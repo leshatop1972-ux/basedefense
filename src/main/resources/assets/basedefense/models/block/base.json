@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/base_side",
+    "up": "basedefense:block/base_top",
+    "down": "basedefense:block/base_bottom",
+    "north": "basedefense:block/base_front",
+    "south": "basedefense:block/base_front",
+    "east": "basedefense:block/base_side",
+    "west": "basedefense:block/base_side"
+  }
+}
