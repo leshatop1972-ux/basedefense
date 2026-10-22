@@ -31,6 +31,8 @@ public class BuildTask {
     private final boolean keepPlacedBlock;
     private int index = 0;
     private int effectCounter = 0;
+    /** Без частиц и звуков на каждый блок (мгновенная постройка в творческом). */
+    private boolean quiet;
 
     public BuildTask(ServerWorld world, StructurePlan plan, BlockPos placedPos, Direction facing) {
         this(world, plan, plan.toSteps(), placedPos, facing, false);
@@ -45,6 +47,10 @@ public class BuildTask {
         this.rotation = rotationFor(facing);
         this.steps = steps;
         this.keepPlacedBlock = keepPlacedBlock;
+    }
+
+    public void setQuiet(boolean quiet) {
+        this.quiet = quiet;
     }
 
     public ServerWorld getWorld() {
@@ -166,7 +172,7 @@ public class BuildTask {
         }
         world.setBlockState(pos, target, Block.NOTIFY_ALL);
 
-        if (!target.isAir() && ++effectCounter % 3 == 0) {
+        if (!quiet && !target.isAir() && ++effectCounter % 3 == 0) {
             world.spawnParticles(ParticleTypes.CLOUD, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                     2, 0.3, 0.3, 0.3, 0.01);
             world.playSound(null, pos, target.getSoundGroup().getPlaceSound(), SoundCategory.BLOCKS, 0.5f, 1.0f);

@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Блок дома (дом фермера, скотовода и т.д.).
+ * В творческом режиме любой дом сразу появляется целиком.
  * Дом строителя строится сам сразу после установки.
  * Остальные дома: блок остаётся на месте и становится стройплощадкой — дом строит
  * житель-строитель из материалов в сундуках своего дома. ПКМ по блоку — список материалов.
@@ -56,6 +57,11 @@ public class HouseBlock extends Block {
             return;
         }
         Direction facing = placer != null ? placer.getHorizontalFacing() : Direction.NORTH;
+        // Творческий режим: любой дом встаёт сразу целиком, без строителя и материалов
+        if (placer instanceof PlayerEntity player && player.isCreative()) {
+            BuildManager.startInstant(serverWorld, type.getPlan(), pos, facing);
+            return;
+        }
         if (type.isSelfBuilt()) {
             BuildManager.start(serverWorld, type.getPlan(), pos, facing);
             return;
