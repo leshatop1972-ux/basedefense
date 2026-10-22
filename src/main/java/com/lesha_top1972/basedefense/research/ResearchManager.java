@@ -60,7 +60,7 @@ public final class ResearchManager {
         return count;
     }
 
-    private static void removeCoins(PlayerEntity player, int amount) {
+    public static void removeCoins(PlayerEntity player, int amount) {
         PlayerInventory inventory = player.getInventory();
         for (int i = 0; i < inventory.size() && amount > 0; i++) {
             ItemStack stack = inventory.getStack(i);

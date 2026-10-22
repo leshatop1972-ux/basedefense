@@ -93,5 +93,11 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> {
         float idle = MathHelper.cos(animationProgress * 0.09f) * 0.05f + 0.05f;
         rightArm.roll = idle;
         leftArm.roll = -idle;
+
+        // Работа: взмах правой рукой (как будто рыхлит грядку)
+        if (this.handSwingProgress > 0.0f) {
+            float s = MathHelper.sin(this.handSwingProgress * (float) Math.PI);
+            rightArm.pitch -= s * 1.6f;
+        }
     }
 }

@@ -441,7 +441,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
         // Запас еды
         int y2 = this.y + 62;
-        int foodPerDay = settlers * SettlementManager.FOOD_PER_SETTLER;
+        int foodPerDay = handler.getProp(BaseScreenHandler.PROP_FOOD_DAY);
         context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.food", food),
                 left, y2, counterColor(food), false);
         Text foodInfo = foodPerDay == 0 ? Text.empty()

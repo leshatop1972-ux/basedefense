@@ -1,0 +1,113 @@
+package com.lesha_top1972.basedefense.screen;
+
+import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import com.lesha_top1972.basedefense.settlement.SettlementManager;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.screen.ArrayPropertyDelegate;
+import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.screen.ScreenHandler;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Меню жителя (открывается кликом по жителю).
+ * Кнопки: 0 — начать/закончить работу, 1 — забрать добычу, 2 — улучшить.
+ * Состояние жителя передаётся клиенту через PropertyDelegate.
+ */
+public class SettlerScreenHandler extends ScreenHandler {
+
+    public static final int BUTTON_WORK = 0;
+    public static final int BUTTON_LOOT = 1;
+    public static final int BUTTON_UPGRADE = 2;
+
+    public static final int PROP_LEVEL = 0;
+    public static final int PROP_WORKING = 1;
+    public static final int PROP_STORED = 2;
+    public static final int PROP_FROZEN = 3;
+    public static final int PROP_WORK_FOOD = 4;   // сколько ест в день, когда работает
+    public static final int PROP_COUNT = 5;
+
+    /** Житель (только на сервере; на клиенте null). */
+    @Nullable
+    private final SettlerEntity settler;
+    private final PropertyDelegate props;
+
+    /** Конструктор для клиента. */
+    public SettlerScreenHandler(int syncId, PlayerInventory playerInventory) {
+        super(ModScreenHandlers.SETTLER, syncId);
+        this.settler = null;
+        this.props = new ArrayPropertyDelegate(PROP_COUNT);
+        this.addProperties(props);
+    }
+
+    /** Конструктор для сервера. */
+    public SettlerScreenHandler(int syncId, PlayerInventory playerInventory, SettlerEntity settler) {
+        super(ModScreenHandlers.SETTLER, syncId);
+        this.settler = settler;
+        this.props = new PropertyDelegate() {
+            @Override
+            public int get(int index) {
+                return switch (index) {
+                    case PROP_LEVEL -> settler.getLevel();
+                    case PROP_WORKING -> settler.isWorking() ? 1 : 0;
+                    case PROP_STORED -> Math.min(Short.MAX_VALUE, settler.getStoredCount());
+                    case PROP_FROZEN -> settler.getServer() != null
+                            && SettlementManager.isFrozen(settler.getServer()) ? 1 : 0;
+                    case PROP_WORK_FOOD -> settler.getWorkFood(settler.getLevel());
+                    default -> 0;
+                };
+            }
+
+            @Override
+            public void set(int index, int value) {
+            }
+
+            @Override
+            public int size() {
+                return PROP_COUNT;
+            }
+        };
+        this.addProperties(props);
+        settler.setInteractingPlayer(playerInventory.player);
+    }
+
+    public int getProp(int index) {
+        return props.get(index);
+    }
+
+    @Override
+    public boolean onButtonClick(PlayerEntity player, int id) {
+        if (settler == null) {
+            return false;
+        }
+        switch (id) {
+            case BUTTON_WORK -> settler.toggleWork(player);
+            case BUTTON_LOOT -> settler.giveLoot(player);
+            case BUTTON_UPGRADE -> settler.tryUpgrade(player);
+            default -> {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onClosed(PlayerEntity player) {
+        super.onClosed(player);
+        if (settler != null && settler.getInteractingPlayer() == player) {
+            settler.setInteractingPlayer(null);
+        }
+    }
+
+    @Override
+    public ItemStack quickMove(PlayerEntity player, int slot) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean canUse(PlayerEntity player) {
+        // Меню закроется, если житель погиб или игрок отошёл дальше 8 блоков
+        return settler == null || (settler.isAlive() && player.squaredDistanceTo(settler) < 8 * 8);
+    }
+}

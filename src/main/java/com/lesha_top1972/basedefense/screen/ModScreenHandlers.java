@@ -15,6 +15,11 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "base"),
             new ScreenHandlerType<>(BaseScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
 
+    public static final ScreenHandlerType<SettlerScreenHandler> SETTLER = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "settler"),
+            new ScreenHandlerType<>(SettlerScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
+
     private ModScreenHandlers() {
     }
 

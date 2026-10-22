@@ -178,13 +178,19 @@ public final class HousePlans {
         }
         // Окна
         for (int y = 2; y <= 3; y++) {
+            // Стекло ставится в самом конце и соединяется с соседями,
+            // иначе панель без соседей выглядит как «крестик»
             for (int z : new int[]{3, 4, 6, 7}) {
-                p.set(0, y, z, glass);
-                p.set(W - 1, y, z, glass);
+                p.set(0, y, z, air);
+                p.set(W - 1, y, z, air);
+                p.lateConnected(0, y, z, glass);
+                p.lateConnected(W - 1, y, z, glass);
             }
             for (int x : new int[]{1, 6}) {
-                p.set(x, y, 0, glass);
-                p.set(x, y, D - 1, glass);
+                p.set(x, y, 0, air);
+                p.set(x, y, D - 1, air);
+                p.lateConnected(x, y, 0, glass);
+                p.lateConnected(x, y, D - 1, glass);
             }
         }
         // Проёмы под двери
@@ -218,10 +224,14 @@ public final class HousePlans {
             }
         }
         // Окошко на чердаке
-        p.set(3, 7, 0, glass);
-        p.set(4, 7, 0, glass);
-        p.set(3, 7, D - 1, glass);
-        p.set(4, 7, D - 1, glass);
+        p.set(3, 7, 0, air);
+        p.set(4, 7, 0, air);
+        p.set(3, 7, D - 1, air);
+        p.set(4, 7, D - 1, air);
+        p.lateConnected(3, 7, 0, glass);
+        p.lateConnected(4, 7, 0, glass);
+        p.lateConnected(3, 7, D - 1, glass);
+        p.lateConnected(4, 7, D - 1, glass);
 
         // Двери, подвесные фонари, факелы у входа
         BlockState door = Blocks.OAK_DOOR.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);

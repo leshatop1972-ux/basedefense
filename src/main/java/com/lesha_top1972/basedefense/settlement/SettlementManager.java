@@ -9,7 +9,7 @@ import net.minecraft.util.Formatting;
 
 /**
  * Потребности поселения. Каждый игровой день (на рассвете) каждый житель тратит:
- * - 10 очков запаса еды;
+ * - очки запаса еды: 10, а работающий — больше (см. SettlerEntity#getFoodPerDay);
  * - 2 железных самородка, 5 досок и 5 булыжника со склада Базы.
  *   Если ресурсов хватает — счётчик эксплуатации немного растёт (до 30),
  *   если нет — падает на 10 за каждого необеспеченного жителя.
@@ -20,7 +20,7 @@ public final class SettlementManager {
     // ---------- Настройки (можно менять) ----------
     public static final int START_FOOD = 20;          // запас еды в новом мире
     public static final int START_UPKEEP = 20;        // запас эксплуатации в новом мире
-    public static final int FOOD_PER_SETTLER = 10;    // еды в день на жителя
+    public static final int FOOD_PER_SETTLER = 10;    // еды в день на неработающего жителя
     public static final int UPKEEP_PER_SETTLER = 10;  // эксплуатации в день на жителя (если нет ресурсов)
     public static final int UPKEEP_GROWTH = 5;        // рост эксплуатации за день, если ресурсов хватило
     public static final int UPKEEP_MAX = 30;
@@ -76,7 +76,7 @@ public final class SettlementManager {
         int settlers = state.getSettlerCount();
 
         // Еда
-        state.setFood(Math.max(FREEZE_AT, state.getFood() - FOOD_PER_SETTLER * settlers));
+        state.setFood(Math.max(FREEZE_AT, state.getFood() - state.getDailyFood()));
 
         // Эксплуатация: сколько жителей можно обеспечить ресурсами со склада
         int served = Math.min(settlers, Math.min(state.getNuggets() / NUGGETS_PER_SETTLER,

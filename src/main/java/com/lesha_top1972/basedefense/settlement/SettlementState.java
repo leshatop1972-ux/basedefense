@@ -3,12 +3,11 @@ package com.lesha_top1972.basedefense.settlement;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -19,7 +18,8 @@ public class SettlementState extends PersistentState {
 
     private static final String SAVE_ID = "basedefense_settlement";
 
-    private final Set<UUID> settlers = new HashSet<>();
+    /** Житель → сколько еды он тратит в день (зависит от работы и уровня). */
+    private final Map<UUID, Integer> settlers = new HashMap<>();
     private int food = SettlementManager.START_FOOD;
     private int upkeep = SettlementManager.START_UPKEEP;
     private int nuggets;
@@ -35,20 +35,31 @@ public class SettlementState extends PersistentState {
 
     // ---------- Жители ----------
 
-    public void addSettler(UUID id) {
-        if (settlers.add(id)) {
+    /** Записать жителя в поселение (или обновить, сколько еды он тратит в день). */
+    public void addSettler(UUID id, int foodPerDay) {
+        Integer old = settlers.put(id, foodPerDay);
+        if (old == null || old != foodPerDay) {
             markDirty();
         }
     }
 
     public void removeSettler(UUID id) {
-        if (settlers.remove(id)) {
+        if (settlers.remove(id) != null) {
             markDirty();
         }
     }
 
     public int getSettlerCount() {
         return settlers.size();
+    }
+
+    /** Сколько еды всё поселение тратит за день. */
+    public int getDailyFood() {
+        int sum = 0;
+        for (int food : settlers.values()) {
+            sum += food;
+        }
+        return sum;
     }
 
     // ---------- Счётчики ----------
@@ -120,10 +131,19 @@ public class SettlementState extends PersistentState {
 
     private static SettlementState fromNbt(NbtCompound nbt) {
         SettlementState state = new SettlementState();
-        NbtList list = nbt.getList("Settlers", NbtElement.STRING_TYPE);
+        // Новый формат: {Id, Food}
+        NbtList list = nbt.getList("SettlerList", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
+            NbtCompound entry = list.getCompound(i);
+            if (entry.containsUuid("Id")) {
+                state.settlers.put(entry.getUuid("Id"), entry.getInt("Food"));
+            }
+        }
+        // Старый формат: просто список UUID
+        NbtList old = nbt.getList("Settlers", NbtElement.STRING_TYPE);
+        for (int i = 0; i < old.size(); i++) {
             try {
-                state.settlers.add(UUID.fromString(list.getString(i)));
+                state.settlers.putIfAbsent(UUID.fromString(old.getString(i)), SettlementManager.FOOD_PER_SETTLER);
             } catch (IllegalArgumentException ignored) {
                 // битая запись — пропускаем
             }
@@ -144,8 +164,13 @@ public class SettlementState extends PersistentState {
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         NbtList list = new NbtList();
-        settlers.forEach(id -> list.add(NbtString.of(id.toString())));
-        nbt.put("Settlers", list);
+        settlers.forEach((id, food) -> {
+            NbtCompound entry = new NbtCompound();
+            entry.putUuid("Id", id);
+            entry.putInt("Food", food);
+            list.add(entry);
+        });
+        nbt.put("SettlerList", list);
         nbt.putInt("Food", food);
         nbt.putInt("Upkeep", upkeep);
         nbt.putInt("Nuggets", nuggets);
