@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "basedefense:base"
+    "basedefense:base",
+    "basedefense:constructor_block",
+    "basedefense:farmer_house"
   ]
 }

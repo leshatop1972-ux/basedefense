@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "item": "minecraft:iron_block"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "basedefense:constructor_block"
+    },
+    {
+      "item": "basedefense:constructor_block"
+    },
+    {
+      "item": "basedefense:constructor_block"
+    }
+  ],
+  "result": {
+    "item": "basedefense:farmer_house",
+    "count": 1
+  }
+}

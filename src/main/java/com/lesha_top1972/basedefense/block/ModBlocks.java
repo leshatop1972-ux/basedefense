@@ -19,6 +19,14 @@ public final class ModBlocks {
     public static final Block BASE = register("base",
             new BaseBlock(FabricBlockSettings.copyOf(Blocks.CRAFTING_TABLE).strength(3.0f)));
 
+    /** Конструкторский блок — деревянный ящик, материал для крафта. */
+    public static final Block CONSTRUCTOR_BLOCK = register("constructor_block",
+            new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.5f)));
+
+    /** Дом фермера — при установке строит домик с огородом. */
+    public static final Block FARMER_HOUSE = register("farmer_house",
+            new FarmerHouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f)));
+
     private ModBlocks() {
     }
 
@@ -29,8 +37,8 @@ public final class ModBlocks {
     }
 
     public static void init() {
-        // Кладём «Базу» во вкладку «Функциональные блоки» сразу после верстака.
+        // Вкладка «Функциональные блоки»: База, Конструкторский блок, Дом фермера — после верстака
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL)
-                .register(entries -> entries.addAfter(Items.CRAFTING_TABLE, BASE));
+                .register(entries -> entries.addAfter(Items.CRAFTING_TABLE, BASE, CONSTRUCTOR_BLOCK, FARMER_HOUSE));
     }
 }

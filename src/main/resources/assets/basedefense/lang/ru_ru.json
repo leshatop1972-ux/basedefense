@@ -4,5 +4,21 @@
   "screen.basedefense.base.tab.technologies": "Технологии",
   "screen.basedefense.base.tab.defense": "Оборона",
   "screen.basedefense.base.tab.economy": "Хозяйство",
-  "screen.basedefense.base.coming_soon": "Здесь скоро появится древо исследований"
+  "screen.basedefense.base.coming_soon": "Здесь скоро появятся исследования",
+  "block.basedefense.constructor_block": "Конструкторский блок",
+  "block.basedefense.farmer_house": "Дом фермера",
+  "item.basedefense.research_coin": "Монета исследований",
+  "item.basedefense.farmer_spawn_egg": "Яйцо призыва фермера",
+  "entity.basedefense.farmer": "Житель-фермер",
+  "research.basedefense.farmer_house": "Дом фермера",
+  "research.basedefense.farmer_house.desc": "Чертёж уютного домика для первого жителя поселения. Поставь блок дома на ровном месте — и за пару секунд вырастет дом с огородом, а в нём поселится фермер.",
+  "screen.basedefense.base.research_button": "Исследовать",
+  "screen.basedefense.base.researched": "Исследовано",
+  "screen.basedefense.base.cost": "Цена: %s",
+  "screen.basedefense.base.have": "У вас: %s",
+  "screen.basedefense.base.not_enough": "Недостаточно монет!",
+  "screen.basedefense.base.unlocks": "Открывает крафт: %s",
+  "message.basedefense.research.done": "Исследование «%s» завершено! Новый рецепт открыт.",
+  "message.basedefense.research.not_enough": "Недостаточно монет исследований (нужно %s)",
+  "message.basedefense.research.locked": "Сначала исследуйте «%s» в меню Базы"
 }

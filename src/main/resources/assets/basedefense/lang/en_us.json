@@ -4,5 +4,21 @@
   "screen.basedefense.base.tab.technologies": "Technologies",
   "screen.basedefense.base.tab.defense": "Defense",
   "screen.basedefense.base.tab.economy": "Economy",
-  "screen.basedefense.base.coming_soon": "The research tree is coming soon"
+  "screen.basedefense.base.coming_soon": "Research is coming soon",
+  "block.basedefense.constructor_block": "Constructor Block",
+  "block.basedefense.farmer_house": "Farmer's House",
+  "item.basedefense.research_coin": "Research Coin",
+  "item.basedefense.farmer_spawn_egg": "Farmer Spawn Egg",
+  "entity.basedefense.farmer": "Farmer",
+  "research.basedefense.farmer_house": "Farmer's House",
+  "research.basedefense.farmer_house.desc": "A blueprint of a cozy house for your settlement's first villager. Place the house block on flat ground and in a few seconds a house with a garden appears, and a farmer moves in.",
+  "screen.basedefense.base.research_button": "Research",
+  "screen.basedefense.base.researched": "Researched",
+  "screen.basedefense.base.cost": "Cost: %s",
+  "screen.basedefense.base.have": "You have: %s",
+  "screen.basedefense.base.not_enough": "Not enough coins!",
+  "screen.basedefense.base.unlocks": "Unlocks: %s",
+  "message.basedefense.research.done": "Research \"%s\" complete! New recipe unlocked.",
+  "message.basedefense.research.not_enough": "Not enough research coins (%s needed)",
+  "message.basedefense.research.locked": "Research \"%s\" in the Base menu first"
 }

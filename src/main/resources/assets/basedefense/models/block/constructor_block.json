@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "basedefense:block/constructor_block_top",
+    "bottom": "basedefense:block/constructor_block_top",
+    "side": "basedefense:block/constructor_block_side"
+  }
+}
