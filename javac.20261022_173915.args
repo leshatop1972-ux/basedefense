@@ -1,0 +1,11 @@
+-Xmaxerrs
+9000
+-d
+/tmp/claude-0/out
+src/client/java/com/lesha_top1972/basedefense/client/screen/BaseScreen.java
+src/main/java/com/lesha_top1972/basedefense/entity/CookEntity.java
+src/main/java/com/lesha_top1972/basedefense/entity/MinerEntity.java
+src/main/java/com/lesha_top1972/basedefense/entity/RancherEntity.java
+src/main/java/com/lesha_top1972/basedefense/research/Technology.java
+src/main/java/com/lesha_top1972/basedefense/settlement/SettlementManager.java
+src/main/java/com/lesha_top1972/basedefense/structure/HousePlans.java

@@ -22,7 +22,7 @@ public final class SettlementManager {
     // ---------- Настройки (можно менять) ----------
     public static final int START_FOOD = 20;          // запас еды в новом мире
     public static final int START_UPKEEP = 20;        // запас эксплуатации в новом мире
-    public static final int FOOD_PER_SETTLER = 10;    // еды в день на неработающего жителя
+    public static final int FOOD_PER_SETTLER = 6;     // еды в день на неработающего жителя
     public static final int UPKEEP_PER_SETTLER = 10;  // эксплуатации в день на жителя (если нет ресурсов)
     public static final int UPKEEP_GROWTH = 5;        // рост эксплуатации за день, если ресурсов хватило
     public static final int UPKEEP_MAX = 30;

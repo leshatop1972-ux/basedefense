@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Житель-шахтёр. Появляется в маленьком домике со спуском в шахту.
- * Работает внизу шахты (у рельсов) и каждый день приносит 2 случайных варианта из списка своего уровня.
+ * Работает внизу шахты (в забое) и каждый день приносит 2 случайных варианта из списка своего уровня.
  */
 public class MinerEntity extends SettlerEntity {
 
@@ -61,9 +61,9 @@ public class MinerEntity extends SettlerEntity {
         };
     }
 
-    /** Работает у рельсов в шахте. */
+    /** Работает в забое внизу шахты (замшелый булыжник). */
     @Override
     public boolean isWorkSpot(BlockState state) {
-        return state.isOf(Blocks.RAIL);
+        return state.isOf(Blocks.MOSSY_COBBLESTONE);
     }
 }

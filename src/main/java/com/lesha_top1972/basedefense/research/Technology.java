@@ -15,7 +15,7 @@ import java.util.Optional;
  * и рецепт, который она открывает.
  *
  * cost         — цена в монетах исследований
- * tab          — номер вкладки в меню Базы (0 = «Технологии»)
+ * tab          — номер вкладки в меню Базы (0 = «Хозяйство»)
  * gridX, gridY — место квадратика в древе (в клетках)
  * recipe       — рецепт, который открывается
  * requires     — какую технологию нужно исследовать раньше (null — ничего)
@@ -95,6 +95,11 @@ public enum Technology {
 
     public Text getDescription() {
         return Text.translatable("research.basedefense." + id + ".desc");
+    }
+
+    /** Подробно о работе жителя (показывается по наведению на синий кружок «?»). */
+    public Text getWorkInfo() {
+        return Text.translatable("research.basedefense." + id + ".work");
     }
 
     /** Бит этой технологии в общей «маске» исследований. */

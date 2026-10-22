@@ -5,7 +5,6 @@ import com.lesha_top1972.basedefense.entity.SettlerEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.LeveledCauldronBlock;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.EntityType;
@@ -45,15 +44,15 @@ public final class HousePlans {
                 Blocks.SPRUCE_STAIRS, Blocks.SPRUCE_PLANKS));
 
         // Мебель
-        p.set(1, 1, 2, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(1, 1, 2, Blocks.FLETCHING_TABLE.getDefaultState());
         p.set(1, 1, 3, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.set(1, 1, 5, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
+        p.set(1, 1, 5, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(6, 1, 2, Blocks.COMPOSTER.getDefaultState());
-        p.set(6, 1, 7, Blocks.BOOKSHELF.getDefaultState());
+        p.set(6, 1, 7, Blocks.HAY_BLOCK.getDefaultState());
         addTable(p);
         addBed(p, Blocks.GREEN_BED);
         p.late(1, 2, 2, Blocks.POTTED_POPPY.getDefaultState());   // цветок на верстаке
-        p.late(1, 2, 3, Blocks.LANTERN.getDefaultState());        // фонарь на бочке
+        p.late(1, 2, 3, Blocks.TORCH.getDefaultState());        // факел на бочке
         addCarpet(p, Blocks.GREEN_CARPET);
 
         // Огород: вспаханная земля и канавка с водой. Пока ничего не посажено.
@@ -88,16 +87,16 @@ public final class HousePlans {
                 Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_PLANKS));
 
         // Мебель
-        p.set(1, 1, 2, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(1, 1, 2, Blocks.FLETCHING_TABLE.getDefaultState());
         p.set(1, 1, 3, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.set(1, 1, 5, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
-        p.set(6, 1, 2, Blocks.SMOKER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(6, 1, 3, Blocks.CAULDRON.getDefaultState());
+        p.set(1, 1, 5, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.set(6, 1, 2, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.set(6, 1, 3, Blocks.COMPOSTER.getDefaultState());
         p.set(6, 1, 7, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         addTable(p);
         addBed(p, Blocks.BROWN_BED);
-        p.late(1, 2, 3, Blocks.LANTERN.getDefaultState());
-        p.late(6, 2, 7, Blocks.LANTERN.getDefaultState());
+        p.late(1, 2, 3, Blocks.TORCH.getDefaultState());
+        p.late(6, 2, 7, Blocks.TORCH.getDefaultState());
         addCarpet(p, Blocks.BROWN_CARPET);
 
         // Загон: трава, корыто с водой и сено. Животных пока нет.
@@ -111,8 +110,8 @@ public final class HousePlans {
         p.set(1, 1, 14, Blocks.HAY_BLOCK.getDefaultState());
         p.set(2, 1, 14, Blocks.HAY_BLOCK.getDefaultState());
         p.set(1, 2, 14, Blocks.HAY_BLOCK.getDefaultState());
-        p.set(6, 1, 12, Blocks.WATER_CAULDRON.getDefaultState().with(LeveledCauldronBlock.LEVEL, 3));
-        p.set(6, 1, 13, Blocks.WATER_CAULDRON.getDefaultState().with(LeveledCauldronBlock.LEVEL, 3));
+        p.set(6, 0, 12, Blocks.WATER.getDefaultState());   // поилка — вода в земле
+        p.set(6, 0, 13, Blocks.WATER.getDefaultState());
         addYardFence(p);
 
         settleResident(p, ModEntities.RANCHER);
@@ -129,17 +128,17 @@ public final class HousePlans {
 
         // Кухня: коптильня, печь, бочки, котёл с водой
         p.set(6, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.set(6, 1, 2, Blocks.SMOKER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(6, 1, 3, Blocks.FURNACE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(6, 1, 4, Blocks.WATER_CAULDRON.getDefaultState().with(LeveledCauldronBlock.LEVEL, 3));
-        p.set(1, 1, 2, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(6, 1, 2, Blocks.BRICKS.getDefaultState());   // кирпичная печь — рабочее место повара
+        p.set(6, 1, 3, Blocks.BRICKS.getDefaultState());
+        p.set(6, 1, 4, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.set(1, 1, 2, Blocks.SMOOTH_STONE.getDefaultState());   // разделочный стол
         p.set(1, 1, 3, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.set(1, 1, 5, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
+        p.set(1, 1, 5, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(6, 1, 7, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         addTable(p);
         addBed(p, Blocks.WHITE_BED);
-        p.late(6, 2, 1, Blocks.LANTERN.getDefaultState());
-        p.late(6, 2, 7, Blocks.CAKE.getDefaultState());           // торт на бочке
+        p.late(6, 2, 1, Blocks.TORCH.getDefaultState());
+        p.late(6, 2, 7, Blocks.POTTED_FERN.getDefaultState());
         p.late(1, 2, 3, Blocks.POTTED_RED_MUSHROOM.getDefaultState());
         addCarpet(p, Blocks.RED_CARPET);
 
@@ -152,7 +151,7 @@ public final class HousePlans {
                         : Blocks.GRASS_BLOCK.getDefaultState());
             }
         }
-        p.set(2, 1, 12, Blocks.CAMPFIRE.getDefaultState());
+        p.set(2, 1, 12, Blocks.BRICKS.getDefaultState());   // уличная печь
         p.set(1, 1, 11, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(1, 1, 12, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(6, 1, 11, Blocks.PUMPKIN.getDefaultState());
@@ -174,16 +173,16 @@ public final class HousePlans {
                 Blocks.DEEPSLATE_TILE_STAIRS, Blocks.DEEPSLATE_TILES));
 
         // Мастерская
-        p.set(6, 1, 2, Blocks.BLAST_FURNACE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(6, 1, 3, Blocks.ANVIL.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));
-        p.set(6, 1, 4, Blocks.SMITHING_TABLE.getDefaultState());
-        p.set(1, 1, 2, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(6, 1, 2, Blocks.BRICKS.getDefaultState());
+        p.set(6, 1, 3, Blocks.POLISHED_ANDESITE.getDefaultState());
+        p.set(6, 1, 4, Blocks.SMOOTH_STONE.getDefaultState());
+        p.set(1, 1, 2, Blocks.CHISELED_STONE_BRICKS.getDefaultState());
         p.set(1, 1, 3, Blocks.GRINDSTONE.getDefaultState());
-        p.set(1, 1, 5, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
+        p.set(1, 1, 5, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(6, 1, 7, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         addTable(p);
         addBed(p, Blocks.GRAY_BED);
-        p.late(6, 2, 7, Blocks.LANTERN.getDefaultState());
+        p.late(6, 2, 7, Blocks.TORCH.getDefaultState());
         addCarpet(p, Blocks.GRAY_CARPET);
 
         // Двор: горн с лавой, наковальня, бочка с водой для закалки
@@ -198,9 +197,9 @@ public final class HousePlans {
             p.set(x, 1, 13, Blocks.BRICKS.getDefaultState());
             p.set(x, 2, 13, Blocks.BRICK_SLAB.getDefaultState());
         }
-        p.set(2, 1, 13, Blocks.LAVA_CAULDRON.getDefaultState());
-        p.set(5, 1, 12, Blocks.ANVIL.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
-        p.set(6, 1, 12, Blocks.WATER_CAULDRON.getDefaultState().with(LeveledCauldronBlock.LEVEL, 3));
+        p.set(2, 1, 13, Blocks.MAGMA_BLOCK.getDefaultState());   // горн
+        p.set(5, 1, 12, Blocks.POLISHED_ANDESITE.getDefaultState());
+        p.set(6, 1, 12, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         addYardFence(p);
 
         settleResident(p, ModEntities.BLACKSMITH);
@@ -219,11 +218,11 @@ public final class HousePlans {
         buildHut(p, new HutMaterials(Blocks.SPRUCE_PLANKS, Blocks.SPRUCE_LOG, Blocks.SPRUCE_SLAB,
                 Blocks.SPRUCE_DOOR, Blocks.BROWN_BED));
         // Внутри: верстак, печь, сундук, бочка
-        p.set(4, 1, 1, Blocks.CRAFTING_TABLE.getDefaultState());
-        p.set(4, 1, 2, Blocks.FURNACE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(4, 1, 4, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
+        p.set(4, 1, 1, Blocks.CARTOGRAPHY_TABLE.getDefaultState());
+        p.set(4, 1, 2, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.set(4, 1, 4, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(1, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.late(1, 2, 1, Blocks.LANTERN.getDefaultState());
+        p.late(1, 2, 1, Blocks.TORCH.getDefaultState());
 
         buildMineShaft(p);
 
@@ -239,11 +238,11 @@ public final class HousePlans {
         buildHut(p, new HutMaterials(Blocks.OAK_PLANKS, Blocks.SPRUCE_LOG, Blocks.DARK_OAK_SLAB,
                 Blocks.OAK_DOOR, Blocks.RED_BED));
         // Внутри: верстак, сундук, бочка, точило
-        p.set(4, 1, 1, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(4, 1, 1, Blocks.FLETCHING_TABLE.getDefaultState());
         p.set(4, 1, 2, Blocks.GRINDSTONE.getDefaultState());
-        p.set(4, 1, 4, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
+        p.set(4, 1, 4, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
         p.set(1, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.late(1, 2, 1, Blocks.LANTERN.getDefaultState());
+        p.late(1, 2, 1, Blocks.TORCH.getDefaultState());
 
         BlockState air = Blocks.AIR.getDefaultState();
         BlockState grass = Blocks.GRASS_BLOCK.getDefaultState();
@@ -437,7 +436,8 @@ public final class HousePlans {
         }
         p.set(7, 0, 0, cobble);
         p.set(8, 0, 0, cobble);
-        p.late(7, 3, 0, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+        p.late(6, 2, -1, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
+        p.late(9, 2, -1, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
 
         // Комната внизу: x = 6..9, z = 11..14, пол на глубине MINE_DEPTH
         int floor = -MINE_DEPTH;
@@ -463,24 +463,25 @@ public final class HousePlans {
                 }
             }
         }
-        // Руда в стенах для красоты
-        p.set(5, floor + 2, 12, Blocks.IRON_ORE.getDefaultState());
-        p.set(10, floor + 1, 13, Blocks.COAL_ORE.getDefaultState());
-        p.set(10, floor + 3, 11, Blocks.COPPER_ORE.getDefaultState());
-        p.set(7, floor + 2, 15, Blocks.GOLD_ORE.getDefaultState());
+        // Разные камни в стенах для красоты
+        p.set(5, floor + 2, 12, Blocks.ANDESITE.getDefaultState());
+        p.set(10, floor + 1, 13, Blocks.GRAVEL.getDefaultState());
+        p.set(10, floor + 3, 11, Blocks.DIORITE.getDefaultState());
+        p.set(7, floor + 2, 15, Blocks.ANDESITE.getDefaultState());
         // Деревянные опоры по углам
         for (int y = floor + 1; y <= floor + 3; y++) {
             p.set(6, y, 14, log);
             p.set(9, y, 14, log);
         }
-        // Рельсы — рабочее место шахтёра
-        BlockState rail = Blocks.RAIL.getDefaultState();
-        for (int z = 11; z <= 13; z++) {
-            p.late(7, floor + 1, z, rail);
-        }
+        // Кучи замшелого булыжника — «забой», рабочее место шахтёра
+        BlockState rubble = Blocks.MOSSY_COBBLESTONE.getDefaultState();
+        p.late(6, floor + 1, 11, rubble);
+        p.late(6, floor + 1, 12, rubble);
+        p.late(9, floor + 1, 11, rubble);
+        p.late(6, floor + 2, 11, Blocks.MOSSY_COBBLESTONE_SLAB.getDefaultState());
         p.late(8, floor + 1, 13, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.late(8, floor + 1, 11, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.late(7, floor + 3, 14, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+        p.late(9, floor + 1, 13, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.late(8, floor + 2, 14, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
         p.late(9, floor + 2, 12, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
     }
 
@@ -605,8 +606,8 @@ public final class HousePlans {
                 3, 2, 0, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
         p.lateDouble(4, 1, D - 1, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER),
                 4, 2, D - 1, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
-        p.late(3, 8, 3, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
-        p.late(4, 8, 6, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+        p.late(1, 3, 5, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST));
+        p.late(6, 3, 5, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
         BlockState torch = Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
         p.late(2, 3, -1, torch);
         p.late(4, 3, -1, torch);
@@ -650,8 +651,8 @@ public final class HousePlans {
                     ? Blocks.OAK_FENCE_GATE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH)
                     : fence);
         }
-        p.late(0, 2, YARD_END, Blocks.LANTERN.getDefaultState());
-        p.late(W - 1, 2, YARD_END, Blocks.LANTERN.getDefaultState());
+        p.late(0, 2, YARD_END, Blocks.TORCH.getDefaultState());
+        p.late(W - 1, 2, YARD_END, Blocks.TORCH.getDefaultState());
     }
 
     /** Когда дом готов — в нём появляется житель. */

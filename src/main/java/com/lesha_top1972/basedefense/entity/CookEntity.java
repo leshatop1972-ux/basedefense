@@ -85,9 +85,9 @@ public class CookEntity extends SettlerEntity {
         super.produceOneDay();
     }
 
-    /** Работает у печей. */
+    /** Работает у кирпичных печей. */
     @Override
     public boolean isWorkSpot(BlockState state) {
-        return state.isOf(Blocks.SMOKER) || state.isOf(Blocks.FURNACE);
+        return state.isOf(Blocks.BRICKS);
     }
 }

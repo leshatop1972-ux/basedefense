@@ -79,13 +79,13 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
     /** Вкладки. Названия берутся из файлов перевода (lang). */
     private static final Text[] TABS = {
-            Text.translatable("screen.basedefense.base.tab.technologies"),
-            Text.translatable("screen.basedefense.base.tab.defense"),
-            Text.translatable("screen.basedefense.base.tab.economy"),
+            Text.translatable("screen.basedefense.base.tab.economy"),   // «Хозяйство» — древо исследований
             Text.translatable("screen.basedefense.base.tab.needs")
     };
     /** Номер вкладки «Потребности». */
-    private static final int NEEDS_TAB = 3;
+    private static final int NEEDS_TAB = 1;
+    private static final int INFO_CIRCLE = 0xFF3B7DD8;
+    private static final int INFO_CIRCLE_HOVER = 0xFF5A9BF0;
 
     private int selectedTab = 0;
     @Nullable
@@ -123,6 +123,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                     Text.translatable("screen.basedefense.needs.rule.base"),
                     Text.translatable("screen.basedefense.needs.rule.constructor"),
                     Text.translatable("screen.basedefense.needs.rule.big")), mouseX, mouseY);
+        }
+
+        // Синий кружок «?» в панели описания — подробности о работе жителя
+        if (selectedTech != null && isOverWorkInfo(mouseX, mouseY)) {
+            context.drawOrderedTooltip(this.textRenderer,
+                    this.textRenderer.wrapLines(selectedTech.getWorkInfo(), 230), mouseX, mouseY);
         }
 
         // Подсказка при наведении на квадратик
@@ -350,6 +356,9 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         // Кнопка закрытия ×
         boolean closeHovered = isOverClose(mouseX, mouseY);
         context.drawText(this.textRenderer, "×", pr - 10, pt + 5, closeHovered ? BAD : TEXT_MUTED, false);
+
+        // Синий кружок «?» — наведи, чтобы узнать про работу жителя
+        drawInfoCircle(context, pr - 27, pt + 6, isOverWorkInfo(mouseX, mouseY));
 
         // Заголовок: иконка + название
         context.drawItem(new ItemStack(tech.getIcon()), pl + 6, pt + 6);
@@ -635,6 +644,26 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
     private boolean isOverInfoPanel(double mouseX, double mouseY) {
         return mouseX >= getInfoLeft() && mouseX < contentRight - 6 && mouseY >= contentTop + 6 && mouseY < contentBottom - 6;
+    }
+
+    /** Кружок 11×11 с белым «?». */
+    private void drawInfoCircle(DrawContext context, int x, int y, boolean hover) {
+        int color = hover ? INFO_CIRCLE_HOVER : INFO_CIRCLE;
+        // Ширина каждой строки круга (рисуем «пиксельный» круг)
+        int[] inset = {3, 1, 1, 0, 0, 0, 0, 0, 1, 1, 3};
+        for (int row = 0; row < 11; row++) {
+            context.fill(x + inset[row], y + row, x + 11 - inset[row], y + row + 1, color);
+        }
+        context.drawText(this.textRenderer, "?", x + 3, y + 2, 0xFFFFFFFF, false);
+    }
+
+    private boolean isOverWorkInfo(double mouseX, double mouseY) {
+        if (selectedTech == null) {
+            return false;
+        }
+        int x = contentRight - 6 - 27;
+        int y = contentTop + 6 + 6;
+        return mouseX >= x && mouseX < x + 11 && mouseY >= y && mouseY < y + 11;
     }
 
     private boolean isOverClose(double mouseX, double mouseY) {

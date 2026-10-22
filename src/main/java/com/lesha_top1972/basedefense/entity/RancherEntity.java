@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Житель-скотовод. Появляется в доме скотовода.
- * Работает в загоне (у сена и корыт): каждый день добывает 3 случайных варианта из списка своего уровня.
+ * Работает в загоне (у сена): каждый день добывает 3 случайных варианта из списка своего уровня.
  * Мясо даёт больше очков еды, чем урожай фермера, поэтому и ест скотовод чуть больше.
  */
 public class RancherEntity extends SettlerEntity {
@@ -66,9 +66,9 @@ public class RancherEntity extends SettlerEntity {
         };
     }
 
-    /** Работает у сена и корыт с водой в загоне. */
+    /** Работает у сена в загоне. */
     @Override
     public boolean isWorkSpot(BlockState state) {
-        return state.isOf(Blocks.HAY_BLOCK) || state.isOf(Blocks.WATER_CAULDRON);
+        return state.isOf(Blocks.HAY_BLOCK);
     }
 }
