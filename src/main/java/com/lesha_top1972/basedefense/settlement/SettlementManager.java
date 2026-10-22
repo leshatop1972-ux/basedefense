@@ -10,7 +10,9 @@ import net.minecraft.util.Formatting;
 /**
  * Потребности поселения. Каждый игровой день (на рассвете) каждый житель тратит:
  * - очки запаса еды: 10, а работающий — больше (см. SettlerEntity#getFoodPerDay);
- * - 2 железных самородка, 5 досок и 5 булыжника со склада Базы.
+ * - 2 железных самородка, 5 досок и 5 булыжника со склада Базы
+ *   (с 6 жителей ещё 1 конструкторский блок в день на всё поселение;
+ *    больше 13 жителей — 4 самородка и 2 плотного дерева вместо досок).
  *   Если ресурсов хватает — счётчик эксплуатации немного растёт (до 30),
  *   если нет — падает на 10 за каждого необеспеченного жителя.
  * Если любой счётчик дошёл до -20, все жители замирают.
@@ -31,6 +33,12 @@ public final class SettlementManager {
     public static final int NUGGETS_PER_SETTLER = 2;
     public static final int PLANKS_PER_SETTLER = 5;
     public static final int COBBLE_PER_SETTLER = 5;
+
+    // Большое поселение требует больше
+    public static final int CONSTRUCTOR_FROM = 6;          // с 6 жителей: +1 конструкторский блок в день
+    public static final int BIG_SETTLEMENT_FROM = 14;      // больше 13 жителей:
+    public static final int NUGGETS_PER_SETTLER_BIG = 4;   //   самородков 4 на жителя
+    public static final int DENSE_WOOD_PER_SETTLER = 2;    //   и 2 плотного дерева вместо досок
 
     private static final long DAY_TICKS = 24000L;
     private static final int MAX_DAYS_AT_ONCE = 7;
@@ -79,18 +87,53 @@ public final class SettlementManager {
         state.setFood(Math.max(FREEZE_AT, state.getFood() - state.getDailyFood()));
 
         // Эксплуатация: сколько жителей можно обеспечить ресурсами со склада
-        int served = Math.min(settlers, Math.min(state.getNuggets() / NUGGETS_PER_SETTLER,
-                Math.min(state.getPlanks() / PLANKS_PER_SETTLER, state.getCobblestone() / COBBLE_PER_SETTLER)));
-        state.setNuggets(state.getNuggets() - served * NUGGETS_PER_SETTLER);
-        state.setPlanks(state.getPlanks() - served * PLANKS_PER_SETTLER);
+        int nuggetsEach = nuggetsPerSettler(settlers);
+        boolean dense = usesDenseWood(settlers);
+        int woodEach = dense ? DENSE_WOOD_PER_SETTLER : PLANKS_PER_SETTLER;
+        int woodHave = dense ? state.getDenseWood() : state.getPlanks();
+        int served = Math.min(settlers, Math.min(state.getNuggets() / nuggetsEach,
+                Math.min(woodHave / woodEach, state.getCobblestone() / COBBLE_PER_SETTLER)));
+        state.setNuggets(state.getNuggets() - served * nuggetsEach);
+        if (dense) {
+            state.setDenseWood(state.getDenseWood() - served * woodEach);
+        } else {
+            state.setPlanks(state.getPlanks() - served * woodEach);
+        }
         state.setCobblestone(state.getCobblestone() - served * COBBLE_PER_SETTLER);
 
+        // Конструкторский блок — один на всё поселение в день (с 6 жителей)
+        boolean constructorMissing = false;
+        int constructorsNeeded = constructorsPerDay(settlers);
+        if (constructorsNeeded > 0) {
+            if (state.getConstructors() >= constructorsNeeded) {
+                state.setConstructors(state.getConstructors() - constructorsNeeded);
+            } else {
+                constructorMissing = true;
+            }
+        }
+
         int unserved = settlers - served;
-        if (unserved > 0) {
-            state.setUpkeep(Math.max(FREEZE_AT, state.getUpkeep() - UPKEEP_PER_SETTLER * unserved));
+        if (unserved > 0 || constructorMissing) {
+            int loss = UPKEEP_PER_SETTLER * unserved + (constructorMissing ? UPKEEP_PER_SETTLER : 0);
+            state.setUpkeep(Math.max(FREEZE_AT, state.getUpkeep() - loss));
         } else {
             state.setUpkeep(Math.min(UPKEEP_MAX, state.getUpkeep() + UPKEEP_GROWTH));
         }
+    }
+
+    // ---------- Сколько нужно в день (используется и на клиенте) ----------
+
+    public static int nuggetsPerSettler(int settlers) {
+        return settlers >= BIG_SETTLEMENT_FROM ? NUGGETS_PER_SETTLER_BIG : NUGGETS_PER_SETTLER;
+    }
+
+    /** Больше 13 жителей — вместо досок нужно плотное дерево. */
+    public static boolean usesDenseWood(int settlers) {
+        return settlers >= BIG_SETTLEMENT_FROM;
+    }
+
+    public static int constructorsPerDay(int settlers) {
+        return settlers >= CONSTRUCTOR_FROM ? 1 : 0;
     }
 
     /** Сообщение в чат всем игрокам, если с запасами плохо. */
@@ -142,6 +185,12 @@ public final class SettlementManager {
         } else if (SettlementItems.isCobblestone(stack)) {
             used = Math.min(count, Math.max(0, STORAGE_MAX - state.getCobblestone()));
             state.setCobblestone(state.getCobblestone() + used);
+        } else if (SettlementItems.isDenseWood(stack)) {
+            used = Math.min(count, Math.max(0, STORAGE_MAX - state.getDenseWood()));
+            state.setDenseWood(state.getDenseWood() + used);
+        } else if (SettlementItems.isConstructor(stack)) {
+            used = Math.min(count, Math.max(0, STORAGE_MAX - state.getConstructors()));
+            state.setConstructors(state.getConstructors() + used);
         }
 
         if (wasFrozen && !state.isFrozen()) {

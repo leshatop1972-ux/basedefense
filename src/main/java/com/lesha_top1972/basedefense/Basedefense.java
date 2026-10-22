@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense;
 
 import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.entity.ModEntities;
+import com.lesha_top1972.basedefense.entity.SettlerThreats;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
@@ -23,5 +24,6 @@ public class Basedefense implements ModInitializer {
         BuildManager.init();
         ResearchManager.init();
         SettlementManager.init();
+        SettlerThreats.init();
     }
 }

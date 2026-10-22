@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "KAK",
-    "KBK",
-    "KFK"
+    "TAR",
+    " K ",
+    "KKK"
   ],
   "key": {
-    "K": {
-      "item": "basedefense:constructor_block"
+    "T": {
+      "item": "minecraft:smithing_table"
     },
     "A": {
       "item": "minecraft:anvil"
     },
-    "B": {
-      "item": "minecraft:blast_furnace"
+    "R": {
+      "item": "minecraft:redstone_block"
     },
-    "F": {
-      "item": "minecraft:furnace"
+    "K": {
+      "item": "basedefense:constructor_block"
     }
   },
   "result": {

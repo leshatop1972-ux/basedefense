@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.screen;
 
+import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.research.Technology;
@@ -114,6 +115,15 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
+
+        // Вкладка «Потребности»: при наведении на склад — правила расхода
+        if (selectedTab == NEEDS_TAB && mouseX >= contentLeft && mouseX < contentRight
+                && mouseY >= this.y + 90 && mouseY < this.y + 120) {
+            context.drawTooltip(this.textRenderer, List.of(
+                    Text.translatable("screen.basedefense.needs.rule.base"),
+                    Text.translatable("screen.basedefense.needs.rule.constructor"),
+                    Text.translatable("screen.basedefense.needs.rule.big")), mouseX, mouseY);
+        }
 
         // Подсказка при наведении на квадратик
         Technology hovered = getNodeAt(mouseX, mouseY);
@@ -463,11 +473,23 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int iy = this.y + 102;
         int ix = left;
         ix = drawStock(context, new ItemStack(Items.IRON_NUGGET), ix, iy,
-                handler.getProp(BaseScreenHandler.PROP_NUGGETS), settlers * SettlementManager.NUGGETS_PER_SETTLER);
-        ix = drawStock(context, new ItemStack(Items.OAK_PLANKS), ix, iy,
-                handler.getProp(BaseScreenHandler.PROP_PLANKS), settlers * SettlementManager.PLANKS_PER_SETTLER);
-        drawStock(context, new ItemStack(Items.COBBLESTONE), ix, iy,
+                handler.getProp(BaseScreenHandler.PROP_NUGGETS), settlers * SettlementManager.nuggetsPerSettler(settlers));
+        // Больше 13 жителей — вместо досок нужно плотное дерево
+        if (SettlementManager.usesDenseWood(settlers)) {
+            ix = drawStock(context, new ItemStack(ModBlocks.DENSE_WOOD), ix, iy,
+                    handler.getProp(BaseScreenHandler.PROP_DENSE_WOOD), settlers * SettlementManager.DENSE_WOOD_PER_SETTLER);
+        } else {
+            ix = drawStock(context, new ItemStack(Items.OAK_PLANKS), ix, iy,
+                    handler.getProp(BaseScreenHandler.PROP_PLANKS), settlers * SettlementManager.PLANKS_PER_SETTLER);
+        }
+        ix = drawStock(context, new ItemStack(Items.COBBLESTONE), ix, iy,
                 handler.getProp(BaseScreenHandler.PROP_COBBLE), settlers * SettlementManager.COBBLE_PER_SETTLER);
+        // С 6 жителей — ещё 1 конструкторский блок в день
+        int constructorsNeed = SettlementManager.constructorsPerDay(settlers);
+        int constructorsHave = handler.getProp(BaseScreenHandler.PROP_CONSTRUCTORS);
+        if (constructorsNeed > 0 || constructorsHave > 0) {
+            drawStock(context, new ItemStack(ModBlocks.CONSTRUCTOR_BLOCK), ix, iy, constructorsHave, constructorsNeed);
+        }
 
         // Подпись над инвентарём
         context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.inventory"),
@@ -522,9 +544,9 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     /** Иконка ресурса и «есть / нужно в день». @return x для следующего ресурса */
     private int drawStock(DrawContext context, ItemStack icon, int x, int y, int have, int need) {
         context.drawItem(icon, x, y);
-        String text = have + " / " + need;
-        context.drawText(this.textRenderer, text, x + 18, y + 4, have >= need ? TEXT_DARK : BAD, false);
-        return x + 18 + this.textRenderer.getWidth(text) + 14;
+        String text = have + "/" + need;
+        context.drawText(this.textRenderer, text, x + 17, y + 4, have >= need ? TEXT_DARK : BAD, false);
+        return x + 17 + this.textRenderer.getWidth(text) + 8;
     }
 
     private void drawSlotFrame(DrawContext context, int sx, int sy, boolean highlight) {
@@ -545,7 +567,8 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                 extra = Text.translatable("tooltip.basedefense.food_points", food);
             } else if (nuggets > 0) {
                 extra = Text.translatable("tooltip.basedefense.nuggets", nuggets);
-            } else if (SettlementItems.isPlanks(stack) || SettlementItems.isCobblestone(stack)) {
+            } else if (SettlementItems.isPlanks(stack) || SettlementItems.isCobblestone(stack)
+                    || SettlementItems.isDenseWood(stack) || SettlementItems.isConstructor(stack)) {
                 extra = Text.translatable("tooltip.basedefense.upkeep_item");
             }
             if (extra != null) {

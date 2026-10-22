@@ -113,7 +113,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new StandStillGoal(this));   // нет запасов или открыто меню — стоит
+        this.goalSelector.add(0, new FleeHomeGoal(this));     // рядом враг — бежит домой и закрывает дверь
+        this.goalSelector.add(1, new StandStillGoal(this));   // нет запасов или открыто меню — стоит
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(1, new LongDoorInteractGoal(this, true));   // открывает и закрывает двери
         this.goalSelector.add(2, new ReturnHomeGoal(this));
@@ -480,6 +481,88 @@ public abstract class SettlerEntity extends PathAwareEntity {
     // =====================================================================
     // Поведение (цели ИИ)
     // =====================================================================
+
+    /** Рядом враждебный моб или житель только что получил удар от него. */
+    boolean isInDanger() {
+        if (SettlerThreats.isThreat(this.getAttacker())) {
+            return true;
+        }
+        return !this.getWorld().getEntitiesByClass(net.minecraft.entity.mob.HostileEntity.class,
+                this.getBoundingBox().expand(10.0, 4.0, 10.0),
+                mob -> mob.isAlive() && SettlerThreats.isThreat(mob)).isEmpty();
+    }
+
+    /**
+     * Опасность: житель бросает всё и бежит домой (двери за собой закрывает
+     * LongDoorInteractGoal). Дома ждёт, пока 10 секунд подряд будет спокойно.
+     */
+    static class FleeHomeGoal extends Goal {
+
+        private static final int CALM_TICKS_TO_STOP = 200;
+
+        private final SettlerEntity settler;
+        private int checkCooldown;
+        private int calmTicks;
+
+        FleeHomeGoal(SettlerEntity settler) {
+            this.settler = settler;
+            this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            if (settler.getHome() == null) {
+                return false;
+            }
+            // Удар — бежим сразу; иначе осматриваемся раз в полсекунды
+            if (settler.getAttacker() == null && --checkCooldown > 0) {
+                return false;
+            }
+            checkCooldown = 10;
+            return settler.isInDanger();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return settler.getHome() != null && calmTicks < CALM_TICKS_TO_STOP;
+        }
+
+        @Override
+        public void start() {
+            calmTicks = 0;
+            runHome();
+        }
+
+        @Override
+        public void stop() {
+            settler.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            if (settler.age % 10 == 0) {
+                calmTicks = settler.isInDanger() ? 0 : calmTicks + 10;
+            }
+            BlockPos home = settler.getHome();
+            if (home == null) {
+                return;
+            }
+            if (settler.squaredDistanceTo(Vec3d.ofBottomCenter(home)) > 1.5 * 1.5) {
+                if (settler.getNavigation().isIdle() || settler.age % 20 == 0) {
+                    runHome();
+                }
+            } else {
+                settler.getNavigation().stop();
+            }
+        }
+
+        private void runHome() {
+            BlockPos home = settler.getHome();
+            if (home != null) {
+                settler.getNavigation().startMovingTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5, 1.35);
+            }
+        }
+    }
 
     /**
      * Житель стоит на месте:

@@ -25,7 +25,8 @@ public enum Technology {
     RANCHER_HOUSE("rancher_house", 100, 0, 1, 0, "rancher_house", FARMER_HOUSE),
     COOK_HOUSE("cook_house", 120, 0, 2, 0, "cook_house", RANCHER_HOUSE),
     MINER_HOUSE("miner_house", 150, 0, 2, 1, "miner_house", RANCHER_HOUSE),
-    BLACKSMITH_HOUSE("blacksmith_house", 200, 0, 3, 1, "blacksmith_house", MINER_HOUSE);
+    BLACKSMITH_HOUSE("blacksmith_house", 200, 0, 3, 1, "blacksmith_house", MINER_HOUSE),
+    LUMBERJACK_HOUSE("lumberjack_house", 130, 0, 2, 2, "lumberjack_house", MINER_HOUSE);
 
     private final String id;
     private final int cost;
@@ -84,6 +85,7 @@ public enum Technology {
             case COOK_HOUSE -> ModBlocks.COOK_HOUSE;
             case MINER_HOUSE -> ModBlocks.MINER_HOUSE;
             case BLACKSMITH_HOUSE -> ModBlocks.BLACKSMITH_HOUSE;
+            case LUMBERJACK_HOUSE -> ModBlocks.LUMBERJACK_HOUSE;
         };
     }
 

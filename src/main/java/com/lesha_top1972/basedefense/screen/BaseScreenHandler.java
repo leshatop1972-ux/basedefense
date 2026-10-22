@@ -38,7 +38,9 @@ public class BaseScreenHandler extends ScreenHandler {
     public static final int PROP_PLANKS = 5;
     public static final int PROP_COBBLE = 6;
     public static final int PROP_FOOD_DAY = 7;   // сколько еды поселение тратит в день
-    public static final int PROP_COUNT = 8;
+    public static final int PROP_DENSE_WOOD = 8;
+    public static final int PROP_CONSTRUCTORS = 9;
+    public static final int PROP_COUNT = 10;
 
     // ---------- Где стоят слоты (от левого верхнего угла окна) ----------
     public static final int DEPOSIT_X = 192;
@@ -108,6 +110,8 @@ public class BaseScreenHandler extends ScreenHandler {
                     case PROP_PLANKS -> s.getPlanks();
                     case PROP_COBBLE -> s.getCobblestone();
                     case PROP_FOOD_DAY -> s.getDailyFood();
+                    case PROP_DENSE_WOOD -> s.getDenseWood();
+                    case PROP_CONSTRUCTORS -> s.getConstructors();
                     default -> 0;
                 };
             }

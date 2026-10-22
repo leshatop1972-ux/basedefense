@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KKK",
+    "AIA"
+  ],
+  "key": {
+    "K": {
+      "item": "basedefense:constructor_block"
+    },
+    "A": {
+      "item": "minecraft:wooden_axe"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    }
+  },
+  "result": {
+    "item": "basedefense:lumberjack_house",
+    "count": 1
+  }
+}

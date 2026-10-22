@@ -25,6 +25,8 @@ public class SettlementState extends PersistentState {
     private int nuggets;
     private int planks;
     private int cobblestone;
+    private int denseWood;
+    private int constructors;
     /** Номер последнего обработанного игрового дня (-1 — ещё не начинали). */
     private long lastDay = -1;
 
@@ -116,6 +118,25 @@ public class SettlementState extends PersistentState {
         markDirty();
     }
 
+    public int getDenseWood() {
+        return denseWood;
+    }
+
+    public void setDenseWood(int denseWood) {
+        this.denseWood = denseWood;
+        markDirty();
+    }
+
+    /** Конструкторские блоки на складе. */
+    public int getConstructors() {
+        return constructors;
+    }
+
+    public void setConstructors(int constructors) {
+        this.constructors = constructors;
+        markDirty();
+    }
+
     // ---------- Дни ----------
 
     public long getLastDay() {
@@ -157,6 +178,8 @@ public class SettlementState extends PersistentState {
         state.nuggets = nbt.getInt("Nuggets");
         state.planks = nbt.getInt("Planks");
         state.cobblestone = nbt.getInt("Cobblestone");
+        state.denseWood = nbt.getInt("DenseWood");
+        state.constructors = nbt.getInt("Constructors");
         state.lastDay = nbt.contains("LastDay") ? nbt.getLong("LastDay") : -1;
         return state;
     }
@@ -176,6 +199,8 @@ public class SettlementState extends PersistentState {
         nbt.putInt("Nuggets", nuggets);
         nbt.putInt("Planks", planks);
         nbt.putInt("Cobblestone", cobblestone);
+        nbt.putInt("DenseWood", denseWood);
+        nbt.putInt("Constructors", constructors);
         nbt.putLong("LastDay", lastDay);
         return nbt;
     }

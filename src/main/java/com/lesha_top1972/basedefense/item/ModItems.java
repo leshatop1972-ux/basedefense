@@ -36,6 +36,10 @@ public final class ModItems {
     public static final Item BLACKSMITH_SPAWN_EGG = register("blacksmith_spawn_egg",
             new SpawnEggItem(ModEntities.BLACKSMITH, 0x2B2B2B, 0x8B5A2B, new Item.Settings()));
 
+    /** Яйцо призыва лесоруба. */
+    public static final Item LUMBERJACK_SPAWN_EGG = register("lumberjack_spawn_egg",
+            new SpawnEggItem(ModEntities.LUMBERJACK, 0x2E5E2A, 0x8B2E2E, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -51,6 +55,7 @@ public final class ModItems {
             entries.add(COOK_SPAWN_EGG);
             entries.add(MINER_SPAWN_EGG);
             entries.add(BLACKSMITH_SPAWN_EGG);
+            entries.add(LUMBERJACK_SPAWN_EGG);
         });
     }
 }

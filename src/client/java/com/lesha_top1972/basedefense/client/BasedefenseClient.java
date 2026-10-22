@@ -27,5 +27,6 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.COOK, ctx -> new SettlerEntityRenderer(ctx, "cook", 3));
         EntityRendererRegistry.register(ModEntities.MINER, ctx -> new SettlerEntityRenderer(ctx, "miner", 3));
         EntityRendererRegistry.register(ModEntities.BLACKSMITH, ctx -> new SettlerEntityRenderer(ctx, "blacksmith", 1));
+        EntityRendererRegistry.register(ModEntities.LUMBERJACK, ctx -> new SettlerEntityRenderer(ctx, "lumberjack", 3));
     }
 }

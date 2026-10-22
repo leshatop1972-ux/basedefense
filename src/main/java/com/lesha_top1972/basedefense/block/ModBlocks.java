@@ -49,6 +49,10 @@ public final class ModBlocks {
     public static final Block BLACKSMITH_HOUSE = register("blacksmith_house",
             new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::blacksmith));
 
+    /** Домик лесоруба — при установке строит домик с посадкой деревьев. */
+    public static final Block LUMBERJACK_HOUSE = register("lumberjack_house",
+            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::lumberjack));
+
     private ModBlocks() {
     }
 
@@ -62,6 +66,6 @@ public final class ModBlocks {
         // Вкладка «Функциональные блоки» — после верстака
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, DENSE_WOOD, CONSTRUCTOR_BLOCK, FARMER_HOUSE, RANCHER_HOUSE,
-                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE));
+                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE));
     }
 }

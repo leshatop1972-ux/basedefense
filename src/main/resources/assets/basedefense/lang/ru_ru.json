@@ -44,7 +44,7 @@
   "screen.basedefense.needs.storage": "Склад (есть / нужно в день):",
   "screen.basedefense.needs.inventory": "Инвентарь",
   "screen.basedefense.needs.deposit": "Положить в Базу:",
-  "screen.basedefense.needs.deposit_hint": "Еда — в запас еды. Самородки, слитки, доски, булыжник — на склад. При -20 жители замирают.",
+  "screen.basedefense.needs.deposit_hint": "Еда — в запас еды. Самородки, доски, булыжник, плотное дерево и конструкторские блоки — на склад.",
   "tooltip.basedefense.food_points": "База: +%s очков еды",
   "tooltip.basedefense.nuggets": "База: +%s жел. самородков на склад",
   "tooltip.basedefense.upkeep_item": "База: +1 на склад эксплуатации",
@@ -92,5 +92,13 @@
   "message.basedefense.settler.need_food_in_hand": "Возьми еду в руку",
   "message.basedefense.settler.ingredients_full": "У повара полный запас продуктов",
   "message.basedefense.settler.ingredients_added": "+%s очков продуктов (всего %s)",
-  "message.basedefense.settler.no_job": "У жителя «%s» пока нет работы"
+  "message.basedefense.settler.no_job": "У жителя «%s» пока нет работы",
+  "block.basedefense.lumberjack_house": "Домик лесоруба",
+  "entity.basedefense.lumberjack": "Житель-лесоруб",
+  "item.basedefense.lumberjack_spawn_egg": "Яйцо призыва лесоруба",
+  "research.basedefense.lumberjack_house": "Домик лесоруба",
+  "research.basedefense.lumberjack_house.desc": "Маленький домик с посадкой деревьев на участке. В нём поселится лесоруб, который каждый день приносит брёвна: 16, 25 или 35 по уровням (на 3 уровне ещё и монеты).",
+  "screen.basedefense.needs.rule.base": "Каждый день на жителя: 2 самородка, 5 досок, 5 булыжника",
+  "screen.basedefense.needs.rule.constructor": "С 6 жителей: +1 конструкторский блок в день",
+  "screen.basedefense.needs.rule.big": "Больше 13 жителей: 4 самородка и 2 плотного дерева вместо досок"
 }

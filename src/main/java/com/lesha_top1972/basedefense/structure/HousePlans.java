@@ -216,14 +216,113 @@ public final class HousePlans {
 
     public static StructurePlan miner() {
         StructurePlan p = new StructurePlan(new BlockPos(2, 1, -1));
+        buildHut(p, new HutMaterials(Blocks.SPRUCE_PLANKS, Blocks.SPRUCE_LOG, Blocks.SPRUCE_SLAB,
+                Blocks.SPRUCE_DOOR, Blocks.BROWN_BED));
+        // Внутри: верстак, печь, сундук, бочка
+        p.set(4, 1, 1, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(4, 1, 2, Blocks.FURNACE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
+        p.set(4, 1, 4, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
+        p.set(1, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.late(1, 2, 1, Blocks.LANTERN.getDefaultState());
+
+        buildMineShaft(p);
+
+        settleResident(p, ModEntities.MINER, 2, 1, 2);
+        return p;
+    }
+
+    // =====================================================================
+    // Домик лесоруба 6×6 и справа участок с посадкой деревьев (x = 7..12)
+    // =====================================================================
+    public static StructurePlan lumberjack() {
+        StructurePlan p = new StructurePlan(new BlockPos(2, 1, -1));
+        buildHut(p, new HutMaterials(Blocks.OAK_PLANKS, Blocks.SPRUCE_LOG, Blocks.DARK_OAK_SLAB,
+                Blocks.OAK_DOOR, Blocks.RED_BED));
+        // Внутри: верстак, сундук, бочка, точило
+        p.set(4, 1, 1, Blocks.CRAFTING_TABLE.getDefaultState());
+        p.set(4, 1, 2, Blocks.GRINDSTONE.getDefaultState());
+        p.set(4, 1, 4, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
+        p.set(1, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
+        p.late(1, 2, 1, Blocks.LANTERN.getDefaultState());
+
+        BlockState air = Blocks.AIR.getDefaultState();
+        BlockState grass = Blocks.GRASS_BLOCK.getDefaultState();
+        // Участок: расчистка, трава, тропинка
+        for (int x = 6; x <= 13; x++) {
+            for (int z = -1; z <= 8; z++) {
+                for (int y = 1; y <= 7; y++) {
+                    p.set(x, y, z, air);
+                }
+                p.fill(x, -1, z, Blocks.DIRT.getDefaultState());
+                p.set(x, 0, z, (x == 6 && z <= 1) ? Blocks.DIRT_PATH.getDefaultState() : grass);
+            }
+        }
+        // Маленькие деревья (их брёвна — рабочее место лесоруба)
+        addSmallTree(p, 8, 2, Blocks.OAK_LOG, Blocks.OAK_LEAVES);
+        addSmallTree(p, 11, 2, Blocks.BIRCH_LOG, Blocks.BIRCH_LEAVES);
+        addSmallTree(p, 8, 6, Blocks.BIRCH_LOG, Blocks.BIRCH_LEAVES);
+        addSmallTree(p, 11, 6, Blocks.OAK_LOG, Blocks.OAK_LEAVES);
+        // Саженцы между деревьями
+        p.late(10, 1, 4, Blocks.OAK_SAPLING.getDefaultState());
+        p.late(12, 1, 4, Blocks.BIRCH_SAPLING.getDefaultState());
+        p.late(7, 1, 4, Blocks.OAK_SAPLING.getDefaultState());
+        // Поленница у домика и колода для колки дров
+        BlockState pile = Blocks.SPRUCE_LOG.getDefaultState().with(Properties.AXIS, Direction.Axis.Z);
+        for (int z = 6; z <= 7; z++) {
+            p.set(6, 1, z, pile);
+            p.set(6, 2, z, pile);
+        }
+        p.set(7, 1, 0, Blocks.SPRUCE_LOG.getDefaultState());
+        // Низкий заборчик вокруг участка
+        BlockState fence = Blocks.OAK_FENCE.getDefaultState();
+        for (int z = -1; z <= 8; z++) {
+            p.lateConnected(13, 1, z, fence);
+        }
+        for (int x = 7; x <= 12; x++) {
+            p.lateConnected(x, 1, 8, fence);
+            if (x >= 9) {
+                p.lateConnected(x, 1, -1, fence);
+            }
+        }
+
+        settleResident(p, ModEntities.LUMBERJACK, 2, 1, 2);
+        return p;
+    }
+
+    /** Деревце: ствол 3 блока и шапка листвы (листва не опадает). */
+    private static void addSmallTree(StructurePlan p, int x, int z, Block log, Block leaves) {
+        BlockState leaf = leaves.getDefaultState().with(Properties.PERSISTENT, true);
+        for (int y = 1; y <= 3; y++) {
+            p.set(x, y, z, log.getDefaultState());
+        }
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx != 0 || dz != 0) {
+                    p.late(x + dx, 3, z + dz, leaf);
+                }
+                p.late(x + dx, 4, z + dz, (dx == 0 || dz == 0) ? leaf : Blocks.AIR.getDefaultState());
+            }
+        }
+        p.late(x, 5, z, leaf);
+    }
+
+    /** Материалы маленького домика 6×6. */
+    private record HutMaterials(Block planks, Block log, Block slab, Block door, Block bed) {
+    }
+
+    /**
+     * Маленький домик 6×6 (шахтёр, лесоруб): x = 0..5, z = 0..5, дверь в (2, 1, 0),
+     * плоская крыша, окна, кровать. Мебель добавляется отдельно.
+     */
+    private static void buildHut(StructurePlan p, HutMaterials m) {
         BlockState air = Blocks.AIR.getDefaultState();
         BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
-        BlockState planks = Blocks.SPRUCE_PLANKS.getDefaultState();
-        BlockState log = Blocks.SPRUCE_LOG.getDefaultState();
-        BlockState slab = Blocks.SPRUCE_SLAB.getDefaultState();
+        BlockState planks = m.planks().getDefaultState();
+        BlockState log = m.log().getDefaultState();
+        BlockState slab = m.slab().getDefaultState();
         BlockState glass = Blocks.GLASS_PANE.getDefaultState();
 
-        // Расчистка места над землёй (домик и вход в шахту)
+        // Расчистка места над землёй (с запасом справа — под шахту или участок)
         for (int x = -1; x <= 10; x++) {
             for (int z = -1; z <= 6; z++) {
                 for (int y = 1; y <= 6; y++) {
@@ -231,7 +330,7 @@ public final class HousePlans {
                 }
             }
         }
-        // Фундамент и пол домика
+        // Фундамент и пол
         for (int x = 0; x <= 5; x++) {
             for (int z = 0; z <= 5; z++) {
                 for (int y = -2; y <= -1; y++) {
@@ -274,24 +373,14 @@ public final class HousePlans {
                 p.set(x, 5, z, slab);
             }
         }
-        // Внутри: кровать, верстак, сундук, печь, бочка
-        BlockState bed = Blocks.BROWN_BED.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+        // Кровать и дверь
+        BlockState bed = m.bed().getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
         p.lateDouble(1, 1, 3, bed.with(Properties.BED_PART, BedPart.FOOT),
                 1, 1, 4, bed.with(Properties.BED_PART, BedPart.HEAD));
-        p.set(4, 1, 1, Blocks.CRAFTING_TABLE.getDefaultState());
-        p.set(4, 1, 2, Blocks.FURNACE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(4, 1, 4, Blocks.CHEST.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST));
-        p.set(1, 1, 1, Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP));
-        p.late(1, 2, 1, Blocks.LANTERN.getDefaultState());
-        BlockState door = Blocks.SPRUCE_DOOR.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+        BlockState door = m.door().getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
         p.lateDouble(2, 1, 0, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER),
                 2, 2, 0, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
         p.late(1, 3, -1, Blocks.WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
-
-        buildMineShaft(p);
-
-        settleResident(p, ModEntities.MINER, 2, 1, 2);
-        return p;
     }
 
     /** Наклонный спуск в шахту (по ступенькам житель ходит сам) и комната внизу. */

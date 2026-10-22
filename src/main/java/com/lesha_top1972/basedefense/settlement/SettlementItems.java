@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.settlement;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import com.lesha_top1972.basedefense.block.ModBlocks;
 import net.minecraft.registry.tag.ItemTags;
 
 import java.util.HashMap;
@@ -96,8 +97,17 @@ public final class SettlementItems {
         return stack.isOf(Items.COBBLESTONE);
     }
 
+    public static boolean isDenseWood(ItemStack stack) {
+        return stack.isOf(ModBlocks.DENSE_WOOD.asItem());
+    }
+
+    public static boolean isConstructor(ItemStack stack) {
+        return stack.isOf(ModBlocks.CONSTRUCTOR_BLOCK.asItem());
+    }
+
     /** Принимает ли База этот предмет. Работает и на клиенте. */
     public static boolean isAccepted(ItemStack stack) {
-        return foodValue(stack) > 0 || nuggetValue(stack) > 0 || isPlanks(stack) || isCobblestone(stack);
+        return foodValue(stack) > 0 || nuggetValue(stack) > 0 || isPlanks(stack) || isCobblestone(stack)
+                || isDenseWood(stack) || isConstructor(stack);
     }
 }

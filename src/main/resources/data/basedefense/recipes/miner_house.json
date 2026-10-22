@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "KPK",
-    "KLK",
-    "KRK"
+    " I ",
+    "PBP",
+    "KKK"
   ],
   "key": {
-    "K": {
-      "item": "basedefense:constructor_block"
+    "I": {
+      "item": "minecraft:iron_block"
     },
     "P": {
       "item": "minecraft:iron_pickaxe"
     },
-    "L": {
-      "item": "minecraft:lantern"
+    "B": {
+      "item": "minecraft:blast_furnace"
     },
-    "R": {
-      "item": "minecraft:rail"
+    "K": {
+      "item": "basedefense:constructor_block"
     }
   },
   "result": {

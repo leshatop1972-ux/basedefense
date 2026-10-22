@@ -48,6 +48,13 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
+    public static final EntityType<LumberjackEntity> LUMBERJACK = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "lumberjack"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, LumberjackEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
     private ModEntities() {
     }
 
@@ -57,5 +64,6 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(COOK, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(MINER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
     }
 }

@@ -1,25 +1,25 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "BSB",
-    "KOK",
-    "KCK"
+    " R ",
+    "SIC",
+    "KKK"
   ],
   "key": {
-    "B": {
-      "item": "minecraft:bricks"
+    "R": {
+      "item": "minecraft:redstone_block"
     },
     "S": {
       "item": "minecraft:smoker"
     },
-    "K": {
-      "item": "basedefense:constructor_block"
-    },
-    "O": {
-      "item": "minecraft:furnace"
+    "I": {
+      "item": "minecraft:iron_block"
     },
     "C": {
       "item": "minecraft:cauldron"
+    },
+    "K": {
+      "item": "basedefense:constructor_block"
     }
   },
   "result": {

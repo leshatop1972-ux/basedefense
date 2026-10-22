@@ -44,7 +44,7 @@
   "screen.basedefense.needs.storage": "Storage (have / need per day):",
   "screen.basedefense.needs.inventory": "Inventory",
   "screen.basedefense.needs.deposit": "Put into Base:",
-  "screen.basedefense.needs.deposit_hint": "Food goes to food supply. Nuggets, ingots, planks, cobblestone go to storage. At -20 settlers freeze.",
+  "screen.basedefense.needs.deposit_hint": "Food goes to the food supply. Nuggets, planks, cobblestone, dense wood and constructor blocks go to storage.",
   "tooltip.basedefense.food_points": "Base: +%s food points",
   "tooltip.basedefense.nuggets": "Base: +%s iron nuggets to storage",
   "tooltip.basedefense.upkeep_item": "Base: +1 to upkeep storage",
@@ -92,5 +92,13 @@
   "message.basedefense.settler.need_food_in_hand": "Hold food in your hand",
   "message.basedefense.settler.ingredients_full": "The cook's pantry is full",
   "message.basedefense.settler.ingredients_added": "+%s ingredient points (total %s)",
-  "message.basedefense.settler.no_job": "%s has no job yet"
+  "message.basedefense.settler.no_job": "%s has no job yet",
+  "block.basedefense.lumberjack_house": "Lumberjack's Hut",
+  "entity.basedefense.lumberjack": "Lumberjack",
+  "item.basedefense.lumberjack_spawn_egg": "Lumberjack Spawn Egg",
+  "research.basedefense.lumberjack_house": "Lumberjack's Hut",
+  "research.basedefense.lumberjack_house.desc": "A small hut with a tree plot. A lumberjack moves in and brings logs every day: 16, 25 or 35 by level (plus coins at level 3).",
+  "screen.basedefense.needs.rule.base": "Per settler per day: 2 nuggets, 5 planks, 5 cobblestone",
+  "screen.basedefense.needs.rule.constructor": "From 6 settlers: +1 constructor block per day",
+  "screen.basedefense.needs.rule.big": "Over 13 settlers: 4 nuggets and 2 dense wood instead of planks"
 }

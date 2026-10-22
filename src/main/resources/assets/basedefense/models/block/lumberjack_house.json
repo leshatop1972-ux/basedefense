@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/lumberjack_house_side",
+    "up": "basedefense:block/lumberjack_house_top",
+    "down": "basedefense:block/lumberjack_house_bottom",
+    "north": "basedefense:block/lumberjack_house_front",
+    "south": "basedefense:block/lumberjack_house_side",
+    "east": "basedefense:block/lumberjack_house_side",
+    "west": "basedefense:block/lumberjack_house_side"
+  }
+}
