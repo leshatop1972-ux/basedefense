@@ -105,7 +105,7 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         context.fill(left + 2, top + 2, right - 2, bottom - 2, PANEL);
         context.fill(left + 2, top + 2, right - 2, top + 20, HEADER);
         context.drawItem(new ItemStack(Registries.ITEM.get(
-                new Identifier(Basedefense.MOD_ID, handler.getType().getId()))), left + 6, top + 3);
+                new Identifier(Basedefense.MOD_ID, handler.getHouseType().getId()))), left + 6, top + 3);
         context.drawText(this.textRenderer, this.title, left + 26, top + 7, TEXT_DARK, false);
 
         // Готовность

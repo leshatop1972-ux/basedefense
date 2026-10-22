@@ -41,7 +41,7 @@ public class HouseBlock extends Block {
         this.type = type;
     }
 
-    public HouseType getType() {
+    public HouseType getHouseType() {
         return type;
     }
 

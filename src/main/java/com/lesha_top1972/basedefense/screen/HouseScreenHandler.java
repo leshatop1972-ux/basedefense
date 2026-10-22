@@ -108,7 +108,7 @@ public class HouseScreenHandler extends ScreenHandler {
 
     // ---------- Для экрана ----------
 
-    public HouseType getType() {
+    public HouseType getHouseType() {
         return type;
     }
 
