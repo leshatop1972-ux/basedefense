@@ -26,8 +26,13 @@ public class TownState extends PersistentState {
     public record Entrance(BlockPos ground, Direction outward, String dimension) {
     }
 
-    /** Площадь: центр на уровне мощения, колокол, полуразмер (без бордюра). */
-    public record Square(BlockPos center, BlockPos bell, int radius, String dimension) {
+    /** Площадь: центр на уровне мощения, колокол, полуразмер, направление «вглубь» (как ставили блок). */
+    public record Square(BlockPos center, BlockPos bell, int radius, Direction facing, String dimension) {
+
+        /** Точка площади по смещению от центра: x — вправо, z — вглубь (как в чертеже). */
+        public BlockPos offset(int x, int y, int z) {
+            return center.offset(facing.rotateYClockwise(), x).offset(facing, z).up(y);
+        }
     }
 
     @Nullable
@@ -46,8 +51,8 @@ public class TownState extends PersistentState {
         return square != null && square.dimension().equals(dimension) ? square : null;
     }
 
-    public void setSquare(BlockPos center, BlockPos bell, int radius, String dimension) {
-        square = new Square(center.toImmutable(), bell.toImmutable(), radius, dimension);
+    public void setSquare(BlockPos center, BlockPos bell, int radius, Direction facing, String dimension) {
+        square = new Square(center.toImmutable(), bell.toImmutable(), radius, facing, dimension);
         revision++;
         markDirty();
     }
@@ -80,8 +85,10 @@ public class TownState extends PersistentState {
         TownState state = new TownState();
         if (nbt.contains("Square")) {
             NbtCompound s = nbt.getCompound("Square");
+            Direction facing = Direction.byName(s.getString("Facing"));
             state.square = new Square(NbtHelper.toBlockPos(s.getCompound("Center")),
-                    NbtHelper.toBlockPos(s.getCompound("Bell")), s.getInt("Radius"), s.getString("Dim"));
+                    NbtHelper.toBlockPos(s.getCompound("Bell")), s.getInt("Radius"),
+                    facing == null || facing.getAxis().isVertical() ? Direction.NORTH : facing, s.getString("Dim"));
         }
         NbtList list = nbt.getList("Entrances", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
@@ -101,6 +108,7 @@ public class TownState extends PersistentState {
             s.put("Center", NbtHelper.fromBlockPos(square.center()));
             s.put("Bell", NbtHelper.fromBlockPos(square.bell()));
             s.putInt("Radius", square.radius());
+            s.putString("Facing", square.facing().getName());
             s.putString("Dim", square.dimension());
             nbt.put("Square", s);
         }

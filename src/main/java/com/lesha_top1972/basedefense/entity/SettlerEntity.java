@@ -5,8 +5,8 @@ import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
+import com.lesha_top1972.basedefense.structure.HousePlans;
 import com.lesha_top1972.basedefense.structure.TownState;
-import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
@@ -863,7 +863,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     /**
      * Иногда (днём, в среднем раз в несколько минут) житель бросает дела и идёт на центральную площадь:
-     * стоит у колокола, переходит с места на место, может позвонить в колокол.
+     * стоит у звонницы или у рыночных прилавков, переходит с места на место.
      * Добычу это не уменьшает — она всё равно появится в сундуке на рассвете.
      */
     static class VisitSquareGoal extends Goal {
@@ -873,14 +873,13 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
         private final SettlerEntity settler;
         @Nullable
-        private BlockPos center;
-        @Nullable
-        private BlockPos bell;
+        private TownState.Square square;
         @Nullable
         private BlockPos spot;
+        @Nullable
+        private Vec3d lookAt;
         private int timeLeft;
         private int nextSpot;
-        private boolean rang;
 
         VisitSquareGoal(SettlerEntity settler) {
             this.settler = settler;
@@ -893,28 +892,25 @@ public abstract class SettlerEntity extends PathAwareEntity {
                     || settler.getRandom().nextInt(2400) != 0 || settler.isSettlementFrozen()) {
                 return false;
             }
-            TownState.Square square = TownState.get(world.getServer())
+            TownState.Square found = TownState.get(world.getServer())
                     .getSquare(world.getRegistryKey().getValue().toString());
             BlockPos home = settler.getHome();
-            if (square == null || home == null
-                    || !square.center().isWithinDistance(home, MAX_DISTANCE)) {
+            if (found == null || home == null || !found.center().isWithinDistance(home, MAX_DISTANCE)) {
                 return false;
             }
-            center = square.center();
-            bell = square.bell();
+            square = found;
             return true;
         }
 
         @Override
         public boolean shouldContinue() {
-            return timeLeft > 0 && center != null && !settler.isSettlementFrozen();
+            return timeLeft > 0 && square != null && !settler.isSettlementFrozen();
         }
 
         @Override
         public void start() {
             settler.visitingSquare = true;
             timeLeft = 600 + settler.getRandom().nextInt(900);   // 30–75 секунд
-            rang = false;
             pickSpot();
         }
 
@@ -928,11 +924,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
         @Override
         public void tick() {
             timeLeft--;
-            if (spot == null || center == null) {
+            if (spot == null) {
                 return;
             }
             double dist = settler.squaredDistanceTo(Vec3d.ofBottomCenter(spot));
-            if (dist > 2.0 * 2.0) {
+            if (dist > 1.5 * 1.5) {
                 if (settler.getNavigation().isIdle() || settler.age % 40 == 0) {
                     boolean ok = settler.getNavigation().startMovingTo(spot.getX() + 0.5, spot.getY(),
                             spot.getZ() + 0.5, 0.6);
@@ -942,35 +938,39 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 }
                 return;
             }
-            // На площади: смотрит на колокол, иногда переходит, изредка звонит
-            if (bell != null) {
-                settler.getLookControl().lookAt(bell.getX() + 0.5, bell.getY() + 0.5, bell.getZ() + 0.5);
+            // На месте: смотрит на прилавок или колокол, иногда переходит
+            settler.getNavigation().stop();
+            if (lookAt != null) {
+                settler.getLookControl().lookAt(lookAt.x, lookAt.y, lookAt.z);
             }
             if (--nextSpot <= 0) {
                 pickSpot();
             }
-            if (!rang && bell != null && settler.getRandom().nextInt(300) == 0
-                    && settler.squaredDistanceTo(Vec3d.ofCenter(bell)) < 4.5 * 4.5
-                    && settler.getWorld().getBlockState(bell).getBlock() instanceof BellBlock bellBlock) {
-                settler.swingHand(Hand.MAIN_HAND);
-                bellBlock.ring(settler.getWorld(), bell, null);
-                rang = true;
-            }
         }
 
-        /** Случайное место на площади (по кольцу вокруг звонницы). */
+        /** Случайное место: у одного из прилавков или на кольце вокруг звонницы. */
         private void pickSpot() {
-            if (center == null) {
+            TownState.Square sq = square;
+            if (sq == null) {
                 return;
             }
             nextSpot = 160 + settler.getRandom().nextInt(200);
-            int r = 2 + settler.getRandom().nextInt(2);
-            int a = settler.getRandom().nextInt(4 * 2 * r);
-            int side = a / (2 * r);
-            int t = a % (2 * r) - r;
-            int x = switch (side) { case 0 -> t; case 1 -> r; case 2 -> -t; default -> -r; };
-            int z = switch (side) { case 0 -> -r; case 1 -> t; case 2 -> r; default -> -t; };
-            spot = center.add(x, 1, z);
+            if (settler.getRandom().nextBoolean()) {
+                // К прилавку: стоит перед ним и смотрит на товар
+                int[] m = HousePlans.MARKET_SPOTS[settler.getRandom().nextInt(HousePlans.MARKET_SPOTS.length)];
+                spot = sq.offset(m[0], 1, m[1]);
+                int towardStall = m[1] < 0 ? -1 : 1;
+                lookAt = Vec3d.ofCenter(sq.offset(m[0], 1, m[1] + towardStall)).add(0, 0.6, 0);
+            } else {
+                int r = 2 + settler.getRandom().nextInt(2);
+                int a = settler.getRandom().nextInt(4 * 2 * r);
+                int side = a / (2 * r);
+                int t = a % (2 * r) - r;
+                int x = switch (side) { case 0 -> t; case 1 -> r; case 2 -> -t; default -> -r; };
+                int z = switch (side) { case 0 -> -r; case 1 -> t; case 2 -> r; default -> -t; };
+                spot = sq.center().add(x, 1, z);
+                lookAt = Vec3d.ofCenter(sq.bell());
+            }
             settler.getNavigation().startMovingTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, 0.6);
         }
     }

@@ -525,10 +525,13 @@ public final class HousePlans {
     }
 
     // =====================================================================
-    // Центральная площадь 11×11: мощение кольцами, звонница с колоколом,
-    // скамейки, фонари и клумбы по углам. Жителя нет — сюда ходят все жители.
+    // Центральная площадь 15×15: мощение кольцами, звонница с колоколом в центре,
+    // скамейки, фонари, клумбы у проходов и 4 рыночных прилавка по углам.
+    // Жителя нет — сюда ходят все жители (постоять у колокола, у прилавков).
     // =====================================================================
-    public static final int SQUARE_RADIUS = 5;
+    public static final int SQUARE_RADIUS = 7;
+    /** Где стоят покупатели у прилавков (смещение от центра: x — вправо, z — вглубь). */
+    public static final int[][] MARKET_SPOTS = {{-5, -4}, {5, -4}, {-5, 4}, {5, 4}};
 
     public static StructurePlan townSquare() {
         int c = SQUARE_RADIUS;            // центр площади
@@ -558,20 +561,17 @@ public final class HousePlans {
                 p.set(x, 0, z, ground);
             }
         }
-        // Клумбы в углах: трава и цветы
-        int[][] corners = {{0, 0}, {size - 1, 0}, {0, size - 1}, {size - 1, size - 1}};
-        for (int i = 0; i < corners.length; i++) {
-            int cx = corners[i][0];
-            int cz = corners[i][1];
-            int sx = cx == 0 ? 1 : -1;
-            int sz = cz == 0 ? 1 : -1;
-            p.set(cx, 0, cz, Blocks.GRASS_BLOCK.getDefaultState());
-            p.set(cx + sx, 0, cz, Blocks.GRASS_BLOCK.getDefaultState());
-            p.set(cx, 0, cz + sz, Blocks.GRASS_BLOCK.getDefaultState());
-            BlockState flower = (i % 2 == 0 ? Blocks.POPPY : Blocks.DANDELION).getDefaultState();
-            p.late(cx, 1, cz, flower);
-            p.late(cx + sx, 1, cz, (i % 2 == 0 ? Blocks.DANDELION : Blocks.POPPY).getDefaultState());
-            p.late(cx, 1, cz + sz, Blocks.AZURE_BLUET.getDefaultState());
+        // Клумбы по краям, по обе стороны от проходов
+        int[][] beds = {{c - 2, 0}, {c + 2, 0}, {c - 2, size - 1}, {c + 2, size - 1},
+                {0, c - 2}, {0, c + 2}, {size - 1, c - 2}, {size - 1, c + 2}};
+        for (int i = 0; i < beds.length; i++) {
+            p.set(beds[i][0], 0, beds[i][1], Blocks.GRASS_BLOCK.getDefaultState());
+            Block flower = switch (i % 3) {
+                case 0 -> Blocks.POPPY;
+                case 1 -> Blocks.DANDELION;
+                default -> Blocks.AZURE_BLUET;
+            };
+            p.late(beds[i][0], 1, beds[i][1], flower.getDefaultState());
         }
         // Звонница: два столба, перекладина и колокол
         BlockState logX = LOG.with(Properties.AXIS, Direction.Axis.X);
@@ -593,16 +593,46 @@ public final class HousePlans {
             p.set(c + d, 1, c + 3, stairs(Direction.NORTH));
             p.set(c + d, 1, c - 3, stairs(Direction.SOUTH));
         }
-        // Фонари на столбах
-        for (int[] lp : new int[][]{{1, 1}, {size - 2, 1}, {1, size - 2}, {size - 2, size - 2}}) {
+        // Фонари на столбах у внутренних углов
+        for (int[] lp : new int[][]{{c - 3, c - 3}, {c + 3, c - 3}, {c - 3, c + 3}, {c + 3, c + 3}}) {
             p.set(lp[0], 1, lp[1], FENCE);
             p.set(lp[0], 2, lp[1], FENCE);
             p.late(lp[0], 3, lp[1], Blocks.LANTERN.getDefaultState());
         }
+        // Рынок: 4 прилавка с полосатыми навесами (прилавком к центру площади)
+        stall(p, 1, 2, 1, Blocks.RED_WOOL, Blocks.HAY_BLOCK.getDefaultState(), Blocks.POTTED_POPPY);
+        stall(p, size - 4, 2, 1, Blocks.YELLOW_WOOL, Blocks.PUMPKIN.getDefaultState(), Blocks.POTTED_DANDELION);
+        stall(p, 1, size - 3, size - 2, Blocks.LIGHT_BLUE_WOOL, Blocks.MELON.getDefaultState(), Blocks.POTTED_AZURE_BLUET);
+        stall(p, size - 4, size - 3, size - 2, Blocks.GREEN_WOOL, barrel(), Blocks.POTTED_FERN);
+
         // Готово — запоминаем площадь
         p.onFinish(task -> TownState.get(task.getWorld().getServer()).setSquare(
-                task.toWorld(c, 0, c), task.toWorld(c, 3, c), SQUARE_RADIUS, dimensionOf(task)));
+                task.toWorld(c, 0, c), task.toWorld(c, 3, c), SQUARE_RADIUS, task.getFacing(), dimensionOf(task)));
         return p;
+    }
+
+    /**
+     * Рыночный прилавок 3×2: спереди прилавок (бочка — доска — бочка), сзади товар,
+     * на четырёх столбиках-заборах полосатый навес (цвет + белый).
+     */
+    private static void stall(StructurePlan p, int x0, int counterZ, int backZ, Block awning,
+                              BlockState goods, Block pot) {
+        BlockState top = Blocks.SPRUCE_SLAB.getDefaultState().with(Properties.SLAB_TYPE, SlabType.TOP);
+        p.set(x0, 1, counterZ, barrel());
+        p.set(x0 + 1, 1, counterZ, top);
+        p.set(x0 + 2, 1, counterZ, barrel());
+        p.late(x0 + 1, 2, counterZ, pot.getDefaultState());
+        p.set(x0 + 1, 1, backZ, goods);
+        for (int x : new int[]{x0, x0 + 2}) {
+            p.set(x, 2, counterZ, FENCE);
+            p.set(x, 1, backZ, FENCE);
+            p.set(x, 2, backZ, FENCE);
+        }
+        for (int x = x0; x <= x0 + 2; x++) {
+            BlockState wool = ((x - x0) % 2 == 0 ? awning : Blocks.WHITE_WOOL).getDefaultState();
+            p.set(x, 3, counterZ, wool);
+            p.set(x, 3, backZ, wool);
+        }
     }
 
     // =====================================================================
