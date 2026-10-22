@@ -169,7 +169,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return interactingPlayer;
     }
 
-    private boolean isFrozen() {
+    private boolean isSettlementFrozen() {
         return this.getWorld() instanceof ServerWorld serverWorld && SettlementManager.isFrozen(serverWorld.getServer());
     }
 
@@ -412,7 +412,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
 
         private boolean active() {
-            return settler.getInteractingPlayer() != null || settler.isFrozen();
+            return settler.getInteractingPlayer() != null || settler.isSettlementFrozen();
         }
 
         @Override
