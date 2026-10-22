@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "basedefense",
+  "version": "${version}",
+  "name": "basedefense",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/basedefense/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "com.lesha_top1972.basedefense.client.BasedefenseDataGenerator"
+    ],
+    "client": [
+      "com.lesha_top1972.basedefense.client.BasedefenseClient"
+    ],
+    "main": [
+      "com.lesha_top1972.basedefense.Basedefense"
+    ]
+  },
+  "mixins": [
+    "basedefense.mixins.json",
+    {
+      "config": "basedefense.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
