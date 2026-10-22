@@ -23,6 +23,6 @@ public class BasedefenseClient implements ClientModInitializer {
         // Модель и отрисовка жителей поселения
         EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);
         EntityRendererRegistry.register(ModEntities.FARMER, ctx -> new SettlerEntityRenderer(ctx, "farmer", 3));
-        EntityRendererRegistry.register(ModEntities.RANCHER, ctx -> new SettlerEntityRenderer(ctx, "rancher", 1));
+        EntityRendererRegistry.register(ModEntities.RANCHER, ctx -> new SettlerEntityRenderer(ctx, "rancher", 3));
     }
 }

@@ -4,7 +4,7 @@ import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
@@ -104,7 +104,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         this.goalSelector.add(0, new StandStillGoal(this));   // нет запасов или открыто меню — стоит
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(2, new ReturnHomeGoal(this));
-        this.goalSelector.add(3, new WorkGoal(this));         // работает на грядках
+        this.goalSelector.add(3, new WorkGoal(this));         // работает (грядки, загон…)
         this.goalSelector.add(4, new GoToWalkTargetGoal(this, 0.8));
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.6, 0.001f));
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
@@ -124,6 +124,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
     /** Сколько еды тратит житель в день, когда работает. */
     public int getWorkFood(int level) {
         return SettlementManager.FOOD_PER_SETTLER;
+    }
+
+    /** Возле каких блоков житель работает (фермер — пашня, скотовод — сено и т.д.). */
+    public boolean isWorkSpot(BlockState state) {
+        return false;
     }
 
     public boolean hasJob() {
@@ -440,7 +445,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
     }
 
-    /** Работающий житель ходит по грядкам (пашне) возле дома и «возится» с ними. */
+    /** Работающий житель ходит к рабочим местам возле дома (грядки, сено…) и «возится» с ними. */
     static class WorkGoal extends Goal {
 
         private static final int SEARCH_RADIUS = 14;
@@ -464,8 +469,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
             if (--cooldown > 0) {
                 return false;
             }
-            target = findFarmland();
-            cooldown = target == null ? 200 : 20;   // грядок нет — поищем снова через 10 секунд
+            target = findWorkSpot();
+            cooldown = target == null ? 200 : 20;   // рабочих мест нет — поищем снова через 10 секунд
             return target != null;
         }
 
@@ -476,7 +481,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
         @Override
         public void start() {
-            workTicks = 200 + settler.getRandom().nextInt(200); // 10–20 секунд у одной грядки
+            workTicks = 200 + settler.getRandom().nextInt(200); // 10–20 секунд у одного места
             moveToTarget();
         }
 
@@ -492,8 +497,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 return;
             }
             workTicks--;
-            Vec3d spot = Vec3d.ofBottomCenter(target.up());
-            double distSq = settler.squaredDistanceTo(spot);
+            double distSq = settler.squaredDistanceTo(Vec3d.ofCenter(target));
             if (distSq > 2.5 * 2.5) {
                 if (settler.getNavigation().isIdle() || workTicks % 40 == 0) {
                     moveToTarget();
@@ -509,13 +513,14 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
         private void moveToTarget() {
             if (target != null) {
-                settler.getNavigation().startMovingTo(target.getX() + 0.5, target.getY() + 1, target.getZ() + 0.5, 0.6);
+                // Идём к самому блоку: путь строится до соседней с ним клетки
+                settler.getNavigation().startMovingTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 0.6);
             }
         }
 
-        /** Случайная пашня рядом с домом. */
+        /** Случайное рабочее место рядом с домом. */
         @Nullable
-        private BlockPos findFarmland() {
+        private BlockPos findWorkSpot() {
             BlockPos home = settler.getHome();
             if (home == null) {
                 return null;
@@ -523,7 +528,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
             List<BlockPos> found = new ArrayList<>();
             for (BlockPos pos : BlockPos.iterate(home.add(-SEARCH_RADIUS, -3, -SEARCH_RADIUS),
                     home.add(SEARCH_RADIUS, 2, SEARCH_RADIUS))) {
-                if (settler.getWorld().getBlockState(pos).isOf(Blocks.FARMLAND)) {
+                if (settler.isWorkSpot(settler.getWorld().getBlockState(pos))) {
                     found.add(pos.toImmutable());
                 }
             }

@@ -1,6 +1,8 @@
 package com.lesha_top1972.basedefense.entity;
 
 import com.lesha_top1972.basedefense.item.ModItems;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.item.Items;
@@ -55,5 +57,11 @@ public class FarmerEntity extends SettlerEntity {
             case 3 -> 23;
             default -> 12;
         };
+    }
+
+    /** Работает на грядках (пашне). */
+    @Override
+    public boolean isWorkSpot(BlockState state) {
+        return state.isOf(Blocks.FARMLAND);
     }
 }
