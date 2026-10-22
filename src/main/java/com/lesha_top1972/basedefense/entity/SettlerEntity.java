@@ -6,6 +6,8 @@ import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
@@ -25,6 +27,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -57,7 +60,10 @@ import java.util.List;
  * Каждый житель привязан к Базе: он входит в поселение и потребляет его запасы.
  * Если запасы поселения кончились (счётчик дошёл до -20) — житель замирает.
  *
- * Работа: по клику открывается меню (начать/закончить работу, забрать добычу, улучшить).
+ * Работа: житель с профессией работает всегда сам. Каждый рассвет добыча складывается
+ * в сундук его дома ({@link #chestPos}). Если сундука нет или он полон — добыча ждёт
+ * у жителя (27 ячеек) и переносится в сундук, как только появится место.
+ * По клику открывается меню (улучшить; у повара — ещё «отдать еду из руки»).
  * Какую работу умеет житель, задаёт подкласс через {@link #getWorkLoot} и {@link #getWorkFood}.
  */
 public abstract class SettlerEntity extends PathAwareEntity {
@@ -72,16 +78,20 @@ public abstract class SettlerEntity extends PathAwareEntity {
     /** Сколько очков продуктов житель (повар) может хранить. */
     public static final int INGREDIENTS_MAX = 300;
     private static final int STORAGE_SIZE = 27;
+    /** Где искать сундук, если он не задан: радиус вокруг дома по горизонтали. */
+    private static final int CHEST_SEARCH_RADIUS = 8;
 
     private static final TrackedData<Integer> LEVEL =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     @Nullable
     private BlockPos homePos;
-    private boolean working;
+    /** Сундук дома, куда житель складывает добычу. */
+    @Nullable
+    private BlockPos chestPos;
     /** Номер игрового дня, за который уже выдана добыча. */
     private long lastWorkDay = -1;
-    /** Что житель добыл и ещё не отдал игроку. */
+    /** Добыча, которая не поместилась в сундук (ждёт места). */
     private final SimpleInventory storage = new SimpleInventory(STORAGE_SIZE);
     /** Очки продуктов, которые игрок отдал жителю (для повара). */
     private int ingredients;
@@ -135,7 +145,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return null;
     }
 
-    /** Сколько еды тратит житель в день, когда работает. */
+    /** Сколько еды тратит житель в день (с профессией). */
     public int getWorkFood(int level) {
         return SettlementManager.FOOD_PER_SETTLER;
     }
@@ -168,13 +178,18 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return false;
     }
 
+    /** На каком расстоянии от дома (по горизонтали) житель ищет рабочие места. */
+    public int getWorkSearchRadius() {
+        return 14;
+    }
+
     public boolean hasJob() {
         return getWorkLoot(1) != null;
     }
 
     /** Сколько еды житель тратит в день прямо сейчас. */
     public int getFoodPerDay() {
-        return working ? getWorkFood(getLevel()) : SettlementManager.FOOD_PER_SETTLER;
+        return hasJob() ? getWorkFood(getLevel()) : SettlementManager.FOOD_PER_SETTLER;
     }
 
     public static int getUpgradeCost(int level) {
@@ -189,11 +204,20 @@ public abstract class SettlerEntity extends PathAwareEntity {
         this.dataTracker.set(LEVEL, Math.max(1, Math.min(MAX_LEVEL, level)));
     }
 
+    /** Житель с профессией работает всегда. */
     public boolean isWorking() {
-        return working;
+        return hasJob();
     }
 
-    /** Сколько предметов житель добыл и хранит. */
+    public void setChest(@Nullable BlockPos pos) {
+        this.chestPos = pos == null ? null : pos.toImmutable();
+    }
+
+    public boolean hasChest() {
+        return chestPos != null;
+    }
+
+    /** Сколько предметов ждёт у жителя (сундука нет или он полон). */
     public int getStoredCount() {
         int count = 0;
         for (int i = 0; i < storage.size(); i++) {
@@ -219,43 +243,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return server.getOverworld().getTimeOfDay() / 24000L;
     }
 
-    /** Кнопка 1: начать / закончить работу. */
-    public void toggleWork(PlayerEntity player) {
-        if (!hasJob() || !(this.getWorld() instanceof ServerWorld serverWorld)) {
-            return;
-        }
-        working = !working;
-        if (working) {
-            lastWorkDay = currentDay(serverWorld.getServer()); // первая добыча — на следующем рассвете
-        }
-        updateSettlement(serverWorld);
-        player.sendMessage(Text.translatable(working ? "message.basedefense.settler.work_started"
-                        : "message.basedefense.settler.work_stopped", this.getDisplayName(), getFoodPerDay())
-                .formatted(working ? Formatting.GREEN : Formatting.YELLOW), true);
-        this.playSound(working ? SoundEvents.ENTITY_VILLAGER_YES : SoundEvents.ENTITY_VILLAGER_AMBIENT, 1.0f, 1.0f);
-    }
-
-    /** Кнопка 2: отдать игроку всё, что добыто. */
-    public void giveLoot(PlayerEntity player) {
-        int given = 0;
-        for (int i = 0; i < storage.size(); i++) {
-            ItemStack stack = storage.getStack(i);
-            if (!stack.isEmpty()) {
-                given += stack.getCount();
-                player.getInventory().offerOrDrop(stack.copy());
-                storage.setStack(i, ItemStack.EMPTY);
-            }
-        }
-        if (given > 0) {
-            this.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ITEM_PICKUP,
-                    SoundCategory.PLAYERS, 0.6f, 1.0f);
-        } else {
-            player.sendMessage(Text.translatable("message.basedefense.settler.nothing")
-                    .formatted(Formatting.GRAY), true);
-        }
-    }
-
-    /** Кнопка 3: улучшить жителя за монеты исследований. */
+    /** Кнопка «Улучшить»: улучшить жителя за монеты исследований. */
     public void tryUpgrade(PlayerEntity player) {
         if (!hasJob() || !(this.getWorld() instanceof ServerWorld serverWorld)) {
             return;
@@ -281,7 +269,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 .formatted(Formatting.GREEN), true);
     }
 
-    /** Кнопка 4 (повар): отдать жителю еду из руки — она превращается в очки продуктов. */
+    /** Кнопка повара: отдать жителю еду из руки — она превращается в очки продуктов. */
     public void takeIngredientsFromHand(PlayerEntity player) {
         if (!acceptsIngredients()) {
             return;
@@ -318,7 +306,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
     }
 
-    /** Положить добычу в хранилище жителя (если оно полно — лишнее пропадает). */
+    /** Положить добычу в запас жителя (потом она уйдёт в сундук; если запас полон — лишнее пропадает). */
     protected void addLoot(WorkLoot pick) {
         int count = pick.rollCount(this.random);
         while (count > 0) {
@@ -326,6 +314,102 @@ public abstract class SettlerEntity extends PathAwareEntity {
             storage.addStack(new ItemStack(pick.item(), part));
             count -= part;
         }
+    }
+
+    // =====================================================================
+    // Сундук дома
+    // =====================================================================
+
+    /** Инвентарь сундука дома или null (сундука нет / чанк не загружен). */
+    @Nullable
+    private Inventory getChestInventory(ServerWorld world) {
+        if (chestPos == null || !world.isChunkLoaded(chestPos)) {
+            return null;
+        }
+        BlockState state = world.getBlockState(chestPos);
+        if (state.getBlock() instanceof ChestBlock chest) {
+            // Учитывает двойной сундук
+            Inventory inventory = ChestBlock.getInventory(chest, state, world, chestPos, true);
+            if (inventory != null) {
+                return inventory;
+            }
+        }
+        BlockEntity blockEntity = world.getBlockEntity(chestPos);
+        if (blockEntity instanceof Inventory inventory) {
+            return inventory;
+        }
+        chestPos = null;   // сундук сломали — поищем новый рядом с домом
+        return null;
+    }
+
+    /** Ищет ближайший сундук возле дома (для жителей из яйца или если старый сундук сломали). */
+    private void findChest(ServerWorld world) {
+        BlockPos home = homePos;
+        if (home == null) {
+            return;
+        }
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (BlockPos pos : BlockPos.iterate(home.add(-CHEST_SEARCH_RADIUS, -2, -CHEST_SEARCH_RADIUS),
+                home.add(CHEST_SEARCH_RADIUS, 3, CHEST_SEARCH_RADIUS))) {
+            if (world.getBlockState(pos).getBlock() instanceof ChestBlock) {
+                double dist = pos.getSquaredDistance(home);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = pos.toImmutable();
+                }
+            }
+        }
+        chestPos = best;
+    }
+
+    /** Переносит добычу из запаса жителя в сундук (сколько влезет). */
+    private void flushToChest(ServerWorld world) {
+        if (getStoredCount() == 0) {
+            return;
+        }
+        Inventory chest = getChestInventory(world);
+        if (chest == null) {
+            return;
+        }
+        boolean changed = false;
+        for (int i = 0; i < storage.size(); i++) {
+            ItemStack stack = storage.getStack(i);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            int before = stack.getCount();
+            ItemStack rest = insertInto(chest, stack.copy());
+            if (rest.getCount() != before) {
+                storage.setStack(i, rest);
+                changed = true;
+            }
+        }
+        if (changed) {
+            chest.markDirty();
+        }
+    }
+
+    /** Кладёт предметы в инвентарь: сначала докладывает в такие же стопки, потом в пустые ячейки. */
+    private static ItemStack insertInto(Inventory inventory, ItemStack stack) {
+        int maxPerSlot = Math.min(stack.getMaxCount(), inventory.getMaxCountPerStack());
+        for (int i = 0; i < inventory.size() && !stack.isEmpty(); i++) {
+            ItemStack slot = inventory.getStack(i);
+            if (!slot.isEmpty() && ItemStack.canCombine(slot, stack) && inventory.isValid(i, stack)) {
+                int move = Math.min(stack.getCount(), maxPerSlot - slot.getCount());
+                if (move > 0) {
+                    slot.increment(move);
+                    stack.decrement(move);
+                }
+            }
+        }
+        for (int i = 0; i < inventory.size() && !stack.isEmpty(); i++) {
+            if (inventory.getStack(i).isEmpty() && inventory.isValid(i, stack)) {
+                int move = Math.min(stack.getCount(), maxPerSlot);
+                inventory.setStack(i, stack.split(move));
+            }
+        }
+        return stack.isEmpty() ? ItemStack.EMPTY : stack;
     }
 
     private void updateSettlement(ServerWorld world) {
@@ -384,8 +468,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
             updateSettlement(serverWorld);
 
             boolean frozen = SettlementManager.isFrozen(serverWorld.getServer());
-            // Добыча: на каждом рассвете, пока житель работает (дни, пока чанк не был загружен, тоже считаются)
-            if (working) {
+            // Добыча: на каждом рассвете (дни, пока чанк не был загружен, тоже считаются)
+            if (hasJob()) {
                 long day = currentDay(serverWorld.getServer());
                 if (lastWorkDay < 0 || day < lastWorkDay) {
                     lastWorkDay = day;
@@ -396,7 +480,15 @@ public abstract class SettlerEntity extends PathAwareEntity {
                         for (int i = 0; i < days; i++) {
                             produceOneDay();
                         }
+                        flushToChest(serverWorld);
                     }
+                }
+                // Раз в 5 секунд: нет сундука — ищем; есть добыча в запасе — переносим в сундук
+                if (this.age % 100 == 1) {
+                    if (chestPos == null) {
+                        findChest(serverWorld);
+                    }
+                    flushToChest(serverWorld);
                 }
             }
             // Замерший житель — сердитые облачка над головой, чтобы было видно
@@ -442,7 +534,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
             nbt.put("Home", NbtHelper.fromBlockPos(homePos));
         }
         nbt.putInt("Level", getLevel());
-        nbt.putBoolean("Working", working);
+        if (chestPos != null) {
+            nbt.put("Chest", NbtHelper.fromBlockPos(chestPos));
+        }
         nbt.putLong("LastWorkDay", lastWorkDay);
         nbt.put("Storage", storage.toNbtList());
         nbt.putInt("Ingredients", ingredients);
@@ -455,7 +549,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
             setHome(NbtHelper.toBlockPos(nbt.getCompound("Home")));
         }
         setLevel(nbt.contains("Level") ? nbt.getInt("Level") : 1);
-        working = nbt.getBoolean("Working");
+        chestPos = nbt.contains("Chest") ? NbtHelper.toBlockPos(nbt.getCompound("Chest")) : null;
         lastWorkDay = nbt.contains("LastWorkDay") ? nbt.getLong("LastWorkDay") : -1;
         storage.readNbtList(nbt.getList("Storage", NbtElement.COMPOUND_TYPE));
         ingredients = nbt.getInt("Ingredients");
@@ -608,10 +702,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
     }
 
-    /** Работающий житель ходит к рабочим местам возле дома (грядки, сено…) и «возится» с ними. */
+    /** Житель с профессией ходит к рабочим местам возле дома (грядки, сено…) и «возится» с ними. */
     static class WorkGoal extends Goal {
-
-        private static final int SEARCH_RADIUS = 14;
 
         private final SettlerEntity settler;
         @Nullable
@@ -689,9 +781,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 return null;
             }
             List<BlockPos> found = new ArrayList<>();
+            int r = settler.getWorkSearchRadius();
             // Вниз ищем глубоко — шахтёр работает в шахте под землёй
-            for (BlockPos pos : BlockPos.iterate(home.add(-SEARCH_RADIUS, -12, -SEARCH_RADIUS),
-                    home.add(SEARCH_RADIUS, 3, SEARCH_RADIUS))) {
+            for (BlockPos pos : BlockPos.iterate(home.add(-r, -12, -r), home.add(r, 3, r))) {
                 if (settler.isWorkSpot(settler.getWorld().getBlockState(pos))) {
                     found.add(pos.toImmutable());
                 }

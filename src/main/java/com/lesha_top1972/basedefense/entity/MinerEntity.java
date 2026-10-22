@@ -66,4 +66,10 @@ public class MinerEntity extends SettlerEntity {
     public boolean isWorkSpot(BlockState state) {
         return state.isOf(Blocks.MOSSY_COBBLESTONE);
     }
+
+    /** Забой шахты — за двором, дальше обычного радиуса. */
+    @Override
+    public int getWorkSearchRadius() {
+        return 22;
+    }
 }
