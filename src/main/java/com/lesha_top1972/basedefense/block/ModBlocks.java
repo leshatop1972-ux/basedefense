@@ -23,7 +23,7 @@ public final class ModBlocks {
 
     /** Плотный блок дерева — материал для крафта. */
     public static final Block DENSE_WOOD = register("dense_wood",
-            new Block(FabricBlockSettings.copyOf(Blocks.OAK_LOG).strength(3.0f)));
+            new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(3.0f)));
 
     /** Конструкторский блок — деревянный ящик, материал для крафта. */
     public static final Block CONSTRUCTOR_BLOCK = register("constructor_block",
