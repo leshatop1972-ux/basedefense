@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -17,34 +18,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.lesha_top1972.basedefense.client.screen.UiKit.*;
+
 /**
- * Меню стройплощадки: чертёж-«накладная» со списком материалов.
- * Для каждого материала: сколько осталось поставить из скольких и сколько лежит в сундуках строителя.
- * Колёсико мыши прокручивает список, если он не помещается.
+ * Меню стройплощадки — «чертёж» дома: что делает строитель, общая готовность
+ * и карточка на каждый материал: сколько уже поставлено из скольких и сколько лежит
+ * в сундуках строителя. Колёсико мыши прокручивает список.
  */
 public class HouseScreen extends HandledScreen<HouseScreenHandler> {
 
-    // ---------- Цвета (как у меню Базы) ----------
-    private static final int SHADOW      = 0x66000000;
-    private static final int FRAME_DARK  = 0xFF5A4630;
-    private static final int FRAME_LIGHT = 0xFFF6EBD0;
-    private static final int PANEL       = 0xFFE6D3AB;
-    private static final int HEADER      = 0xFFD8C08F;
-    private static final int CONTENT     = 0xFFF2E7CC;
-    private static final int EDGE        = 0xFF9C8058;
-    private static final int CELL        = 0xFFFBF4E2;
-    private static final int CELL_DONE   = 0xFFDCE6BE;
-    private static final int TEXT_DARK   = 0xFF4A3622;
-    private static final int TEXT_MUTED  = 0xFF8F7550;
-    private static final int GOOD        = 0xFF4F7F2E;
-    private static final int BAD         = 0xFFB03A2E;
-    private static final int ACCENT      = 0xFFB0782F;
-
     private static final int COLS = 3;
-    private static final int CELL_W = 104;
-    private static final int CELL_H = 22;
-    private static final int VISIBLE_ROWS = 7;
-    private static final int LIST_TOP = 58;   // от верха окна
+    private static final int CELL_W = 108;
+    private static final int CELL_H = 26;
+    private static final int GAP = 4;
+    private static final int VISIBLE_ROWS = 6;
+    private static final int PAD = 12;
+    private static final int HEADER_H = 22;
+    private static final int LIST_TOP = 62;   // от верха окна
 
     private int scroll;
     private int cachedStep = -1;
@@ -52,8 +42,8 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
 
     public HouseScreen(HouseScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = 12 + COLS * CELL_W + (COLS - 1) * 4 + 12;
-        this.backgroundHeight = LIST_TOP + VISIBLE_ROWS * CELL_H + 18;
+        this.backgroundWidth = PAD * 2 + COLS * CELL_W + (COLS - 1) * GAP + 6;
+        this.backgroundHeight = LIST_TOP + VISIBLE_ROWS * (CELL_H + GAP) + 10;
     }
 
     private int rows() {
@@ -73,6 +63,10 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         }
     }
 
+    private int placed(int index) {
+        return handler.getTotal(index) - remaining.getOrDefault(handler.getItems().get(index), 0);
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
@@ -82,10 +76,16 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
             Item item = handler.getItems().get(index);
             List<Text> lines = new ArrayList<>();
             lines.add(item.getName());
-            lines.add(Text.translatable("screen.basedefense.house.tip.left",
-                    remaining.getOrDefault(item, 0), handler.getTotal(index)).styled(s -> s.withColor(TEXT_MUTED & 0xFFFFFF)));
-            lines.add(Text.translatable("screen.basedefense.house.tip.stock",
-                    handler.getProp(HouseScreenHandler.PROP_AVAILABLE + index)).styled(s -> s.withColor(GOOD & 0xFFFFFF)));
+            lines.add(Text.translatable("screen.basedefense.house.tip.placed", placed(index), handler.getTotal(index))
+                    .styled(s -> s.withColor(0xBBBBBB)));
+            int left = remaining.getOrDefault(item, 0);
+            int have = handler.getProp(HouseScreenHandler.PROP_AVAILABLE + index);
+            lines.add(Text.translatable("screen.basedefense.house.tip.stock", have)
+                    .styled(s -> s.withColor(have >= left ? 0x8BD05A : 0xFF7A6A)));
+            if (left > have) {
+                lines.add(Text.translatable("screen.basedefense.house.tip.bring", left - have)
+                        .styled(s -> s.withColor(0xFFD45A)));
+            }
             context.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
         }
     }
@@ -98,76 +98,103 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         int right = left + this.backgroundWidth;
         int bottom = top + this.backgroundHeight;
 
-        // Рамка и заголовок
-        context.fill(left + 3, top + 3, right + 3, bottom + 3, SHADOW);
-        context.fill(left, top, right, bottom, FRAME_DARK);
-        context.fill(left + 1, top + 1, right - 1, bottom - 1, FRAME_LIGHT);
-        context.fill(left + 2, top + 2, right - 2, bottom - 2, PANEL);
-        context.fill(left + 2, top + 2, right - 2, top + 20, HEADER);
-        context.drawItem(new ItemStack(Registries.ITEM.get(
-                new Identifier(Basedefense.MOD_ID, handler.getHouseType().getId()))), left + 6, top + 3);
-        context.drawText(this.textRenderer, this.title, left + 26, top + 7, TEXT_DARK, false);
+        panel(context, left, top, right, bottom);
+        header(context, left + 4, top + 4, right - 4, HEADER_H);
 
-        // Готовность
+        // Заголовок: иконка дома, название, процент готовности
+        context.drawItem(new ItemStack(Registries.ITEM.get(
+                new Identifier(Basedefense.MOD_ID, handler.getHouseType().getId()))), left + 10, top + 7);
+        embossed(context, this.textRenderer, this.title, left + 30, top + 11, TEXT_DARK);
+
         int total = 0;
-        int left2 = 0;
+        int placedAll = 0;
         for (int i = 0; i < handler.getItems().size(); i++) {
             total += handler.getTotal(i);
-            left2 += remaining.getOrDefault(handler.getItems().get(i), 0);
+            placedAll += placed(i);
         }
-        int percent = total == 0 ? 100 : (total - left2) * 100 / total;
+        int percent = total == 0 ? 100 : placedAll * 100 / total;
         Text pct = Text.translatable("screen.basedefense.house.progress", percent);
-        context.drawText(this.textRenderer, pct, right - 8 - this.textRenderer.getWidth(pct), top + 7, TEXT_DARK, false);
+        int pillW = this.textRenderer.getWidth(pct) + 8;
+        pill(context, this.textRenderer, right - 12 - pillW, top + 9, pct,
+                percent >= 100 ? 0xFFB9D68E : 0xFFEAD7A8, percent >= 100 ? GOOD : TEXT_DARK);
 
-        // Состояние стройки
-        context.drawText(this.textRenderer, statusText(left2), left + 8, top + 26, statusColor(), false);
+        // Состояние стройки: значок + текст
+        int statusY = top + HEADER_H + 11;
+        context.drawItem(new ItemStack(statusIcon()), left + 10, statusY - 4);
+        embossed(context, this.textRenderer, statusText(total - placedAll), left + 30, statusY, statusColor());
 
         // Полоска готовности
-        int barL = left + 8, barR = right - 8, barT = top + 39;
-        context.fill(barL - 1, barT - 1, barR + 1, barT + 7, EDGE);
-        context.fill(barL, barT, barR, barT + 6, CONTENT);
-        context.fill(barL, barT, barL + (barR - barL) * percent / 100, barT + 6, GOOD);
+        progress(context, left + 12, top + 48, right - 12, top + 54, percent / 100.0f, GOOD_LIGHT, GOOD);
 
         // Список материалов
-        int listL = left + 12;
+        int listL = left + PAD;
         int listT = top + LIST_TOP;
-        context.fill(listL - 3, listT - 3, right - 9, listT + VISIBLE_ROWS * CELL_H + 1, EDGE);
-        context.fill(listL - 2, listT - 2, right - 10, listT + VISIBLE_ROWS * CELL_H, CONTENT);
+        int listR = listL + COLS * CELL_W + (COLS - 1) * GAP;
+        int listB = listT + VISIBLE_ROWS * (CELL_H + GAP) - GAP;
+        inset(context, listL - 3, listT - 3, listR + 3, listB + 3, CONTENT_ALT);
         List<Item> items = handler.getItems();
         for (int i = 0; i < items.size(); i++) {
             int row = i / COLS - scroll;
             if (row < 0 || row >= VISIBLE_ROWS) {
                 continue;
             }
-            int cx = listL + (i % COLS) * (CELL_W + 4);
-            int cy = listT + row * CELL_H;
-            drawCell(context, i, items.get(i), cx, cy);
+            int cx = listL + (i % COLS) * (CELL_W + GAP);
+            int cy = listT + row * (CELL_H + GAP);
+            boolean hover = mouseX >= cx && mouseX < cx + CELL_W && mouseY >= cy && mouseY < cy + CELL_H;
+            drawCell(context, i, items.get(i), cx, cy, hover);
         }
         // Полоса прокрутки
         if (maxScroll() > 0) {
-            int trackT = listT, trackB = listT + VISIBLE_ROWS * CELL_H - 2;
-            int thumbH = Math.max(10, (trackB - trackT) * VISIBLE_ROWS / rows());
-            int thumbT = trackT + (trackB - trackT - thumbH) * scroll / maxScroll();
-            context.fill(right - 8, thumbT, right - 5, thumbT + thumbH, ACCENT);
+            int trackL = listR + 5;
+            context.fill(trackL, listT - 2, trackL + 3, listB + 2, 0x33000000);
+            int thumbH = Math.max(12, (listB - listT + 4) * VISIBLE_ROWS / rows());
+            int thumbT = listT - 2 + (listB - listT + 4 - thumbH) * scroll / maxScroll();
+            context.fill(trackL, thumbT, trackL + 3, thumbT + thumbH, GOLD);
+            context.fill(trackL, thumbT, trackL + 1, thumbT + thumbH, GOLD_LIGHT);
         }
-
-        // Подсказка внизу
-        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.house.hint"),
-                left + 8, bottom - 13, TEXT_MUTED, false);
     }
 
-    private void drawCell(DrawContext context, int index, Item item, int cx, int cy) {
-        int left = remaining.getOrDefault(item, 0);
+    private void drawCell(DrawContext context, int index, Item item, int cx, int cy, boolean hover) {
+        int total = handler.getTotal(index);
+        int done = placed(index);
+        int left = total - done;
         int have = handler.getProp(HouseScreenHandler.PROP_AVAILABLE + index);
-        boolean done = left == 0;
-        context.fill(cx, cy, cx + CELL_W, cy + CELL_H - 2, done ? CELL_DONE : CELL);
-        context.drawItem(new ItemStack(item), cx + 2, cy + 2);
-        context.drawText(this.textRenderer, left + " / " + handler.getTotal(index), cx + 21, cy + 2,
-                done ? GOOD : TEXT_DARK, false);
-        Text stock = done ? Text.translatable("screen.basedefense.house.done")
+        boolean complete = left == 0;
+
+        card(context, cx, cy, cx + CELL_W, cy + CELL_H, complete ? 0xFFE3EDC8 : 0xFFFCF6E6, hover);
+        // Иконка в маленьком «гнезде»
+        context.fill(cx + 3, cy + 3, cx + 21, cy + 21, complete ? 0x2A4F7F2E : 0x18000000);
+        context.drawItem(new ItemStack(item), cx + 4, cy + 4);
+
+        // Сколько поставлено из скольких
+        Text count = Text.literal(done + " / " + total);
+        context.drawText(this.textRenderer, count, cx + 25, cy + 4, complete ? GOOD : TEXT_DARK, false);
+        // Запас в сундуках строителя
+        Text stock = complete ? Text.translatable("screen.basedefense.house.done")
                 : Text.translatable("screen.basedefense.house.stock", have);
-        context.drawText(this.textRenderer, stock, cx + 21, cy + 11,
-                done ? GOOD : (have >= left ? GOOD : BAD), false);
+        int stockColor = complete ? GOOD : (have >= left ? GOOD : BAD);
+        context.drawText(this.textRenderer, stock, cx + 25, cy + 14, stockColor, false);
+
+        // Тонкая полоска внизу карточки: доля поставленного
+        int barL = cx + 3, barR = cx + CELL_W - 3, barY = cy + CELL_H - 4;
+        context.fill(barL, barY, barR, barY + 2, 0x22000000);
+        int w = total == 0 ? 0 : (barR - barL) * done / total;
+        if (w > 0) {
+            context.fill(barL, barY, barL + w, barY + 2, complete ? GOOD_LIGHT : GOLD);
+        }
+    }
+
+    private Item statusIcon() {
+        return switch (handler.getProp(HouseScreenHandler.PROP_STATUS)) {
+            case HouseScreenHandler.STATUS_BUILDING -> Items.IRON_SHOVEL;
+            case HouseScreenHandler.STATUS_WALKING -> Items.LEATHER_BOOTS;
+            case HouseScreenHandler.STATUS_MISSING -> {
+                int raw = handler.getProp(HouseScreenHandler.PROP_MISSING);
+                yield raw < 0 ? Items.BARRIER : Registries.ITEM.get(raw);
+            }
+            case HouseScreenHandler.STATUS_QUEUE -> Items.CLOCK;
+            default -> Items.BARRIER;
+        };
     }
 
     private Text statusText(int blocksLeft) {
@@ -187,10 +214,9 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
     }
 
     private int statusColor() {
-        int status = handler.getProp(HouseScreenHandler.PROP_STATUS);
-        return switch (status) {
+        return switch (handler.getProp(HouseScreenHandler.PROP_STATUS)) {
             case HouseScreenHandler.STATUS_BUILDING, HouseScreenHandler.STATUS_WALKING -> GOOD;
-            case HouseScreenHandler.STATUS_QUEUE -> TEXT_MUTED;
+            case HouseScreenHandler.STATUS_QUEUE -> TEXT_BODY;
             default -> BAD;
         };
     }
@@ -207,16 +233,16 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
     }
 
     private int getCellAt(double mouseX, double mouseY) {
-        int listL = this.x + 12;
+        int listL = this.x + PAD;
         int listT = this.y + LIST_TOP;
         for (int i = 0; i < handler.getItems().size(); i++) {
             int row = i / COLS - scroll;
             if (row < 0 || row >= VISIBLE_ROWS) {
                 continue;
             }
-            int cx = listL + (i % COLS) * (CELL_W + 4);
-            int cy = listT + row * CELL_H;
-            if (mouseX >= cx && mouseX < cx + CELL_W && mouseY >= cy && mouseY < cy + CELL_H - 2) {
+            int cx = listL + (i % COLS) * (CELL_W + GAP);
+            int cy = listT + row * (CELL_H + GAP);
+            if (mouseX >= cx && mouseX < cx + CELL_W && mouseY >= cy && mouseY < cy + CELL_H) {
                 return i;
             }
         }

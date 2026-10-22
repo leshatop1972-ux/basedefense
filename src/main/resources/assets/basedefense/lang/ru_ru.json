@@ -105,13 +105,13 @@
   "screen.basedefense.house.status.walking": "Строитель идёт на стройку",
   "screen.basedefense.house.status.building": "Строитель ур. %s строит, осталось ≈ %s",
   "screen.basedefense.house.status.missing": "Стройка стоит: нет материала «%s»",
-  "screen.basedefense.house.tip.left": "Осталось поставить: %s из %s",
   "screen.basedefense.house.tip.stock": "В сундуках строителя: %s",
-  "screen.basedefense.house.stock": "есть %s",
+  "screen.basedefense.house.stock": "в сундуках: %s",
   "screen.basedefense.house.done": "готово ✔",
-  "screen.basedefense.house.hint": "Материалы клади в сундуки дома строителя",
   "screen.basedefense.settler.build.idle": "Нет заказов — поставь блок дома",
   "screen.basedefense.settler.build.walking": "Идёт на стройку: %s",
   "screen.basedefense.settler.build.building": "Строит: %s — %s%%",
-  "screen.basedefense.settler.build.missing": "Нет материала: %s"
+  "screen.basedefense.settler.build.missing": "Нет материала: %s",
+  "screen.basedefense.house.tip.placed": "Поставлено: %s из %s",
+  "screen.basedefense.house.tip.bring": "Нужно принести ещё: %s"
 }

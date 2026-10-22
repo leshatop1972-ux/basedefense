@@ -105,13 +105,13 @@
   "screen.basedefense.house.status.walking": "The builder is on his way",
   "screen.basedefense.house.status.building": "Builder lvl %s is building, ≈ %s left",
   "screen.basedefense.house.status.missing": "Construction stopped: no \"%s\"",
-  "screen.basedefense.house.tip.left": "Left to place: %s of %s",
   "screen.basedefense.house.tip.stock": "In the builder's chests: %s",
-  "screen.basedefense.house.stock": "have %s",
+  "screen.basedefense.house.stock": "in chests: %s",
   "screen.basedefense.house.done": "done ✔",
-  "screen.basedefense.house.hint": "Put materials into the builder's house chests",
   "screen.basedefense.settler.build.idle": "No orders — place a house block",
   "screen.basedefense.settler.build.walking": "Going to build: %s",
   "screen.basedefense.settler.build.building": "Building: %s — %s%%",
-  "screen.basedefense.settler.build.missing": "Missing: %s"
+  "screen.basedefense.settler.build.missing": "Missing: %s",
+  "screen.basedefense.house.tip.placed": "Placed: %s of %s",
+  "screen.basedefense.house.tip.bring": "Still need to bring: %s"
 }

@@ -10,37 +10,30 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Меню жителя: почти прозрачная панель посреди экрана (мир за ней не затемняется)
- * со строкой состояния и кнопками: «Улучшить» (у повара ещё «Отдать еду из руки»).
+ * Меню жителя в общем стиле мода (пергамент в деревянной рамке): имя и уровень,
+ * карточка состояния, расход еды и кнопки «Улучшить» (у повара ещё «Отдать еду из руки»).
  * Работа и сбор добычи идут сами: житель складывает всё в сундук своего дома.
  */
 public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
 
-    // ---------- Цвета (полупрозрачные) ----------
-    private static final int PANEL        = 0x40000000;
-    private static final int PANEL_EDGE   = 0x50FFFFFF;
-    private static final int BUTTON       = 0x60000000;
-    private static final int BUTTON_HOVER = 0x90000000;
-    private static final int BUTTON_EDGE  = 0x70FFFFFF;
-    private static final int BUTTON_EDGE_HOVER = 0xE0FFE08A;
-    private static final int TEXT         = 0xFFFFFFFF;
-    private static final int TEXT_MUTED   = 0xFFB8B8B8;
-    private static final int TEXT_GOOD    = 0xFF8FE07A;
-    private static final int TEXT_BAD     = 0xFFFF7A6A;
-    private static final int TEXT_GOLD    = 0xFFFFD45A;
-
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
-    private static final int BUTTONS_TOP = 46;   // от верха панели
+    private static final int HEADER_H = 22;
+    private static final int STATUS_T = 32;      // карточка состояния (от верха окна)
+    private static final int STATUS_B = 56;
+    private static final int BUTTONS_TOP = 88;
 
     public SettlerScreen(SettlerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -49,7 +42,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
     }
 
     private static int heightFor(int buttons) {
-        return BUTTONS_TOP + buttons * BUTTON_H + (buttons - 1) * BUTTON_GAP + 22;
+        return BUTTONS_TOP + buttons * BUTTON_H + (buttons - 1) * BUTTON_GAP + 34;
     }
 
     /** Какие кнопки показаны (по порядку сверху вниз): id кнопок из SettlerScreenHandler. */
@@ -76,7 +69,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Фон мира НЕ затемняем — меню почти прозрачное
+        this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
         int hovered = getButtonAt(mouseX, mouseY);
         if (hovered >= 0) {
@@ -94,51 +87,36 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         int right = left + this.backgroundWidth;
         int bottom = top + this.backgroundHeight;
 
-        // Панель
-        context.fill(left - 1, top - 1, right + 1, bottom + 1, PANEL_EDGE);
-        context.fill(left, top, right, bottom, PANEL);
+        UiKit.panel(context, left, top, right, bottom);
+        UiKit.header(context, left + 4, top + 4, right - 4, HEADER_H);
 
-        // Заголовок: имя и уровень
+        // Заголовок: имя и уровень (ромбики — сколько уровней из трёх)
         int level = handler.getProp(SettlerScreenHandler.PROP_LEVEL);
-        Text title = this.title.copy().append(Text.translatable("screen.basedefense.settler.level", level));
-        context.drawCenteredTextWithShadow(this.textRenderer, title, left + this.backgroundWidth / 2, top + 6, TEXT_GOLD);
-
-        // Строка состояния
-        boolean frozen = handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1;
-        boolean hasChest = handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) == 1;
-        int stored = handler.getProp(SettlerScreenHandler.PROP_STORED);
-        Text status;
-        int statusColor;
-        if (frozen) {
-            status = Text.translatable("screen.basedefense.settler.status.frozen");
-            statusColor = TEXT_BAD;
-        } else if (handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS) > 0) {
-            status = builderStatus();
-            int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
-            statusColor = bs == BuilderEntity.STATUS_MISSING ? TEXT_BAD
-                    : bs == BuilderEntity.STATUS_IDLE ? TEXT_MUTED : TEXT_GOOD;
-        } else if (!hasChest) {
-            status = Text.translatable("screen.basedefense.settler.status.no_chest", stored);
-            statusColor = TEXT_BAD;
-        } else if (stored > 0) {
-            status = Text.translatable("screen.basedefense.settler.status.chest_full", stored);
-            statusColor = TEXT_BAD;
-        } else if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
-            int have = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS);
-            int need = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY);
-            status = Text.translatable(have >= need ? "screen.basedefense.settler.status.cooking"
-                    : "screen.basedefense.settler.status.no_ingredients", have, need);
-            statusColor = have >= need ? TEXT_GOOD : TEXT_BAD;
-        } else {
-            status = Text.translatable("screen.basedefense.settler.status.working",
-                    handler.getProp(SettlerScreenHandler.PROP_ROLLS));
-            statusColor = TEXT_GOOD;
+        UiKit.embossed(context, this.textRenderer, this.title, left + 11, top + 11, UiKit.TEXT_DARK);
+        for (int i = 0; i < SettlerEntity.MAX_LEVEL; i++) {
+            int dx = right - 14 - (SettlerEntity.MAX_LEVEL - 1 - i) * 8;
+            UiKit.diamond(context, dx, top + 14, i < level ? UiKit.GOLD : 0xFFBBA987);
         }
-        int centerX = left + this.backgroundWidth / 2;
-        context.drawCenteredTextWithShadow(this.textRenderer, status, centerX, top + 19, statusColor);
-        // Вторая строка: сколько ест в день
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.translatable("screen.basedefense.settler.food",
-                handler.getProp(SettlerScreenHandler.PROP_WORK_FOOD)), centerX, top + 31, TEXT_MUTED);
+
+        // Карточка состояния: значок + текст
+        Text status = statusText();
+        int statusColor = statusColor();
+        UiKit.inset(context, left + 12, top + STATUS_T, right - 12, top + STATUS_B, UiKit.CONTENT);
+        context.fill(left + 14, top + STATUS_T + 2, left + 16, top + STATUS_B - 2, statusColor);
+        context.drawItem(new ItemStack(statusIcon()), left + 20, top + STATUS_T + 4);
+        List<OrderedText> lines = this.textRenderer.wrapLines(status, right - 12 - (left + 40) - 4);
+        int ty = top + (STATUS_T + STATUS_B) / 2 - lines.size() * 5 + 1;
+        for (OrderedText line : lines.subList(0, Math.min(2, lines.size()))) {
+            context.drawText(this.textRenderer, line, left + 40, ty, statusColor, false);
+            ty += 10;
+        }
+
+        // Еда в день
+        context.drawItem(new ItemStack(Items.BREAD), left + 12, top + 60);
+        UiKit.embossed(context, this.textRenderer, Text.translatable("screen.basedefense.settler.food",
+                handler.getProp(SettlerScreenHandler.PROP_WORK_FOOD)), left + 32, top + 65, UiKit.TEXT_BODY);
+
+        UiKit.divider(context, left + 12, right - 12, top + 80);
 
         // Кнопки
         for (int i = 0; i < buttonCount(); i++) {
@@ -146,12 +124,83 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         }
 
         // Монеты игрока внизу
+        UiKit.divider(context, left + 12, right - 12, bottom - 27);
         int coins = ResearchManager.countCoins(this.client.player);
         Text coinText = Text.translatable("screen.basedefense.settler.coins", coins);
         int tw = this.textRenderer.getWidth(coinText);
         int cx = left + (this.backgroundWidth - tw - 18) / 2;
-        context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), cx, bottom - 19);
-        context.drawTextWithShadow(this.textRenderer, coinText, cx + 18, bottom - 15, TEXT_MUTED);
+        context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), cx, bottom - 22);
+        UiKit.embossed(context, this.textRenderer, coinText, cx + 18, bottom - 18, UiKit.TEXT_BODY);
+    }
+
+    /** Текст строки состояния. */
+    private Text statusText() {
+        boolean frozen = handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1;
+        int stored = handler.getProp(SettlerScreenHandler.PROP_STORED);
+        if (frozen) {
+            return Text.translatable("screen.basedefense.settler.status.frozen");
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS) > 0) {
+            return builderStatus();
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1) {
+            return Text.translatable("screen.basedefense.settler.status.no_chest", stored);
+        }
+        if (stored > 0) {
+            return Text.translatable("screen.basedefense.settler.status.chest_full", stored);
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
+            int have = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS);
+            int need = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY);
+            return Text.translatable(have >= need ? "screen.basedefense.settler.status.cooking"
+                    : "screen.basedefense.settler.status.no_ingredients", have, need);
+        }
+        return Text.translatable("screen.basedefense.settler.status.working",
+                handler.getProp(SettlerScreenHandler.PROP_ROLLS));
+    }
+
+    private int statusColor() {
+        if (handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1) {
+            return UiKit.BAD;
+        }
+        int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
+        if (bs > 0) {
+            return bs == BuilderEntity.STATUS_MISSING ? UiKit.BAD
+                    : bs == BuilderEntity.STATUS_IDLE ? UiKit.TEXT_MUTED : UiKit.GOOD;
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1
+                || handler.getProp(SettlerScreenHandler.PROP_STORED) > 0) {
+            return UiKit.BAD;
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
+            return handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS)
+                    >= handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY) ? UiKit.GOOD : UiKit.BAD;
+        }
+        return UiKit.GOOD;
+    }
+
+    /** Значок в карточке состояния. */
+    private Item statusIcon() {
+        if (handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1) {
+            return Items.PACKED_ICE;
+        }
+        int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
+        if (bs > 0) {
+            return switch (bs) {
+                case BuilderEntity.STATUS_BUILDING -> Items.IRON_SHOVEL;
+                case BuilderEntity.STATUS_WALKING -> Items.LEATHER_BOOTS;
+                case BuilderEntity.STATUS_MISSING -> {
+                    int raw = handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING);
+                    yield raw < 0 ? Items.BARRIER : Registries.ITEM.get(raw);
+                }
+                default -> Items.CLOCK;
+            };
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1
+                || handler.getProp(SettlerScreenHandler.PROP_STORED) > 0) {
+            return Items.CHEST;
+        }
+        return handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1 ? Items.PUMPKIN_PIE : Items.GOLDEN_HOE;
     }
 
     /** Строка состояния строителя: что строит и чего не хватает. */
@@ -180,21 +229,15 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         int index = buttons()[slot];
         int bl = getButtonLeft();
         int bt = getButtonTop(slot);
-        int br = bl + getButtonWidth();
-        int bb = bt + BUTTON_H;
         boolean enabled = isButtonEnabled(index);
         boolean hover = enabled && getButtonAt(mouseX, mouseY) == index;
-
-        context.fill(bl - 1, bt - 1, br + 1, bb + 1, hover ? BUTTON_EDGE_HOVER : BUTTON_EDGE);
-        context.fill(bl, bt, br, bb, hover ? BUTTON_HOVER : BUTTON);
-
+        int state = !enabled ? (index == SettlerScreenHandler.BUTTON_UPGRADE && isMaxLevel() ? 3 : 2) : (hover ? 1 : 0);
         Text label = getButtonLabel(index);
-        int color = enabled ? (hover ? TEXT_GOLD : TEXT) : TEXT_MUTED;
         if (index == SettlerScreenHandler.BUTTON_UPGRADE && enabled
                 && ResearchManager.countCoins(this.client.player) < upgradeCost()) {
-            color = TEXT_BAD;
+            label = label.copy().styled(s -> s.withColor(UiKit.BAD & 0xFFFFFF));
         }
-        context.drawCenteredTextWithShadow(this.textRenderer, label, (bl + br) / 2, bt + 6, color);
+        UiKit.button(context, this.textRenderer, bl, bt, bl + getButtonWidth(), bt + BUTTON_H, label, state);
     }
 
     // ---------------------------------------------------------------------
@@ -234,7 +277,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
                 lines.add(Text.translatable("screen.basedefense.settler.tip.ingredients"));
                 lines.add(Text.translatable("screen.basedefense.settler.tip.ingredients_day",
                         handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY))
-                        .styled(s -> s.withColor(TEXT_GOLD & 0xFFFFFF)));
+                        .styled(s -> s.withColor(0xFFD45A)));
             }
             case SettlerScreenHandler.BUTTON_UPGRADE -> {
                 if (!isMaxLevel()) {
