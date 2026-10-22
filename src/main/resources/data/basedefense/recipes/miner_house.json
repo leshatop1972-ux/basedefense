@@ -1,24 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " I ",
-    "PBP",
-    "KKK"
-  ],
-  "key": {
-    "I": {
-      "item": "minecraft:iron_block"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:crafting_table"
     },
-    "P": {
-      "item": "minecraft:iron_pickaxe"
-    },
-    "B": {
+    {
       "item": "minecraft:blast_furnace"
-    },
-    "K": {
-      "item": "basedefense:constructor_block"
     }
-  },
+  ],
   "result": {
     "item": "basedefense:miner_house",
     "count": 1

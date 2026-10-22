@@ -25,7 +25,7 @@ import net.minecraft.sound.SoundEvents;
  * Серверная часть меню базы.
  * - Передаёт клиенту исследования и состояние поселения (через PropertyDelegate).
  * - Принимает нажатие кнопки «Исследовать» (номер кнопки = номер технологии).
- * - Вкладка «Потребности»: слот, куда кладут еду и ресурсы, + инвентарь игрока.
+ * - Вкладка «Потребности»: слот, куда кладут еду, + инвентарь игрока.
  */
 public class BaseScreenHandler extends ScreenHandler {
 
@@ -33,14 +33,8 @@ public class BaseScreenHandler extends ScreenHandler {
     public static final int PROP_RESEARCH = 0;
     public static final int PROP_SETTLERS = 1;
     public static final int PROP_FOOD = 2;
-    public static final int PROP_UPKEEP = 3;
-    public static final int PROP_NUGGETS = 4;
-    public static final int PROP_PLANKS = 5;
-    public static final int PROP_COBBLE = 6;
-    public static final int PROP_FOOD_DAY = 7;   // сколько еды поселение тратит в день
-    public static final int PROP_DENSE_WOOD = 8;
-    public static final int PROP_CONSTRUCTORS = 9;
-    public static final int PROP_COUNT = 10;
+    public static final int PROP_FOOD_DAY = 3;   // сколько еды поселение тратит в день
+    public static final int PROP_COUNT = 4;
 
     // ---------- Где стоят слоты (от левого верхнего угла окна) ----------
     public static final int DEPOSIT_X = 192;
@@ -105,13 +99,7 @@ public class BaseScreenHandler extends ScreenHandler {
                 return switch (index) {
                     case PROP_SETTLERS -> s.getSettlerCount();
                     case PROP_FOOD -> s.getFood();
-                    case PROP_UPKEEP -> s.getUpkeep();
-                    case PROP_NUGGETS -> s.getNuggets();
-                    case PROP_PLANKS -> s.getPlanks();
-                    case PROP_COBBLE -> s.getCobblestone();
                     case PROP_FOOD_DAY -> s.getDailyFood();
-                    case PROP_DENSE_WOOD -> s.getDenseWood();
-                    case PROP_CONSTRUCTORS -> s.getConstructors();
                     default -> 0;
                 };
             }
@@ -235,7 +223,7 @@ public class BaseScreenHandler extends ScreenHandler {
         }
     }
 
-    /** Слот «положить в Базу»: принимает только еду и ресурсы эксплуатации. */
+    /** Слот «положить в Базу»: принимает только еду. */
     private class DepositSlot extends ToggleSlot {
         DepositSlot(Inventory inventory, int index, int x, int y) {
             super(inventory, index, x, y);

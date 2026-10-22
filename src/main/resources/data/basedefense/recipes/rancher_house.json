@@ -1,27 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "FUF",
-    "KOK",
-    "KMK"
-  ],
-  "key": {
-    "F": {
-      "tag": "minecraft:wooden_fences"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:crafting_table"
     },
-    "U": {
+    {
       "item": "minecraft:cauldron"
-    },
-    "K": {
-      "item": "basedefense:constructor_block"
-    },
-    "O": {
-      "item": "minecraft:furnace"
-    },
-    "M": {
-      "item": "minecraft:campfire"
     }
-  },
+  ],
   "result": {
     "item": "basedefense:rancher_house",
     "count": 1

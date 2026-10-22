@@ -10,6 +10,7 @@ import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -187,6 +188,16 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return getWorkLoot(1) != null;
     }
 
+    /** Инструмент, который житель держит в руке (просто для вида). */
+    protected ItemStack getDefaultTool() {
+        return ItemStack.EMPTY;
+    }
+
+    /** Житель занят делом вдали от дома (строитель на стройке) — не тянуть его домой. */
+    protected boolean isAwayOnDuty() {
+        return false;
+    }
+
     /** Сколько еды житель тратит в день прямо сейчас. */
     public int getFoodPerDay() {
         return hasJob() ? getWorkFood(getLevel()) : SettlementManager.FOOD_PER_SETTLER;
@@ -235,7 +246,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return interactingPlayer;
     }
 
-    private boolean isSettlementFrozen() {
+    protected boolean isSettlementFrozen() {
         return this.getWorld() instanceof ServerWorld serverWorld && SettlementManager.isFrozen(serverWorld.getServer());
     }
 
@@ -466,6 +477,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
         if (this.getWorld() instanceof ServerWorld serverWorld && this.age % 20 == 1 && this.isAlive()) {
             // Привязка к Базе: житель записан в поселение вместе со своим расходом еды
             updateSettlement(serverWorld);
+            // Инструмент в руке (для вида; при смерти не выпадает)
+            if (this.getMainHandStack().isEmpty() && !getDefaultTool().isEmpty()) {
+                this.equipStack(EquipmentSlot.MAINHAND, getDefaultTool());
+                this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
+            }
 
             boolean frozen = SettlementManager.isFrozen(serverWorld.getServer());
             // Добыча: на каждом рассвете (дни, пока чанк не был загружен, тоже считаются)
@@ -809,12 +825,14 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
         @Override
         public boolean canStart() {
-            return settler.getHome() != null && distanceSqToHome() > HOME_RADIUS * HOME_RADIUS;
+            return settler.getHome() != null && !settler.isAwayOnDuty()
+                    && distanceSqToHome() > HOME_RADIUS * HOME_RADIUS;
         }
 
         @Override
         public boolean shouldContinue() {
-            return settler.getHome() != null && distanceSqToHome() > 16 * 16 && !settler.getNavigation().isIdle();
+            return settler.getHome() != null && !settler.isAwayOnDuty()
+                    && distanceSqToHome() > 16 * 16 && !settler.getNavigation().isIdle();
         }
 
         @Override

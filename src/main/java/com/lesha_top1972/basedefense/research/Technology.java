@@ -21,12 +21,14 @@ import java.util.Optional;
  * requires     — какую технологию нужно исследовать раньше (null — ничего)
  */
 public enum Technology {
-    FARMER_HOUSE("farmer_house", 60, 0, 0, 0, "farmer_house", null),
-    RANCHER_HOUSE("rancher_house", 100, 0, 1, 0, "rancher_house", FARMER_HOUSE),
-    COOK_HOUSE("cook_house", 120, 0, 2, 0, "cook_house", RANCHER_HOUSE),
-    MINER_HOUSE("miner_house", 150, 0, 2, 1, "miner_house", RANCHER_HOUSE),
-    BLACKSMITH_HOUSE("blacksmith_house", 200, 0, 3, 1, "blacksmith_house", MINER_HOUSE),
-    LUMBERJACK_HOUSE("lumberjack_house", 130, 0, 2, 2, "lumberjack_house", MINER_HOUSE);
+    // Исследования хранятся по id, поэтому порядок в списке можно менять
+    BUILDER_HOUSE("builder_house", 40, 0, 0, 0, "builder_house", null),
+    FARMER_HOUSE("farmer_house", 60, 0, 1, 0, "farmer_house", BUILDER_HOUSE),
+    RANCHER_HOUSE("rancher_house", 100, 0, 2, 0, "rancher_house", FARMER_HOUSE),
+    COOK_HOUSE("cook_house", 120, 0, 3, 0, "cook_house", RANCHER_HOUSE),
+    MINER_HOUSE("miner_house", 150, 0, 3, 1, "miner_house", RANCHER_HOUSE),
+    BLACKSMITH_HOUSE("blacksmith_house", 200, 0, 4, 1, "blacksmith_house", MINER_HOUSE),
+    LUMBERJACK_HOUSE("lumberjack_house", 130, 0, 3, 2, "lumberjack_house", MINER_HOUSE);
 
     private final String id;
     private final int cost;
@@ -80,6 +82,7 @@ public enum Technology {
     /** Предмет-иконка (он же предмет, крафт которого открывается). */
     public ItemConvertible getIcon() {
         return switch (this) {
+            case BUILDER_HOUSE -> ModBlocks.BUILDER_HOUSE;
             case FARMER_HOUSE -> ModBlocks.FARMER_HOUSE;
             case RANCHER_HOUSE -> ModBlocks.RANCHER_HOUSE;
             case COOK_HOUSE -> ModBlocks.COOK_HOUSE;

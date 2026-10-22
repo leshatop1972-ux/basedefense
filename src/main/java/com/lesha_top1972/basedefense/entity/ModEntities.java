@@ -13,6 +13,13 @@ import net.minecraft.util.Identifier;
 /** Все мобы мода. */
 public final class ModEntities {
 
+    public static final EntityType<BuilderEntity> BUILDER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "builder"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, BuilderEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
     public static final EntityType<FarmerEntity> FARMER = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "farmer"),
@@ -59,6 +66,7 @@ public final class ModEntities {
     }
 
     public static void init() {
+        FabricDefaultAttributeRegistry.register(BUILDER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(FARMER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(RANCHER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(COOK, SettlerEntity.createSettlerAttributes());

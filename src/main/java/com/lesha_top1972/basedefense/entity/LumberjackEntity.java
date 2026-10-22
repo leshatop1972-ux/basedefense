@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.world.World;
@@ -67,5 +68,10 @@ public class LumberjackEntity extends SettlerEntity {
     @Override
     public boolean isWorkSpot(BlockState state) {
         return state.isIn(BlockTags.LOGS) && !state.isOf(Blocks.SPRUCE_LOG);
+    }
+
+    @Override
+    protected ItemStack getDefaultTool() {
+        return new ItemStack(Items.IRON_AXE);
     }
 }

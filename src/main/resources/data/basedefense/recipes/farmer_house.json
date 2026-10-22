@@ -1,24 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "KKK",
-    "KGK",
-    "TCT"
-  ],
-  "key": {
-    "K": {
-      "item": "basedefense:constructor_block"
-    },
-    "G": {
-      "item": "minecraft:gold_ingot"
-    },
-    "T": {
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
       "item": "minecraft:crafting_table"
     },
-    "C": {
-      "item": "minecraft:chest"
+    {
+      "item": "minecraft:composter"
     }
-  },
+  ],
   "result": {
     "item": "basedefense:farmer_house",
     "count": 1

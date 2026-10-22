@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.world.World;
 
@@ -89,5 +90,10 @@ public class CookEntity extends SettlerEntity {
     @Override
     public boolean isWorkSpot(BlockState state) {
         return state.isOf(Blocks.BRICKS);
+    }
+
+    @Override
+    protected ItemStack getDefaultTool() {
+        return new ItemStack(Items.BOWL);
     }
 }

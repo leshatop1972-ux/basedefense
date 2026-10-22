@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.world.World;
 
@@ -71,5 +72,10 @@ public class MinerEntity extends SettlerEntity {
     @Override
     public int getWorkSearchRadius() {
         return 22;
+    }
+
+    @Override
+    protected ItemStack getDefaultTool() {
+        return new ItemStack(Items.IRON_PICKAXE);
     }
 }

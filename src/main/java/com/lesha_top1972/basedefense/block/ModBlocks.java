@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.block;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.structure.HousePlans;
+import com.lesha_top1972.basedefense.structure.HouseType;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
@@ -21,39 +21,26 @@ public final class ModBlocks {
     public static final Block BASE = register("base",
             new BaseBlock(FabricBlockSettings.copyOf(Blocks.CRAFTING_TABLE).strength(-1.0f, 3600000.0f)));
 
-    /** Плотный блок дерева — материал для крафта. */
-    public static final Block DENSE_WOOD = register("dense_wood",
-            new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(3.0f)));
-
-    /** Конструкторский блок — деревянный ящик, материал для крафта. */
-    public static final Block CONSTRUCTOR_BLOCK = register("constructor_block",
-            new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.5f)));
-
-    /** Дом фермера — при установке строит домик с огородом. */
-    public static final Block FARMER_HOUSE = register("farmer_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::farmer));
-
-    /** Дом скотовода — при установке строит домик с загоном. */
-    public static final Block RANCHER_HOUSE = register("rancher_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::rancher));
-
-    /** Дом повара — при установке строит домик с летней кухней. */
-    public static final Block COOK_HOUSE = register("cook_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::cook));
-
-    /** Домик шахтёра — при установке строит домик и спуск в шахту. */
-    public static final Block MINER_HOUSE = register("miner_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::miner));
-
-    /** Кузница — при установке строит кузницу с горном во дворе. */
-    public static final Block BLACKSMITH_HOUSE = register("blacksmith_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::blacksmith));
-
-    /** Домик лесоруба — при установке строит домик с посадкой деревьев. */
-    public static final Block LUMBERJACK_HOUSE = register("lumberjack_house",
-            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::lumberjack));
+    /** Дом строителя — строится сам; строитель потом строит остальные дома. */
+    public static final Block BUILDER_HOUSE = house("builder_house", HouseType.BUILDER);
+    /** Дом фермера (огород). */
+    public static final Block FARMER_HOUSE = house("farmer_house", HouseType.FARMER);
+    /** Дом скотовода (загон). */
+    public static final Block RANCHER_HOUSE = house("rancher_house", HouseType.RANCHER);
+    /** Дом повара (летняя кухня). */
+    public static final Block COOK_HOUSE = house("cook_house", HouseType.COOK);
+    /** Дом шахтёра (вход в шахту). */
+    public static final Block MINER_HOUSE = house("miner_house", HouseType.MINER);
+    /** Кузница (горн). */
+    public static final Block BLACKSMITH_HOUSE = house("blacksmith_house", HouseType.BLACKSMITH);
+    /** Дом лесоруба (посадка деревьев). */
+    public static final Block LUMBERJACK_HOUSE = house("lumberjack_house", HouseType.LUMBERJACK);
 
     private ModBlocks() {
+    }
+
+    private static Block house(String name, HouseType type) {
+        return register(name, new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), type));
     }
 
     private static Block register(String name, Block block) {
@@ -65,7 +52,7 @@ public final class ModBlocks {
     public static void init() {
         // Вкладка «Функциональные блоки» — после верстака
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
-                Items.CRAFTING_TABLE, BASE, DENSE_WOOD, CONSTRUCTOR_BLOCK, FARMER_HOUSE, RANCHER_HOUSE,
+                Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
                 COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE));
     }
 }

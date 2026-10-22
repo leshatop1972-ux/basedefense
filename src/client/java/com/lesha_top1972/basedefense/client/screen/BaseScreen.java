@@ -116,15 +116,6 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
 
-        // Вкладка «Потребности»: при наведении на склад — правила расхода
-        if (selectedTab == NEEDS_TAB && mouseX >= contentLeft && mouseX < contentRight
-                && mouseY >= this.y + 90 && mouseY < this.y + 120) {
-            context.drawTooltip(this.textRenderer, List.of(
-                    Text.translatable("screen.basedefense.needs.rule.base"),
-                    Text.translatable("screen.basedefense.needs.rule.constructor"),
-                    Text.translatable("screen.basedefense.needs.rule.big")), mouseX, mouseY);
-        }
-
         // Синий кружок «?» в панели описания — подробности о работе жителя
         if (selectedTech != null && isOverWorkInfo(mouseX, mouseY)) {
             context.drawOrderedTooltip(this.textRenderer,
@@ -444,13 +435,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private void drawNeeds(DrawContext context, int mouseX, int mouseY) {
         int settlers = handler.getProp(BaseScreenHandler.PROP_SETTLERS);
         int food = handler.getProp(BaseScreenHandler.PROP_FOOD);
-        int upkeep = handler.getProp(BaseScreenHandler.PROP_UPKEEP);
-        boolean frozen = food <= SettlementManager.FREEZE_AT || upkeep <= SettlementManager.FREEZE_AT;
+        boolean frozen = food <= SettlementManager.FREEZE_AT;
         int left = this.x + 12;
         int right = contentRight - 6;
 
         // Жители и общее состояние
-        int y1 = this.y + 48;
+        int y1 = this.y + 50;
         context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.settlers", settlers),
                 left, y1, TEXT_DARK, false);
         Text status = settlers == 0 ? Text.translatable("screen.basedefense.needs.status.empty")
@@ -459,46 +449,17 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         context.drawText(this.textRenderer, status, right - this.textRenderer.getWidth(status), y1,
                 settlers == 0 ? TEXT_MUTED : (frozen ? BAD : GOOD), false);
 
-        // Запас еды
-        int y2 = this.y + 62;
+        // Запас еды + полоска
+        int y2 = this.y + 68;
         int foodPerDay = handler.getProp(BaseScreenHandler.PROP_FOOD_DAY);
-        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.food", food),
-                left, y2, counterColor(food), false);
+        context.drawItem(new ItemStack(Items.BREAD), left, y2 - 4);
+        Text foodText = Text.translatable("screen.basedefense.needs.food", food);
+        context.drawText(this.textRenderer, foodText, left + 20, y2, counterColor(food), false);
         Text foodInfo = foodPerDay == 0 ? Text.empty()
                 : food > 0 ? Text.translatable("screen.basedefense.needs.food_days", foodPerDay, food / foodPerDay)
                 : Text.translatable("screen.basedefense.needs.per_day", foodPerDay);
         context.drawText(this.textRenderer, foodInfo, right - this.textRenderer.getWidth(foodInfo), y2, TEXT_MUTED, false);
-
-        // Запас эксплуатации + полоска от -20 до 30
-        int y3 = this.y + 76;
-        Text upkeepText = Text.translatable("screen.basedefense.needs.upkeep", upkeep, SettlementManager.UPKEEP_MAX);
-        context.drawText(this.textRenderer, upkeepText, left, y3, counterColor(upkeep), false);
-        int barLeft = left + this.textRenderer.getWidth(upkeepText) + 8;
-        drawUpkeepBar(context, barLeft, y3 + 1, right, upkeep);
-
-        // Склад ресурсов эксплуатации: есть / нужно в день
-        int y4 = this.y + 92;
-        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.storage"), left, y4, TEXT_BODY, false);
-        int iy = this.y + 102;
-        int ix = left;
-        ix = drawStock(context, new ItemStack(Items.IRON_NUGGET), ix, iy,
-                handler.getProp(BaseScreenHandler.PROP_NUGGETS), settlers * SettlementManager.nuggetsPerSettler(settlers));
-        // Больше 13 жителей — вместо досок нужно плотное дерево
-        if (SettlementManager.usesDenseWood(settlers)) {
-            ix = drawStock(context, new ItemStack(ModBlocks.DENSE_WOOD), ix, iy,
-                    handler.getProp(BaseScreenHandler.PROP_DENSE_WOOD), settlers * SettlementManager.DENSE_WOOD_PER_SETTLER);
-        } else {
-            ix = drawStock(context, new ItemStack(Items.OAK_PLANKS), ix, iy,
-                    handler.getProp(BaseScreenHandler.PROP_PLANKS), settlers * SettlementManager.PLANKS_PER_SETTLER);
-        }
-        ix = drawStock(context, new ItemStack(Items.COBBLESTONE), ix, iy,
-                handler.getProp(BaseScreenHandler.PROP_COBBLE), settlers * SettlementManager.COBBLE_PER_SETTLER);
-        // С 6 жителей — ещё 1 конструкторский блок в день
-        int constructorsNeed = SettlementManager.constructorsPerDay(settlers);
-        int constructorsHave = handler.getProp(BaseScreenHandler.PROP_CONSTRUCTORS);
-        if (constructorsNeed > 0 || constructorsHave > 0) {
-            drawStock(context, new ItemStack(ModBlocks.CONSTRUCTOR_BLOCK), ix, iy, constructorsHave, constructorsNeed);
-        }
+        drawFoodBar(context, left, y2 + 16, right, food);
 
         // Подпись над инвентарём
         context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.inventory"),
@@ -533,29 +494,18 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         return value < 0 ? ACCENT : GOOD;
     }
 
-    private void drawUpkeepBar(DrawContext context, int barLeft, int top, int barRight, int value) {
-        if (barRight - barLeft < 20) {
-            return;
-        }
+    /** Полоска запаса еды: от -20 до максимума, отметка «0». */
+    private void drawFoodBar(DrawContext context, int barLeft, int top, int barRight, int value) {
         int min = SettlementManager.FREEZE_AT;
-        int max = SettlementManager.UPKEEP_MAX;
+        int max = Math.max(200, value);
         int h = 7;
         context.fill(barLeft - 1, top - 1, barRight + 1, top + h + 1, CONTENT_EDGE);
         context.fill(barLeft, top, barRight, top + h, NODE_LOCKED_BG);
         int clamped = Math.max(min, Math.min(max, value));
         int zeroX = barLeft + (barRight - barLeft) * (-min) / (max - min);
         int valueX = barLeft + (barRight - barLeft) * (clamped - min) / (max - min);
-        int color = counterColor(value);
-        context.fill(Math.min(zeroX, valueX), top, Math.max(zeroX, valueX), top + h, color);
+        context.fill(Math.min(zeroX, valueX), top, Math.max(zeroX, valueX), top + h, counterColor(value));
         context.fill(zeroX, top - 1, zeroX + 1, top + h + 1, TEXT_DARK); // отметка «0»
-    }
-
-    /** Иконка ресурса и «есть / нужно в день». @return x для следующего ресурса */
-    private int drawStock(DrawContext context, ItemStack icon, int x, int y, int have, int need) {
-        context.drawItem(icon, x, y);
-        String text = have + "/" + need;
-        context.drawText(this.textRenderer, text, x + 17, y + 4, have >= need ? TEXT_DARK : BAD, false);
-        return x + 17 + this.textRenderer.getWidth(text) + 8;
     }
 
     private void drawSlotFrame(DrawContext context, int sx, int sy, boolean highlight) {
@@ -570,18 +520,9 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         List<Text> lines = new ArrayList<>(super.getTooltipFromItem(stack));
         if (selectedTab == NEEDS_TAB) {
             int food = SettlementItems.foodValue(stack);
-            int nuggets = SettlementItems.nuggetValue(stack);
-            Text extra = null;
             if (food > 0) {
-                extra = Text.translatable("tooltip.basedefense.food_points", food);
-            } else if (nuggets > 0) {
-                extra = Text.translatable("tooltip.basedefense.nuggets", nuggets);
-            } else if (SettlementItems.isPlanks(stack) || SettlementItems.isCobblestone(stack)
-                    || SettlementItems.isDenseWood(stack) || SettlementItems.isConstructor(stack)) {
-                extra = Text.translatable("tooltip.basedefense.upkeep_item");
-            }
-            if (extra != null) {
-                lines.add(extra.copy().styled(s -> s.withColor(GOOD & 0xFFFFFF)));
+                lines.add(Text.translatable("tooltip.basedefense.food_points", food)
+                        .styled(s -> s.withColor(GOOD & 0xFFFFFF)));
             }
         }
         return lines;

@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "basedefense:constructor_block"
+          "name": "basedefense:builder_house"
         }
       ],
       "conditions": [

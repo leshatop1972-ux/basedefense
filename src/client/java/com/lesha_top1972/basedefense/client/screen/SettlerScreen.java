@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.screen;
 
+import com.lesha_top1972.basedefense.entity.BuilderEntity;
 import com.lesha_top1972.basedefense.entity.SettlerEntity;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
@@ -10,6 +11,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 
@@ -42,7 +44,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
 
     public SettlerScreen(SettlerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = 210;
+        this.backgroundWidth = 236;
         this.backgroundHeight = heightFor(1);
     }
 
@@ -110,6 +112,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (frozen) {
             status = Text.translatable("screen.basedefense.settler.status.frozen");
             statusColor = TEXT_BAD;
+        } else if (handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS) > 0) {
+            status = builderStatus();
+            int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
+            statusColor = bs == BuilderEntity.STATUS_MISSING ? TEXT_BAD
+                    : bs == BuilderEntity.STATUS_IDLE ? TEXT_MUTED : TEXT_GOOD;
         } else if (!hasChest) {
             status = Text.translatable("screen.basedefense.settler.status.no_chest", stored);
             statusColor = TEXT_BAD;
@@ -145,6 +152,27 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         int cx = left + (this.backgroundWidth - tw - 18) / 2;
         context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), cx, bottom - 19);
         context.drawTextWithShadow(this.textRenderer, coinText, cx + 18, bottom - 15, TEXT_MUTED);
+    }
+
+    /** Строка состояния строителя: что строит и чего не хватает. */
+    private Text builderStatus() {
+        int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
+        Text house = itemName(handler.getProp(SettlerScreenHandler.PROP_BUILD_HOUSE));
+        return switch (bs) {
+            case BuilderEntity.STATUS_WALKING -> Text.translatable("screen.basedefense.settler.build.walking", house);
+            case BuilderEntity.STATUS_BUILDING -> Text.translatable("screen.basedefense.settler.build.building",
+                    house, handler.getProp(SettlerScreenHandler.PROP_BUILD_PROGRESS));
+            case BuilderEntity.STATUS_MISSING -> Text.translatable("screen.basedefense.settler.build.missing",
+                    itemName(handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING)));
+            default -> Text.translatable("screen.basedefense.settler.build.idle");
+        };
+    }
+
+    private static Text itemName(int rawId) {
+        if (rawId < 0) {
+            return Text.literal("?");
+        }
+        return Registries.ITEM.get(rawId).getName();
     }
 
     /** @param slot место кнопки сверху вниз (0, 1, …) */

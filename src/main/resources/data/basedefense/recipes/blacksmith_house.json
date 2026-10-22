@@ -1,24 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "TAR",
-    " K ",
-    "KKK"
-  ],
-  "key": {
-    "T": {
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:crafting_table"
+    },
+    {
       "item": "minecraft:smithing_table"
-    },
-    "A": {
-      "item": "minecraft:anvil"
-    },
-    "R": {
-      "item": "minecraft:redstone_block"
-    },
-    "K": {
-      "item": "basedefense:constructor_block"
     }
-  },
+  ],
   "result": {
     "item": "basedefense:blacksmith_house",
     "count": 1

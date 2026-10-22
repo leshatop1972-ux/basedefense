@@ -11,8 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Поселение при Базе (одно на сервер): кто в нём живёт, запасы еды и эксплуатации,
- * склад ресурсов. Сохраняется в data/basedefense_settlement.dat в папке мира.
+ * Поселение при Базе (одно на сервер): кто в нём живёт и запас еды. Сохраняется в data/basedefense_settlement.dat в папке мира.
  */
 public class SettlementState extends PersistentState {
 
@@ -21,12 +20,6 @@ public class SettlementState extends PersistentState {
     /** Житель → сколько еды он тратит в день (зависит от работы и уровня). */
     private final Map<UUID, Integer> settlers = new HashMap<>();
     private int food = SettlementManager.START_FOOD;
-    private int upkeep = SettlementManager.START_UPKEEP;
-    private int nuggets;
-    private int planks;
-    private int cobblestone;
-    private int denseWood;
-    private int constructors;
     /** Номер последнего обработанного игрового дня (-1 — ещё не начинали). */
     private long lastDay = -1;
 
@@ -75,66 +68,9 @@ public class SettlementState extends PersistentState {
         markDirty();
     }
 
-    public int getUpkeep() {
-        return upkeep;
-    }
-
-    public void setUpkeep(int upkeep) {
-        this.upkeep = upkeep;
-        markDirty();
-    }
-
-    /** Жители замерли: один из запасов опустился до -20. */
+    /** Жители замерли: запас еды опустился до -20. */
     public boolean isFrozen() {
-        return food <= SettlementManager.FREEZE_AT || upkeep <= SettlementManager.FREEZE_AT;
-    }
-
-    // ---------- Склад ----------
-
-    public int getNuggets() {
-        return nuggets;
-    }
-
-    public void setNuggets(int nuggets) {
-        this.nuggets = nuggets;
-        markDirty();
-    }
-
-    public int getPlanks() {
-        return planks;
-    }
-
-    public void setPlanks(int planks) {
-        this.planks = planks;
-        markDirty();
-    }
-
-    public int getCobblestone() {
-        return cobblestone;
-    }
-
-    public void setCobblestone(int cobblestone) {
-        this.cobblestone = cobblestone;
-        markDirty();
-    }
-
-    public int getDenseWood() {
-        return denseWood;
-    }
-
-    public void setDenseWood(int denseWood) {
-        this.denseWood = denseWood;
-        markDirty();
-    }
-
-    /** Конструкторские блоки на складе. */
-    public int getConstructors() {
-        return constructors;
-    }
-
-    public void setConstructors(int constructors) {
-        this.constructors = constructors;
-        markDirty();
+        return food <= SettlementManager.FREEZE_AT;
     }
 
     // ---------- Дни ----------
@@ -172,14 +108,6 @@ public class SettlementState extends PersistentState {
         if (nbt.contains("Food")) {
             state.food = nbt.getInt("Food");
         }
-        if (nbt.contains("Upkeep")) {
-            state.upkeep = nbt.getInt("Upkeep");
-        }
-        state.nuggets = nbt.getInt("Nuggets");
-        state.planks = nbt.getInt("Planks");
-        state.cobblestone = nbt.getInt("Cobblestone");
-        state.denseWood = nbt.getInt("DenseWood");
-        state.constructors = nbt.getInt("Constructors");
         state.lastDay = nbt.contains("LastDay") ? nbt.getLong("LastDay") : -1;
         return state;
     }
@@ -195,12 +123,6 @@ public class SettlementState extends PersistentState {
         });
         nbt.put("SettlerList", list);
         nbt.putInt("Food", food);
-        nbt.putInt("Upkeep", upkeep);
-        nbt.putInt("Nuggets", nuggets);
-        nbt.putInt("Planks", planks);
-        nbt.putInt("Cobblestone", cobblestone);
-        nbt.putInt("DenseWood", denseWood);
-        nbt.putInt("Constructors", constructors);
         nbt.putLong("LastDay", lastDay);
         return nbt;
     }
