@@ -8,7 +8,10 @@ import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -22,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Меню жителя в общем стиле мода (пергамент в деревянной рамке): имя и уровень,
+ * Меню жителя в общем стиле мода («тёмное стекло» с бирюзой): слева — портрет жителя
+ * (он поворачивается за мышкой, как в MineColonies), справа — имя и уровень,
  * карточка состояния, расход еды и кнопки «Улучшить» (у повара ещё «Отдать еду из руки»).
  * Работа и сбор добычи идут сами: житель складывает всё в сундук своего дома.
  */
@@ -34,11 +38,20 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
     private static final int STATUS_T = 40;      // карточка состояния (от верха окна)
     private static final int STATUS_B = 64;
     private static final int BUTTONS_TOP = 96;
+    /** Ширина панели-портрета слева от окна (вместе с зазором). */
+    private static final int PORTRAIT_W = 78;
 
     public SettlerScreen(SettlerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = 236;
         this.backgroundHeight = heightFor(1);
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        // Окно + портрет слева вместе стоят по центру экрана
+        this.x += PORTRAIT_W / 2;
     }
 
     private static int heightFor(int buttons) {
@@ -87,6 +100,8 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         int right = left + this.backgroundWidth;
         int bottom = top + this.backgroundHeight;
 
+        drawPortrait(context, left - PORTRAIT_W, top, left - 4, Math.min(bottom, top + 132), mouseX, mouseY);
+
         UiKit.panel(context, left, top, right, bottom);
         UiKit.header(context, left + 4, top + 4, right - 4, HEADER_H);
 
@@ -97,7 +112,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         context.drawText(this.textRenderer, profession, left + 11, top + 21, UiKit.TEXT_MUTED, false);
         for (int i = 0; i < SettlerEntity.MAX_LEVEL; i++) {
             int dx = right - 14 - (SettlerEntity.MAX_LEVEL - 1 - i) * 8;
-            UiKit.diamond(context, dx, top + 13, i < level ? UiKit.GOLD : 0xFFBBA987);
+            UiKit.diamond(context, dx, top + 13, i < level ? UiKit.TEAL : 0xFF3A424A);
         }
         Text lv = Text.translatable("screen.basedefense.settler.level_short", level);
         context.drawText(this.textRenderer, lv, right - 10 - this.textRenderer.getWidth(lv), top + 21, UiKit.TEXT_MUTED, false);
@@ -135,6 +150,53 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         int cx = left + (this.backgroundWidth - tw - 18) / 2;
         context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), cx, bottom - 22);
         UiKit.embossed(context, this.textRenderer, coinText, cx + 18, bottom - 18, UiKit.TEXT_BODY);
+    }
+
+    /** Панель с живым портретом жителя: стоит на светящемся «постаменте» и смотрит на мышку. */
+    private void drawPortrait(DrawContext context, int l, int t, int r, int b, int mouseX, int mouseY) {
+        UiKit.panel(context, l, t, r, b);
+        UiKit.inset(context, l + 6, t + 6, r - 6, b - 6, 0x70000000);
+        // Бирюзовый градиент снизу — как подсветка сцены
+        context.fillGradient(l + 6, b - 46, r - 6, b - 6, 0x00000000, 0x4033C9BE);
+        int cx = (l + r) / 2;
+        int feet = b - 16;
+        // Светящийся «постамент» под ногами (эллипс из полосок)
+        context.fill(cx - 22, feet + 1, cx + 22, feet + 2, 0x6033C9BE);
+        context.fill(cx - 17, feet, cx + 17, feet + 3, 0x5033C9BE);
+        context.fill(cx - 11, feet - 1, cx + 11, feet + 4, 0x4033C9BE);
+        context.fill(cx - 22, feet + 1, cx + 22, feet + 2, 0x509BF5EC);
+
+        LivingEntity settler = findSettler();
+        if (settler == null) {
+            return;
+        }
+        // Имя над головой в портрете не нужно (оно есть в заголовке) — на время рисования прячем
+        Text name = settler.getCustomName();
+        boolean nameVisible = settler.isCustomNameVisible();
+        settler.setCustomName(null);
+        settler.setCustomNameVisible(false);
+        try {
+            int size = 44;
+            InventoryScreen.drawEntity(context, cx, feet, size,
+                    (float) (cx - mouseX), (float) (feet - size * 1.6f - mouseY), settler);
+        } finally {
+            settler.setCustomName(name);
+            settler.setCustomNameVisible(nameVisible);
+        }
+    }
+
+    /** Житель в мире клиента по номеру, который прислал сервер. */
+    private LivingEntity findSettler() {
+        if (this.client == null || this.client.world == null) {
+            return null;
+        }
+        int lo = handler.getProp(SettlerScreenHandler.PROP_ENTITY_LO) & 0xFFFF;
+        int hi = handler.getProp(SettlerScreenHandler.PROP_ENTITY_HI) & 0xFFFF;
+        if (lo == 0 && hi == 0) {
+            return null;   // данные с сервера ещё не пришли
+        }
+        Entity entity = this.client.world.getEntityById((hi << 16) | lo);
+        return entity instanceof SettlerEntity living ? living : null;
     }
 
     /** Текст строки состояния. */

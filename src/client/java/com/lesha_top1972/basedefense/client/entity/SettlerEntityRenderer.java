@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import com.lesha_top1972.basedefense.entity.SettlerLooks;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.MobEntityRenderer;
@@ -12,33 +13,44 @@ import net.minecraft.util.Identifier;
 
 /**
  * Отрисовка жителей поселения. Внешность не зависит от профессии: каждому жителю случайно
- * достаётся одна из 8 (5 мужчин, 3 женщины) — textures/entity/settler/male_1..5, female_1..3 (128×64).
- * Для женщин модель включает тонкие руки, грудь, юбку и причёску (см. LOOKS).
+ * достаётся одна из 12 (7 мужчин, 5 женщин, список — SettlerLooks), текстуры 128×64.
+ * Для женщин модель включает тонкие руки, грудь, юбку и причёску; у некоторых — шляпа, кепка
+ * или сумочка на поясе (см. LOOKS).
  */
 public class SettlerEntityRenderer extends MobEntityRenderer<SettlerEntity, SettlerEntityModel> {
 
     public static final EntityModelLayer LAYER =
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "settler"), "main");
 
-    private static final int COUNT = SettlerEntity.MALE_SKINS + SettlerEntity.FEMALE_SKINS;
+    private static final int COUNT = SettlerLooks.COUNT;
     private static final Identifier[] SKINS = new Identifier[COUNT];
 
-    /** Причёски и фигура для каждой внешности (номер = номер текстуры). */
+    private static final int NONE = SettlerEntityModel.HAT_NONE;
+    private static final int BRIM = SettlerEntityModel.HAT_BRIM;
+    private static final int CAP = SettlerEntityModel.HAT_CAP;
+
+    /**
+     * Фигура, причёска и аксессуары для каждой внешности (номер = номер в SettlerLooks).
+     * Должно совпадать с CHARACTERS в tools/settler_textures.py (hair_style, hat, pouch).
+     */
     private static final SettlerEntityModel.Look[] LOOKS = {
-            new SettlerEntityModel.Look(false, false, false),   // male_1
-            new SettlerEntityModel.Look(false, false, false),   // male_2
-            new SettlerEntityModel.Look(false, false, false),   // male_3
-            new SettlerEntityModel.Look(false, false, false),   // male_4
-            new SettlerEntityModel.Look(false, false, false),   // male_5
-            new SettlerEntityModel.Look(true, false, true),     // female_1 — хвост
-            new SettlerEntityModel.Look(true, true, false),     // female_2 — длинные волосы
-            new SettlerEntityModel.Look(true, false, false),    // female_3 — пучок
+            new SettlerEntityModel.Look(false, false, false, NONE, false),   // male_1 — сюртук
+            new SettlerEntityModel.Look(false, false, false, NONE, true),    // male_2 — жилет, сумочка
+            new SettlerEntityModel.Look(false, false, false, NONE, false),   // male_3 — жилет с галстуком
+            new SettlerEntityModel.Look(false, false, false, NONE, true),    // male_4 — рыжий, сумочка
+            new SettlerEntityModel.Look(false, false, false, CAP, false),    // male_5 — седой, кепка
+            new SettlerEntityModel.Look(true, false, true, NONE, false),     // female_1 — хвост
+            new SettlerEntityModel.Look(true, true, false, NONE, false),     // female_2 — длинные волосы
+            new SettlerEntityModel.Look(true, false, false, NONE, false),    // female_3 — пучок и платок
+            new SettlerEntityModel.Look(false, false, false, BRIM, true),    // male_6 — старик, соломенная шляпа
+            new SettlerEntityModel.Look(false, false, false, CAP, false),    // male_7 — парень в кепке
+            new SettlerEntityModel.Look(true, false, true, NONE, true),      // female_4 — рыжая коса, сумочка
+            new SettlerEntityModel.Look(true, false, false, BRIM, false),    // female_5 — каре, шляпа
     };
 
     static {
         for (int i = 0; i < COUNT; i++) {
-            String name = i < SettlerEntity.MALE_SKINS ? "male_" + (i + 1) : "female_" + (i - SettlerEntity.MALE_SKINS + 1);
-            SKINS[i] = new Identifier(Basedefense.MOD_ID, "textures/entity/settler/" + name + ".png");
+            SKINS[i] = new Identifier(Basedefense.MOD_ID, "textures/entity/settler/" + SettlerLooks.NAMES[i] + ".png");
         }
     }
 

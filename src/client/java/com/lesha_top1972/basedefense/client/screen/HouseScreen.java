@@ -21,7 +21,7 @@ import java.util.Map;
 import static com.lesha_top1972.basedefense.client.screen.UiKit.*;
 
 /**
- * Меню стройплощадки — «чертёж» дома: что делает строитель, общая готовность
+ * Меню стройплощадки (стиль «тёмное стекло») — «чертёж» дома: что делает строитель, общая готовность
  * и карточка на каждый материал: сколько уже поставлено из скольких и сколько лежит
  * в сундуках строителя. Колёсико мыши прокручивает список.
  */
@@ -116,7 +116,7 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         Text pct = Text.translatable("screen.basedefense.house.progress", percent);
         int pillW = this.textRenderer.getWidth(pct) + 8;
         pill(context, this.textRenderer, right - 12 - pillW, top + 9, pct,
-                percent >= 100 ? 0xFFB9D68E : 0xFFEAD7A8, percent >= 100 ? GOOD : TEXT_DARK);
+                percent >= 100 ? 0xC0234A33 : 0xC0123A38, percent >= 100 ? GOOD_LIGHT : TEAL_LIGHT);
 
         // Состояние стройки: значок + текст
         int statusY = top + HEADER_H + 11;
@@ -146,7 +146,7 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         // Полоса прокрутки
         if (maxScroll() > 0) {
             int trackL = listR + 5;
-            context.fill(trackL, listT - 2, trackL + 3, listB + 2, 0x33000000);
+            context.fill(trackL, listT - 2, trackL + 3, listB + 2, 0x80000000);
             int thumbH = Math.max(12, (listB - listT + 4) * VISIBLE_ROWS / rows());
             int thumbT = listT - 2 + (listB - listT + 4 - thumbH) * scroll / maxScroll();
             context.fill(trackL, thumbT, trackL + 3, thumbT + thumbH, GOLD);
@@ -161,9 +161,9 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         int have = handler.getProp(HouseScreenHandler.PROP_AVAILABLE + index);
         boolean complete = left == 0;
 
-        card(context, cx, cy, cx + CELL_W, cy + CELL_H, complete ? 0xFFE3EDC8 : 0xFFFCF6E6, hover);
+        card(context, cx, cy, cx + CELL_W, cy + CELL_H, complete ? 0xB01A3A2B : (hover ? CARD_HOVER : CARD), hover);
         // Иконка в маленьком «гнезде»
-        context.fill(cx + 3, cy + 3, cx + 21, cy + 21, complete ? 0x2A4F7F2E : 0x18000000);
+        context.fill(cx + 3, cy + 3, cx + 21, cy + 21, complete ? 0x403FAF6E : 0x60000000);
         context.drawItem(new ItemStack(item), cx + 4, cy + 4);
 
         // Сколько поставлено из скольких
@@ -177,7 +177,7 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
 
         // Тонкая полоска внизу карточки: доля поставленного
         int barL = cx + 3, barR = cx + CELL_W - 3, barY = cy + CELL_H - 4;
-        context.fill(barL, barY, barR, barY + 2, 0x22000000);
+        context.fill(barL, barY, barR, barY + 2, 0x80000000);
         int w = total == 0 ? 0 : (barR - barL) * done / total;
         if (w > 0) {
             context.fill(barL, barY, barL + w, barY + 2, complete ? GOOD_LIGHT : GOLD);

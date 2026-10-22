@@ -28,44 +28,32 @@ import java.util.List;
  * Экран меню базы: заголовок «База», строка вкладок и область с древом исследований.
  * Клик по квадратику технологии открывает справа панель с описанием и кнопкой «Исследовать».
  * Вкладка «Потребности» — запасы поселения, склад и слот, куда кладут еду и ресурсы.
- * Всё рисуется кодом (заливками, стиль — UiKit), поэтому окно подстраивается под размер экрана.
+ * Всё рисуется кодом (заливками, стиль «тёмное стекло» — UiKit), поэтому окно подстраивается под размер экрана.
  */
 public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
-    // ---------- Палитра (бежевые оттенки) ----------
-    private static final int SHADOW        = 0x55000000;
-    private static final int FRAME_DARK    = 0xFF5C4630;
-    private static final int FRAME_LIGHT   = 0xFFFFF7E3;
-    private static final int FRAME_MID     = 0xFFB89B6E;
-    private static final int PANEL         = 0xFFE6D3AB;
-    private static final int HEADER        = 0xFFD8C08F;
-    private static final int TAB_IDLE      = 0xFFD2BA88;
-    private static final int TAB_HOVER     = 0xFFE0CB9E;
-    private static final int CONTENT       = 0xFFF2E7CC;
-    private static final int CONTENT_EDGE  = 0xFF9C8058;
-    private static final int GRID_DOT      = 0x22745A38;
-    private static final int TEXT_DARK     = 0xFF4A3622;
-    private static final int TEXT_BODY     = 0xFF6A5236;
-    private static final int TEXT_MUTED    = 0xFF8F7550;
-    private static final int ACCENT        = 0xFFB0782F;
+    // ---------- Палитра (тёмное стекло + бирюза, основа — UiKit) ----------
+    private static final int CONTENT       = UiKit.CONTENT;
+    private static final int GRID_DOT      = 0x1433C9BE;
+    private static final int TEXT_DARK     = UiKit.TEXT_DARK;
+    private static final int TEXT_BODY     = UiKit.TEXT_BODY;
+    private static final int TEXT_MUTED    = UiKit.TEXT_MUTED;
+    private static final int ACCENT        = UiKit.TEAL;
 
-    private static final int NODE_BG       = 0xFFE9D9B4;
-    private static final int NODE_BG_HOVER = 0xFFF4E8CC;
-    private static final int NODE_EDGE     = 0xFF8C6E45;
-    private static final int NODE_DONE_BG  = 0xFFDCE6BE;
-    private static final int NODE_DONE_EDGE = 0xFF5E8C3A;
-    private static final int NODE_LOCKED_BG = 0xFFD9CDB2;
-    private static final int NODE_LOCKED_EDGE = 0xFFA89A80;
-    private static final int LOCK_OVERLAY  = 0x99E2D6BC;
-    private static final int LINK_OPEN     = 0xFF7FA35A;
-    private static final int LINK_CLOSED   = 0xFFB5A27F;
+    private static final int NODE_BG       = 0xC0222830;
+    private static final int NODE_BG_HOVER = 0xD02E3842;
+    private static final int NODE_EDGE     = 0xFF4A5560;
+    private static final int NODE_DONE_BG  = 0xC01A3A2E;
+    private static final int NODE_DONE_EDGE = 0xFF3FAF6E;
+    private static final int NODE_LOCKED_BG = 0xA0141619;
+    private static final int NODE_LOCKED_EDGE = 0xFF2C3238;
+    private static final int LOCK_OVERLAY  = 0xA0101215;
+    private static final int LINK_OPEN     = UiKit.TEAL;
+    private static final int LINK_CLOSED   = 0xFF353D45;
 
-    private static final int INFO_BG       = 0xFFFBF4E2;
-    private static final int BUTTON        = 0xFFC9A66B;
-    private static final int BUTTON_HOVER  = 0xFFD9B67A;
-    private static final int BUTTON_EDGE   = 0xFF7A5A30;
-    private static final int GOOD          = 0xFF4F7F2E;
-    private static final int BAD           = 0xFFB03A2E;
+    private static final int INFO_BG       = 0xE00E1114;
+    private static final int GOOD          = UiKit.GOOD;
+    private static final int BAD           = UiKit.BAD;
 
     // ---------- Размеры ----------
     private static final int HEADER_H = 20;
@@ -84,8 +72,8 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     };
     /** Номер вкладки «Потребности». */
     private static final int NEEDS_TAB = 1;
-    private static final int INFO_CIRCLE = 0xFF3B7DD8;
-    private static final int INFO_CIRCLE_HOVER = 0xFF5A9BF0;
+    private static final int INFO_CIRCLE = 0xFF1E9E95;
+    private static final int INFO_CIRCLE_HOVER = 0xFF33C9BE;
 
     private int selectedTab = 0;
     @Nullable
@@ -161,7 +149,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         Text settlers = Text.translatable("screen.basedefense.base.settlers_short",
                 handler.getProp(BaseScreenHandler.PROP_SETTLERS));
         UiKit.pill(context, this.textRenderer, coinsLeft - 12 - this.textRenderer.getWidth(settlers) - 8,
-                headerTop + 4, settlers, 0xFFEAD7A8, TEXT_BODY);
+                headerTop + 4, settlers, UiKit.TEAL_LIGHT);
 
         // Область контента
         UiKit.inset(context, contentLeft, contentTop, contentRight, contentBottom, CONTENT);
@@ -233,27 +221,27 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         if (selected) {
             // Выбранная вкладка «сливается» с областью контента
             context.fill(tabLeft - 1, top - 1, tabRight + 1, bottom, UiKit.INSET_DARK);
-            context.fill(tabLeft, top, tabRight, bottom + 1, CONTENT);
-            context.fill(tabLeft, top, tabRight, top + 2, UiKit.GOLD);
-            context.fill(tabLeft, top, tabRight, top + 1, UiKit.GOLD_LIGHT);
+            context.fillGradient(tabLeft, top, tabRight, bottom, 0x6033C9BE, 0x18167A73);
+            context.fill(tabLeft, top, tabRight, top + 2, UiKit.TEAL);
+            context.fill(tabLeft, top, tabRight, top + 1, UiKit.TEAL_LIGHT);
         } else {
             context.fill(tabLeft - 1, top - 1, tabRight + 1, bottom - 1, UiKit.INSET_DARK);
             context.fillGradient(tabLeft, top, tabRight, bottom - 1,
-                    hovered ? 0xFFF0DFB4 : UiKit.HEADER_TOP, hovered ? 0xFFE0C792 : UiKit.HEADER_BOTTOM);
-            context.fill(tabLeft, top, tabRight, top + 1, 0x66FFFFFF);
+                    hovered ? 0xD0323C46 : UiKit.HEADER_TOP, hovered ? 0xD0242B32 : UiKit.HEADER_BOTTOM);
+            context.fill(tabLeft, top, tabRight, top + 1, hovered ? UiKit.TEAL_DARK : 0x14FFFFFF);
         }
 
         Text label = TABS[index];
         int textX = tabLeft + (tabW - this.textRenderer.getWidth(label)) / 2;
         int textY = top + (bottom - top - this.textRenderer.fontHeight) / 2 + 1;
-        UiKit.embossed(context, this.textRenderer, label, textX, textY, selected ? TEXT_DARK : TEXT_MUTED);
+        UiKit.embossed(context, this.textRenderer, label, textX, textY, selected ? 0xFFFFFFFF : (hovered ? TEXT_BODY : TEXT_MUTED));
     }
 
     private void drawGrid(DrawContext context) {
         for (int gx = contentLeft + 8; gx < contentRight - 2; gx += 12) {
             for (int gy = contentTop + 8; gy < contentBottom - 2; gy += 12) {
                 context.fill(gx, gy, gx + 1, gy + 1, ((gx - contentLeft) / 12 + (gy - contentTop) / 12) % 4 == 0
-                        ? 0x33745A38 : GRID_DOT);
+                        ? 0x3033C9BE : GRID_DOT);
             }
         }
     }
@@ -271,20 +259,21 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
         // Мягкая тень, рамка, фон с градиентом, фаска; у выбранного — золотая рамка с заклёпками
         context.fill(nx + 1, ny + 2, nx + NODE + 2, ny + NODE + 2, 0x2A000000);
-        context.fill(nx, ny, nx + NODE, ny + NODE, edge);
+        // Фон полупрозрачный, поэтому рамку рисуем контуром, а не залитым квадратом под фоном
+        UiKit.outline(context, nx, ny, nx + NODE, ny + NODE, edge);
+        if (selected) {
+            UiKit.outline(context, nx + 1, ny + 1, nx + NODE - 1, ny + NODE - 1, edge);
+        }
         int inset = selected ? 2 : 1;
         context.fillGradient(nx + inset, ny + inset, nx + NODE - inset, ny + NODE - inset,
                 lighten(bg), bg);
-        context.fill(nx + inset, ny + inset, nx + NODE - inset, ny + inset + 1, 0x77FFFFFF);
-        context.fill(nx + inset, ny + NODE - inset - 1, nx + NODE - inset, ny + NODE - inset, 0x1A000000);
+        context.fill(nx + inset, ny + inset, nx + NODE - inset, ny + inset + 1, 0x22FFFFFF);
+        context.fill(nx + inset, ny + NODE - inset - 1, nx + NODE - inset, ny + NODE - inset, 0x30000000);
         if (selected) {
-            context.fill(nx + 1, ny + 1, nx + NODE - 1, ny + 2, UiKit.GOLD_LIGHT);
-            UiKit.rivet(context, nx - 1, ny - 1);
-            UiKit.rivet(context, nx + NODE - 2, ny - 1);
-            UiKit.rivet(context, nx - 1, ny + NODE - 2);
-            UiKit.rivet(context, nx + NODE - 2, ny + NODE - 2);
+            UiKit.outline(context, nx - 2, ny - 2, nx + NODE + 2, ny + NODE + 2, UiKit.TEAL_GLOW);
+            UiKit.corners(context, nx - 1, ny - 1, nx + NODE + 1, ny + NODE + 1, 6, UiKit.TEAL_LIGHT);
         } else if (hovered && !locked) {
-            UiKit.outline(context, nx - 1, ny - 1, nx + NODE + 1, ny + NODE + 1, 0x88C99A3E);
+            UiKit.outline(context, nx - 1, ny - 1, nx + NODE + 1, ny + NODE + 1, UiKit.TEAL_GLOW);
         }
 
         context.drawItem(new ItemStack(tech.getIcon()), nx + (NODE - 16) / 2, ny + (NODE - 16) / 2);
@@ -294,7 +283,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 300);
             context.fill(nx + 1, ny + 1, nx + NODE - 1, ny + NODE - 1, LOCK_OVERLAY);
-            drawLock(context, nx + NODE - 8, ny + NODE - 9);
+            UiKit.lock(context, nx + NODE - 10, ny + NODE - 11);
             context.getMatrices().pop();
         }
 
@@ -308,12 +297,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         }
     }
 
-    /** Чуть светлее цвет (для верха градиента). */
+    /** Чуть светлее цвет (для верха градиента); прозрачность сохраняется. */
     private static int lighten(int color) {
         int r = Math.min(255, ((color >> 16) & 0xFF) + 14);
         int g = Math.min(255, ((color >> 8) & 0xFF) + 14);
         int b = Math.min(255, (color & 0xFF) + 14);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
+        return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
     }
 
     /** Линия от предыдущей технологии в цепочке к этой. */
@@ -340,16 +329,6 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         }
     }
 
-    /** Маленький замочек 6×7 пикселей. */
-    private void drawLock(DrawContext context, int x, int y) {
-        int body = 0xFF7A6A50;
-        context.fill(x + 1, y, x + 5, y + 1, body);
-        context.fill(x + 1, y, x + 2, y + 3, body);
-        context.fill(x + 4, y, x + 5, y + 3, body);
-        context.fill(x, y + 3, x + 6, y + 7, body);
-        context.fill(x + 2, y + 4, x + 4, y + 6, 0xFFE2D6BC);
-    }
-
     /** Квадратик не рисуем, если его закрывает панель описания. */
     private boolean isNodeVisible(Technology tech) {
         return selectedTech == null || getNodeX(tech) + NODE < getInfoLeft() - 4;
@@ -363,25 +342,23 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int pw = pr - pl;
 
         // Фон панели: карточка с полосой-заголовком
-        context.fill(pl + 2, pt + 3, pr + 3, pb + 3, 0x26000000);
-        context.fill(pl - 1, pt - 1, pr + 1, pb + 1, UiKit.WOOD);
+        context.fill(pl + 2, pt + 3, pr + 3, pb + 3, 0x50000000);
+        UiKit.outline(context, pl - 1, pt - 1, pr + 1, pb + 1, UiKit.FRAME);
         context.fill(pl, pt, pr, pb, INFO_BG);
-        context.fillGradient(pl, pt, pr, pt + 26, UiKit.HEADER_TOP, 0xFFF3E6C4);
-        context.fill(pl, pt, pr, pt + 2, UiKit.GOLD);
-        context.fill(pl, pt, pr, pt + 1, UiKit.GOLD_LIGHT);
-        UiKit.rivet(context, pl - 1, pt - 1);
-        UiKit.rivet(context, pr - 2, pt - 1);
+        context.fillGradient(pl, pt, pr, pt + 26, 0x5033C9BE, 0x00000000);
+        context.fill(pl, pt, pr, pt + 1, UiKit.TEAL);
+        UiKit.corners(context, pl - 1, pt - 1, pr + 1, pb + 1, 5, UiKit.TEAL);
 
         // Кнопка закрытия ×
         boolean closeHovered = isOverClose(mouseX, mouseY);
-        context.drawText(this.textRenderer, "×", pr - 10, pt + 5, closeHovered ? BAD : TEXT_MUTED, false);
+        context.drawText(this.textRenderer, "×", pr - 10, pt + 5, closeHovered ? BAD : TEXT_BODY, false);
 
         // Синий кружок «?» — наведи, чтобы узнать про работу жителя
         drawInfoCircle(context, pr - 27, pt + 6, isOverWorkInfo(mouseX, mouseY));
 
         // Заголовок: иконка + название
         context.drawItem(new ItemStack(tech.getIcon()), pl + 6, pt + 6);
-        UiKit.embossed(context, this.textRenderer, tech.getName(), pl + 26, pt + 10, TEXT_DARK);
+        UiKit.embossed(context, this.textRenderer, tech.getName(), pl + 26, pt + 10, 0xFFFFFFFF);
         UiKit.divider(context, pl + 6, pr - 6, pt + 26);
 
         // Описание (переносится по словам)
@@ -414,7 +391,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         boolean locked = !done && !handler.isAvailable(tech);
         int costY = pb - 46;
         Text costText = Text.translatable("screen.basedefense.base.cost", tech.getCost());
-        UiKit.inset(context, pl + 4, costY - 2, pr - 4, costY + 18, 0xFFF6ECD4);
+        UiKit.inset(context, pl + 4, costY - 2, pr - 4, costY + 18, 0x90000000);
         UiKit.embossed(context, this.textRenderer, costText, pl + 6, costY + 4, TEXT_DARK);
         int coinX = pl + 6 + this.textRenderer.getWidth(costText) + 2;
         context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), coinX, costY);
@@ -458,7 +435,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
         // Жители и общее состояние
         int y1 = this.y + 60;
-        UiKit.card(context, left - 4, y1 - 6, right + 4, y1 + 40, 0xFFFBF4E2, false);
+        UiKit.card(context, left - 4, y1 - 6, right + 4, y1 + 40, UiKit.CARD, false);
         context.drawItem(new ItemStack(ModItems.FARMER_SPAWN_EGG), left, y1 - 4);
         UiKit.embossed(context, this.textRenderer, Text.translatable("screen.basedefense.needs.settlers", settlers),
                 left + 20, y1, TEXT_DARK);
@@ -510,7 +487,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         if (value <= SettlementManager.FREEZE_AT) {
             return BAD;
         }
-        return value < 0 ? ACCENT : GOOD;
+        return value < 0 ? UiKit.WARN : GOOD;
     }
 
     /** Полоска запаса еды: от -20 до максимума, отметка «0». */
@@ -518,14 +495,14 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int min = SettlementManager.FREEZE_AT;
         int max = Math.max(200, value);
         int h = 6;
-        UiKit.inset(context, barLeft, top, barRight, top + h, 0xFFE8DCC0);
+        UiKit.inset(context, barLeft, top, barRight, top + h, 0xA0000000);
         int clamped = Math.max(min, Math.min(max, value));
         int zeroX = barLeft + (barRight - barLeft) * (-min) / (max - min);
         int valueX = barLeft + (barRight - barLeft) * (clamped - min) / (max - min);
         int color = counterColor(value);
         context.fillGradient(Math.min(zeroX, valueX), top, Math.max(zeroX, valueX), top + h, lighten(lighten(color)), color);
         context.fill(Math.min(zeroX, valueX), top, Math.max(zeroX, valueX), top + 1, 0x55FFFFFF);
-        context.fill(zeroX, top - 1, zeroX + 1, top + h + 1, TEXT_DARK); // отметка «0»
+        context.fill(zeroX, top - 1, zeroX + 1, top + h + 1, 0xFFFFFFFF); // отметка «0»
     }
 
     private void drawSlotFrame(DrawContext context, int sx, int sy, boolean highlight) {
