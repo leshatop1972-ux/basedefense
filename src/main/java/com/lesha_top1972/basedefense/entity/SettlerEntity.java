@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.entity;
 
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
+import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
 import net.minecraft.block.BlockState;
@@ -10,9 +11,11 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
+import net.minecraft.entity.ai.goal.LongDoorInteractGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -64,8 +67,10 @@ public abstract class SettlerEntity extends PathAwareEntity {
     public static final int MAX_LEVEL = 3;
     /** Цена улучшения в монетах: [уровень сейчас] → цена перехода на следующий. */
     private static final int[] UPGRADE_COST = {0, 20, 60};
-    /** Сколько раз в день житель «тянет» добычу из списка. */
+    /** Сколько раз в день житель «тянет» добычу из списка (по умолчанию). */
     public static final int LOOT_ROLLS_PER_DAY = 3;
+    /** Сколько очков продуктов житель (повар) может хранить. */
+    public static final int INGREDIENTS_MAX = 300;
     private static final int STORAGE_SIZE = 27;
 
     private static final TrackedData<Integer> LEVEL =
@@ -78,12 +83,19 @@ public abstract class SettlerEntity extends PathAwareEntity {
     private long lastWorkDay = -1;
     /** Что житель добыл и ещё не отдал игроку. */
     private final SimpleInventory storage = new SimpleInventory(STORAGE_SIZE);
+    /** Очки продуктов, которые игрок отдал жителю (для повара). */
+    private int ingredients;
     /** Игрок, у которого сейчас открыто меню этого жителя (житель стоит и смотрит на него). */
     @Nullable
     private PlayerEntity interactingPlayer;
 
     protected SettlerEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
+        // Умеет открывать двери (иначе не выйдет из дома на огород)
+        if (this.getNavigation() instanceof MobNavigation navigation) {
+            navigation.setCanPathThroughDoors(true);
+            navigation.setCanEnterOpenDoors(true);
+        }
     }
 
     public static DefaultAttributeContainer.Builder createSettlerAttributes() {
@@ -103,6 +115,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
     protected void initGoals() {
         this.goalSelector.add(0, new StandStillGoal(this));   // нет запасов или открыто меню — стоит
         this.goalSelector.add(1, new SwimGoal(this));
+        this.goalSelector.add(1, new LongDoorInteractGoal(this, true));   // открывает и закрывает двери
         this.goalSelector.add(2, new ReturnHomeGoal(this));
         this.goalSelector.add(3, new WorkGoal(this));         // работает (грядки, загон…)
         this.goalSelector.add(4, new GoToWalkTargetGoal(this, 0.8));
@@ -124,6 +137,29 @@ public abstract class SettlerEntity extends PathAwareEntity {
     /** Сколько еды тратит житель в день, когда работает. */
     public int getWorkFood(int level) {
         return SettlementManager.FOOD_PER_SETTLER;
+    }
+
+    /** Сколько раз в день житель выбирает добычу из списка. */
+    public int getLootRolls() {
+        return LOOT_ROLLS_PER_DAY;
+    }
+
+    /** Принимает ли житель продукты от игрока (повар). */
+    public boolean acceptsIngredients() {
+        return false;
+    }
+
+    /** Сколько очков продуктов нужно на один рабочий день (для повара). */
+    public int getIngredientsPerDay() {
+        return 0;
+    }
+
+    public int getIngredients() {
+        return ingredients;
+    }
+
+    protected void setIngredients(int value) {
+        this.ingredients = Math.max(0, Math.min(INGREDIENTS_MAX, value));
     }
 
     /** Возле каких блоков житель работает (фермер — пашня, скотовод — сено и т.д.). */
@@ -244,15 +280,50 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 .formatted(Formatting.GREEN), true);
     }
 
-    /** Добыча за один рабочий день. */
-    private void produceOneDay() {
+    /** Кнопка 4 (повар): отдать жителю еду из руки — она превращается в очки продуктов. */
+    public void takeIngredientsFromHand(PlayerEntity player) {
+        if (!acceptsIngredients()) {
+            return;
+        }
+        ItemStack hand = player.getMainHandStack();
+        int value = SettlementItems.foodValue(hand);
+        if (value <= 0) {
+            player.sendMessage(Text.translatable("message.basedefense.settler.need_food_in_hand")
+                    .formatted(Formatting.RED), true);
+            return;
+        }
+        int space = INGREDIENTS_MAX - ingredients;
+        int count = Math.min(hand.getCount(), space / value);
+        if (count <= 0) {
+            player.sendMessage(Text.translatable("message.basedefense.settler.ingredients_full")
+                    .formatted(Formatting.YELLOW), true);
+            return;
+        }
+        hand.decrement(count);
+        setIngredients(ingredients + count * value);
+        this.playSound(SoundEvents.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
+        player.sendMessage(Text.translatable("message.basedefense.settler.ingredients_added",
+                count * value, ingredients).formatted(Formatting.GREEN), true);
+    }
+
+    /** Добыча за один рабочий день: getLootRolls() раз берётся случайный вариант из списка. */
+    protected void produceOneDay() {
         List<WorkLoot> loot = getWorkLoot(getLevel());
         if (loot == null || loot.isEmpty()) {
             return;
         }
-        for (int i = 0; i < LOOT_ROLLS_PER_DAY; i++) {
-            WorkLoot pick = loot.get(this.random.nextInt(loot.size()));
-            storage.addStack(new ItemStack(pick.item(), pick.count())); // если хранилище полно — лишнее пропадает
+        for (int i = 0; i < getLootRolls(); i++) {
+            addLoot(loot.get(this.random.nextInt(loot.size())));
+        }
+    }
+
+    /** Положить добычу в хранилище жителя (если оно полно — лишнее пропадает). */
+    protected void addLoot(WorkLoot pick) {
+        int count = pick.rollCount(this.random);
+        while (count > 0) {
+            int part = Math.min(count, pick.item().getMaxCount());
+            storage.addStack(new ItemStack(pick.item(), part));
+            count -= part;
         }
     }
 
@@ -266,8 +337,15 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (hand != Hand.MAIN_HAND || !hasJob()) {
+        if (hand != Hand.MAIN_HAND) {
             return super.interactMob(player, hand);
+        }
+        if (!hasJob()) {
+            if (!this.getWorld().isClient) {
+                player.sendMessage(Text.translatable("message.basedefense.settler.no_job", this.getDisplayName())
+                        .formatted(Formatting.GRAY), true);
+            }
+            return ActionResult.success(this.getWorld().isClient);
         }
         if (!this.getWorld().isClient) {
             player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
@@ -366,6 +444,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         nbt.putBoolean("Working", working);
         nbt.putLong("LastWorkDay", lastWorkDay);
         nbt.put("Storage", storage.toNbtList());
+        nbt.putInt("Ingredients", ingredients);
     }
 
     @Override
@@ -378,6 +457,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         working = nbt.getBoolean("Working");
         lastWorkDay = nbt.contains("LastWorkDay") ? nbt.getLong("LastWorkDay") : -1;
         storage.readNbtList(nbt.getList("Storage", NbtElement.COMPOUND_TYPE));
+        ingredients = nbt.getInt("Ingredients");
     }
 
     // ---------- Звуки (пока как у обычного жителя) ----------
@@ -526,8 +606,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 return null;
             }
             List<BlockPos> found = new ArrayList<>();
-            for (BlockPos pos : BlockPos.iterate(home.add(-SEARCH_RADIUS, -3, -SEARCH_RADIUS),
-                    home.add(SEARCH_RADIUS, 2, SEARCH_RADIUS))) {
+            // Вниз ищем глубоко — шахтёр работает в шахте под землёй
+            for (BlockPos pos : BlockPos.iterate(home.add(-SEARCH_RADIUS, -12, -SEARCH_RADIUS),
+                    home.add(SEARCH_RADIUS, 3, SEARCH_RADIUS))) {
                 if (settler.isWorkSpot(settler.getWorld().getBlockState(pos))) {
                     found.add(pos.toImmutable());
                 }

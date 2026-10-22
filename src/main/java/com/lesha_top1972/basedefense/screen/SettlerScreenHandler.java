@@ -12,7 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Меню жителя (открывается кликом по жителю).
- * Кнопки: 0 — начать/закончить работу, 1 — забрать добычу, 2 — улучшить.
+ * Кнопки: 0 — начать/закончить работу, 1 — забрать добычу, 2 — улучшить,
+ * 3 — отдать еду из руки (только у повара).
  * Состояние жителя передаётся клиенту через PropertyDelegate.
  */
 public class SettlerScreenHandler extends ScreenHandler {
@@ -20,13 +21,18 @@ public class SettlerScreenHandler extends ScreenHandler {
     public static final int BUTTON_WORK = 0;
     public static final int BUTTON_LOOT = 1;
     public static final int BUTTON_UPGRADE = 2;
+    public static final int BUTTON_INGREDIENTS = 3;   // только у повара
 
     public static final int PROP_LEVEL = 0;
     public static final int PROP_WORKING = 1;
     public static final int PROP_STORED = 2;
     public static final int PROP_FROZEN = 3;
     public static final int PROP_WORK_FOOD = 4;   // сколько ест в день, когда работает
-    public static final int PROP_COUNT = 5;
+    public static final int PROP_ROLLS = 5;        // сколько раз в день выбирается добыча
+    public static final int PROP_ACCEPTS = 6;      // принимает продукты (повар) — 1
+    public static final int PROP_INGREDIENTS = 7;  // сколько очков продуктов у жителя
+    public static final int PROP_INGREDIENTS_DAY = 8; // сколько продуктов уходит за день
+    public static final int PROP_COUNT = 9;
 
     /** Житель (только на сервере; на клиенте null). */
     @Nullable
@@ -55,6 +61,10 @@ public class SettlerScreenHandler extends ScreenHandler {
                     case PROP_FROZEN -> settler.getServer() != null
                             && SettlementManager.isFrozen(settler.getServer()) ? 1 : 0;
                     case PROP_WORK_FOOD -> settler.getWorkFood(settler.getLevel());
+                    case PROP_ROLLS -> settler.getLootRolls();
+                    case PROP_ACCEPTS -> settler.acceptsIngredients() ? 1 : 0;
+                    case PROP_INGREDIENTS -> settler.getIngredients();
+                    case PROP_INGREDIENTS_DAY -> settler.getIngredientsPerDay();
                     default -> 0;
                 };
             }
@@ -85,6 +95,7 @@ public class SettlerScreenHandler extends ScreenHandler {
             case BUTTON_WORK -> settler.toggleWork(player);
             case BUTTON_LOOT -> settler.giveLoot(player);
             case BUTTON_UPGRADE -> settler.tryUpgrade(player);
+            case BUTTON_INGREDIENTS -> settler.takeIngredientsFromHand(player);
             default -> {
                 return false;
             }

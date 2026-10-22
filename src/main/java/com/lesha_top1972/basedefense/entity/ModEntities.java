@@ -27,11 +27,35 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
+    public static final EntityType<CookEntity> COOK = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "cook"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, CookEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
+    public static final EntityType<MinerEntity> MINER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "miner"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, MinerEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
+    public static final EntityType<BlacksmithEntity> BLACKSMITH = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "blacksmith"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, BlacksmithEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
     private ModEntities() {
     }
 
     public static void init() {
         FabricDefaultAttributeRegistry.register(FARMER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(RANCHER, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(COOK, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(MINER, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
     }
 }

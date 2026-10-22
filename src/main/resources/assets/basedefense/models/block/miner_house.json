@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/miner_house_side",
+    "up": "basedefense:block/miner_house_top",
+    "down": "basedefense:block/miner_house_bottom",
+    "north": "basedefense:block/miner_house_front",
+    "south": "basedefense:block/miner_house_side",
+    "east": "basedefense:block/miner_house_side",
+    "west": "basedefense:block/miner_house_side"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/cook_house_side",
+    "up": "basedefense:block/cook_house_top",
+    "down": "basedefense:block/cook_house_bottom",
+    "north": "basedefense:block/cook_house_front",
+    "south": "basedefense:block/cook_house_side",
+    "east": "basedefense:block/cook_house_side",
+    "west": "basedefense:block/cook_house_side"
+  }
+}

@@ -303,9 +303,10 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int y1 = getNodeY(from) + NODE / 2;
         int x2 = getNodeX(tech) + NODE / 2;
         int y2 = getNodeY(tech) + NODE / 2;
-        // Г-образная линия толщиной 2 пикселя: сначала по горизонтали, потом по вертикали
-        context.fill(Math.min(x1, x2), y1 - 1, Math.max(x1, x2) + 1, y1 + 1, color);
-        context.fill(x2 - 1, Math.min(y1, y2), x2 + 1, Math.max(y1, y2) + 1, color);
+        // Г-образная линия толщиной 2 пикселя: сначала вниз/вверх, потом вбок
+        // (так ветка на другой строке не проходит сквозь соседний квадратик)
+        context.fill(x1 - 1, Math.min(y1, y2), x1 + 1, Math.max(y1, y2) + 1, color);
+        context.fill(Math.min(x1, x2), y2 - 1, Math.max(x1, x2) + 1, y2 + 1, color);
     }
 
     /** Маленький замочек 6×7 пикселей. */

@@ -24,6 +24,18 @@ public final class ModItems {
     public static final Item RANCHER_SPAWN_EGG = register("rancher_spawn_egg",
             new SpawnEggItem(ModEntities.RANCHER, 0xA83A2E, 0x8B5A2B, new Item.Settings()));
 
+    /** Яйцо призыва повара. */
+    public static final Item COOK_SPAWN_EGG = register("cook_spawn_egg",
+            new SpawnEggItem(ModEntities.COOK, 0xF2F2F2, 0xC0392B, new Item.Settings()));
+
+    /** Яйцо призыва шахтёра. */
+    public static final Item MINER_SPAWN_EGG = register("miner_spawn_egg",
+            new SpawnEggItem(ModEntities.MINER, 0x4A4A55, 0xF0B429, new Item.Settings()));
+
+    /** Яйцо призыва кузнеца. */
+    public static final Item BLACKSMITH_SPAWN_EGG = register("blacksmith_spawn_egg",
+            new SpawnEggItem(ModEntities.BLACKSMITH, 0x2B2B2B, 0x8B5A2B, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -36,6 +48,9 @@ public final class ModItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(FARMER_SPAWN_EGG);
             entries.add(RANCHER_SPAWN_EGG);
+            entries.add(COOK_SPAWN_EGG);
+            entries.add(MINER_SPAWN_EGG);
+            entries.add(BLACKSMITH_SPAWN_EGG);
         });
     }
 }

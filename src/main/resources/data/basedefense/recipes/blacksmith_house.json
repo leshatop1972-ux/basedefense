@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KAK",
+    "KBK",
+    "KFK"
+  ],
+  "key": {
+    "K": {
+      "item": "basedefense:constructor_block"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "B": {
+      "item": "minecraft:blast_furnace"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "result": {
+    "item": "basedefense:blacksmith_house",
+    "count": 1
+  }
+}

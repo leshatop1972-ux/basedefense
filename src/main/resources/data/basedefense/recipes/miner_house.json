@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KPK",
+    "KLK",
+    "KRK"
+  ],
+  "key": {
+    "K": {
+      "item": "basedefense:constructor_block"
+    },
+    "P": {
+      "item": "minecraft:iron_pickaxe"
+    },
+    "L": {
+      "item": "minecraft:lantern"
+    },
+    "R": {
+      "item": "minecraft:rail"
+    }
+  },
+  "result": {
+    "item": "basedefense:miner_house",
+    "count": 1
+  }
+}

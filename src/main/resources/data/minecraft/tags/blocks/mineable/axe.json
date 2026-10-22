@@ -5,6 +5,9 @@
     "basedefense:dense_wood",
     "basedefense:constructor_block",
     "basedefense:farmer_house",
-    "basedefense:rancher_house"
+    "basedefense:rancher_house",
+    "basedefense:cook_house",
+    "basedefense:miner_house",
+    "basedefense:blacksmith_house"
   ]
 }

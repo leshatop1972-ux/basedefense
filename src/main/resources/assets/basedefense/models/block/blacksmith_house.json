@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/blacksmith_house_side",
+    "up": "basedefense:block/blacksmith_house_top",
+    "down": "basedefense:block/blacksmith_house_bottom",
+    "north": "basedefense:block/blacksmith_house_front",
+    "south": "basedefense:block/blacksmith_house_side",
+    "east": "basedefense:block/blacksmith_house_side",
+    "west": "basedefense:block/blacksmith_house_side"
+  }
+}

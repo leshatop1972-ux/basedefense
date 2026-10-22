@@ -37,6 +37,18 @@ public final class ModBlocks {
     public static final Block RANCHER_HOUSE = register("rancher_house",
             new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::rancher));
 
+    /** Дом повара — при установке строит домик с летней кухней. */
+    public static final Block COOK_HOUSE = register("cook_house",
+            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::cook));
+
+    /** Домик шахтёра — при установке строит домик и спуск в шахту. */
+    public static final Block MINER_HOUSE = register("miner_house",
+            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::miner));
+
+    /** Кузница — при установке строит кузницу с горном во дворе. */
+    public static final Block BLACKSMITH_HOUSE = register("blacksmith_house",
+            new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), HousePlans::blacksmith));
+
     private ModBlocks() {
     }
 
@@ -49,6 +61,7 @@ public final class ModBlocks {
     public static void init() {
         // Вкладка «Функциональные блоки» — после верстака
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
-                Items.CRAFTING_TABLE, BASE, DENSE_WOOD, CONSTRUCTOR_BLOCK, FARMER_HOUSE, RANCHER_HOUSE));
+                Items.CRAFTING_TABLE, BASE, DENSE_WOOD, CONSTRUCTOR_BLOCK, FARMER_HOUSE, RANCHER_HOUSE,
+                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE));
     }
 }

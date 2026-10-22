@@ -22,7 +22,10 @@ import java.util.Optional;
  */
 public enum Technology {
     FARMER_HOUSE("farmer_house", 60, 0, 0, 0, "farmer_house", null),
-    RANCHER_HOUSE("rancher_house", 100, 0, 1, 0, "rancher_house", FARMER_HOUSE);
+    RANCHER_HOUSE("rancher_house", 100, 0, 1, 0, "rancher_house", FARMER_HOUSE),
+    COOK_HOUSE("cook_house", 120, 0, 2, 0, "cook_house", RANCHER_HOUSE),
+    MINER_HOUSE("miner_house", 150, 0, 2, 1, "miner_house", RANCHER_HOUSE),
+    BLACKSMITH_HOUSE("blacksmith_house", 200, 0, 3, 1, "blacksmith_house", MINER_HOUSE);
 
     private final String id;
     private final int cost;
@@ -78,6 +81,9 @@ public enum Technology {
         return switch (this) {
             case FARMER_HOUSE -> ModBlocks.FARMER_HOUSE;
             case RANCHER_HOUSE -> ModBlocks.RANCHER_HOUSE;
+            case COOK_HOUSE -> ModBlocks.COOK_HOUSE;
+            case MINER_HOUSE -> ModBlocks.MINER_HOUSE;
+            case BLACKSMITH_HOUSE -> ModBlocks.BLACKSMITH_HOUSE;
         };
     }
 

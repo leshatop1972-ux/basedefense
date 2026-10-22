@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BSB",
+    "KOK",
+    "KCK"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:bricks"
+    },
+    "S": {
+      "item": "minecraft:smoker"
+    },
+    "K": {
+      "item": "basedefense:constructor_block"
+    },
+    "O": {
+      "item": "minecraft:furnace"
+    },
+    "C": {
+      "item": "minecraft:cauldron"
+    }
+  },
+  "result": {
+    "item": "basedefense:cook_house",
+    "count": 1
+  }
+}
