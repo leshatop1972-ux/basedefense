@@ -1,557 +1,704 @@
 """
-Генератор текстур жителей basedefense.
+Генератор текстур жителей basedefense (стиль — как у жителей MineColonies).
 Запуск:  python tools/settler_textures.py      (нужен Pillow: pip install pillow)
 
-Пишет:
-  textures/entity/settler/male_1..5.png, female_1..3.png  — внешность (64x64, раскладка скина игрока).
-      Выдаётся жителю случайно и не зависит от профессии.
-  textures/entity/outfit/<профессия>[ _2 | _3 ].png       — наряд профессии (128x64): одежда поверх
-      (левая половина, раскладка скина) и головной убор (правая половина). _2/_3 — для 2-го и 3-го уровня.
-Правь списки SKINS и OUTFITS ниже и перезапусти.
+Пишет textures/entity/settler/male_1..5.png и female_1..3.png (128x64).
+Раскладка совпадает с SettlerEntityModel:
+  левая половина — как скин игрока (голова, тело, широкие руки, ноги + вторые слои);
+  (64,0) пряди по спине, (82,0) хвост, (96,0) юбка, (96,13) низ юбки,
+  (64,16)/(64,32) тонкая правая рука и рукав, (80,16)/(80,32) тонкая левая, (64,48)/(64,52) грудь.
+Внешность от профессии не зависит. Чтобы поменять жителя — правь словари в CHARACTERS.
+
+Приёмы «качества»: свет сверху-спереди (у каждой грани своя яркость), вертикальный градиент,
+упорядоченный шум (ткань), затемнение краёв, складки, швы, пуговицы, второй слой для объёма.
 """
 import os
-import random
 from PIL import Image
 
-ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources",
-                    "assets", "basedefense", "textures", "entity")
+OUT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources",
+                   "assets", "basedefense", "textures", "entity", "settler")
 T = (0, 0, 0, 0)
-GOLD = (235, 190, 60, 255)
+
+# Яркость граней (свет сверху и спереди)
+FACE_LIGHT = {"top": 1.10, "front": 1.0, "right": 0.93, "left": 0.93, "back": 0.86, "bottom": 0.72}
 
 
 def clamp(v):
-    return max(0, min(255, int(v)))
+    return max(0, min(255, int(round(v))))
 
 
-def rgba(c):
-    return c if len(c) == 4 else (c[0], c[1], c[2], 255)
+def rgb(c):
+    return (c[0], c[1], c[2])
 
 
-def shade(c, k):
-    return (clamp(c[0] * k), clamp(c[1] * k), clamp(c[2] * k), 255)
+def mul(c, k):
+    return (clamp(c[0] * k), clamp(c[1] * k), clamp(c[2] * k))
 
 
 def mix(a, b, t):
-    return (clamp(a[0] + (b[0] - a[0]) * t), clamp(a[1] + (b[1] - a[1]) * t),
-            clamp(a[2] + (b[2] - a[2]) * t), 255)
+    return (clamp(a[0] + (b[0] - a[0]) * t), clamp(a[1] + (b[1] - a[1]) * t), clamp(a[2] + (b[2] - a[2]) * t))
+
+
+def hue_shift_dark(c, k):
+    """Тень с лёгким уходом в холодный оттенок (живее, чем просто темнее)."""
+    d = mul(c, k)
+    return (clamp(d[0] * 0.97), clamp(d[1] * 0.98), clamp(d[2] * 1.04))
+
+
+def noise(x, y, seed=0):
+    """Упорядоченный шум -1..1 (одинаковый при каждом запуске)."""
+    h = (x * 374761393 + y * 668265263 + seed * 1442695041) & 0xFFFFFFFF
+    h = (h ^ (h >> 13)) * 1274126177 & 0xFFFFFFFF
+    return ((h >> 8) % 1000) / 500.0 - 1.0
 
 
 class Canvas:
-    def __init__(self, w, h, seed):
-        self.im = Image.new("RGBA", (w, h), T)
+    def __init__(self, seed):
+        self.im = Image.new("RGBA", (128, 64), T)
         self.px = self.im.load()
-        self.w, self.h = w, h
-        self.rnd = random.Random(seed)
+        self.seed = seed
 
     def put(self, x, y, c):
-        if c is not None and 0 <= x < self.w and 0 <= y < self.h:
-            self.px[x, y] = rgba(c)
+        if c is not None and 0 <= x < 128 and 0 <= y < 64:
+            self.px[x, y] = (c[0], c[1], c[2], 255)
 
-    def noisy(self, c, a=5):
-        n = self.rnd.randint(-a, a)
-        return (clamp(c[0] + n), clamp(c[1] + n), clamp(c[2] + n), 255)
+    def get(self, x, y):
+        return self.px[x, y]
 
     @staticmethod
     def faces(u, v, w, h, d):
         return {"top": (u + d, v, w, d), "bottom": (u + d + w, v, w, d), "right": (u, v + d, d, h),
                 "front": (u + d, v + d, w, h), "left": (u + d + w, v + d, d, h), "back": (u + 2 * d + w, v + d, w, h)}
 
-    def box(self, u, v, w, h, d, fns):
-        """fns: {'front': fn, ..., '*': fn}; fn(col, row, width, height, face) -> цвет или None."""
-        for name, (x, y, fw, fh) in self.faces(u, v, w, h, d).items():
-            fn = fns.get(name, fns.get("*"))
-            if fn is None:
-                continue
+    def box(self, u, v, w, h, d, fn):
+        """fn(face, col, row, fw, fh, X, Y) -> цвет или None; X, Y — абсолютные координаты пикселя."""
+        for face, (x, y, fw, fh) in self.faces(u, v, w, h, d).items():
             for r in range(fh):
                 for c in range(fw):
-                    self.put(x + c, y + r, fn(c, r, fw, fh, name))
+                    self.put(x + c, y + r, fn(face, c, r, fw, fh, x + c, y + r))
 
 
 # ---------------------------------------------------------------------------
-# Ткани
+# Материалы: возвращают цвет пикселя с учётом света, градиента и фактуры
 # ---------------------------------------------------------------------------
 
-def plain(cv, base, a=5):
-    return lambda c, r, w, h, f: cv.noisy(base, a)
+def cloth(base, face, c, r, fw, fh, X, Y, seed, rough=0.045, grad=0.08, edge=True):
+    k = FACE_LIGHT[face]
+    if face in ("front", "back", "left", "right"):
+        k *= 1.0 - grad * (r / max(1, fh - 1))
+        if edge and (c == 0 or c == fw - 1):
+            k *= 0.93
+    k *= 1.0 + rough * noise(X, Y, seed)
+    return hue_shift_dark(base, k) if k < 0.97 else mul(base, k)
 
 
-def plaid(cv, a, b):
-    def f(c, r, w, h, face):
-        sc, sr = c % 4 == 1, r % 4 == 1
-        col = b if sc and sr else (mix(a, b, 0.55) if sc or sr else rgba(a))
-        return cv.noisy(col, 4)
-    return f
+def skin_px(base, face, c, r, fw, fh, X, Y, seed):
+    k = FACE_LIGHT[face] * (1.0 + 0.02 * noise(X, Y, seed))
+    return mul(base, k)
 
 
-def stripes(cv, a, b):
-    return lambda c, r, w, h, f: cv.noisy(a if r % 3 else b, 3)
-
-
-def denim(cv, base):
-    def f(c, r, w, h, face):
-        k = 1.06 if (c + r) % 3 == 0 else 0.97
-        return cv.noisy(shade(base, k), 4)
-    return f
+def hair_px(base, face, c, r, fw, fh, X, Y, seed):
+    """Волосы: пряди (вертикальные полосы разной яркости) и блик сверху."""
+    strand = ((c * 3 + (r // 2)) % 4)
+    k = FACE_LIGHT[face] * (0.92 + 0.06 * strand)
+    if face == "top":
+        k *= 1.05 if (c + r) % 3 else 1.12
+    k *= 1.0 + 0.03 * noise(X, Y, seed + 7)
+    return mul(base, k)
 
 
 # ---------------------------------------------------------------------------
-# Внешность (64x64)
+# Персонажи
 # ---------------------------------------------------------------------------
 
-SKINS = {
-    # мужчины
-    "male_1": dict(skin=(232, 186, 148), hair=(110, 72, 40), eyes=(70, 110, 160), shirt=(214, 196, 160),
-                   pants=(96, 78, 58), shoes=(70, 48, 30), style="short"),
-    "male_2": dict(skin=(196, 140, 98), hair=(36, 28, 24), eyes=(70, 45, 30), shirt=(110, 128, 150),
-                   pants=(60, 64, 80), shoes=(40, 34, 30), style="short", mustache=True),
-    "male_3": dict(skin=(124, 84, 58), hair=(26, 22, 20), eyes=(45, 30, 22), shirt=(225, 222, 210),
-                   pants=(70, 70, 76), shoes=(45, 38, 34), style="crop"),
-    "male_4": dict(skin=(240, 200, 170), hair=(178, 80, 36), eyes=(80, 130, 70), shirt=(110, 140, 80),
-                   pants=(110, 90, 60), shoes=(90, 60, 35), style="short", beard=True),
-    "male_5": dict(skin=(214, 162, 122), hair=(165, 165, 160), eyes=(80, 90, 100), shirt=(140, 100, 70),
-                   pants=(80, 70, 60), shoes=(60, 45, 35), style="short", beard=True),
-    # женщины
-    "female_1": dict(skin=(240, 198, 166), hair=(226, 190, 104), eyes=(70, 120, 180), shirt=(170, 200, 225),
-                     skirt=(70, 100, 160), shoes=(110, 70, 45), style="braid", female=True),
-    "female_2": dict(skin=(206, 150, 112), hair=(82, 50, 30), eyes=(90, 60, 35), shirt=(235, 232, 225),
-                     skirt=(150, 60, 50), shoes=(70, 45, 30), style="long", female=True, pattern="stripes"),
-    "female_3": dict(skin=(132, 90, 62), hair=(28, 22, 20), eyes=(50, 34, 24), shirt=(230, 195, 90),
-                     skirt=(80, 120, 80), shoes=(60, 40, 30), style="bun", female=True),
+CHARACTERS = {
+    "male_1": dict(skin=(233, 190, 155), hair=(122, 76, 44), hair_style="wavy", eyes=(64, 110, 160),
+                   shirt=(226, 214, 190), outer="coat", outer_color=(76, 90, 108), buttons=(196, 160, 82),
+                   trousers=(72, 54, 42), boots=(46, 36, 30), boot_style="tall"),
+    "male_2": dict(skin=(112, 76, 54), hair=(30, 25, 23), hair_style="short", eyes=(52, 34, 24), beard="full",
+                   shirt=(222, 210, 182), sleeves="rolled", outer="waistcoat", outer_color=(98, 64, 42),
+                   buttons=(70, 50, 34), belt=(44, 34, 28), buckle=(200, 164, 80),
+                   trousers=(60, 58, 62), boots=(42, 34, 30), boot_style="socks", socks=(222, 214, 196)),
+    "male_3": dict(skin=(204, 150, 112), hair=(64, 44, 32), hair_style="side", eyes=(80, 56, 36),
+                   shirt=(236, 232, 222), outer="vest", outer_color=(120, 84, 54), buttons=(206, 170, 90),
+                   cravat=(130, 44, 40), trousers=(98, 72, 48), boots=(32, 28, 26), boot_style="shoes",
+                   socks=(230, 226, 214)),
+    "male_4": dict(skin=(241, 204, 176), hair=(184, 88, 42), hair_style="messy", eyes=(84, 128, 72), beard="short",
+                   shirt=(94, 114, 72), sleeves="rolled", belt=(176, 150, 102), rope_belt=True,
+                   trousers=(152, 126, 92), boots=(94, 64, 40), boot_style="tall"),
+    "male_5": dict(skin=(214, 164, 124), hair=(172, 170, 164), hair_style="receding", eyes=(90, 100, 112),
+                   beard="mustache", shirt=(122, 138, 152), outer="suspenders", outer_color=(62, 44, 32),
+                   buttons=(180, 150, 90), scarf=(150, 52, 42), trousers=(92, 76, 60), boots=(50, 40, 34),
+                   boot_style="tall"),
+    "female_1": dict(skin=(242, 204, 174), hair=(230, 196, 112), hair_style="ponytail", eyes=(70, 120, 180),
+                     female=True, shirt=(234, 226, 208), outer="bodice", outer_color=(108, 126, 88),
+                     lacing=(230, 220, 196), skirt=(122, 88, 62), apron=(226, 218, 200),
+                     boots=(96, 66, 44), socks=(212, 202, 188)),
+    "female_2": dict(skin=(208, 152, 114), hair=(80, 50, 32), hair_style="long", eyes=(92, 62, 38),
+                     female=True, shirt=(238, 236, 230), outer="bodice", outer_color=(70, 96, 128),
+                     lacing=(214, 206, 186), skirt=(54, 68, 98), hem=(150, 160, 184),
+                     boots=(36, 30, 28), socks=(70, 64, 60)),
+    "female_3": dict(skin=(126, 86, 60), hair=(28, 23, 21), hair_style="bun", eyes=(54, 36, 26),
+                     female=True, shirt=(228, 216, 192), outer="bodice", outer_color=(158, 86, 64),
+                     lacing=(232, 210, 170), skirt=(126, 72, 54), apron=(214, 196, 160), scarf=(196, 160, 72),
+                     boots=(62, 44, 32), socks=(186, 170, 150)),
 }
 
 
-def paint_skin(name, d):
-    cv = Canvas(64, 64, name)
-    skin, hair = rgba(d["skin"]), rgba(d["hair"])
-    dark_skin = shade(skin, 0.86)
-    eye = rgba(d["eyes"])
-    female = d.get("female", False)
-    style = d["style"]
-    brow = shade(hair, 0.7) if hair[0] < 150 else shade(hair, 0.55)
-    beard = shade(hair, 0.95) if d.get("beard") else None
-    long_hair = style in ("long", "braid")
+# ---------------------------------------------------------------------------
+# Голова
+# ---------------------------------------------------------------------------
 
-    # ----- голова -----
-    def front(c, r, w, h, f):
+def paint_head(cv, ch):
+    skin, hair, eyes = ch["skin"], ch["hair"], ch["eyes"]
+    style = ch["hair_style"]
+    female = ch.get("female", False)
+    beard = ch.get("beard")
+    s = cv.seed
+    shadow_skin = hue_shift_dark(skin, 0.86)
+    brow = mul(hair, 0.62) if sum(hair) < 450 else mul(hair, 0.5)
+    beard_col = mul(hair, 0.95)
+    long_sides = style in ("long",)
+
+    def hairline(c, r):
+        """Есть ли волосы на лбу в этой клетке лица."""
         if r == 0:
-            return cv.noisy(hair, 4)
-        if r == 1:
-            if style == "crop":
-                return cv.noisy(hair, 4) if c in (0, 7) else cv.noisy(skin, 3)
-            return cv.noisy(hair, 4) if (c not in (3, 4) or style == "short") else cv.noisy(skin, 3)
-        if r == 2:
-            return cv.noisy(hair, 4) if c in (0, 7) else cv.noisy(skin, 3)
+            return True
+        if style == "receding":
+            return r == 0 or (r == 1 and c in (0, 7))
+        if style == "short":
+            return r == 1 and c not in (3, 4)
+        if style == "side":
+            return r == 1 and c not in (5, 6) or (r == 2 and c in (0, 1))
+        if style == "wavy":
+            return r == 1 or (r == 2 and c in (0, 1, 7))
+        if style == "messy":
+            return r == 1 or (r == 2 and c in (0, 2, 5, 7))
+        if style in ("ponytail", "bun"):
+            return r == 1 and c in (0, 1, 2, 5, 6, 7)
+        if style == "long":
+            return r == 1 or (r == 2 and c in (0, 7))
+        return r == 1
+
+    def face_px(c, r, X, Y):
+        if hairline(c, r):
+            return hair_px(hair, "front", c, r, 8, 8, X, Y, s)
+        if long_sides and c in (0, 7) and r <= 6:
+            return hair_px(hair, "front", c, r, 8, 8, X, Y, s)
+        base = skin_px(skin, "front", c, r, 8, 8, X, Y, s)
+        # Боковые колонки лица и подбородок — в тени
+        if c in (0, 7):
+            base = mix(base, shadow_skin, 0.45)
+        if r == 7:
+            base = mix(base, shadow_skin, 0.55)
+        # Брови
         if r == 3:
-            if female:
-                return shade(brow, 1.1) if c in (2, 5) else (cv.noisy(hair, 4) if c in (0, 7) else cv.noisy(skin, 3))
-            return brow if c in (1, 2, 5, 6) else cv.noisy(skin, 3)
+            if female and c in (1, 2, 5, 6):
+                return mix(brow, skin, 0.25) if c in (2, 5) else mix(brow, skin, 0.55)
+            if not female and c in (1, 2, 5, 6):
+                return brow if c in (2, 5) or style != "receding" else mix(brow, skin, 0.3)
+        # Глаза: белок + радужка (внутри), у женщин — ресницы снаружи
         if r == 4:
             if c in (1, 6):
-                return (245, 245, 245, 255)
+                return (238, 238, 236)
             if c in (2, 5):
-                return eye
+                return eyes
             if female and c in (0, 7):
-                return cv.noisy(hair, 4) if long_hair else (40, 30, 30, 255)
-            return cv.noisy(skin, 3)
-        if beard is not None:
-            if r == 5 and c in (2, 3, 4, 5):
-                return shade(beard, 0.9)
-            if r == 6 and c in (3, 4):
-                return (120, 60, 50, 255)
-            if r >= 6 or (r == 5 and c in (0, 7)):
-                return cv.noisy(beard, 4)
-        if d.get("mustache") and r == 5 and c in (2, 3, 4, 5):
-            return shade(hair, 1.0)
+                return (52, 38, 34)
+        # Нос: свет слева, тень справа; румянец
         if r == 5:
-            if c in (3, 4):
-                return dark_skin
+            if c == 3:
+                return mix(base, (255, 230, 210), 0.12)
+            if c == 4:
+                return mix(base, shadow_skin, 0.55)
             if c in (1, 6):
-                return mix(skin, (225, 120, 115), 0.28 if female else 0.15)
-            if female and long_hair and c in (0, 7):
-                return cv.noisy(hair, 4)
-            return cv.noisy(skin, 3)
-        if r == 6:
-            if c in (3, 4):
-                return (196, 92, 96, 255) if female else (150, 82, 72, 255)
-            if female and long_hair and c in (0, 7):
-                return cv.noisy(hair, 4)
-            return cv.noisy(skin, 3)
-        return cv.noisy(dark_skin, 3)
+                return mix(base, (222, 120, 112), 0.30 if female else 0.14)
+        # Рот
+        if r == 6 and c in (3, 4):
+            return mix(skin, (176, 82, 86), 0.7) if female else mix(skin, (120, 62, 54), 0.5)
+        # Борода и усы
+        if beard == "mustache" and r == 5 and c in (2, 5) or beard == "mustache" and r == 6 and c in (2, 5):
+            return beard_col
+        if beard == "mustache" and r == 5 and c in (3, 4):
+            return mul(beard_col, 0.95)
+        if beard in ("full", "short"):
+            if r == 5 and c in (2, 3, 4, 5):
+                return mul(beard_col, 0.9 if c in (3, 4) else 1.0)
+            if r == 6 and c in (3, 4):
+                return (110, 58, 50)
+            if r == 6 or r == 7:
+                if beard == "full" or c not in (1, 2, 5, 6) or r == 7:
+                    return hair_px(beard_col, "front", c, r, 8, 8, X, Y, s + 3)
+            if beard == "full" and r == 5 and c in (0, 1, 6, 7):
+                return hair_px(beard_col, "front", c, r, 8, 8, X, Y, s + 3)
+        return base
 
-    def side(c, r, w, h, f):
-        back_cols = (0, 1, 2) if f == "right" else (5, 6, 7)
-        face_col = 7 if f == "right" else 0
+    def side_px(face, c, r, X, Y):
+        back_cols = (0, 1, 2) if face == "right" else (5, 6, 7)
+        face_col = 7 if face == "right" else 0
+        near = (5, 6, 7) if face == "right" else (0, 1, 2)
         if r <= 1:
-            return cv.noisy(hair, 4)
-        if long_hair or style == "bun":
-            if c in back_cols or r <= 2 or (c != face_col and r <= 7 and long_hair):
-                return cv.noisy(hair, 4)
-        if c in back_cols[:2] and r <= 5:
-            return cv.noisy(hair, 4)
-        if r == 2 and c != face_col:
-            return cv.noisy(hair, 4)
-        if beard is not None and r >= 5 and ((f == "right" and c >= 4) or (f == "left" and c <= 3)):
-            return cv.noisy(beard, 4)
-        if r == 4 and c in (3, 4):
-            return dark_skin
-        return cv.noisy(skin, 3)
+            return hair_px(hair, face, c, r, 8, 8, X, Y, s)
+        if style == "long" and r <= 7:
+            return hair_px(hair, face, c, r, 8, 8, X, Y, s)
+        if style == "receding":
+            if c in back_cols and r <= 4:
+                return hair_px(hair, face, c, r, 8, 8, X, Y, s)
+        elif c in back_cols and r <= 5 or (r == 2 and c != face_col) or (c not in near and r <= 3):
+            return hair_px(hair, face, c, r, 8, 8, X, Y, s)
+        if beard in ("full", "short") and r >= 4 and c in near:
+            return hair_px(beard_col, face, c, r, 8, 8, X, Y, s + 3)
+        if r in (4, 5) and c in (3, 4):
+            return mix(skin_px(skin, face, c, r, 8, 8, X, Y, s), shadow_skin, 0.6)   # ухо
+        px = skin_px(skin, face, c, r, 8, 8, X, Y, s)
+        return mix(px, shadow_skin, 0.3) if r >= 6 else px
 
-    def back(c, r, w, h, f):
-        if long_hair or r <= 5:
-            return cv.noisy(hair, 4)
-        return cv.noisy(dark_skin, 3)
+    def head_fn(face, c, r, fw, fh, X, Y):
+        if face == "top":
+            return hair_px(hair, face, c, r, fw, fh, X, Y, s)
+        if face == "bottom":
+            return shadow_skin
+        if face == "front":
+            return face_px(c, r, X, Y)
+        if face == "back":
+            if style == "long" or r <= (4 if style == "receding" else 5):
+                return hair_px(hair, face, c, r, fw, fh, X, Y, s)
+            return mix(skin, shadow_skin, 0.6)
+        return side_px(face, c, r, X, Y)
 
-    cv.box(0, 0, 8, 8, 8, {"top": lambda c, r, w, h, f: cv.noisy(hair, 4),
-                            "bottom": lambda c, r, w, h, f: cv.noisy(dark_skin, 3),
-                            "front": front, "right": side, "left": side, "back": back})
+    cv.box(0, 0, 8, 8, 8, head_fn)
 
-    # ----- второй слой головы: объём волос -----
-    hl = shade(hair, 1.1)
+    # Второй слой: объём волос (и платок/пучок)
+    hl = mul(hair, 1.08)
+    scarf = ch.get("scarf") if female else None
 
-    def h_front(c, r, w, h, f):
-        if r == 0:
-            return cv.noisy(hl, 4)
-        if r == 1 and c in (0, 1, 6, 7) and style != "crop":
-            return cv.noisy(hl, 4)
-        if long_hair and c in (0, 7) and r <= 6:
-            return cv.noisy(hl, 4)
-        return None
-
-    def h_side(c, r, w, h, f):
-        back_cols = (0, 1, 2, 3) if f == "right" else (4, 5, 6, 7)
-        if r <= 1:
-            return cv.noisy(hl, 4)
-        if long_hair and r <= 7:
-            return cv.noisy(hl, 4) if c in back_cols or c in ((6, 7) if f == "right" else (0, 1)) else None
-        if c in back_cols[:2] and r <= 3 and style != "crop":
-            return cv.noisy(hl, 4)
-        return None
-
-    def h_back(c, r, w, h, f):
-        if style == "bun" and r <= 3 and 2 <= c <= 5:
-            return cv.noisy(shade(hair, 0.9), 4)      # пучок
-        if long_hair:
-            return cv.noisy(hl, 4)
-        return cv.noisy(hl, 4) if r <= 3 else None
-
-    cv.box(32, 0, 8, 8, 8, {"top": lambda c, r, w, h, f: cv.noisy(hl, 4),
-                             "front": h_front, "right": h_side, "left": h_side, "back": h_back})
-
-    # ----- туловище -----
-    shirt = (stripes(cv, rgba(d["shirt"]), shade(d["shirt"], 0.75)) if d.get("pattern") == "stripes"
-             else plain(cv, rgba(d["shirt"])))
-    lower = rgba(d["skirt"]) if female else rgba(d["pants"])
-
-    def body(c, r, w, h, f):
-        if f == "top":
-            return shirt(c, r, w, h, f)
-        if f == "bottom":
-            return cv.noisy(lower, 4)
-        if f == "front" and r == 0 and c in (3, 4):
-            return skin if not female else mix(skin, shade(d["shirt"], 0.9), 0.0)
-        if f == "front" and not female and c in (3, 4) and r in (2, 4, 6):
-            return shade(d["shirt"], 0.75)            # пуговицы
-        if r == 8:
-            return shade(lower, 0.75) if not female else cv.noisy(shade(d["shirt"], 0.85), 3)  # пояс
-        if r >= 9:
-            return cv.noisy(lower, 4)
-        return shirt(c, r, w, h, f)
-
-    cv.box(16, 16, 8, 12, 4, {"*": body})
-
-    # второй слой туловища: длинные волосы по спине / коса
-    if long_hair:
-        def jb(c, r, w, h, f):
-            if f != "back":
-                return None
-            if style == "braid":
-                if c in (3, 4) and r <= 7:
-                    return cv.noisy(shade(hair, 0.95 if r % 2 else 1.08), 3)
-                if r == 8 and c in (3, 4):
-                    return (200, 60, 60, 255)          # лента на косе
-                return None
-            return cv.noisy(hl, 4) if r <= 4 and 1 <= c <= 6 else None
-        cv.box(16, 32, 8, 12, 4, {"*": jb})
-
-    # ----- руки -----
-    sleeve = 9 if female else 8
-
-    def arm(c, r, w, h, f):
-        if f == "top":
-            return shirt(c, r, w, h, f)
-        if f == "bottom":
-            return dark_skin
-        if r < sleeve:
-            return shirt(c, r, w, h, f)
-        return cv.noisy(dark_skin if r >= 10 else skin, 3)
-
-    cv.box(40, 16, 4, 12, 4, {"*": arm})
-    cv.box(32, 48, 4, 12, 4, {"*": arm})
-    # закатанный рукав (второй слой)
-    cuff = shade(d["shirt"], 0.85)
-    cv.box(40, 32, 4, 12, 4, {"*": lambda c, r, w, h, f: cuff if f not in ("top", "bottom") and r == sleeve - 1 else None})
-    cv.box(48, 48, 4, 12, 4, {"*": lambda c, r, w, h, f: cuff if f not in ("top", "bottom") and r == sleeve - 1 else None})
-
-    # ----- ноги -----
-    shoes = rgba(d["shoes"])
-
-    def leg(c, r, w, h, f):
-        if f == "top":
-            return cv.noisy(lower, 4)
-        if f == "bottom":
-            return shade(shoes, 0.6)
-        if r >= 10:
-            return cv.noisy(shade(shoes, 0.7) if r == 11 else shoes, 3)
-        if female:
-            if r <= 6:
-                return cv.noisy(lower, 4)            # юбка
-            return cv.noisy(shade(d["skin"], 0.95) if r != 9 else (235, 235, 230), 3)  # ноги / носки
-        return cv.noisy(lower, 4)
-
-    cv.box(0, 16, 4, 12, 4, {"*": leg})
-    cv.box(16, 48, 4, 12, 4, {"*": leg})
-    if female:
-        # юбка «расширяется» вторым слоем
-        def flare(c, r, w, h, f):
-            if f in ("top", "bottom"):
-                return None
-            if r <= 6:
-                return cv.noisy(shade(lower, 1.05 if r < 6 else 0.8), 4)
+    def layer_fn(face, c, r, fw, fh, X, Y):
+        if scarf is not None:
+            # Платок на голове у женщины
+            if face == "top" or (face != "bottom" and r <= 1) or (face == "back" and r <= 3):
+                k = 1.0 if (c + r) % 4 else 0.9
+                return cloth(mul(scarf, k), face, c, r, fw, fh, X, Y, s + 11, edge=False)
+            if face == "back" and r in (4, 5) and c in (3, 4):
+                return mul(scarf, 0.85)               # узелок
             return None
-        cv.box(0, 32, 4, 12, 4, {"*": flare})
-        cv.box(0, 48, 4, 12, 4, {"*": flare})
-    return cv.im
+        if face == "top":
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+        if face == "bottom":
+            return None
+        if face == "front":
+            if r == 0:
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            if style in ("wavy", "messy") and r == 1 and c in (0, 1, 3, 6, 7):
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            if style == "side" and r == 1 and c in (0, 1, 2, 3):
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            if style == "long" and c in (0, 7) and r <= 6:
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            return None
+        if face == "back":
+            if style == "bun" and 1 <= r <= 4 and 2 <= c <= 5:
+                return hair_px(mul(hair, 0.95), face, c, r, fw, fh, X, Y, s + 2)
+            if style == "ponytail" and r <= 3 and 3 <= c <= 4:
+                return (170, 60, 60) if r == 3 else hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            if style == "long":
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+            if style == "receding":
+                return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1) if 2 <= r <= 3 else None
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1) if r <= 3 else None
+        # бока
+        back_cols = (0, 1, 2, 3) if face == "right" else (4, 5, 6, 7)
+        if style == "receding":
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1) if c in back_cols and 2 <= r <= 3 else None
+        if r == 0 or (r == 1 and style != "short"):
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+        if style == "long" and r <= 7:
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+        if style in ("wavy", "messy") and c in back_cols and r <= 3:
+            return hair_px(hl, face, c, r, fw, fh, X, Y, s + 1)
+        return None
+
+    cv.box(32, 0, 8, 8, 8, layer_fn)
+
+    # Пряди по спине и хвост (отдельные части модели)
+    cv.box(64, 0, 8, 7, 1, lambda face, c, r, fw, fh, X, Y: hair_px(
+        mul(hair, 1.0 - 0.02 * r), face if face != "front" else "back", c, r, fw, fh, X, Y, s + 4))
+
+    def tail(face, c, r, fw, fh, X, Y):
+        if r == 0 and face not in ("top", "bottom"):
+            return (176, 64, 60)                       # лента
+        return hair_px(mul(hair, 1.0 - 0.03 * r), face, c, r, fw, fh, X, Y, s + 5)
+    cv.box(82, 0, 2, 5, 2, tail)
 
 
 # ---------------------------------------------------------------------------
-# Наряды профессий (128x64)
+# Туловище
 # ---------------------------------------------------------------------------
 
-def hat_brim(cv, base, band, weave, trim=None):
-    dark = shade(base, 0.8)
+def paint_body(cv, ch):
+    s = cv.seed
+    skin = ch["skin"]
+    female = ch.get("female", False)
+    shirt = ch["shirt"]
+    outer = ch.get("outer")
+    oc = ch.get("outer_color")
+    trousers = ch.get("trousers", ch.get("skirt"))
+    belt = ch.get("belt")
+    buckle = ch.get("buckle")
+    buttons = ch.get("buttons")
 
-    def brim(c, r, w, h, f):
-        if f == "top":
-            col = shade(base, 0.92) if c in (0, 13) or r in (0, 13) else rgba(base)
-            if weave and (c + r) % 2 == 0:
-                col = shade(col, 1.07)
-            return cv.noisy(col, 3)
-        return cv.noisy(dark if f == "bottom" else shade(base, 0.85), 3)
-    cv.box(64, 0, 14, 1, 14, {"*": brim})
-
-    def crown(c, r, w, h, f):
-        if f == "top":
-            col = shade(base, 1.05)
-            if weave and (c + r) % 2 == 0:
-                col = shade(col, 1.06)
-            if not weave and 2 <= c <= 5 and 2 <= r <= 5:
-                col = shade(base, 0.9)
-            return cv.noisy(col, 3)
-        if f == "bottom":
-            return cv.noisy(dark, 3)
-        if r == 2:
-            return trim if trim and f == "front" and c in (3, 4) else cv.noisy(band, 3)
-        col = rgba(base)
-        if weave and (c + r) % 2 == 0:
-            col = shade(col, 1.06)
-        return cv.noisy(col, 3)
-    cv.box(64, 16, 8, 3, 8, {"*": crown})
-
-
-def hat_toque(cv, base, trim=None):
-    def f(c, r, w, h, face):
+    def base_fn(face, c, r, fw, fh, X, Y):
         if face == "top":
-            return cv.noisy(shade(base, 1.02), 2)
+            return cloth(shirt, face, c, r, fw, fh, X, Y, s)
         if face == "bottom":
-            return cv.noisy(shade(base, 0.85), 2)
-        if r == 5:
-            return trim or shade(base, 0.88)
-        return cv.noisy(shade(base, 0.92) if c % 2 else rgba(base), 2)
-    cv.box(96, 16, 8, 6, 8, {"*": f})
+            return cloth(trousers, face, c, r, fw, fh, X, Y, s)
+        # Ворот: открытая шея
+        if face == "front" and r == 0 and c in (3, 4):
+            return mul(skin, 0.9)
+        if face == "front" and r == 1 and c in (3, 4) and not ch.get("cravat"):
+            return mul(skin, 0.82)
+        # Низ: брюки (у мужчин) — с ремнём
+        if not female and r >= 9:
+            px = cloth(trousers, face, c, r, fw, fh, X, Y, s + 1)
+            if face == "front" and r >= 10 and c in (3, 4):
+                return mul(px, 0.9)                     # шов ширинки
+            return px
+        if belt is not None and r == 8:
+            if ch.get("rope_belt"):
+                return mul(belt, 1.06 if (c + X) % 2 else 0.88)
+            if face == "front" and buckle and c in (3, 4):
+                return buckle if c == 3 else mul(buckle, 0.8)
+            return cloth(belt, face, c, r, fw, fh, X, Y, s + 2, rough=0.03)
+        px = cloth(shirt, face, c, r, fw, fh, X, Y, s, rough=0.055, grad=0.07)
+        # Складки рубашки
+        if face == "front" and (c, r) in ((2, 6), (5, 5), (2, 7), (5, 6)):
+            px = hue_shift_dark(px, 0.9)
+        if face == "front" and c in (3, 4) and r >= 2 and r % 2 == 0 and not female:
+            px = mul(px, 0.92)                          # планка с пуговицами
+        if female and r == 9:
+            return hue_shift_dark(px, 0.88)
+        return px
 
+    cv.box(16, 16, 8, 12, 4, base_fn)
 
-def hat_helmet(cv, base, stripe=None, knit=False, visor=True, lamp=False):
-    def f(c, r, w, h, face):
+    # Шейный платок у мужчины / галстук
+    if ch.get("cravat"):
+        cr = ch["cravat"]
+        for (x, y) in ((23, 21), (24, 21), (23, 22), (24, 22), (23, 23)):
+            cv.put(x, y, mul(cr, 1.0 if y < 23 else 0.85))
+    if ch.get("scarf") and not female:
+        sc = ch["scarf"]
+        for x in range(20, 28):
+            cv.put(x, 20, mul(sc, 1.0 if x % 2 else 0.9))
+        for (x, y) in ((22, 21), (23, 21), (24, 21), (25, 21), (23, 22), (24, 22)):
+            cv.put(x, y, mul(sc, 0.92))
+
+    # ----- второй слой туловища -----
+    def coat_fn(face, c, r, fw, fh, X, Y):
+        """Сюртук нараспашку: полы до бёдер, лацканы, медные пуговицы."""
+        if face == "bottom":
+            return None
         if face == "top":
-            if stripe and c in (3, 4):
-                return stripe
-            col = shade(base, 1.08) if (c in (3, 4) and not knit) else rgba(base)
-            if knit and r % 2 == 0:
-                col = shade(col, 0.92)
-            return cv.noisy(col, 4)
-        if face == "bottom":
-            return cv.noisy(shade(base, 0.7), 3)
-        if knit:
-            col = shade(base, 0.9) if c % 2 == 0 else rgba(base)
-            if r == 2:
-                col = shade(base, 0.8)
-            if stripe and r == 1:
-                col = stripe
-            return cv.noisy(col, 3)
-        if stripe and face in ("front", "back") and c in (3, 4):
-            return stripe
-        return cv.noisy(shade(base, 0.95) if r == 2 else rgba(base), 4)
-    cv.box(64, 32, 8, 3, 8, {"*": f})
-    if visor:
-        cv.box(96, 32, 8, 1, 3, {"*": lambda c, r, w, h, face: cv.noisy(shade(base, 0.88), 3)})
-    if lamp:
-        cv.box(96, 40, 2, 2, 1, {"*": lambda c, r, w, h, face:
-                                 (255, 250, 200, 255) if face == "front" else (110, 110, 115, 255)})
+            return cloth(oc, face, c, r, fw, fh, X, Y, s + 6)
+        if face == "front":
+            if c in (3, 4):
+                return None                              # рубашка видна
+            px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6)
+            if r <= 3 and c in (2, 5):
+                return mul(px, 1.18)                     # лацкан
+            if r <= 1 and c in (1, 6):
+                return mul(px, 1.1)
+            if c == 2 and r in (4, 6, 8) and buttons:
+                return buttons
+            if r == 8 and c in (0, 1, 6, 7):
+                return mul(px, 0.85)                     # карманы
+            return px
+        px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6)
+        if face == "back" and c in (3, 4) and r >= 8:
+            return mul(px, 0.82)                         # разрез сзади
+        return px
 
-
-def body_vest(cv, color, stripe=None, trim=None):
-    def f(c, r, w, h, face):
+    def waistcoat_fn(face, c, r, fw, fh, X, Y):
+        """Жилет: закрыт, V-вырез, пуговицы, кончается на поясе."""
         if face in ("top", "bottom") or r > 8:
             return None
-        if face == "front" and c in (3, 4):
-            return None
-        if stripe and r in (4, 7):
-            return stripe
-        if trim and face == "front" and c == 2 and r in (2, 5):
-            return trim
-        return cv.noisy(color, 4)
-    cv.box(16, 16, 8, 12, 4, {"*": f})
-
-
-def body_apron(cv, color, strap, legs=True, pocket=True):
-    def f(c, r, w, h, face):
         if face == "front":
-            if r <= 1:
-                return cv.noisy(strap, 3) if c in (2, 5) else None
-            if 1 <= c <= 6:
-                if pocket and r == 6 and c in (3, 4):
-                    return shade(color, 0.85)
-                return cv.noisy(color, 3)
+            if r <= 2 and c in (3, 4) or (r == 0 and c in (2, 5)):
+                return None
+            px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6, rough=0.06)
+            if c in (3, 4) and r % 2 == 1 and buttons:
+                return buttons if c == 3 else mul(buttons, 0.8)
+            if (c, r) in ((1, 5), (6, 5)):
+                return mul(px, 0.82)                     # кармашки
+            return px
+        if face == "back":
+            px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6, rough=0.02)
+            return mul(px, 0.9) if r == 6 else px        # хлястик
+        return cloth(oc, face, c, r, fw, fh, X, Y, s + 6)
+
+    def vest_fn(face, c, r, fw, fh, X, Y):
+        """Строгий жилет: тёмная окантовка, 4 пуговицы, до пояса."""
+        if face in ("top", "bottom") or r > 8:
             return None
-        if face in ("back", "left", "right"):
-            return shade(strap, 0.9) if r == 8 else None
-        return None
-    cv.box(16, 16, 8, 12, 4, {"*": f})
-    if legs:
-        for u, v in ((0, 16), (16, 48)):
-            cv.box(u, v, 4, 12, 4, {"front": lambda c, r, w, h, face: cv.noisy(color, 3) if r <= 5 else None})
-
-
-def body_straps(cv, color, buckle):
-    def f(c, r, w, h, face):
-        if face == "front" and c in (1, 6) and r <= 8:
-            return buckle if r == 8 else cv.noisy(color, 3)
-        if face == "back" and r <= 8 and c in (1 + r // 3, 6 - r // 3):
-            return cv.noisy(color, 3)
-        if face in ("front", "back", "left", "right") and r == 8:
-            return cv.noisy(shade(color, 0.9), 3)
-        return None
-    cv.box(16, 16, 8, 12, 4, {"*": f})
-
-
-def body_bib(cv, color, buttons):
-    def f(c, r, w, h, face):
         if face == "front":
-            if r <= 2:
-                return cv.noisy(color, 4) if c in (1, 6) else None
-            if r == 3 and c in (1, 6):
+            if r <= 1 and c in (2, 3, 4, 5):
+                return None
+            if r == 2 and c in (3, 4):
+                return None
+            px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6, rough=0.035)
+            if c in (2, 5) and r <= 4:
+                return mul(px, 0.8)                      # окантовка выреза
+            if c == 4 and r in (3, 5, 7) and buttons:
                 return buttons
-            return cv.noisy(color, 4) if 1 <= c <= 6 and r <= 8 else None
-        if face == "back" and r <= 6 and c in (1 + r // 2, 6 - r // 2):
-            return cv.noisy(color, 4)
-        return None
-    cv.box(16, 16, 8, 12, 4, {"*": f})
+            return px
+        return cloth(mul(oc, 0.92), face, c, r, fw, fh, X, Y, s + 6)
 
-
-def neckerchief(cv, color):
-    for x in range(20, 28):
-        cv.put(x, 20, color)
-    for x in (22, 23, 24, 25):
-        cv.put(x, 21, shade(color, 0.9))
-    cv.put(23, 22, shade(color, 0.8))
-    cv.put(24, 22, shade(color, 0.8))
-
-
-def gloves(cv, color):
-    for u, v in ((40, 16), (32, 48)):
-        cv.box(u, v, 4, 12, 4, {"*": lambda c, r, w, h, face:
-                                cv.noisy(color, 4) if face == "bottom" or (face != "top" and r >= 8) else None})
-
-
-def belt(cv, color, buckle):
-    def f(c, r, w, h, face):
-        if face in ("top", "bottom") or r != 8:
+    def suspenders_fn(face, c, r, fw, fh, X, Y):
+        if face in ("top", "bottom"):
             return None
-        return buckle if face == "front" and c in (3, 4) else cv.noisy(color, 3)
-    cv.box(16, 16, 8, 12, 4, {"*": f})
+        if face == "front" and c in (1, 6) and r <= 8:
+            return buttons if r == 8 and buttons else cloth(oc, face, c, r, fw, fh, X, Y, s + 6, edge=False)
+        if face == "back" and r <= 8 and c in (1 + r // 3, 6 - r // 3):
+            return cloth(oc, face, c, r, fw, fh, X, Y, s + 6, edge=False)
+        return None
+
+    def bodice_fn(face, c, r, fw, fh, X, Y):
+        """Корсаж: от груди до талии, шнуровка спереди."""
+        if face in ("top", "bottom") or r < 2 or r > 9:
+            if face == "front" and r == 1 and c in (1, 6):
+                return cloth(oc, face, c, r, fw, fh, X, Y, s + 6)   # бретели
+            return None
+        px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6, rough=0.04)
+        if face == "front":
+            if c in (3, 4):
+                lace = ch.get("lacing", (230, 220, 200))
+                return lace if (r + c) % 2 == 0 else mul(px, 0.8)
+            if r == 9:
+                return mul(px, 0.85)
+        if r == 2:
+            return mul(px, 1.1)                          # светлый край корсажа
+        return px
+
+    fn = {"coat": coat_fn, "waistcoat": waistcoat_fn, "vest": vest_fn,
+          "suspenders": suspenders_fn, "bodice": bodice_fn}.get(outer)
+    collar = None if female else mul(shirt, 1.04)
+
+    def jacket_fn(face, c, r, fw, fh, X, Y):
+        px = fn(face, c, r, fw, fh, X, Y) if fn else None
+        if px is not None:
+            return px
+        # Воротник рубашки — уголки поверх
+        if collar and face == "front" and r == 0 and c in (2, 5):
+            return collar
+        if collar and face == "front" and r == 1 and c in (2, 5) and outer not in ("vest", "waistcoat"):
+            return mul(collar, 0.93)
+        # Женская блуза: пышный край выреза
+        if female and face == "front" and r == 0 and c in (1, 2, 5, 6):
+            return mul(shirt, 1.05)
+        return None
+
+    cv.box(16, 32, 8, 12, 4, jacket_fn)
+
+    # Полы сюртука на бёдрах — второй слой ног
+    if outer == "coat":
+        def tails(face, c, r, fw, fh, X, Y):
+            if face in ("top", "bottom") or r > 2:
+                return None
+            if face == "front" and (c == 3 if X < 8 else c == 0):
+                return None
+            return cloth(oc, face, c, r, fw, fh, X, Y, s + 6, grad=0.0)
+        cv.box(0, 32, 4, 12, 4, tails)
+        cv.box(0, 48, 4, 12, 4, tails)
+
+    # Грудь (женская модель): цвет как у корсажа/блузы
+    if female:
+        def breast_fn(face, c, r, fw, fh, X, Y):
+            if face == "top":
+                return cloth(shirt, face, c, r, fw, fh, X, Y, s)
+            base = shirt if r == 0 else (oc if outer == "bodice" else shirt)
+            px = cloth(base, face, c, r, fw, fh, X, Y, s + 6, grad=0.0)
+            if face == "front" and outer == "bodice" and r >= 1 and c == 3:
+                return ch.get("lacing", (230, 220, 200)) if r == 1 else mul(px, 0.8)
+            return mul(px, 0.9) if face == "bottom" else px
+        cv.box(64, 48, 7, 3, 1, breast_fn)
+        cv.box(64, 52, 7, 3, 1, lambda face, c, r, fw, fh, X, Y:
+               mul(shirt, 1.06) if face == "front" and r == 0 and c in (0, 1, 5, 6) else None)
 
 
-def bandana(cv, color):
-    def f(c, r, w, h, face):
+# ---------------------------------------------------------------------------
+# Руки
+# ---------------------------------------------------------------------------
+
+def paint_arm(cv, ch, u, v, lu, lv, width):
+    s = cv.seed
+    skin = ch["skin"]
+    shirt = ch["shirt"]
+    female = ch.get("female", False)
+    outer = ch.get("outer")
+    oc = ch.get("outer_color")
+    rolled = ch.get("sleeves") == "rolled"
+    sleeve_end = 6 if rolled else (9 if female else 10)
+    coat = outer == "coat"
+
+    def arm_fn(face, c, r, fw, fh, X, Y):
         if face == "top":
-            return cv.noisy(color, 4)
+            return cloth(oc if coat else shirt, face, c, r, fw, fh, X, Y, s + 6)
+        if face == "bottom":
+            return mul(skin, 0.8)
+        if r < sleeve_end:
+            px = cloth(shirt, face, c, r, fw, fh, X, Y, s + 8, rough=0.06, grad=0.08)
+            if female and r in (0, 1, 2) and not rolled:
+                px = mul(px, 1.04 if r != 2 else 0.9)    # пышный рукав
+            if (c + r * 2) % 7 == 3 or (c, r) in ((1, 4), (2, 7)):
+                px = hue_shift_dark(px, 0.88)            # складки ткани
+            return px
+        px = skin_px(skin, face, c, r, fw, fh, X, Y, s)
+        if r >= 10:
+            px = mul(px, 0.94)                           # кисть
+        if r == 11 and face == "front":
+            px = mul(px, 0.9)
+        return px
+
+    cv.box(u, v, width, 12, 4, arm_fn)
+
+    def sleeve_fn(face, c, r, fw, fh, X, Y):
         if face == "bottom":
             return None
-        if r <= 1:
-            return cv.noisy(color, 4)
-        if face == "back" and r in (2, 3) and c in (3, 4):
-            return shade(color, 0.85)
+        if coat:
+            if face == "top" or r <= 8:
+                px = cloth(oc, face, c, r, fw, fh, X, Y, s + 6)
+                return mul(px, 1.12) if r == 8 else px   # обшлаг
+            if r == 9:
+                return mul(shirt, 1.04)                  # манжета рубашки
+            return None
+        if face == "top":
+            return None
+        if rolled and r == sleeve_end - 1:
+            return mul(shirt, 0.88)                      # закатанный рукав
+        if not rolled and r == sleeve_end - 1:
+            return mul(shirt, 1.05)                      # манжета
+        if female and r == 2 and not rolled:
+            return mul(shirt, 0.92)                      # перехват пышного рукава
         return None
-    cv.box(0, 0, 8, 8, 8, {"*": f})
+
+    cv.box(lu, lv, width, 12, 4, sleeve_fn)
 
 
-def paint_outfit(prof, level):
-    cv = Canvas(128, 64, f"{prof}-{level}")
-    gold = GOLD if level == 3 else None
-    if prof == "builder":
-        # жёлтая каска + оранжевый жилет (со 2 ур. — светоотражающие полосы, на 3 — пояс с золотой пряжкой)
-        hat_helmet(cv, (240, 200, 50), stripe=gold)
-        body_vest(cv, (240, 130, 30), stripe=(230, 230, 130, 255) if level >= 2 else None)
-        if level == 3:
-            belt(cv, (100, 65, 35), GOLD)
-    elif prof == "farmer":
-        band = {1: (205, 175, 90), 2: (120, 80, 45), 3: (190, 45, 40)}[level]
-        hat_brim(cv, (228, 196, 105), band, weave=True, trim=gold)
-        body_bib(cv, (70, 100, 160), gold or (200, 200, 205, 255))
-        if level >= 2:
-            neckerchief(cv, (190, 50, 45, 255))
-    elif prof == "rancher":
-        hat_brim(cv, (125, 85, 48), GOLD[:3] if level == 3 else (60, 40, 25), weave=False)
-        neckerchief(cv, (175, 45, 40, 255))
-        if level >= 2:
-            body_vest(cv, (125, 85, 50), trim=gold)
-        belt(cv, (70, 45, 25), gold or (180, 180, 185, 255))
-    elif prof == "cook":
-        hat_toque(cv, (246, 246, 243), trim=gold)
-        body_apron(cv, (236, 236, 232), (210, 210, 206))
-        if level >= 2:
-            neckerchief(cv, (200, 50, 45, 255))
-    elif prof == "miner":
-        hat_helmet(cv, (230, 170, 40), stripe=gold, lamp=True)
-        body_straps(cv, (45, 60, 95), gold or (170, 170, 175, 255))
-        if level >= 2:
-            gloves(cv, (90, 70, 45))
-    elif prof == "lumberjack":
-        beanie = {1: (50, 90, 60), 2: (160, 45, 40), 3: (50, 90, 60)}[level]
-        hat_helmet(cv, beanie, stripe=gold or (200, 195, 180, 255), knit=True, visor=False)
-        body_straps(cv, (70, 45, 25), gold or (160, 160, 165, 255))
-    elif prof == "blacksmith":
-        bandana(cv, {1: (170, 45, 40), 2: (50, 80, 150), 3: (30, 30, 30)}[level])
-        body_apron(cv, (110, 70, 40), (80, 50, 30))
-        gloves(cv, (80, 55, 35))
-        if level == 3:
-            belt(cv, (60, 40, 25), GOLD)
+# ---------------------------------------------------------------------------
+# Ноги и юбка
+# ---------------------------------------------------------------------------
+
+def paint_leg(cv, ch, u, v, lu, lv):
+    s = cv.seed
+    female = ch.get("female", False)
+    boots = ch["boots"]
+    style = ch.get("boot_style", "tall")
+    socks = ch.get("socks")
+    trousers = ch.get("trousers", ch.get("skirt"))
+    top_boot = {"tall": 6, "socks": 9, "shoes": 9}.get(style, 6)
+    if female:
+        top_boot = 9
+
+    def leg_fn(face, c, r, fw, fh, X, Y):
+        if face == "top":
+            return cloth(trousers, face, c, r, fw, fh, X, Y, s + 1)
+        if face == "bottom":
+            return mul(boots, 0.55)
+        if r >= top_boot:
+            px = cloth(boots, face, c, r, fw, fh, X, Y, s + 9, rough=0.03, grad=0.0)
+            if r == 11:
+                return mul(px, 0.7)                      # подошва
+            if face == "front" and r == top_boot + 1 and style == "shoes":
+                return (196, 170, 96) if c in (1, 2) else px   # пряжка
+            if face == "front" and style == "socks" and r == top_boot + 1 and c in (1, 2):
+                return mul(boots, 1.3)                   # шнурки
+            return mul(px, 1.08) if c in (1, 2) and face == "front" else px
+        if socks and (female or style in ("socks", "shoes")) and r >= top_boot - (3 if female else 2):
+            px = cloth(socks, face, c, r, fw, fh, X, Y, s + 10, rough=0.03, grad=0.0)
+            return mul(px, 0.92) if r % 2 else px        # вязка
+        px = cloth(trousers, face, c, r, fw, fh, X, Y, s + 1, grad=0.06)
+        if face == "front" and (c, r) in ((1, 3), (2, 6), (1, 7)):
+            px = hue_shift_dark(px, 0.9)                 # складки на коленях
+        return px
+
+    cv.box(u, v, 4, 12, 4, leg_fn)
+
+    def layer_fn(face, c, r, fw, fh, X, Y):
+        if face in ("top", "bottom"):
+            return None
+        if style == "tall" and not female and r == 6:
+            return mul(boots, 1.25)                      # отворот сапога
+        return None
+
+    # (у сюртука на этом слое уже нарисованы полы — дорисовываем только пустые клетки)
+    for face, (x, y, fw, fh) in Canvas.faces(lu, lv, 4, 12, 4).items():
+        for r in range(fh):
+            for c in range(fw):
+                if cv.get(x + c, y + r)[3] == 0:
+                    cv.put(x + c, y + r, layer_fn(face, c, r, fw, fh, x + c, y + r))
+
+
+def paint_skirt(cv, ch):
+    s = cv.seed
+    skirt = ch["skirt"]
+    apron = ch.get("apron")
+    hem = ch.get("hem")
+
+    def fold(c):
+        return 0.86 if c % 3 == 2 else (1.04 if c % 3 == 0 else 1.0)
+
+    def upper(face, c, r, fw, fh, X, Y):
+        if face == "bottom":
+            return mul(skirt, 0.5)
+        px = cloth(mul(skirt, fold(c)), face, c, r, fw, fh, X, Y, s + 12, grad=0.1)
+        if face == "front" and apron and 2 <= c <= 6:
+            ap = cloth(apron, face, c, r, fw, fh, X, Y, s + 13, rough=0.03, grad=0.06)
+            return mul(ap, 0.9) if c in (2, 6) else ap
+        if r == 0:
+            return mul(px, 0.8)                          # пояс юбки
+        return px
+
+    cv.box(96, 0, 9, 8, 5, upper)
+
+    def lower(face, c, r, fw, fh, X, Y):
+        if face == "top":
+            return mul(skirt, 0.8)
+        if face == "bottom":
+            return mul(skirt, 0.45)
+        px = cloth(mul(skirt, fold(c + 1)), face, c, r, fw, fh, X, Y, s + 14, grad=0.12)
+        if face == "front" and apron and 2 <= c <= 7 and r <= 2:
+            ap = cloth(apron, face, c, r, fw, fh, X, Y, s + 13, rough=0.03, grad=0.0)
+            return mul(ap, 0.88) if r == 2 or c in (2, 7) else ap
+        if r == 3:
+            return hem if hem else mul(px, 0.78)         # кайма по подолу
+        return px
+
+    cv.box(96, 13, 10, 4, 6, lower)
+
+
+# ---------------------------------------------------------------------------
+
+def paint(name, ch):
+    cv = Canvas(sum(map(ord, name)))
+    paint_head(cv, ch)
+    paint_body(cv, ch)
+    female = ch.get("female", False)
+    if female:
+        paint_arm(cv, ch, 64, 16, 64, 32, 3)
+        paint_arm(cv, ch, 80, 16, 80, 32, 3)
+        paint_skirt(cv, ch)
+    else:
+        paint_arm(cv, ch, 40, 16, 40, 32, 4)
+        paint_arm(cv, ch, 32, 48, 48, 48, 4)
+    paint_leg(cv, ch, 0, 16, 0, 32)
+    paint_leg(cv, ch, 16, 48, 0, 48)
     return cv.im
 
 
 def main():
-    skin_dir = os.path.join(ROOT, "settler")
-    outfit_dir = os.path.join(ROOT, "outfit")
-    os.makedirs(skin_dir, exist_ok=True)
-    os.makedirs(outfit_dir, exist_ok=True)
-    for name, d in SKINS.items():
-        paint_skin(name, d).save(os.path.join(skin_dir, name + ".png"))
-        print("skin", name)
-    for prof in ("builder", "farmer", "rancher", "cook", "miner", "lumberjack", "blacksmith"):
-        for level in (1, 2, 3):
-            suffix = "" if level == 1 else f"_{level}"
-            paint_outfit(prof, level).save(os.path.join(outfit_dir, prof + suffix + ".png"))
-        print("outfit", prof)
+    os.makedirs(OUT, exist_ok=True)
+    for name, ch in CHARACTERS.items():
+        paint(name, ch).save(os.path.join(OUT, name + ".png"))
+        print("saved", name)
 
 
 if __name__ == "__main__":

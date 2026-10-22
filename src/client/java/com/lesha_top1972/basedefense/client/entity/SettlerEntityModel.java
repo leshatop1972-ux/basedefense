@@ -13,23 +13,22 @@ import net.minecraft.client.render.entity.model.SinglePartEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Модель жителя поселения — «человек» с пропорциями игрока. Используется в двух видах:
- * - основа ({@link #getTexturedModelData()}): голова, туловище, руки, ноги и второй слой
- *   (волосы, куртка, рукава, штаны); текстура 64×64 — внешность жителя (5 мужчин, 3 женщины),
- *   с профессией не связана;
- * - наряд профессии ({@link #getOutfitModelData()}): те же части чуть крупнее (поверх одежды)
- *   и головные уборы; текстура 128×64 — левая половина как скин, правая — шляпы/каски.
- * Анимации: шаг с покачиванием корпуса, взмах руками, «дыхание», рабочий удар инструментом,
- * держание инструмента в руке.
+ * Модель жителя поселения (по образцу жителей MineColonies): человек с пропорциями игрока,
+ * у каждой части второй слой (волосы, воротник/жилет, рукава, штанины).
+ * Женская внешность включает свои части: тонкие руки (3 пикселя), грудь, юбку-платье,
+ * пряди волос по спине и хвост. Что показывать — задаёт {@link #setLook(Look)} перед отрисовкой.
+ *
+ * Текстура 128×64:
+ *   левая половина — как скин игрока (голова, тело, широкие руки, ноги и их вторые слои);
+ *   (64,0) пряди по спине, (82,0) хвост, (96,0) юбка, (96,13) низ юбки,
+ *   (64,16)/(64,32) тонкая правая рука и рукав, (80,16)/(80,32) тонкая левая, (64,48)/(64,52) грудь.
  */
 public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> implements ModelWithArms {
 
-    /** Головные уборы. */
-    public enum Headwear {
-        NONE, BRIM_HAT, TOQUE, MINER_HELMET, HARD_HAT, BEANIE
+    /** Как выглядит житель: женщина/мужчина, длинные волосы по спине, хвост. */
+    public record Look(boolean female, boolean longHair, boolean ponytail) {
     }
 
     private final ModelPart root;
@@ -39,19 +38,15 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
     private final ModelPart leftArm;
     private final ModelPart rightLeg;
     private final ModelPart leftLeg;
-    // Головные уборы есть только у модели наряда (у основы — null)
-    @Nullable
-    private final ModelPart brim;
-    @Nullable
-    private final ModelPart crown;
-    @Nullable
-    private final ModelPart toque;
-    @Nullable
-    private final ModelPart helmet;
-    @Nullable
-    private final ModelPart visor;
-    @Nullable
-    private final ModelPart lamp;
+    private final ModelPart rightWide;
+    private final ModelPart rightSlim;
+    private final ModelPart leftWide;
+    private final ModelPart leftSlim;
+    private final ModelPart hairBack;
+    private final ModelPart ponytail;
+    private final ModelPart breast;
+    private final ModelPart skirt;
+    private Look look = new Look(false, false, false);
 
     public SettlerEntityModel(ModelPart root) {
         this.root = root;
@@ -61,13 +56,14 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         this.leftArm = root.getChild("left_arm");
         this.rightLeg = root.getChild("right_leg");
         this.leftLeg = root.getChild("left_leg");
-        boolean outfit = head.hasChild("brim");
-        this.brim = outfit ? head.getChild("brim") : null;
-        this.crown = outfit ? head.getChild("crown") : null;
-        this.toque = outfit ? head.getChild("toque") : null;
-        this.helmet = outfit ? head.getChild("helmet") : null;
-        this.visor = outfit ? head.getChild("visor") : null;
-        this.lamp = outfit ? head.getChild("lamp") : null;
+        this.rightWide = rightArm.getChild("wide");
+        this.rightSlim = rightArm.getChild("slim");
+        this.leftWide = leftArm.getChild("wide");
+        this.leftSlim = leftArm.getChild("slim");
+        this.hairBack = head.getChild("hair_back");
+        this.ponytail = head.getChild("ponytail");
+        this.breast = body.getChild("breast");
+        this.skirt = body.getChild("skirt");
     }
 
     public static TexturedModelData getTexturedModelData() {
@@ -75,111 +71,91 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         ModelPartData root = data.getRoot();
         Dilation outer = new Dilation(0.25f);
 
-        // Голова и волосы (второй слой)
+        // ---------- Голова ----------
         ModelPartData head = root.addChild("head",
-                ModelPartBuilder.create().uv(0, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8),
+                ModelPartBuilder.create()
+                        .uv(0, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8)
+                        .uv(32, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8, new Dilation(0.5f)),
                 ModelTransform.pivot(0.0f, 0.0f, 0.0f));
-        head.addChild("hair",
-                ModelPartBuilder.create().uv(32, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8, new Dilation(0.5f)),
-                ModelTransform.NONE);
-        // Туловище и куртка
+        // Пряди по спине (длинные волосы)
+        head.addChild("hair_back",
+                ModelPartBuilder.create().uv(64, 0).cuboid(-4.0f, 0.0f, 0.0f, 8, 7, 1, new Dilation(0.5f)),
+                ModelTransform.pivot(0.0f, -1.0f, 3.0f));
+        // Хвост, перевязанный на затылке
+        head.addChild("ponytail",
+                ModelPartBuilder.create().uv(82, 0).cuboid(-1.0f, 0.0f, 0.0f, 2, 5, 2),
+                ModelTransform.of(0.0f, -6.0f, 4.0f, 0.55f, 0.0f, 0.0f));
+
+        // ---------- Туловище ----------
         ModelPartData body = root.addChild("body",
-                ModelPartBuilder.create().uv(16, 16).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4),
+                ModelPartBuilder.create()
+                        .uv(16, 16).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4)
+                        .uv(16, 32).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4, outer),
                 ModelTransform.pivot(0.0f, 0.0f, 0.0f));
-        body.addChild("jacket",
-                ModelPartBuilder.create().uv(16, 32).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4, outer),
-                ModelTransform.NONE);
+        body.addChild("breast",
+                ModelPartBuilder.create()
+                        .uv(64, 48).cuboid(-3.5f, 0.0f, -1.0f, 7, 3, 1)
+                        .uv(64, 52).cuboid(-3.5f, 0.0f, -1.0f, 7, 3, 1, outer),
+                ModelTransform.pivot(0.0f, 2.5f, -2.0f));
+        // Юбка-платье: от пояса до колен, внизу шире
+        body.addChild("skirt",
+                ModelPartBuilder.create()
+                        .uv(96, 0).cuboid(-4.5f, 0.0f, -2.5f, 9, 8, 5)
+                        .uv(96, 13).cuboid(-5.0f, 4.0f, -3.0f, 10, 4, 6),
+                ModelTransform.pivot(0.0f, 10.0f, 0.0f));
 
-        // Руки и рукава
-        ModelPartData rightArm = root.addChild("right_arm",
-                ModelPartBuilder.create().uv(40, 16).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4),
+        // ---------- Руки: широкие (мужские) и тонкие (женские) ----------
+        ModelPartData rightArm = root.addChild("right_arm", ModelPartBuilder.create(),
                 ModelTransform.pivot(-5.0f, 2.0f, 0.0f));
-        rightArm.addChild("right_sleeve",
-                ModelPartBuilder.create().uv(40, 32).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4, outer),
+        rightArm.addChild("wide",
+                ModelPartBuilder.create()
+                        .uv(40, 16).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4)
+                        .uv(40, 32).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4, outer),
                 ModelTransform.NONE);
-        ModelPartData leftArm = root.addChild("left_arm",
-                ModelPartBuilder.create().uv(32, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4),
+        rightArm.addChild("slim",
+                ModelPartBuilder.create()
+                        .uv(64, 16).cuboid(-2.0f, -2.0f, -2.0f, 3, 12, 4)
+                        .uv(64, 32).cuboid(-2.0f, -2.0f, -2.0f, 3, 12, 4, outer),
+                ModelTransform.NONE);
+        ModelPartData leftArm = root.addChild("left_arm", ModelPartBuilder.create(),
                 ModelTransform.pivot(5.0f, 2.0f, 0.0f));
-        leftArm.addChild("left_sleeve",
-                ModelPartBuilder.create().uv(48, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4, outer),
+        leftArm.addChild("wide",
+                ModelPartBuilder.create()
+                        .uv(32, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4)
+                        .uv(48, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4, outer),
+                ModelTransform.NONE);
+        leftArm.addChild("slim",
+                ModelPartBuilder.create()
+                        .uv(80, 16).cuboid(-1.0f, -2.0f, -2.0f, 3, 12, 4)
+                        .uv(80, 32).cuboid(-1.0f, -2.0f, -2.0f, 3, 12, 4, outer),
                 ModelTransform.NONE);
 
-        // Ноги и штанины
-        ModelPartData rightLeg = root.addChild("right_leg",
-                ModelPartBuilder.create().uv(0, 16).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4),
-                ModelTransform.pivot(-1.9f, 12.0f, 0.0f));
-        rightLeg.addChild("right_pants",
-                ModelPartBuilder.create().uv(0, 32).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, outer),
-                ModelTransform.NONE);
-        ModelPartData leftLeg = root.addChild("left_leg",
-                ModelPartBuilder.create().uv(16, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4),
-                ModelTransform.pivot(1.9f, 12.0f, 0.0f));
-        leftLeg.addChild("left_pants",
-                ModelPartBuilder.create().uv(0, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, outer),
-                ModelTransform.NONE);
-
-        return TexturedModelData.of(data, 64, 64);
-    }
-
-    /** Наряд профессии: одежда поверх (чуть больше основы) и головные уборы. Текстура 128×64. */
-    public static TexturedModelData getOutfitModelData() {
-        ModelData data = new ModelData();
-        ModelPartData root = data.getRoot();
-        Dilation over = new Dilation(0.45f);
-
-        ModelPartData head = root.addChild("head",
-                ModelPartBuilder.create().uv(0, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8, new Dilation(0.62f)),
-                ModelTransform.pivot(0.0f, 0.0f, 0.0f));
-        // Головные уборы (правая половина текстуры)
-        head.addChild("brim",
-                ModelPartBuilder.create().uv(64, 0).cuboid(-7.0f, -7.6f, -7.0f, 14, 1, 14),
-                ModelTransform.NONE);
-        head.addChild("crown",
-                ModelPartBuilder.create().uv(64, 16).cuboid(-4.0f, -10.6f, -4.0f, 8, 3, 8, new Dilation(0.45f)),
-                ModelTransform.NONE);
-        head.addChild("toque",
-                ModelPartBuilder.create().uv(96, 16).cuboid(-4.0f, -14.0f, -4.0f, 8, 6, 8, new Dilation(0.6f)),
-                ModelTransform.NONE);
-        head.addChild("helmet",
-                ModelPartBuilder.create().uv(64, 32).cuboid(-4.0f, -9.0f, -4.0f, 8, 3, 8, new Dilation(0.7f)),
-                ModelTransform.NONE);
-        head.addChild("visor",
-                ModelPartBuilder.create().uv(96, 32).cuboid(-4.0f, -6.0f, -7.4f, 8, 1, 3),
-                ModelTransform.NONE);
-        head.addChild("lamp",
-                ModelPartBuilder.create().uv(96, 40).cuboid(-1.0f, -8.6f, -5.6f, 2, 2, 1),
-                ModelTransform.NONE);
-
-        root.addChild("body",
-                ModelPartBuilder.create().uv(16, 16).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4, over),
-                ModelTransform.pivot(0.0f, 0.0f, 0.0f));
-        root.addChild("right_arm",
-                ModelPartBuilder.create().uv(40, 16).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4, over),
-                ModelTransform.pivot(-5.0f, 2.0f, 0.0f));
-        root.addChild("left_arm",
-                ModelPartBuilder.create().uv(32, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4, over),
-                ModelTransform.pivot(5.0f, 2.0f, 0.0f));
+        // ---------- Ноги ----------
         root.addChild("right_leg",
-                ModelPartBuilder.create().uv(0, 16).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, over),
+                ModelPartBuilder.create()
+                        .uv(0, 16).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4)
+                        .uv(0, 32).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, outer),
                 ModelTransform.pivot(-1.9f, 12.0f, 0.0f));
         root.addChild("left_leg",
-                ModelPartBuilder.create().uv(16, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, over),
+                ModelPartBuilder.create()
+                        .uv(16, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4)
+                        .uv(0, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, outer),
                 ModelTransform.pivot(1.9f, 12.0f, 0.0f));
+
         return TexturedModelData.of(data, 128, 64);
     }
 
-    /** Какие головные уборы показать (вызывается рендером перед отрисовкой). */
-    public void setHeadwear(Headwear headwear) {
-        if (brim == null || crown == null || toque == null || helmet == null || visor == null || lamp == null) {
-            return;
-        }
-        brim.visible = headwear == Headwear.BRIM_HAT;
-        crown.visible = headwear == Headwear.BRIM_HAT;
-        toque.visible = headwear == Headwear.TOQUE;
-        helmet.visible = headwear == Headwear.MINER_HELMET || headwear == Headwear.HARD_HAT
-                || headwear == Headwear.BEANIE;
-        visor.visible = headwear == Headwear.MINER_HELMET || headwear == Headwear.HARD_HAT;
-        lamp.visible = headwear == Headwear.MINER_HELMET;
+    /** Какие части показать (вызывается рендером перед отрисовкой каждого жителя). */
+    public void setLook(Look look) {
+        this.look = look;
+        rightWide.visible = !look.female();
+        leftWide.visible = !look.female();
+        rightSlim.visible = look.female();
+        leftSlim.visible = look.female();
+        breast.visible = look.female();
+        skirt.visible = look.female();
+        hairBack.visible = look.longHair();
+        ponytail.visible = look.ponytail();
     }
 
     @Override
@@ -201,10 +177,11 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         // Шаг: ноги и руки в противофазе, корпус чуть поворачивается, всё тело слегка подпрыгивает
         float phase = limbAngle * 0.6662f;
         float swing = MathHelper.cos(phase) * limbDistance;
-        rightLeg.pitch = swing * 1.4f;
-        leftLeg.pitch = -swing * 1.4f;
-        rightArm.pitch = -swing * 1.0f;
-        leftArm.pitch = swing * 1.0f;
+        float stride = look.female() ? 1.1f : 1.4f;          // женщины шагают мельче
+        rightLeg.pitch = swing * stride;
+        leftLeg.pitch = -swing * stride;
+        rightArm.pitch = -swing * 0.9f;
+        leftArm.pitch = swing * 0.9f;
         body.yaw = MathHelper.sin(phase) * 0.08f * walk;
         rightArm.yaw = body.yaw;
         leftArm.yaw = body.yaw;
@@ -219,6 +196,13 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         leftArm.roll = -0.05f - breath * 0.03f;
         rightArm.pivotY += breath * 0.15f;
         leftArm.pivotY += breath * 0.15f;
+
+        // Юбка и волосы покачиваются при ходьбе
+        skirt.pitch = MathHelper.sin(phase * 2.0f) * 0.04f * walk;
+        skirt.roll = MathHelper.sin(phase) * 0.05f * walk;
+        hairBack.pitch = 0.08f * walk + Math.max(0.0f, -head.pitch) * 0.5f;
+        ponytail.pitch = 0.55f + MathHelper.sin(phase) * 0.18f * walk + breath * 0.02f;
+        ponytail.roll = MathHelper.cos(phase) * 0.12f * walk;
 
         // Держит инструмент — рука немного вперёд
         if (!entity.getMainHandStack().isEmpty()) {
@@ -254,16 +238,20 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         leftArm.setPivot(5.0f, 2.0f, 0.0f);
         rightLeg.setPivot(-1.9f, 12.0f, 0.0f);
         leftLeg.setPivot(1.9f, 12.0f, 0.0f);
-        for (ModelPart part : new ModelPart[]{head, body, rightArm, leftArm, rightLeg, leftLeg}) {
+        for (ModelPart part : new ModelPart[]{head, body, rightArm, leftArm, rightLeg, leftLeg, skirt, hairBack}) {
             part.pitch = 0.0f;
             part.yaw = 0.0f;
             part.roll = 0.0f;
         }
     }
 
-    /** Куда рисовать предмет в руке. */
+    /** Куда рисовать предмет в руке (у тонкой руки — на полпикселя ближе к телу, как у игрока). */
     @Override
     public void setArmAngle(Arm arm, MatrixStack matrices) {
-        (arm == Arm.LEFT ? leftArm : rightArm).rotate(matrices);
+        ModelPart part = arm == Arm.LEFT ? leftArm : rightArm;
+        float shift = look.female() ? 0.5f * (arm == Arm.RIGHT ? 1 : -1) : 0.0f;
+        part.pivotX += shift;
+        part.rotate(matrices);
+        part.pivotX -= shift;
     }
 }

@@ -1,7 +1,6 @@
 package com.lesha_top1972.basedefense.client;
 
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
-import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel.Headwear;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
@@ -22,15 +21,14 @@ public class BasedefenseClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.SETTLER, SettlerScreen::new);
         HandledScreens.register(ModScreenHandlers.HOUSE, HouseScreen::new);
 
-        // Модель жителей: случайная внешность + наряд профессии (головной убор и одежда поверх)
+        // Жители: случайная внешность (5 мужчин, 3 женщины), одна модель на все профессии
         EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);
-        EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.OUTFIT_LAYER, SettlerEntityModel::getOutfitModelData);
-        EntityRendererRegistry.register(ModEntities.BUILDER, ctx -> new SettlerEntityRenderer(ctx, "builder", Headwear.HARD_HAT));
-        EntityRendererRegistry.register(ModEntities.FARMER, ctx -> new SettlerEntityRenderer(ctx, "farmer", Headwear.BRIM_HAT));
-        EntityRendererRegistry.register(ModEntities.RANCHER, ctx -> new SettlerEntityRenderer(ctx, "rancher", Headwear.BRIM_HAT));
-        EntityRendererRegistry.register(ModEntities.COOK, ctx -> new SettlerEntityRenderer(ctx, "cook", Headwear.TOQUE));
-        EntityRendererRegistry.register(ModEntities.MINER, ctx -> new SettlerEntityRenderer(ctx, "miner", Headwear.MINER_HELMET));
-        EntityRendererRegistry.register(ModEntities.BLACKSMITH, ctx -> new SettlerEntityRenderer(ctx, "blacksmith", Headwear.NONE));
-        EntityRendererRegistry.register(ModEntities.LUMBERJACK, ctx -> new SettlerEntityRenderer(ctx, "lumberjack", Headwear.BEANIE));
+        EntityRendererRegistry.register(ModEntities.BUILDER, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FARMER, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.RANCHER, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.COOK, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MINER, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BLACKSMITH, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.LUMBERJACK, SettlerEntityRenderer::new);
     }
 }
