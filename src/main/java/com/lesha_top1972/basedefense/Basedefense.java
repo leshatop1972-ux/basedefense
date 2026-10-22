@@ -5,6 +5,7 @@ import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
+import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.structure.BuildManager;
 import net.fabricmc.api.ModInitializer;
 
@@ -21,5 +22,6 @@ public class Basedefense implements ModInitializer {
         ModScreenHandlers.init();
         BuildManager.init();
         ResearchManager.init();
+        SettlementManager.init();
     }
 }

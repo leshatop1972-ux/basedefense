@@ -4,12 +4,16 @@ import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.research.Technology;
 import com.lesha_top1972.basedefense.screen.BaseScreenHandler;
+import com.lesha_top1972.basedefense.settlement.SettlementItems;
+import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -22,6 +26,7 @@ import java.util.List;
 /**
  * Экран меню базы: заголовок «База», строка вкладок и область с древом исследований.
  * Клик по квадратику технологии открывает справа панель с описанием и кнопкой «Исследовать».
+ * Вкладка «Потребности» — запасы поселения, склад и слот, куда кладут еду и ресурсы.
  * Всё рисуется кодом (заливками), поэтому окно подстраивается под размер экрана.
  */
 public class BaseScreen extends HandledScreen<BaseScreenHandler> {
@@ -64,7 +69,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     // ---------- Размеры ----------
     private static final int HEADER_H = 18;
     private static final int TAB_H = 18;
-    private static final int TAB_W = 92;
+    private static final int TAB_W_MAX = 92;
     private static final int PAD = 6;
     private static final int NODE = 26;          // размер квадратика технологии
     private static final int NODE_STEP = 44;     // шаг сетки древа
@@ -75,8 +80,11 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private static final Text[] TABS = {
             Text.translatable("screen.basedefense.base.tab.technologies"),
             Text.translatable("screen.basedefense.base.tab.defense"),
-            Text.translatable("screen.basedefense.base.tab.economy")
+            Text.translatable("screen.basedefense.base.tab.economy"),
+            Text.translatable("screen.basedefense.base.tab.needs")
     };
+    /** Номер вкладки «Потребности». */
+    private static final int NEEDS_TAB = 3;
 
     private int selectedTab = 0;
     @Nullable
@@ -99,6 +107,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         contentTop = getTabsTop() + TAB_H;
         contentRight = this.x + this.backgroundWidth - PAD;
         contentBottom = this.y + this.backgroundHeight - PAD;
+        handler.setSlotsVisible(selectedTab == NEEDS_TAB);
     }
 
     @Override
@@ -147,8 +156,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         context.fill(left + 2, headerBottom, right - 2, headerBottom + 1, FRAME_MID);
         context.drawText(this.textRenderer, this.title, left + PAD + 2, headerTop + 5, TEXT_DARK, false);
 
-        // Монеты игрока — справа в заголовке
-        drawCoinCounter(context, right - PAD - 2, headerTop + 1);
+        // Монеты игрока — справа в заголовке, рядом — сколько жителей
+        int coinsLeft = drawCoinCounter(context, right - PAD - 2, headerTop + 1);
+        Text settlers = Text.translatable("screen.basedefense.base.settlers_short",
+                handler.getProp(BaseScreenHandler.PROP_SETTLERS));
+        context.drawText(this.textRenderer, settlers, coinsLeft - 10 - this.textRenderer.getWidth(settlers),
+                headerTop + 5, TEXT_BODY, false);
 
         // Область контента
         context.fill(contentLeft - 1, contentTop - 1, contentRight + 1, contentBottom + 1, CONTENT_EDGE);
@@ -159,6 +172,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int tabsTop = getTabsTop();
         for (int i = 0; i < TABS.length; i++) {
             drawTab(context, i, tabsTop, mouseX, mouseY);
+        }
+
+        // Вкладка «Потребности» рисуется отдельно
+        if (selectedTab == NEEDS_TAB) {
+            drawNeeds(context, mouseX, mouseY);
+            return;
         }
 
         // Древо исследований текущей вкладки: сначала линии-связи, потом квадратики
@@ -193,16 +212,19 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     // Элементы
     // ---------------------------------------------------------------------
 
-    private void drawCoinCounter(DrawContext context, int rightX, int y) {
+    /** @return левый край счётчика (чтобы рядом нарисовать что-то ещё) */
+    private int drawCoinCounter(DrawContext context, int rightX, int y) {
         String count = String.valueOf(ResearchManager.countCoins(this.client.player));
         int textW = this.textRenderer.getWidth(count);
         context.drawText(this.textRenderer, count, rightX - textW, y + 4, TEXT_DARK, false);
         context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), rightX - textW - 18, y);
+        return rightX - textW - 18;
     }
 
     private void drawTab(DrawContext context, int index, int tabsTop, int mouseX, int mouseY) {
         int tabLeft = getTabLeft(index);
-        int tabRight = tabLeft + TAB_W;
+        int tabW = getTabWidth();
+        int tabRight = tabLeft + tabW;
         boolean selected = index == selectedTab;
         boolean hovered = isOverTab(index, mouseX, mouseY);
 
@@ -217,7 +239,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         }
 
         Text label = TABS[index];
-        int textX = tabLeft + (TAB_W - this.textRenderer.getWidth(label)) / 2;
+        int textX = tabLeft + (tabW - this.textRenderer.getWidth(label)) / 2;
         int textY = top + (bottom - top - this.textRenderer.fontHeight) / 2 + 1;
         context.drawText(this.textRenderer, label, textX, textY, selected ? TEXT_DARK : TEXT_MUTED, false);
     }
@@ -396,6 +418,143 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     }
 
     // ---------------------------------------------------------------------
+    // Вкладка «Потребности»
+    // ---------------------------------------------------------------------
+
+    private void drawNeeds(DrawContext context, int mouseX, int mouseY) {
+        int settlers = handler.getProp(BaseScreenHandler.PROP_SETTLERS);
+        int food = handler.getProp(BaseScreenHandler.PROP_FOOD);
+        int upkeep = handler.getProp(BaseScreenHandler.PROP_UPKEEP);
+        boolean frozen = food <= SettlementManager.FREEZE_AT || upkeep <= SettlementManager.FREEZE_AT;
+        int left = this.x + 12;
+        int right = contentRight - 6;
+
+        // Жители и общее состояние
+        int y1 = this.y + 48;
+        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.settlers", settlers),
+                left, y1, TEXT_DARK, false);
+        Text status = settlers == 0 ? Text.translatable("screen.basedefense.needs.status.empty")
+                : frozen ? Text.translatable("screen.basedefense.needs.status.frozen")
+                : Text.translatable("screen.basedefense.needs.status.ok");
+        context.drawText(this.textRenderer, status, right - this.textRenderer.getWidth(status), y1,
+                settlers == 0 ? TEXT_MUTED : (frozen ? BAD : GOOD), false);
+
+        // Запас еды
+        int y2 = this.y + 62;
+        int foodPerDay = settlers * SettlementManager.FOOD_PER_SETTLER;
+        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.food", food),
+                left, y2, counterColor(food), false);
+        Text foodInfo = foodPerDay == 0 ? Text.empty()
+                : food > 0 ? Text.translatable("screen.basedefense.needs.food_days", foodPerDay, food / foodPerDay)
+                : Text.translatable("screen.basedefense.needs.per_day", foodPerDay);
+        context.drawText(this.textRenderer, foodInfo, right - this.textRenderer.getWidth(foodInfo), y2, TEXT_MUTED, false);
+
+        // Запас эксплуатации + полоска от -20 до 30
+        int y3 = this.y + 76;
+        Text upkeepText = Text.translatable("screen.basedefense.needs.upkeep", upkeep, SettlementManager.UPKEEP_MAX);
+        context.drawText(this.textRenderer, upkeepText, left, y3, counterColor(upkeep), false);
+        int barLeft = left + this.textRenderer.getWidth(upkeepText) + 8;
+        drawUpkeepBar(context, barLeft, y3 + 1, right, upkeep);
+
+        // Склад ресурсов эксплуатации: есть / нужно в день
+        int y4 = this.y + 92;
+        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.storage"), left, y4, TEXT_BODY, false);
+        int iy = this.y + 102;
+        int ix = left;
+        ix = drawStock(context, new ItemStack(Items.IRON_NUGGET), ix, iy,
+                handler.getProp(BaseScreenHandler.PROP_NUGGETS), settlers * SettlementManager.NUGGETS_PER_SETTLER);
+        ix = drawStock(context, new ItemStack(Items.OAK_PLANKS), ix, iy,
+                handler.getProp(BaseScreenHandler.PROP_PLANKS), settlers * SettlementManager.PLANKS_PER_SETTLER);
+        drawStock(context, new ItemStack(Items.COBBLESTONE), ix, iy,
+                handler.getProp(BaseScreenHandler.PROP_COBBLE), settlers * SettlementManager.COBBLE_PER_SETTLER);
+
+        // Подпись над инвентарём
+        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.inventory"),
+                this.x + BaseScreenHandler.INV_X, this.y + BaseScreenHandler.INV_Y - 10, TEXT_MUTED, false);
+
+        // Рамки слотов
+        for (Slot slot : handler.slots) {
+            drawSlotFrame(context, this.x + slot.x, this.y + slot.y, slot.id == 0);
+        }
+
+        // Подпись к слоту «положить»
+        int dx = this.x + BaseScreenHandler.DEPOSIT_X;
+        int dy = this.y + BaseScreenHandler.DEPOSIT_Y;
+        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.needs.deposit"),
+                dx - 2, dy - 12, TEXT_DARK, false);
+        int hintY = dy + 22;
+        for (OrderedText line : this.textRenderer.wrapLines(
+                Text.translatable("screen.basedefense.needs.deposit_hint"), right - dx + 2)) {
+            if (hintY + 9 > contentBottom - 2) {
+                break;
+            }
+            context.drawText(this.textRenderer, line, dx - 2, hintY, TEXT_MUTED, false);
+            hintY += 10;
+        }
+    }
+
+    /** Цвет счётчика: зелёный — в плюсе, оранжевый — в минусе, красный — жители замерли. */
+    private static int counterColor(int value) {
+        if (value <= SettlementManager.FREEZE_AT) {
+            return BAD;
+        }
+        return value < 0 ? ACCENT : GOOD;
+    }
+
+    private void drawUpkeepBar(DrawContext context, int barLeft, int top, int barRight, int value) {
+        if (barRight - barLeft < 20) {
+            return;
+        }
+        int min = SettlementManager.FREEZE_AT;
+        int max = SettlementManager.UPKEEP_MAX;
+        int h = 7;
+        context.fill(barLeft - 1, top - 1, barRight + 1, top + h + 1, CONTENT_EDGE);
+        context.fill(barLeft, top, barRight, top + h, NODE_LOCKED_BG);
+        int clamped = Math.max(min, Math.min(max, value));
+        int zeroX = barLeft + (barRight - barLeft) * (-min) / (max - min);
+        int valueX = barLeft + (barRight - barLeft) * (clamped - min) / (max - min);
+        int color = counterColor(value);
+        context.fill(Math.min(zeroX, valueX), top, Math.max(zeroX, valueX), top + h, color);
+        context.fill(zeroX, top - 1, zeroX + 1, top + h + 1, TEXT_DARK); // отметка «0»
+    }
+
+    /** Иконка ресурса и «есть / нужно в день». @return x для следующего ресурса */
+    private int drawStock(DrawContext context, ItemStack icon, int x, int y, int have, int need) {
+        context.drawItem(icon, x, y);
+        String text = have + " / " + need;
+        context.drawText(this.textRenderer, text, x + 18, y + 4, have >= need ? TEXT_DARK : BAD, false);
+        return x + 18 + this.textRenderer.getWidth(text) + 14;
+    }
+
+    private void drawSlotFrame(DrawContext context, int sx, int sy, boolean highlight) {
+        context.fill(sx - 1, sy - 1, sx + 17, sy + 17, highlight ? ACCENT : CONTENT_EDGE);
+        context.fill(sx, sy, sx + 17, sy + 17, FRAME_LIGHT);
+        context.fill(sx, sy, sx + 16, sy + 16, highlight ? INFO_BG : NODE_LOCKED_BG);
+    }
+
+    /** В подсказке к предмету показываем, сколько он даёт Базе. */
+    @Override
+    protected List<Text> getTooltipFromItem(ItemStack stack) {
+        List<Text> lines = new ArrayList<>(super.getTooltipFromItem(stack));
+        if (selectedTab == NEEDS_TAB) {
+            int food = SettlementItems.foodValue(stack);
+            int nuggets = SettlementItems.nuggetValue(stack);
+            Text extra = null;
+            if (food > 0) {
+                extra = Text.translatable("tooltip.basedefense.food_points", food);
+            } else if (nuggets > 0) {
+                extra = Text.translatable("tooltip.basedefense.nuggets", nuggets);
+            } else if (SettlementItems.isPlanks(stack) || SettlementItems.isCobblestone(stack)) {
+                extra = Text.translatable("tooltip.basedefense.upkeep_item");
+            }
+            if (extra != null) {
+                lines.add(extra.copy().styled(s -> s.withColor(GOOD & 0xFFFFFF)));
+            }
+        }
+        return lines;
+    }
+
+    // ---------------------------------------------------------------------
     // Координаты
     // ---------------------------------------------------------------------
 
@@ -404,7 +563,13 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     }
 
     private int getTabLeft(int index) {
-        return this.x + PAD + index * (TAB_W + 3);
+        return this.x + PAD + index * (getTabWidth() + 3);
+    }
+
+    /** Ширина вкладки: все вкладки должны влезть в окно. */
+    private int getTabWidth() {
+        int fit = (this.backgroundWidth - 2 * PAD - 3 * (TABS.length - 1)) / TABS.length;
+        return Math.min(TAB_W_MAX, fit);
     }
 
     private int getNodeX(Technology tech) {
@@ -422,7 +587,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private boolean isOverTab(int index, double mouseX, double mouseY) {
         int tabLeft = getTabLeft(index);
         int tabsTop = getTabsTop();
-        return mouseX >= tabLeft && mouseX < tabLeft + TAB_W && mouseY >= tabsTop - 2 && mouseY < tabsTop + TAB_H;
+        return mouseX >= tabLeft && mouseX < tabLeft + getTabWidth() && mouseY >= tabsTop - 2 && mouseY < tabsTop + TAB_H;
     }
 
     private boolean isOverNode(Technology tech, double mouseX, double mouseY) {
@@ -473,6 +638,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                     if (selectedTab != i) {
                         selectedTab = i;
                         selectedTech = null;
+                        handler.setSlotsVisible(i == NEEDS_TAB);
                         playClick();
                     }
                     return true;

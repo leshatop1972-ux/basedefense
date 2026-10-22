@@ -1,5 +1,8 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.settlement.SettlementManager;
+import com.lesha_top1972.basedefense.settlement.SettlementState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
@@ -15,6 +18,8 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -28,6 +33,8 @@ import java.util.EnumSet;
  * Общий класс для жителей поселения (фермер, скотовод и т.д.).
  * Дружелюбный, гуляет возле своего дома и не уходит от него
  * дальше чем на {@link #HOME_RADIUS} блоков.
+ * Каждый житель привязан к Базе: он входит в поселение и потребляет его запасы.
+ * Если запасы поселения кончились (счётчик дошёл до -20) — житель замирает.
  */
 public abstract class SettlerEntity extends PathAwareEntity {
 
@@ -50,12 +57,13 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new SwimGoal(this));
-        this.goalSelector.add(1, new ReturnHomeGoal(this));
-        this.goalSelector.add(2, new GoToWalkTargetGoal(this, 0.8));
-        this.goalSelector.add(3, new WanderAroundFarGoal(this, 0.6, 0.001f));
-        this.goalSelector.add(4, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
-        this.goalSelector.add(5, new LookAroundGoal(this));
+        this.goalSelector.add(0, new FreezeGoal(this));   // нет запасов — стоит на месте
+        this.goalSelector.add(1, new SwimGoal(this));
+        this.goalSelector.add(2, new ReturnHomeGoal(this));
+        this.goalSelector.add(3, new GoToWalkTargetGoal(this, 0.8));
+        this.goalSelector.add(4, new WanderAroundFarGoal(this, 0.6, 0.001f));
+        this.goalSelector.add(5, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
+        this.goalSelector.add(6, new LookAroundGoal(this));
     }
 
     /** Назначить дом. Гуляет житель только в пределах радиуса от него. */
@@ -77,6 +85,26 @@ public abstract class SettlerEntity extends PathAwareEntity {
         if (!this.getWorld().isClient && this.homePos == null) {
             setHome(this.getBlockPos());
         }
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            // Привязка к Базе: житель записывается в поселение (раз в секунду — на всякий случай)
+            if (this.age % 20 == 1 && this.isAlive()) {
+                SettlementState.get(serverWorld.getServer()).addSettler(this.getUuid());
+            }
+            // Замерший житель — сердитые облачка над головой, чтобы было видно
+            if (this.age % 60 == 0 && SettlementManager.isFrozen(serverWorld.getServer())) {
+                serverWorld.spawnParticles(ParticleTypes.ANGRY_VILLAGER, this.getX(), this.getY() + 2.2, this.getZ(),
+                        1, 0.2, 0.1, 0.2, 0.0);
+            }
+        }
+    }
+
+    /** Житель погиб или удалён — убираем его из поселения. */
+    @Override
+    public void remove(Entity.RemovalReason reason) {
+        if (this.getWorld() instanceof ServerWorld serverWorld && reason.shouldDestroy()) {
+            SettlementState.get(serverWorld.getServer()).removeSettler(this.getUuid());
+        }
+        super.remove(reason);
     }
 
     @Override
@@ -115,6 +143,43 @@ public abstract class SettlerEntity extends PathAwareEntity {
     @Override
     protected SoundEvent getDeathSound() {
         return SoundEvents.ENTITY_VILLAGER_DEATH;
+    }
+
+    /** Пока у поселения нет запасов (счётчик дошёл до -20) — житель стоит и ничего не делает. */
+    static class FreezeGoal extends Goal {
+
+        private final SettlerEntity settler;
+
+        FreezeGoal(SettlerEntity settler) {
+            this.settler = settler;
+            // Плавать (прыгать) не мешаем, чтобы житель не утонул
+            this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        private boolean frozen() {
+            return settler.getWorld() instanceof ServerWorld serverWorld
+                    && SettlementManager.isFrozen(serverWorld.getServer());
+        }
+
+        @Override
+        public boolean canStart() {
+            return frozen();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return frozen();
+        }
+
+        @Override
+        public void start() {
+            settler.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            settler.getNavigation().stop();
+        }
     }
 
     /** Возвращает жителя домой, если он ушёл дальше {@link #HOME_RADIUS} блоков. */
