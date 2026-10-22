@@ -86,6 +86,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     private static final TrackedData<Integer> LEVEL =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Внешность: 0..4 — мужчины, 5..7 — женщины (-1 — ещё не выбрана). Не зависит от профессии. */
+    private static final TrackedData<Integer> SKIN =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    public static final int MALE_SKINS = 5;
+    public static final int FEMALE_SKINS = 3;
 
     @Nullable
     private BlockPos homePos;
@@ -122,6 +127,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(LEVEL, 1);
+        this.dataTracker.startTracking(SKIN, -1);
     }
 
     @Override
@@ -215,6 +221,25 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     public int getLevel() {
         return this.dataTracker.get(LEVEL);
+    }
+
+    /** Номер внешности (0..7) или -1, пока не выбрана. */
+    public int getSkin() {
+        return this.dataTracker.get(SKIN);
+    }
+
+    public boolean isFemale() {
+        return getSkin() >= MALE_SKINS;
+    }
+
+    /** Новому жителю — случайная внешность и русское имя с фамилией (имя видно над головой и в меню). */
+    private void ensureLook() {
+        if (getSkin() < 0) {
+            this.dataTracker.set(SKIN, this.random.nextInt(MALE_SKINS + FEMALE_SKINS));
+        }
+        if (!this.hasCustomName()) {
+            this.setCustomName(Text.literal(SettlerNames.random(this.random, isFemale())));
+        }
     }
 
     private void setLevel(int level) {
@@ -480,6 +505,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
         if (!this.getWorld().isClient && this.homePos == null) {
             setHome(this.getBlockPos());
         }
+        if (!this.getWorld().isClient && (getSkin() < 0 || !this.hasCustomName())) {
+            ensureLook();
+        }
         if (this.getWorld() instanceof ServerWorld serverWorld && this.age % 20 == 1 && this.isAlive()) {
             // Привязка к Базе: житель записан в поселение вместе со своим расходом еды
             updateSettlement(serverWorld);
@@ -556,6 +584,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
             nbt.put("Home", NbtHelper.fromBlockPos(homePos));
         }
         nbt.putInt("Level", getLevel());
+        nbt.putInt("Skin", getSkin());
         if (chestPos != null) {
             nbt.put("Chest", NbtHelper.fromBlockPos(chestPos));
         }
@@ -571,6 +600,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
             setHome(NbtHelper.toBlockPos(nbt.getCompound("Home")));
         }
         setLevel(nbt.contains("Level") ? nbt.getInt("Level") : 1);
+        int skin = nbt.contains("Skin") ? nbt.getInt("Skin") : -1;
+        this.dataTracker.set(SKIN, skin >= 0 && skin < MALE_SKINS + FEMALE_SKINS ? skin : -1);
         chestPos = nbt.contains("Chest") ? NbtHelper.toBlockPos(nbt.getCompound("Chest")) : null;
         lastWorkDay = nbt.contains("LastWorkDay") ? nbt.getLong("LastWorkDay") : -1;
         storage.readNbtList(nbt.getList("Storage", NbtElement.COMPOUND_TYPE));

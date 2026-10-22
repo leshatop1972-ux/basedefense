@@ -30,10 +30,10 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
 
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
-    private static final int HEADER_H = 22;
-    private static final int STATUS_T = 32;      // карточка состояния (от верха окна)
-    private static final int STATUS_B = 56;
-    private static final int BUTTONS_TOP = 88;
+    private static final int HEADER_H = 30;
+    private static final int STATUS_T = 40;      // карточка состояния (от верха окна)
+    private static final int STATUS_B = 64;
+    private static final int BUTTONS_TOP = 96;
 
     public SettlerScreen(SettlerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -90,13 +90,17 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         UiKit.panel(context, left, top, right, bottom);
         UiKit.header(context, left + 4, top + 4, right - 4, HEADER_H);
 
-        // Заголовок: имя и уровень (ромбики — сколько уровней из трёх)
+        // Заголовок: имя и фамилия, под ними профессия; справа уровень (ромбики — сколько из трёх)
         int level = handler.getProp(SettlerScreenHandler.PROP_LEVEL);
-        UiKit.embossed(context, this.textRenderer, this.title, left + 11, top + 11, UiKit.TEXT_DARK);
+        UiKit.embossed(context, this.textRenderer, this.title, left + 11, top + 9, UiKit.TEXT_DARK);
+        Text profession = Registries.ENTITY_TYPE.get(handler.getProp(SettlerScreenHandler.PROP_PROFESSION)).getName();
+        context.drawText(this.textRenderer, profession, left + 11, top + 21, UiKit.TEXT_MUTED, false);
         for (int i = 0; i < SettlerEntity.MAX_LEVEL; i++) {
             int dx = right - 14 - (SettlerEntity.MAX_LEVEL - 1 - i) * 8;
-            UiKit.diamond(context, dx, top + 14, i < level ? UiKit.GOLD : 0xFFBBA987);
+            UiKit.diamond(context, dx, top + 13, i < level ? UiKit.GOLD : 0xFFBBA987);
         }
+        Text lv = Text.translatable("screen.basedefense.settler.level_short", level);
+        context.drawText(this.textRenderer, lv, right - 10 - this.textRenderer.getWidth(lv), top + 21, UiKit.TEXT_MUTED, false);
 
         // Карточка состояния: значок + текст
         Text status = statusText();
@@ -112,11 +116,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         }
 
         // Еда в день
-        context.drawItem(new ItemStack(Items.BREAD), left + 12, top + 60);
+        context.drawItem(new ItemStack(Items.BREAD), left + 12, top + 68);
         UiKit.embossed(context, this.textRenderer, Text.translatable("screen.basedefense.settler.food",
-                handler.getProp(SettlerScreenHandler.PROP_WORK_FOOD)), left + 32, top + 65, UiKit.TEXT_BODY);
+                handler.getProp(SettlerScreenHandler.PROP_WORK_FOOD)), left + 32, top + 73, UiKit.TEXT_BODY);
 
-        UiKit.divider(context, left + 12, right - 12, top + 80);
+        UiKit.divider(context, left + 12, right - 12, top + 88);
 
         // Кнопки
         for (int i = 0; i < buttonCount(); i++) {

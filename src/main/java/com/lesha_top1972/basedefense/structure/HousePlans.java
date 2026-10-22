@@ -601,8 +601,8 @@ public final class HousePlans {
         }
         // Рынок: 4 прилавка с полосатыми навесами (прилавком к центру площади)
         stall(p, 1, 2, 1, Blocks.RED_WOOL, Blocks.HAY_BLOCK.getDefaultState(), Blocks.POTTED_POPPY);
-        stall(p, size - 4, 2, 1, Blocks.YELLOW_WOOL, Blocks.PUMPKIN.getDefaultState(), Blocks.POTTED_DANDELION);
-        stall(p, 1, size - 3, size - 2, Blocks.LIGHT_BLUE_WOOL, Blocks.MELON.getDefaultState(), Blocks.POTTED_AZURE_BLUET);
+        stall(p, size - 4, 2, 1, Blocks.YELLOW_WOOL, Blocks.STRIPPED_SPRUCE_LOG.getDefaultState().with(Properties.AXIS, Direction.Axis.X), Blocks.POTTED_DANDELION);
+        stall(p, 1, size - 3, size - 2, Blocks.LIGHT_BLUE_WOOL, Blocks.BROWN_WOOL.getDefaultState(), Blocks.POTTED_AZURE_BLUET);
         stall(p, size - 4, size - 3, size - 2, Blocks.GREEN_WOOL, barrel(), Blocks.POTTED_FERN);
 
         // Готово — запоминаем площадь

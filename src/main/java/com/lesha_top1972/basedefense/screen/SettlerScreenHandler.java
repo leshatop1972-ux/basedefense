@@ -39,7 +39,8 @@ public class SettlerScreenHandler extends ScreenHandler {
     public static final int PROP_BUILD_HOUSE = 10;    // какой дом строит (номер предмета-блока, -1 — нет)
     public static final int PROP_BUILD_PROGRESS = 11; // готовность дома, %
     public static final int PROP_BUILD_MISSING = 12;  // какого материала не хватает (номер предмета, -1 — нет)
-    public static final int PROP_COUNT = 13;
+    public static final int PROP_PROFESSION = 13;     // номер типа жителя (для названия профессии)
+    public static final int PROP_COUNT = 14;
 
     /** Житель (только на сервере; на клиенте null). */
     @Nullable
@@ -77,6 +78,7 @@ public class SettlerScreenHandler extends ScreenHandler {
                             ? Registries.ITEM.getRawId(Registries.ITEM.get(
                                     new Identifier(Basedefense.MOD_ID, b.getCurrentHouse().getId()))) : -1;
                     case PROP_BUILD_PROGRESS -> settler instanceof BuilderEntity b ? b.getBuildProgress() : 0;
+                    case PROP_PROFESSION -> Registries.ENTITY_TYPE.getRawId(settler.getType());
                     case PROP_BUILD_MISSING -> settler instanceof BuilderEntity b && b.getMissingItem() != null
                             ? Registries.ITEM.getRawId(b.getMissingItem()) : -1;
                     default -> 0;

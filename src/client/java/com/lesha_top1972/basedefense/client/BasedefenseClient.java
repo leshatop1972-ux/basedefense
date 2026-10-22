@@ -22,8 +22,9 @@ public class BasedefenseClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.SETTLER, SettlerScreen::new);
         HandledScreens.register(ModScreenHandlers.HOUSE, HouseScreen::new);
 
-        // Модель и отрисовка жителей поселения: текстура и головной убор
+        // Модель жителей: случайная внешность + наряд профессии (головной убор и одежда поверх)
         EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);
+        EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.OUTFIT_LAYER, SettlerEntityModel::getOutfitModelData);
         EntityRendererRegistry.register(ModEntities.BUILDER, ctx -> new SettlerEntityRenderer(ctx, "builder", Headwear.HARD_HAT));
         EntityRendererRegistry.register(ModEntities.FARMER, ctx -> new SettlerEntityRenderer(ctx, "farmer", Headwear.BRIM_HAT));
         EntityRendererRegistry.register(ModEntities.RANCHER, ctx -> new SettlerEntityRenderer(ctx, "rancher", Headwear.BRIM_HAT));

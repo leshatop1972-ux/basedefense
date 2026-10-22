@@ -13,13 +13,15 @@ import net.minecraft.client.render.entity.model.SinglePartEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Модель жителя поселения — «человек» с пропорциями игрока:
- * голова, туловище, руки и ноги, у каждой части второй слой одежды (волосы, куртка, рукава, штаны).
- * Головные уборы (шляпа, колпак, каска с фонариком, шапка) — отдельные части, включаются по профессии.
- *
- * Текстура 128×64: левая половина — как скин игрока (64×64), правая — головные уборы.
+ * Модель жителя поселения — «человек» с пропорциями игрока. Используется в двух видах:
+ * - основа ({@link #getTexturedModelData()}): голова, туловище, руки, ноги и второй слой
+ *   (волосы, куртка, рукава, штаны); текстура 64×64 — внешность жителя (5 мужчин, 3 женщины),
+ *   с профессией не связана;
+ * - наряд профессии ({@link #getOutfitModelData()}): те же части чуть крупнее (поверх одежды)
+ *   и головные уборы; текстура 128×64 — левая половина как скин, правая — шляпы/каски.
  * Анимации: шаг с покачиванием корпуса, взмах руками, «дыхание», рабочий удар инструментом,
  * держание инструмента в руке.
  */
@@ -37,11 +39,18 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
     private final ModelPart leftArm;
     private final ModelPart rightLeg;
     private final ModelPart leftLeg;
+    // Головные уборы есть только у модели наряда (у основы — null)
+    @Nullable
     private final ModelPart brim;
+    @Nullable
     private final ModelPart crown;
+    @Nullable
     private final ModelPart toque;
+    @Nullable
     private final ModelPart helmet;
+    @Nullable
     private final ModelPart visor;
+    @Nullable
     private final ModelPart lamp;
 
     public SettlerEntityModel(ModelPart root) {
@@ -52,12 +61,13 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         this.leftArm = root.getChild("left_arm");
         this.rightLeg = root.getChild("right_leg");
         this.leftLeg = root.getChild("left_leg");
-        this.brim = head.getChild("brim");
-        this.crown = head.getChild("crown");
-        this.toque = head.getChild("toque");
-        this.helmet = head.getChild("helmet");
-        this.visor = head.getChild("visor");
-        this.lamp = head.getChild("lamp");
+        boolean outfit = head.hasChild("brim");
+        this.brim = outfit ? head.getChild("brim") : null;
+        this.crown = outfit ? head.getChild("crown") : null;
+        this.toque = outfit ? head.getChild("toque") : null;
+        this.helmet = outfit ? head.getChild("helmet") : null;
+        this.visor = outfit ? head.getChild("visor") : null;
+        this.lamp = outfit ? head.getChild("lamp") : null;
     }
 
     public static TexturedModelData getTexturedModelData() {
@@ -72,26 +82,6 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         head.addChild("hair",
                 ModelPartBuilder.create().uv(32, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8, new Dilation(0.5f)),
                 ModelTransform.NONE);
-        // Головные уборы (правая половина текстуры)
-        head.addChild("brim",
-                ModelPartBuilder.create().uv(64, 0).cuboid(-7.0f, -7.6f, -7.0f, 14, 1, 14),
-                ModelTransform.NONE);
-        head.addChild("crown",
-                ModelPartBuilder.create().uv(64, 16).cuboid(-4.0f, -10.6f, -4.0f, 8, 3, 8, new Dilation(0.45f)),
-                ModelTransform.NONE);
-        head.addChild("toque",
-                ModelPartBuilder.create().uv(96, 16).cuboid(-4.0f, -14.0f, -4.0f, 8, 6, 8, new Dilation(0.6f)),
-                ModelTransform.NONE);
-        head.addChild("helmet",
-                ModelPartBuilder.create().uv(64, 32).cuboid(-4.0f, -9.0f, -4.0f, 8, 3, 8, new Dilation(0.7f)),
-                ModelTransform.NONE);
-        head.addChild("visor",
-                ModelPartBuilder.create().uv(96, 32).cuboid(-4.0f, -6.0f, -7.4f, 8, 1, 3),
-                ModelTransform.NONE);
-        head.addChild("lamp",
-                ModelPartBuilder.create().uv(96, 40).cuboid(-1.0f, -8.6f, -5.6f, 2, 2, 1),
-                ModelTransform.NONE);
-
         // Туловище и куртка
         ModelPartData body = root.addChild("body",
                 ModelPartBuilder.create().uv(16, 16).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4),
@@ -128,11 +118,61 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
                 ModelPartBuilder.create().uv(0, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, outer),
                 ModelTransform.NONE);
 
+        return TexturedModelData.of(data, 64, 64);
+    }
+
+    /** Наряд профессии: одежда поверх (чуть больше основы) и головные уборы. Текстура 128×64. */
+    public static TexturedModelData getOutfitModelData() {
+        ModelData data = new ModelData();
+        ModelPartData root = data.getRoot();
+        Dilation over = new Dilation(0.45f);
+
+        ModelPartData head = root.addChild("head",
+                ModelPartBuilder.create().uv(0, 0).cuboid(-4.0f, -8.0f, -4.0f, 8, 8, 8, new Dilation(0.62f)),
+                ModelTransform.pivot(0.0f, 0.0f, 0.0f));
+        // Головные уборы (правая половина текстуры)
+        head.addChild("brim",
+                ModelPartBuilder.create().uv(64, 0).cuboid(-7.0f, -7.6f, -7.0f, 14, 1, 14),
+                ModelTransform.NONE);
+        head.addChild("crown",
+                ModelPartBuilder.create().uv(64, 16).cuboid(-4.0f, -10.6f, -4.0f, 8, 3, 8, new Dilation(0.45f)),
+                ModelTransform.NONE);
+        head.addChild("toque",
+                ModelPartBuilder.create().uv(96, 16).cuboid(-4.0f, -14.0f, -4.0f, 8, 6, 8, new Dilation(0.6f)),
+                ModelTransform.NONE);
+        head.addChild("helmet",
+                ModelPartBuilder.create().uv(64, 32).cuboid(-4.0f, -9.0f, -4.0f, 8, 3, 8, new Dilation(0.7f)),
+                ModelTransform.NONE);
+        head.addChild("visor",
+                ModelPartBuilder.create().uv(96, 32).cuboid(-4.0f, -6.0f, -7.4f, 8, 1, 3),
+                ModelTransform.NONE);
+        head.addChild("lamp",
+                ModelPartBuilder.create().uv(96, 40).cuboid(-1.0f, -8.6f, -5.6f, 2, 2, 1),
+                ModelTransform.NONE);
+
+        root.addChild("body",
+                ModelPartBuilder.create().uv(16, 16).cuboid(-4.0f, 0.0f, -2.0f, 8, 12, 4, over),
+                ModelTransform.pivot(0.0f, 0.0f, 0.0f));
+        root.addChild("right_arm",
+                ModelPartBuilder.create().uv(40, 16).cuboid(-3.0f, -2.0f, -2.0f, 4, 12, 4, over),
+                ModelTransform.pivot(-5.0f, 2.0f, 0.0f));
+        root.addChild("left_arm",
+                ModelPartBuilder.create().uv(32, 48).cuboid(-1.0f, -2.0f, -2.0f, 4, 12, 4, over),
+                ModelTransform.pivot(5.0f, 2.0f, 0.0f));
+        root.addChild("right_leg",
+                ModelPartBuilder.create().uv(0, 16).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, over),
+                ModelTransform.pivot(-1.9f, 12.0f, 0.0f));
+        root.addChild("left_leg",
+                ModelPartBuilder.create().uv(16, 48).cuboid(-2.0f, 0.0f, -2.0f, 4, 12, 4, over),
+                ModelTransform.pivot(1.9f, 12.0f, 0.0f));
         return TexturedModelData.of(data, 128, 64);
     }
 
     /** Какие головные уборы показать (вызывается рендером перед отрисовкой). */
     public void setHeadwear(Headwear headwear) {
+        if (brim == null || crown == null || toque == null || helmet == null || visor == null || lamp == null) {
+            return;
+        }
         brim.visible = headwear == Headwear.BRIM_HAT;
         crown.visible = headwear == Headwear.BRIM_HAT;
         toque.visible = headwear == Headwear.TOQUE;
