@@ -498,7 +498,11 @@ public final class HousePlans {
         void settle(EntityType<? extends SettlerEntity> type, @Nullable BlockPos chestLocal) {
             int sx = doorX;
             int sz = 2;
+            int dx = doorX;
             p.onFinish(task -> {
+                // Запоминаем вход в дом — к нему строитель проложит тропинку
+                TownState.get(task.getWorld().getServer()).addEntrance(task.toWorld(dx, 0, -1),
+                        task.getFacing().getOpposite(), dimensionOf(task));
                 SettlerEntity settler = type.create(task.getWorld());
                 if (settler == null) {
                     return;
@@ -514,6 +518,91 @@ public final class HousePlans {
                 task.getWorld().spawnEntity(settler);
             });
         }
+    }
+
+    private static String dimensionOf(BuildTask task) {
+        return task.getWorld().getRegistryKey().getValue().toString();
+    }
+
+    // =====================================================================
+    // Центральная площадь 11×11: мощение кольцами, звонница с колоколом,
+    // скамейки, фонари и клумбы по углам. Жителя нет — сюда ходят все жители.
+    // =====================================================================
+    public static final int SQUARE_RADIUS = 5;
+
+    public static StructurePlan townSquare() {
+        int c = SQUARE_RADIUS;            // центр площади
+        int size = 2 * c + 1;
+        StructurePlan p = new StructurePlan(new BlockPos(c, 1, -1));
+        // Расчистка и засыпка
+        for (int x = -1; x <= size; x++) {
+            for (int z = -1; z <= size; z++) {
+                for (int y = 1; y <= 6; y++) {
+                    p.set(x, y, z, AIR);
+                }
+            }
+        }
+        for (int x = 0; x < size; x++) {
+            for (int z = 0; z < size; z++) {
+                for (int y = -2; y <= -1; y++) {
+                    p.fill(x, y, z, DIRT);
+                }
+                // Мощение кольцами от центра
+                int ring = Math.max(Math.abs(x - c), Math.abs(z - c));
+                BlockState ground = switch (ring) {
+                    case 0, 1 -> Blocks.STONE_BRICKS.getDefaultState();
+                    case 2 -> Blocks.POLISHED_ANDESITE.getDefaultState();
+                    case 4 -> COBBLE;
+                    default -> Blocks.DIRT_PATH.getDefaultState();
+                };
+                p.set(x, 0, z, ground);
+            }
+        }
+        // Клумбы в углах: трава и цветы
+        int[][] corners = {{0, 0}, {size - 1, 0}, {0, size - 1}, {size - 1, size - 1}};
+        for (int i = 0; i < corners.length; i++) {
+            int cx = corners[i][0];
+            int cz = corners[i][1];
+            int sx = cx == 0 ? 1 : -1;
+            int sz = cz == 0 ? 1 : -1;
+            p.set(cx, 0, cz, Blocks.GRASS_BLOCK.getDefaultState());
+            p.set(cx + sx, 0, cz, Blocks.GRASS_BLOCK.getDefaultState());
+            p.set(cx, 0, cz + sz, Blocks.GRASS_BLOCK.getDefaultState());
+            BlockState flower = (i % 2 == 0 ? Blocks.POPPY : Blocks.DANDELION).getDefaultState();
+            p.late(cx, 1, cz, flower);
+            p.late(cx + sx, 1, cz, (i % 2 == 0 ? Blocks.DANDELION : Blocks.POPPY).getDefaultState());
+            p.late(cx, 1, cz + sz, Blocks.AZURE_BLUET.getDefaultState());
+        }
+        // Звонница: два столба, перекладина и колокол
+        BlockState logX = LOG.with(Properties.AXIS, Direction.Axis.X);
+        for (int y = 1; y <= 3; y++) {
+            p.set(c - 1, y, c, LOG);
+            p.set(c + 1, y, c, LOG);
+        }
+        for (int x = c - 1; x <= c + 1; x++) {
+            p.set(x, 4, c, logX);
+        }
+        p.set(c, 5, c, Blocks.SPRUCE_SLAB.getDefaultState());
+        p.late(c, 3, c, Blocks.BELL.getDefaultState()
+                .with(Properties.ATTACHMENT, net.minecraft.block.enums.Attachment.CEILING)
+                .with(Properties.HORIZONTAL_FACING, Direction.NORTH));
+        // Скамейки лицом к колоколу (проходы по центру каждой стороны свободны)
+        for (int d : new int[]{-1, 1}) {
+            p.set(c - 3, 1, c + d, stairs(Direction.WEST));
+            p.set(c + 3, 1, c + d, stairs(Direction.EAST));
+            p.set(c + d, 1, c + 3, stairs(Direction.NORTH));
+            p.set(c + d, 1, c - 3, stairs(Direction.SOUTH));
+        }
+        // Фонари на столбах
+        for (int[] lp : new int[][]{{1, 1}, {size - 2, 1}, {1, size - 2}, {size - 2, size - 2}}) {
+            p.set(lp[0], 1, lp[1], FENCE);
+            p.set(lp[0], 2, lp[1], FENCE);
+            p.late(lp[0], 3, lp[1], Blocks.LANTERN.getDefaultState());
+        }
+        // Готово — запоминаем площадь
+        p.onFinish(task -> TownState.get(task.getWorld().getServer()).setSquare(
+                task.toWorld(c, 0, c), task.toWorld(c, 3, c), SQUARE_RADIUS, dimensionOf(task)));
+        return p;
     }
 
     // =====================================================================

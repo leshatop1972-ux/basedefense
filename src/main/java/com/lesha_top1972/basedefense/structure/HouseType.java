@@ -18,7 +18,8 @@ public enum HouseType {
     COOK("cook_house", HousePlans::cook, false),
     MINER("miner_house", HousePlans::miner, false),
     BLACKSMITH("blacksmith_house", HousePlans::blacksmith, false),
-    LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false);
+    LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false),
+    TOWN_SQUARE("town_square", HousePlans::townSquare, false);
 
     private final String id;
     private final Supplier<StructurePlan> factory;

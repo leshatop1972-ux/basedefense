@@ -35,6 +35,8 @@ public final class ModBlocks {
     public static final Block BLACKSMITH_HOUSE = house("blacksmith_house", HouseType.BLACKSMITH);
     /** Дом лесоруба (посадка деревьев). */
     public static final Block LUMBERJACK_HOUSE = house("lumberjack_house", HouseType.LUMBERJACK);
+    /** Центральная площадь (колокол; сюда ходят жители, к ней ведут тропинки). */
+    public static final Block TOWN_SQUARE = house("town_square", HouseType.TOWN_SQUARE);
 
     private ModBlocks() {
     }
@@ -53,6 +55,6 @@ public final class ModBlocks {
         // Вкладка «Функциональные блоки» — после верстака
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
-                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE));
+                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE));
     }
 }

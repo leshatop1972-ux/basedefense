@@ -108,10 +108,15 @@
   "screen.basedefense.house.tip.stock": "In the builder's chests: %s",
   "screen.basedefense.house.stock": "in chests: %s",
   "screen.basedefense.house.done": "done ✔",
-  "screen.basedefense.settler.build.idle": "No orders — place a house block",
+  "screen.basedefense.settler.build.idle": "No orders — place a house or square block",
   "screen.basedefense.settler.build.walking": "Going to build: %s",
   "screen.basedefense.settler.build.building": "Building: %s — %s%%",
   "screen.basedefense.settler.build.missing": "Missing: %s",
   "screen.basedefense.house.tip.placed": "Placed: %s of %s",
-  "screen.basedefense.house.tip.bring": "Still need to bring: %s"
+  "screen.basedefense.house.tip.bring": "Still need to bring: %s",
+  "block.basedefense.town_square": "Town Square",
+  "research.basedefense.town_square": "Town Square",
+  "research.basedefense.town_square.desc": "A paved square with a bell tower, benches, lanterns and flower beds. The builder builds it. Settlers sometimes come here to rest, and the idle builder lays paths from the square to every house.",
+  "research.basedefense.town_square.work": "The town square is the heart of the settlement.\nDuring the day settlers sometimes come to stand by the bell (their loot is not reduced).\nAn idle builder lays paths: a ring around the square, straight main roads and branches to house doors.\nMaterials: stone bricks, polished andesite, cobblestone, spruce, benches, lanterns, flowers. The bell is free.",
+  "screen.basedefense.settler.build.paths": "Laying paths"
 }

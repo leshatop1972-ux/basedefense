@@ -49,6 +49,9 @@ public final class BuildCost {
         if (state.contains(Properties.DOUBLE_BLOCK_HALF) && state.get(Properties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER) {
             return null;
         }
+        if (block == Blocks.BELL) {
+            return null;   // колокол поселению выдаёт мод (в обычном Minecraft его не скрафтить)
+        }
         if (block instanceof FlowerPotBlock) {
             return Items.FLOWER_POT;
         }

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "basedefense:block/town_square_side",
+    "up": "basedefense:block/town_square_top",
+    "down": "basedefense:block/town_square_bottom",
+    "north": "basedefense:block/town_square_front",
+    "south": "basedefense:block/town_square_side",
+    "east": "basedefense:block/town_square_side",
+    "west": "basedefense:block/town_square_side"
+  }
+}

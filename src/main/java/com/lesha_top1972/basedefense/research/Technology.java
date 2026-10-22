@@ -24,6 +24,7 @@ public enum Technology {
     // Исследования хранятся по id, поэтому порядок в списке можно менять
     BUILDER_HOUSE("builder_house", 40, 0, 0, 0, "builder_house", null),
     FARMER_HOUSE("farmer_house", 60, 0, 1, 0, "farmer_house", BUILDER_HOUSE),
+    TOWN_SQUARE("town_square", 80, 0, 1, 1, "town_square", FARMER_HOUSE),
     RANCHER_HOUSE("rancher_house", 100, 0, 2, 0, "rancher_house", FARMER_HOUSE),
     COOK_HOUSE("cook_house", 120, 0, 3, 0, "cook_house", RANCHER_HOUSE),
     MINER_HOUSE("miner_house", 150, 0, 3, 1, "miner_house", RANCHER_HOUSE),
@@ -84,6 +85,7 @@ public enum Technology {
         return switch (this) {
             case BUILDER_HOUSE -> ModBlocks.BUILDER_HOUSE;
             case FARMER_HOUSE -> ModBlocks.FARMER_HOUSE;
+            case TOWN_SQUARE -> ModBlocks.TOWN_SQUARE;
             case RANCHER_HOUSE -> ModBlocks.RANCHER_HOUSE;
             case COOK_HOUSE -> ModBlocks.COOK_HOUSE;
             case MINER_HOUSE -> ModBlocks.MINER_HOUSE;

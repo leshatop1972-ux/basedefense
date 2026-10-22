@@ -5,6 +5,8 @@ import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
+import com.lesha_top1972.basedefense.structure.TownState;
+import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
@@ -130,6 +132,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         this.goalSelector.add(1, new LongDoorInteractGoal(this, true));   // открывает и закрывает двери
         this.goalSelector.add(2, new ReturnHomeGoal(this));
         this.goalSelector.add(3, new WorkGoal(this));         // работает (грядки, загон…)
+        this.goalSelector.add(3, new VisitSquareGoal(this));  // иногда ходит на центральную площадь
         this.goalSelector.add(4, new GoToWalkTargetGoal(this, 0.8));
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.6, 0.001f));
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
@@ -193,9 +196,12 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return ItemStack.EMPTY;
     }
 
-    /** Житель занят делом вдали от дома (строитель на стройке) — не тянуть его домой. */
+    /** Житель гуляет на площади (см. VisitSquareGoal). */
+    private boolean visitingSquare;
+
+    /** Житель занят делом вдали от дома (строитель на стройке, прогулка на площадь) — не тянуть его домой. */
     protected boolean isAwayOnDuty() {
-        return false;
+        return visitingSquare;
     }
 
     /** Сколько еды житель тратит в день прямо сейчас. */
@@ -852,6 +858,120 @@ public abstract class SettlerEntity extends PathAwareEntity {
         @Override
         public void stop() {
             settler.getNavigation().stop();
+        }
+    }
+
+    /**
+     * Иногда (днём, в среднем раз в несколько минут) житель бросает дела и идёт на центральную площадь:
+     * стоит у колокола, переходит с места на место, может позвонить в колокол.
+     * Добычу это не уменьшает — она всё равно появится в сундуке на рассвете.
+     */
+    static class VisitSquareGoal extends Goal {
+
+        /** Площадь не дальше этого от дома жителя. */
+        private static final double MAX_DISTANCE = 128.0;
+
+        private final SettlerEntity settler;
+        @Nullable
+        private BlockPos center;
+        @Nullable
+        private BlockPos bell;
+        @Nullable
+        private BlockPos spot;
+        private int timeLeft;
+        private int nextSpot;
+        private boolean rang;
+
+        VisitSquareGoal(SettlerEntity settler) {
+            this.settler = settler;
+            this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            if (!(settler.getWorld() instanceof ServerWorld world) || !world.isDay()
+                    || settler.getRandom().nextInt(2400) != 0 || settler.isSettlementFrozen()) {
+                return false;
+            }
+            TownState.Square square = TownState.get(world.getServer())
+                    .getSquare(world.getRegistryKey().getValue().toString());
+            BlockPos home = settler.getHome();
+            if (square == null || home == null
+                    || !square.center().isWithinDistance(home, MAX_DISTANCE)) {
+                return false;
+            }
+            center = square.center();
+            bell = square.bell();
+            return true;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return timeLeft > 0 && center != null && !settler.isSettlementFrozen();
+        }
+
+        @Override
+        public void start() {
+            settler.visitingSquare = true;
+            timeLeft = 600 + settler.getRandom().nextInt(900);   // 30–75 секунд
+            rang = false;
+            pickSpot();
+        }
+
+        @Override
+        public void stop() {
+            settler.visitingSquare = false;
+            settler.getNavigation().stop();
+            spot = null;
+        }
+
+        @Override
+        public void tick() {
+            timeLeft--;
+            if (spot == null || center == null) {
+                return;
+            }
+            double dist = settler.squaredDistanceTo(Vec3d.ofBottomCenter(spot));
+            if (dist > 2.0 * 2.0) {
+                if (settler.getNavigation().isIdle() || settler.age % 40 == 0) {
+                    boolean ok = settler.getNavigation().startMovingTo(spot.getX() + 0.5, spot.getY(),
+                            spot.getZ() + 0.5, 0.6);
+                    if (!ok && dist > 48 * 48) {
+                        timeLeft = 0;   // дойти нельзя — бросаем затею
+                    }
+                }
+                return;
+            }
+            // На площади: смотрит на колокол, иногда переходит, изредка звонит
+            if (bell != null) {
+                settler.getLookControl().lookAt(bell.getX() + 0.5, bell.getY() + 0.5, bell.getZ() + 0.5);
+            }
+            if (--nextSpot <= 0) {
+                pickSpot();
+            }
+            if (!rang && bell != null && settler.getRandom().nextInt(300) == 0
+                    && settler.squaredDistanceTo(Vec3d.ofCenter(bell)) < 4.5 * 4.5
+                    && settler.getWorld().getBlockState(bell).getBlock() instanceof BellBlock bellBlock) {
+                settler.swingHand(Hand.MAIN_HAND);
+                bellBlock.ring(settler.getWorld(), bell, null);
+                rang = true;
+            }
+        }
+
+        /** Случайное место на площади (по кольцу вокруг звонницы). */
+        private void pickSpot() {
+            if (center == null) {
+                return;
+            }
+            nextSpot = 160 + settler.getRandom().nextInt(200);
+            int r = 2 + settler.getRandom().nextInt(2);
+            int a = settler.getRandom().nextInt(4 * 2 * r);
+            int side = a / (2 * r);
+            int t = a % (2 * r) - r;
+            int x = switch (side) { case 0 -> t; case 1 -> r; case 2 -> -t; default -> -r; };
+            int z = switch (side) { case 0 -> -r; case 1 -> t; case 2 -> r; default -> -t; };
+            spot = center.add(x, 1, z);
+            settler.getNavigation().startMovingTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, 0.6);
         }
     }
 }

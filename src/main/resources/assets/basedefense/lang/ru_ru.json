@@ -108,10 +108,15 @@
   "screen.basedefense.house.tip.stock": "В сундуках строителя: %s",
   "screen.basedefense.house.stock": "в сундуках: %s",
   "screen.basedefense.house.done": "готово ✔",
-  "screen.basedefense.settler.build.idle": "Нет заказов — поставь блок дома",
+  "screen.basedefense.settler.build.idle": "Нет заказов — поставь блок дома или площади",
   "screen.basedefense.settler.build.walking": "Идёт на стройку: %s",
   "screen.basedefense.settler.build.building": "Строит: %s — %s%%",
   "screen.basedefense.settler.build.missing": "Нет материала: %s",
   "screen.basedefense.house.tip.placed": "Поставлено: %s из %s",
-  "screen.basedefense.house.tip.bring": "Нужно принести ещё: %s"
+  "screen.basedefense.house.tip.bring": "Нужно принести ещё: %s",
+  "block.basedefense.town_square": "Центральная площадь",
+  "research.basedefense.town_square": "Центральная площадь",
+  "research.basedefense.town_square.desc": "Мощёная площадь со звонницей, скамейками, фонарями и клумбами. Её построит строитель. Жители иногда приходят сюда отдохнуть, а строитель в свободное время прокладывает от площади тропинки ко всем домам.",
+  "research.basedefense.town_square.work": "Центральная площадь — сердце поселения.\nЖители днём иногда приходят сюда постоять у колокола (добыча в сундуках от этого не уменьшается).\nСтроитель без заказов прокладывает тропинки: кольцо вокруг площади, прямые главные дороги и ответвления к дверям домов.\nТропинки ведут к домам, которые достроены после этого обновления мода.\nМатериалы: каменные кирпичи, полированный андезит, булыжник, ель, скамейки, фонари, цветы. Колокол — бесплатно.",
+  "screen.basedefense.settler.build.paths": "Прокладывает тропинки"
 }

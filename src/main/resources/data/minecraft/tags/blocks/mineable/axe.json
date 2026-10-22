@@ -8,6 +8,7 @@
     "basedefense:miner_house",
     "basedefense:blacksmith_house",
     "basedefense:lumberjack_house",
-    "basedefense:builder_house"
+    "basedefense:builder_house",
+    "basedefense:town_square"
   ]
 }

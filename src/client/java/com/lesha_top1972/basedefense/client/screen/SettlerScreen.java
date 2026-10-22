@@ -189,6 +189,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
             return switch (bs) {
                 case BuilderEntity.STATUS_BUILDING -> Items.IRON_SHOVEL;
                 case BuilderEntity.STATUS_WALKING -> Items.LEATHER_BOOTS;
+                case BuilderEntity.STATUS_PATHS -> Items.DIRT_PATH;
                 case BuilderEntity.STATUS_MISSING -> {
                     int raw = handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING);
                     yield raw < 0 ? Items.BARRIER : Registries.ITEM.get(raw);
@@ -213,6 +214,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
                     house, handler.getProp(SettlerScreenHandler.PROP_BUILD_PROGRESS));
             case BuilderEntity.STATUS_MISSING -> Text.translatable("screen.basedefense.settler.build.missing",
                     itemName(handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING)));
+            case BuilderEntity.STATUS_PATHS -> Text.translatable("screen.basedefense.settler.build.paths");
             default -> Text.translatable("screen.basedefense.settler.build.idle");
         };
     }

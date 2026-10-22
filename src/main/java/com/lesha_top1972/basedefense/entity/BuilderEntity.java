@@ -5,6 +5,8 @@ import com.lesha_top1972.basedefense.structure.BuildCost;
 import com.lesha_top1972.basedefense.structure.BuildTask;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
 import com.lesha_top1972.basedefense.structure.HouseType;
+import com.lesha_top1972.basedefense.structure.PathPlanner;
+import com.lesha_top1972.basedefense.structure.TownState;
 import com.lesha_top1972.basedefense.structure.StructurePlan;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
@@ -28,6 +30,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -55,6 +58,7 @@ public class BuilderEntity extends SettlerEntity {
     public static final int STATUS_WALKING = 2;    // идёт на стройку
     public static final int STATUS_BUILDING = 3;   // строит
     public static final int STATUS_MISSING = 4;    // не хватает материала
+    public static final int STATUS_PATHS = 5;      // заказов нет — прокладывает тропинки
 
     private int status = STATUS_IDLE;
     private int progress;
@@ -70,6 +74,14 @@ public class BuilderEntity extends SettlerEntity {
     private BuildTask task;
     private double budget;
     private List<BlockPos> chestCache = List.of();
+
+    // ---------- Тропинки (когда нет заказов) ----------
+    private final ArrayDeque<BlockPos> pathQueue = new ArrayDeque<>();
+    private int pathRevision = -1;
+    private int pathReplan;
+    @Nullable
+    private BlockPos pathTarget;
+    private int pathStuck;
     private int chestCacheAge = 1000;
 
     public BuilderEntity(EntityType<? extends PathAwareEntity> type, World world) {
@@ -80,6 +92,7 @@ public class BuilderEntity extends SettlerEntity {
     protected void initGoals() {
         super.initGoals();
         this.goalSelector.add(3, new BuildGoal(this));
+        this.goalSelector.add(3, new PathGoal(this));
     }
 
     // ---------- Профессия ----------
@@ -105,7 +118,7 @@ public class BuilderEntity extends SettlerEntity {
 
     @Override
     protected boolean isAwayOnDuty() {
-        return site != null;
+        return super.isAwayOnDuty() || site != null || pathTarget != null;
     }
 
     public int getBuildStatus() {
@@ -163,8 +176,10 @@ public class BuilderEntity extends SettlerEntity {
         }
         if (site == null) {
             clearWork();
+            pathTick(world, dim);
             return;
         }
+        pathTarget = null;
         // Блок дома сломали — заказ отменён
         if (world.isChunkLoaded(site.pos) && !(world.getBlockState(site.pos).getBlock() instanceof HouseBlock)) {
             construction.removeSite(site.pos, dim);
@@ -194,6 +209,62 @@ public class BuilderEntity extends SettlerEntity {
         }
         if (task.isDone()) {
             finish(world, construction, dim);
+        }
+    }
+
+    /**
+     * Заказов нет — прокладываем тропинки: кольцо у площади, главные дороги и ответвления к домам
+     * (см. PathPlanner). Нужна построенная центральная площадь. Материалы не нужны.
+     */
+    private void pathTick(ServerWorld world, String dim) {
+        TownState town = TownState.get(world.getServer());
+        TownState.Square square = town.getSquare(dim);
+        if (square == null) {
+            pathTarget = null;
+            pathQueue.clear();
+            return;
+        }
+        // План пересчитываем, когда появился новый дом/площадь или раз в минуту, если всё сделано
+        if (town.getRevision() != pathRevision || (pathQueue.isEmpty() && pathTarget == null && --pathReplan <= 0)) {
+            pathQueue.clear();
+            pathQueue.addAll(PathPlanner.plan(square, town.getEntrances(dim)));
+            pathRevision = town.getRevision();
+            pathReplan = 1200;
+            pathTarget = null;
+        }
+        if (isSettlementFrozen()) {
+            return;
+        }
+        // Следующая клетка, где тропинки ещё нет (не больше 48 проверок за тик)
+        for (int i = 0; pathTarget == null && i < 48 && !pathQueue.isEmpty(); i++) {
+            BlockPos tile = pathQueue.poll();
+            BlockPos ground = PathPlanner.groundAt(world, tile.getX(), tile.getZ());
+            if (ground != null && PathPlanner.needsPath(world, ground)) {
+                pathTarget = ground;
+                pathStuck = 0;
+            }
+        }
+        if (pathTarget == null) {
+            return;
+        }
+        status = STATUS_PATHS;
+        double dx = this.getX() - (pathTarget.getX() + 0.5);
+        double dz = this.getZ() - (pathTarget.getZ() + 0.5);
+        if (dx * dx + dz * dz <= 3.5 * 3.5) {
+            int interval = switch (getLevel()) {
+                case 3 -> 4;
+                case 2 -> 7;
+                default -> 10;
+            };
+            if (this.age % interval == 0) {
+                if (PathPlanner.needsPath(world, pathTarget)) {
+                    PathPlanner.makePath(world, pathTarget);
+                    this.swingHand(Hand.MAIN_HAND);
+                }
+                pathTarget = null;
+            }
+        } else if (++pathStuck > 400) {
+            pathTarget = null;   // не дойти — пропускаем клетку
         }
     }
 
@@ -502,6 +573,51 @@ public class BuilderEntity extends SettlerEntity {
             builder.getLookControl().lookAt(center.getX() + 0.5, center.getY() + 1.5, center.getZ() + 0.5);
             if (builder.status == STATUS_BUILDING && builder.age % 15 == 0) {
                 builder.swingHand(Hand.MAIN_HAND);
+            }
+        }
+    }
+
+    /** Строитель без заказов идёт к следующей клетке будущей тропинки. */
+    static class PathGoal extends Goal {
+
+        private final BuilderEntity builder;
+
+        PathGoal(BuilderEntity builder) {
+            this.builder = builder;
+            this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            return builder.site == null && builder.pathTarget != null && !builder.isSettlementFrozen();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void stop() {
+            builder.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            BlockPos target = builder.pathTarget;
+            if (target == null) {
+                return;
+            }
+            builder.getLookControl().lookAt(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5);
+            double dx = builder.getX() - (target.getX() + 0.5);
+            double dz = builder.getZ() - (target.getZ() + 0.5);
+            if (dx * dx + dz * dz > 2.5 * 2.5) {
+                if (builder.getNavigation().isIdle() || builder.age % 40 == 0) {
+                    builder.getNavigation().startMovingTo(target.getX() + 0.5, target.getY() + 1,
+                            target.getZ() + 0.5, 0.7);
+                }
+            } else {
+                builder.getNavigation().stop();
             }
         }
     }
