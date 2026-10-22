@@ -2,9 +2,11 @@ package com.lesha_top1972.basedefense.client;
 
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
+import com.lesha_top1972.basedefense.client.render.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
 import com.lesha_top1972.basedefense.client.screen.SettlerScreen;
+import com.lesha_top1972.basedefense.client.screen.TabletScreen;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
 import net.fabricmc.api.ClientModInitializer;
@@ -16,10 +18,14 @@ public class BasedefenseClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Меню: База, житель, стройплощадка
+        // Меню: База, житель, стройплощадка, строительный планшет
         HandledScreens.register(ModScreenHandlers.BASE, BaseScreen::new);
         HandledScreens.register(ModScreenHandlers.SETTLER, SettlerScreen::new);
         HandledScreens.register(ModScreenHandlers.HOUSE, HouseScreen::new);
+        HandledScreens.register(ModScreenHandlers.TABLET, TabletScreen::new);
+
+        // Рамка места постройки, пока в руке планшет с выбранной постройкой
+        TabletPreview.init();
 
         // Жители: случайная внешность (5 мужчин, 3 женщины), одна модель на все профессии
         EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);

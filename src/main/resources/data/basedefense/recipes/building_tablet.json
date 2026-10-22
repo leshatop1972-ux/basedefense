@@ -5,11 +5,14 @@
       "item": "minecraft:crafting_table"
     },
     {
-      "item": "minecraft:smoker"
+      "item": "minecraft:paper"
+    },
+    {
+      "item": "minecraft:ink_sac"
     }
   ],
   "result": {
-    "item": "basedefense:cook_house",
+    "item": "basedefense:building_tablet",
     "count": 1
   }
 }

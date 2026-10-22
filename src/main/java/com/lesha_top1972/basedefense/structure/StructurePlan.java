@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.structure;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -69,6 +70,40 @@ public class StructurePlan {
         late.add(List.of(
                 new Placement(new BlockPos(x1, y1, z1), first, false, false),
                 new Placement(new BlockPos(x2, y2, z2), second, false, false)));
+    }
+
+    /** Самый маленький и самый большой угол чертежа (локальные координаты): {min, max}. */
+    public BlockPos[] getBounds() {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        List<BlockPos> all = new ArrayList<>(main.keySet());
+        for (List<Placement> step : late) {
+            for (Placement p : step) {
+                all.add(p.local());
+            }
+        }
+        all.add(origin);
+        for (BlockPos p : all) {
+            minX = Math.min(minX, p.getX());
+            minY = Math.min(minY, p.getY());
+            minZ = Math.min(minZ, p.getZ());
+            maxX = Math.max(maxX, p.getX());
+            maxY = Math.max(maxY, p.getY());
+            maxZ = Math.max(maxZ, p.getZ());
+        }
+        return new BlockPos[]{new BlockPos(minX, minY, minZ), new BlockPos(maxX, maxY, maxZ)};
+    }
+
+    /**
+     * Переводит локальные координаты чертежа в координаты мира
+     * (блок постройки стоит в placedPos, игрок смотрел в сторону facing).
+     */
+    public BlockPos toWorld(BlockPos placedPos, Direction facing, int x, int y, int z) {
+        Direction right = facing.rotateYClockwise();
+        return placedPos
+                .offset(right, x - origin.getX())
+                .offset(facing, z - origin.getZ())
+                .up(y - origin.getY());
     }
 
     public void onFinish(FinishAction action) {

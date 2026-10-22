@@ -83,12 +83,7 @@ public class BuildTask {
 
     /** Переводит локальные координаты чертежа в координаты мира. */
     public BlockPos toWorld(int x, int y, int z) {
-        BlockPos origin = plan.getOrigin();
-        Direction right = facing.rotateYClockwise();
-        return placedPos
-                .offset(right, x - origin.getX())
-                .offset(facing, z - origin.getZ())
-                .up(y - origin.getY());
+        return plan.toWorld(placedPos, facing, x, y, z);
     }
 
     /** Режим «сама собой». @return true, когда постройка завершена */

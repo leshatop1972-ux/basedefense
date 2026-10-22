@@ -26,7 +26,8 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Блок дома (дом фермера, скотовода и т.д.).
+ * Блок дома (дом фермера, скотовода и т.д.). Ставится строительным планшетом
+ * (в творческом режиме его можно поставить и просто из инвентаря).
  * В творческом режиме любой дом сразу появляется целиком.
  * Дом строителя строится сам сразу после установки.
  * Остальные дома: блок остаётся на месте и становится стройплощадкой — дом строит
@@ -57,18 +58,27 @@ public class HouseBlock extends Block {
             return;
         }
         Direction facing = placer != null ? placer.getHorizontalFacing() : Direction.NORTH;
+        startConstruction(serverWorld, pos, type, facing, placer instanceof PlayerEntity player ? player : null);
+    }
+
+    /**
+     * Блок дома уже стоит в pos — запускаем стройку.
+     * Вызывается и при обычной установке блока (творческий режим), и из строительного планшета.
+     */
+    public static void startConstruction(ServerWorld world, BlockPos pos, HouseType type, Direction facing,
+                                         @Nullable PlayerEntity player) {
         // Творческий режим: любой дом встаёт сразу целиком, без строителя и материалов
-        if (placer instanceof PlayerEntity player && player.isCreative()) {
-            BuildManager.startInstant(serverWorld, type.getPlan(), pos, facing);
+        if (player != null && player.isCreative()) {
+            BuildManager.startInstant(world, type.getPlan(), pos, facing);
             return;
         }
         if (type.isSelfBuilt()) {
-            BuildManager.start(serverWorld, type.getPlan(), pos, facing);
+            BuildManager.start(world, type.getPlan(), pos, facing);
             return;
         }
-        ConstructionState construction = ConstructionState.get(serverWorld.getServer());
+        ConstructionState construction = ConstructionState.get(world.getServer());
         construction.addSite(pos, dimensionId(world), type, facing);
-        if (placer instanceof PlayerEntity player) {
+        if (player != null) {
             boolean hasBuilder = construction.hasBuilders(dimensionId(world));
             player.sendMessage(Text.translatable(hasBuilder ? "message.basedefense.house.site_created"
                     : "message.basedefense.house.no_builder").formatted(hasBuilder ? Formatting.GREEN : Formatting.GOLD), false);

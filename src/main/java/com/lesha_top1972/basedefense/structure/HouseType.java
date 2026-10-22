@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.structure;
 
+import com.lesha_top1972.basedefense.research.Technology;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -46,6 +47,23 @@ public enum HouseType {
 
     public boolean isSelfBuilt() {
         return selfBuilt;
+    }
+
+    /** Открыта ли постройка в планшете при такой маске исследований (дом строителя — всегда). */
+    public boolean isUnlocked(int researchMask) {
+        Technology tech = Technology.forHouse(this);
+        return tech == null || (researchMask & tech.bit()) != 0;
+    }
+
+    /** Название постройки (как у её блока). */
+    public net.minecraft.text.Text getName() {
+        return net.minecraft.text.Text.translatable("block.basedefense." + id);
+    }
+
+    @Nullable
+    public static HouseType byIndex(int index) {
+        HouseType[] all = values();
+        return index >= 0 && index < all.length ? all[index] : null;
     }
 
     public synchronized StructurePlan getPlan() {

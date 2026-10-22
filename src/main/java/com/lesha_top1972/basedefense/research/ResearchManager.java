@@ -1,7 +1,6 @@
 package com.lesha_top1972.basedefense.research;
 
 import com.lesha_top1972.basedefense.item.ModItems;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -11,10 +10,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** Логика исследований. Исследования общие на весь сервер. */
 public final class ResearchManager {
@@ -23,9 +18,7 @@ public final class ResearchManager {
     }
 
     public static void init() {
-        // Зашедшему игроку открываем в книге рецептов всё, что уже исследовано на сервере
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                handler.player.unlockRecipes(researchedRecipes(server)));
+        // Рецептов больше нет: исследования открывают постройки в строительном планшете
     }
 
     public static boolean isResearched(MinecraftServer server, Technology tech) {
@@ -34,17 +27,6 @@ public final class ResearchManager {
 
     public static int researchMask(MinecraftServer server) {
         return ResearchState.get(server).mask();
-    }
-
-    private static Identifier[] researchedRecipes(MinecraftServer server) {
-        ResearchState state = ResearchState.get(server);
-        List<Identifier> ids = new ArrayList<>();
-        for (Technology tech : Technology.values()) {
-            if (state.has(tech)) {
-                ids.add(tech.getUnlockedRecipe());
-            }
-        }
-        return ids.toArray(new Identifier[0]);
     }
 
     /** Сколько монет исследований у игрока в инвентаре (работает и на клиенте). */
@@ -73,7 +55,7 @@ public final class ResearchManager {
         inventory.markDirty();
     }
 
-    /** Пытается исследовать технологию: проверяет цепочку и монеты, забирает их и открывает рецепт всем. */
+    /** Пытается исследовать технологию: проверяет цепочку и монеты, забирает их и открывает постройку в планшете для всех. */
     public static void tryResearch(ServerPlayerEntity player, Technology tech) {
         MinecraftServer server = player.getServer();
         if (server == null) {
@@ -97,10 +79,6 @@ public final class ResearchManager {
         removeCoins(player, tech.getCost());
         state.add(tech);
 
-        Identifier[] recipe = new Identifier[]{tech.getUnlockedRecipe()};
-        for (ServerPlayerEntity other : server.getPlayerManager().getPlayerList()) {
-            other.unlockRecipes(recipe);
-        }
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP,
                 SoundCategory.PLAYERS, 0.8f, 1.2f);
         server.getPlayerManager().broadcast(

@@ -27,6 +27,12 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "house"),
             new ExtendedScreenHandlerType<>(HouseScreenHandler::new));
 
+    /** Меню строительного планшета (выбор постройки). */
+    public static final ScreenHandlerType<TabletScreenHandler> TABLET = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "tablet"),
+            new ScreenHandlerType<>(TabletScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
+
     private ModScreenHandlers() {
     }
 

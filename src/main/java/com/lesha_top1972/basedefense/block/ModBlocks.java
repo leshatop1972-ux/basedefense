@@ -14,8 +14,14 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /** Все блоки мода. */
 public final class ModBlocks {
+
+    /** Блок каждой постройки (заполняется при регистрации домов). */
+    private static final Map<HouseType, Block> HOUSE_BLOCKS = new EnumMap<>(HouseType.class);
 
     /** База: одна на сервер, сломать нельзя (прочность как у бедрока). */
     public static final Block BASE = register("base",
@@ -42,7 +48,14 @@ public final class ModBlocks {
     }
 
     private static Block house(String name, HouseType type) {
-        return register(name, new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), type));
+        Block block = register(name, new HouseBlock(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(2.0f), type));
+        HOUSE_BLOCKS.put(type, block);
+        return block;
+    }
+
+    /** Блок (стройплощадка) этой постройки. */
+    public static Block houseBlock(HouseType type) {
+        return HOUSE_BLOCKS.get(type);
     }
 
     private static Block register(String name, Block block) {
@@ -52,7 +65,8 @@ public final class ModBlocks {
     }
 
     public static void init() {
-        // Вкладка «Функциональные блоки» — после верстака
+        // Вкладка «Функциональные блоки» — после верстака.
+        // Блоки домов не крафтятся (их ставит строительный планшет), здесь они для творческого режима
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
                 COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE));

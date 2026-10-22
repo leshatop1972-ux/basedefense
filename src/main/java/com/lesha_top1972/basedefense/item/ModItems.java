@@ -16,6 +16,10 @@ public final class ModItems {
     /** Монета исследований — валюта для исследований в меню Базы. */
     public static final Item RESEARCH_COIN = register("research_coin", new Item(new Item.Settings()));
 
+    /** Строительный планшет: выбор и установка построек (крафт: верстак + бумага + чернильный мешок). */
+    public static final Item BUILDING_TABLET = register("building_tablet",
+            new BuildingTabletItem(new Item.Settings().maxCount(1)));
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -53,6 +57,7 @@ public final class ModItems {
 
     public static void init() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BUILDING_TABLET));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);
             entries.add(FARMER_SPAWN_EGG);
