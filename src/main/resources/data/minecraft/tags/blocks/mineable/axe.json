@@ -2,7 +2,9 @@
   "replace": false,
   "values": [
     "basedefense:base",
+    "basedefense:dense_wood",
     "basedefense:constructor_block",
-    "basedefense:farmer_house"
+    "basedefense:farmer_house",
+    "basedefense:rancher_house"
   ]
 }

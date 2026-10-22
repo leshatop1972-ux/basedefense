@@ -1,34 +1,24 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "tag": "minecraft:planks"
-    },
-    {
-      "tag": "minecraft:planks"
-    },
-    {
-      "tag": "minecraft:planks"
-    },
-    {
-      "item": "minecraft:iron_block"
-    },
-    {
-      "item": "minecraft:gold_ingot"
-    },
-    {
-      "item": "minecraft:gold_ingot"
-    },
-    {
-      "item": "basedefense:constructor_block"
-    },
-    {
-      "item": "basedefense:constructor_block"
-    },
-    {
-      "item": "basedefense:constructor_block"
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KKK",
+    "KGK",
+    "TCT"
   ],
+  "key": {
+    "K": {
+      "item": "basedefense:constructor_block"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "T": {
+      "item": "minecraft:crafting_table"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    }
+  },
   "result": {
     "item": "basedefense:farmer_house",
     "count": 1

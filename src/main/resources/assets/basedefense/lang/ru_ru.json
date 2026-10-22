@@ -18,7 +18,17 @@
   "screen.basedefense.base.have": "У вас: %s",
   "screen.basedefense.base.not_enough": "Недостаточно монет!",
   "screen.basedefense.base.unlocks": "Открывает крафт: %s",
-  "message.basedefense.research.done": "Исследование «%s» завершено! Новый рецепт открыт.",
+  "message.basedefense.research.done": "%s исследовал(а) «%s»! Новый рецепт открыт для всех.",
   "message.basedefense.research.not_enough": "Недостаточно монет исследований (нужно %s)",
-  "message.basedefense.research.locked": "Сначала исследуйте «%s» в меню Базы"
+  "message.basedefense.research.locked": "Сначала исследуйте «%s» в меню Базы",
+  "block.basedefense.dense_wood": "Плотный блок дерева",
+  "block.basedefense.rancher_house": "Дом скотовода",
+  "entity.basedefense.rancher": "Житель-скотовод",
+  "item.basedefense.rancher_spawn_egg": "Яйцо призыва скотовода",
+  "research.basedefense.rancher_house": "Дом скотовода",
+  "research.basedefense.rancher_house.desc": "Крепкий дом из тёмного дерева с загоном для животных. Поставь блок — и за пару секунд вырастет дом с загоном, корытом и сеном, а в нём поселится скотовод.",
+  "screen.basedefense.base.requires": "Требуется: %s",
+  "screen.basedefense.base.locked": "Недоступно",
+  "message.basedefense.research.requires": "Сначала нужно исследовать «%s»",
+  "message.basedefense.base.already_exists": "База уже есть на сервере (%s, %s, %s). Вторую поставить нельзя."
 }

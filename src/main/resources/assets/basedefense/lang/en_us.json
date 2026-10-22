@@ -18,7 +18,17 @@
   "screen.basedefense.base.have": "You have: %s",
   "screen.basedefense.base.not_enough": "Not enough coins!",
   "screen.basedefense.base.unlocks": "Unlocks: %s",
-  "message.basedefense.research.done": "Research \"%s\" complete! New recipe unlocked.",
+  "message.basedefense.research.done": "%s researched \"%s\"! New recipe unlocked for everyone.",
   "message.basedefense.research.not_enough": "Not enough research coins (%s needed)",
-  "message.basedefense.research.locked": "Research \"%s\" in the Base menu first"
+  "message.basedefense.research.locked": "Research \"%s\" in the Base menu first",
+  "block.basedefense.dense_wood": "Dense Wood Block",
+  "block.basedefense.rancher_house": "Rancher's House",
+  "entity.basedefense.rancher": "Rancher",
+  "item.basedefense.rancher_spawn_egg": "Rancher Spawn Egg",
+  "research.basedefense.rancher_house": "Rancher's House",
+  "research.basedefense.rancher_house.desc": "A sturdy dark-wood house with an animal pen. Place the block and in a few seconds a house with a pen, a water trough and hay appears, and a rancher moves in.",
+  "screen.basedefense.base.requires": "Requires: %s",
+  "screen.basedefense.base.locked": "Locked",
+  "message.basedefense.research.requires": "Research \"%s\" first",
+  "message.basedefense.base.already_exists": "The server already has a Base (%s, %s, %s). You can't place a second one."
 }

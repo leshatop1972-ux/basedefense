@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.block;
 
 import com.lesha_top1972.basedefense.structure.BuildManager;
-import com.lesha_top1972.basedefense.structure.FarmerHousePlan;
+import com.lesha_top1972.basedefense.structure.StructurePlan;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
@@ -12,14 +12,20 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Блок «Дом фермера». Сразу после установки начинает возводить домик:
- * дверь смотрит на игрока, дом и огород строятся «вглубь» от него.
- */
-public class FarmerHouseBlock extends Block {
+import java.util.function.Supplier;
 
-    public FarmerHouseBlock(Settings settings) {
+/**
+ * Блок-домик (дом фермера, дом скотовода и т.д.). Сразу после установки
+ * начинает возводить постройку по чертежу: дверь смотрит на игрока,
+ * дом и двор строятся «вглубь» от него.
+ */
+public class HouseBlock extends Block {
+
+    private final Supplier<StructurePlan> plan;
+
+    public HouseBlock(Settings settings, Supplier<StructurePlan> plan) {
         super(settings);
+        this.plan = plan;
     }
 
     @Override
@@ -27,7 +33,7 @@ public class FarmerHouseBlock extends Block {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (world instanceof ServerWorld serverWorld) {
             Direction facing = placer != null ? placer.getHorizontalFacing() : Direction.NORTH;
-            BuildManager.start(serverWorld, FarmerHousePlan.create(), pos, facing);
+            BuildManager.start(serverWorld, plan.get(), pos, facing);
         }
     }
 }

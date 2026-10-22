@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.client;
 
-import com.lesha_top1972.basedefense.client.entity.FarmerEntityModel;
-import com.lesha_top1972.basedefense.client.entity.FarmerEntityRenderer;
+import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
+import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
@@ -17,8 +17,9 @@ public class BasedefenseClient implements ClientModInitializer {
         // Связываем меню базы с его экраном
         HandledScreens.register(ModScreenHandlers.BASE, BaseScreen::new);
 
-        // Модель и отрисовка жителя-фермера
-        EntityModelLayerRegistry.registerModelLayer(FarmerEntityRenderer.LAYER, FarmerEntityModel::getTexturedModelData);
-        EntityRendererRegistry.register(ModEntities.FARMER, FarmerEntityRenderer::new);
+        // Модель и отрисовка жителей поселения
+        EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);
+        EntityRendererRegistry.register(ModEntities.FARMER, ctx -> new SettlerEntityRenderer(ctx, "farmer"));
+        EntityRendererRegistry.register(ModEntities.RANCHER, ctx -> new SettlerEntityRenderer(ctx, "rancher"));
     }
 }

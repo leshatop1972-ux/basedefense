@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "basedefense:block/dense_wood_top",
+    "side": "basedefense:block/dense_wood_side"
+  }
+}

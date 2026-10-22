@@ -1,6 +1,6 @@
 package com.lesha_top1972.basedefense.client.entity;
 
-import com.lesha_top1972.basedefense.entity.FarmerEntity;
+import com.lesha_top1972.basedefense.entity.SettlerEntity;
 import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
@@ -12,10 +12,11 @@ import net.minecraft.client.render.entity.model.SinglePartEntityModel;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Модель жителя-фермера: голова с носом и соломенной шляпой, туловище,
- * руки и ноги. Текстура 64×64 (textures/entity/farmer.png).
+ * Модель жителя поселения: голова с носом и шляпой, туловище, руки и ноги.
+ * Общая для всех жителей — отличаются только текстурой 64×64
+ * (textures/entity/farmer.png, textures/entity/rancher.png).
  */
-public class FarmerEntityModel extends SinglePartEntityModel<FarmerEntity> {
+public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> {
 
     private final ModelPart root;
     private final ModelPart head;
@@ -24,7 +25,7 @@ public class FarmerEntityModel extends SinglePartEntityModel<FarmerEntity> {
     private final ModelPart rightLeg;
     private final ModelPart leftLeg;
 
-    public FarmerEntityModel(ModelPart root) {
+    public SettlerEntityModel(ModelPart root) {
         this.root = root;
         this.head = root.getChild("head");
         this.rightArm = root.getChild("right_arm");
@@ -75,7 +76,7 @@ public class FarmerEntityModel extends SinglePartEntityModel<FarmerEntity> {
     }
 
     @Override
-    public void setAngles(FarmerEntity entity, float limbAngle, float limbDistance, float animationProgress,
+    public void setAngles(SettlerEntity entity, float limbAngle, float limbDistance, float animationProgress,
                           float headYaw, float headPitch) {
         // Голова смотрит туда, куда смотрит моб
         head.yaw = headYaw * MathHelper.RADIANS_PER_DEGREE;

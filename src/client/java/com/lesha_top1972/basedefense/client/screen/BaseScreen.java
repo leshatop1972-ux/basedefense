@@ -48,6 +48,11 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private static final int NODE_EDGE     = 0xFF8C6E45;
     private static final int NODE_DONE_BG  = 0xFFDCE6BE;
     private static final int NODE_DONE_EDGE = 0xFF5E8C3A;
+    private static final int NODE_LOCKED_BG = 0xFFD9CDB2;
+    private static final int NODE_LOCKED_EDGE = 0xFFA89A80;
+    private static final int LOCK_OVERLAY  = 0x99E2D6BC;
+    private static final int LINK_OPEN     = 0xFF7FA35A;
+    private static final int LINK_CLOSED   = 0xFFB5A27F;
 
     private static final int INFO_BG       = 0xFFFBF4E2;
     private static final int BUTTON        = 0xFFC9A66B;
@@ -88,7 +93,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     @Override
     protected void init() {
         this.backgroundWidth = Math.max(300, Math.min(this.width - 40, 420));
-        this.backgroundHeight = Math.max(180, Math.min(this.height - 30, 260));
+        this.backgroundHeight = Math.max(220, Math.min(this.height - 30, 260));
         super.init();
         contentLeft = this.x + PAD;
         contentTop = getTabsTop() + TAB_H;
@@ -106,9 +111,16 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         if (hovered != null) {
             List<Text> lines = new ArrayList<>();
             lines.add(hovered.getName());
-            lines.add(handler.isResearched(hovered)
-                    ? Text.translatable("screen.basedefense.base.researched").styled(s -> s.withColor(GOOD & 0xFFFFFF))
-                    : Text.translatable("screen.basedefense.base.cost", hovered.getCost()).styled(s -> s.withColor(TEXT_MUTED & 0xFFFFFF)));
+            if (handler.isResearched(hovered)) {
+                lines.add(Text.translatable("screen.basedefense.base.researched").styled(s -> s.withColor(GOOD & 0xFFFFFF)));
+            } else {
+                lines.add(Text.translatable("screen.basedefense.base.cost", hovered.getCost())
+                        .styled(s -> s.withColor(TEXT_MUTED & 0xFFFFFF)));
+                if (!handler.isAvailable(hovered)) {
+                    lines.add(Text.translatable("screen.basedefense.base.requires", hovered.getRequires().getName())
+                            .styled(s -> s.withColor(BAD & 0xFFFFFF)));
+                }
+            }
             context.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
         }
         this.drawMouseoverTooltip(context, mouseX, mouseY);
@@ -149,12 +161,19 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             drawTab(context, i, tabsTop, mouseX, mouseY);
         }
 
-        // Древо исследований текущей вкладки
+        // Древо исследований текущей вкладки: сначала линии-связи, потом квадратики
         boolean anyNode = false;
         for (Technology tech : Technology.values()) {
+            if (tech.getTab() == selectedTab && isNodeVisible(tech)) {
+                drawLink(context, tech);
+            }
+        }
+        for (Technology tech : Technology.values()) {
             if (tech.getTab() == selectedTab) {
-                drawNode(context, tech, mouseX, mouseY);
                 anyNode = true;
+                if (isNodeVisible(tech)) {
+                    drawNode(context, tech, mouseX, mouseY);
+                }
             }
         }
         if (!anyNode) {
@@ -215,11 +234,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         int nx = getNodeX(tech);
         int ny = getNodeY(tech);
         boolean done = handler.isResearched(tech);
+        boolean locked = !done && !handler.isAvailable(tech);
         boolean hovered = isOverNode(tech, mouseX, mouseY);
         boolean selected = tech == selectedTech;
 
-        int edge = selected ? ACCENT : (done ? NODE_DONE_EDGE : NODE_EDGE);
-        int bg = done ? NODE_DONE_BG : (hovered ? NODE_BG_HOVER : NODE_BG);
+        int edge = selected ? ACCENT : (done ? NODE_DONE_EDGE : (locked ? NODE_LOCKED_EDGE : NODE_EDGE));
+        int bg = done ? NODE_DONE_BG : (locked ? NODE_LOCKED_BG : (hovered ? NODE_BG_HOVER : NODE_BG));
 
         // Тень, рамка (у выбранного — двойная золотая), фон
         context.fill(nx + 2, ny + 2, nx + NODE + 2, ny + NODE + 2, 0x33000000);
@@ -231,6 +251,15 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
         context.drawItem(new ItemStack(tech.getIcon()), nx + (NODE - 16) / 2, ny + (NODE - 16) / 2);
 
+        // Закрытая технология — иконка «выцветшая» и маленький замочек
+        if (locked) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 300);
+            context.fill(nx + 1, ny + 1, nx + NODE - 1, ny + NODE - 1, LOCK_OVERLAY);
+            drawLock(context, nx + NODE - 8, ny + NODE - 9);
+            context.getMatrices().pop();
+        }
+
         // Зелёная галочка-метка в углу у исследованного
         if (done) {
             context.fill(nx + NODE - 7, ny + NODE - 7, nx + NODE - 1, ny + NODE - 1, NODE_DONE_EDGE);
@@ -239,6 +268,37 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             context.fill(nx + NODE - 4, ny + NODE - 5, nx + NODE - 3, ny + NODE - 3, 0xFFFFFFFF);
             context.fill(nx + NODE - 3, ny + NODE - 6, nx + NODE - 2, ny + NODE - 4, 0xFFFFFFFF);
         }
+    }
+
+    /** Линия от предыдущей технологии в цепочке к этой. */
+    private void drawLink(DrawContext context, Technology tech) {
+        Technology from = tech.getRequires();
+        if (from == null || from.getTab() != tech.getTab() || !isNodeVisible(from)) {
+            return;
+        }
+        int color = handler.isResearched(from) ? LINK_OPEN : LINK_CLOSED;
+        int x1 = getNodeX(from) + NODE / 2;
+        int y1 = getNodeY(from) + NODE / 2;
+        int x2 = getNodeX(tech) + NODE / 2;
+        int y2 = getNodeY(tech) + NODE / 2;
+        // Г-образная линия толщиной 2 пикселя: сначала по горизонтали, потом по вертикали
+        context.fill(Math.min(x1, x2), y1 - 1, Math.max(x1, x2) + 1, y1 + 1, color);
+        context.fill(x2 - 1, Math.min(y1, y2), x2 + 1, Math.max(y1, y2) + 1, color);
+    }
+
+    /** Маленький замочек 6×7 пикселей. */
+    private void drawLock(DrawContext context, int x, int y) {
+        int body = 0xFF7A6A50;
+        context.fill(x + 1, y, x + 5, y + 1, body);
+        context.fill(x + 1, y, x + 2, y + 3, body);
+        context.fill(x + 4, y, x + 5, y + 3, body);
+        context.fill(x, y + 3, x + 6, y + 7, body);
+        context.fill(x + 2, y + 4, x + 4, y + 6, 0xFFE2D6BC);
+    }
+
+    /** Квадратик не рисуем, если его закрывает панель описания. */
+    private boolean isNodeVisible(Technology tech) {
+        return selectedTech == null || getNodeX(tech) + NODE < getInfoLeft() - 4;
     }
 
     private void drawInfoPanel(DrawContext context, Technology tech, int mouseX, int mouseY) {
@@ -265,13 +325,21 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
         // Описание (переносится по словам)
         int textY = pt + 32;
-        int descBottom = pb - 62;
+        Technology requires = tech.getRequires();
+        int descBottom = requires != null ? pb - 74 : pb - 62;
         for (OrderedText line : this.textRenderer.wrapLines(tech.getDescription(), pw - 12)) {
             if (textY + 9 > descBottom) {
                 break;
             }
             context.drawText(this.textRenderer, line, pl + 6, textY, TEXT_BODY, false);
             textY += 10;
+        }
+
+        // Что нужно исследовать раньше
+        if (requires != null) {
+            boolean reqDone = handler.isResearched(requires);
+            context.drawText(this.textRenderer, Text.translatable("screen.basedefense.base.requires", requires.getName()),
+                    pl + 6, pb - 70, reqDone ? GOOD : BAD, false);
         }
 
         // Что открывает
@@ -282,6 +350,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         // Цена и сколько монет у игрока
         int coins = ResearchManager.countCoins(this.client.player);
         boolean done = handler.isResearched(tech);
+        boolean locked = !done && !handler.isAvailable(tech);
         int costY = pb - 46;
         Text costText = Text.translatable("screen.basedefense.base.cost", tech.getCost());
         context.drawText(this.textRenderer, costText, pl + 6, costY + 4, TEXT_DARK, false);
@@ -309,6 +378,11 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             context.fill(bl + 1, bt + 1, br - 1, bb - 1, NODE_DONE_BG);
             label = Text.translatable("screen.basedefense.base.researched");
             labelColor = GOOD;
+        } else if (locked) {
+            context.fill(bl, bt, br, bb, NODE_LOCKED_EDGE);
+            context.fill(bl + 1, bt + 1, br - 1, bb - 1, NODE_LOCKED_BG);
+            label = Text.translatable("screen.basedefense.base.locked");
+            labelColor = TEXT_MUTED;
         } else {
             boolean hover = isOverButton(mouseX, mouseY);
             context.fill(bl, bt, br, bb, BUTTON_EDGE);
@@ -363,7 +437,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             return null;
         }
         for (Technology tech : Technology.values()) {
-            if (tech.getTab() == selectedTab && isOverNode(tech, mouseX, mouseY)) {
+            if (tech.getTab() == selectedTab && isNodeVisible(tech) && isOverNode(tech, mouseX, mouseY)) {
                 return tech;
             }
         }
@@ -410,7 +484,8 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                 if (isOverClose(mouseX, mouseY)) {
                     selectedTech = null;
                     playClick();
-                } else if (isOverButton(mouseX, mouseY) && !handler.isResearched(selectedTech)) {
+                } else if (isOverButton(mouseX, mouseY) && !handler.isResearched(selectedTech)
+                        && handler.isAvailable(selectedTech)) {
                     onResearchPressed(selectedTech);
                 }
                 return true;

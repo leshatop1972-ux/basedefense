@@ -7,42 +7,38 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
- * Хранит, кто что исследовал. Сохраняется вместе с миром
- * (файл data/basedefense_research.dat в папке мира).
+ * Хранит, что исследовано на сервере (общее для всех игроков).
+ * Сохраняется вместе с миром: data/basedefense_research.dat в папке мира.
  */
 public class ResearchState extends PersistentState {
 
     private static final String SAVE_ID = "basedefense_research";
 
-    private final Map<UUID, Set<String>> researched = new HashMap<>();
+    private final Set<String> researched = new HashSet<>();
 
     public static ResearchState get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager()
                 .getOrCreate(ResearchState::fromNbt, ResearchState::new, SAVE_ID);
     }
 
-    public boolean has(UUID player, Technology tech) {
-        Set<String> set = researched.get(player);
-        return set != null && set.contains(tech.getId());
+    public boolean has(Technology tech) {
+        return researched.contains(tech.getId());
     }
 
-    public void add(UUID player, Technology tech) {
-        researched.computeIfAbsent(player, k -> new HashSet<>()).add(tech.getId());
+    public void add(Technology tech) {
+        researched.add(tech.getId());
         markDirty();
     }
 
-    /** Все исследования игрока одним числом (по биту на технологию). */
-    public int mask(UUID player) {
+    /** Все исследования одним числом (по биту на технологию). */
+    public int mask() {
         int mask = 0;
         for (Technology tech : Technology.values()) {
-            if (has(player, tech)) {
+            if (has(tech)) {
                 mask |= tech.bit();
             }
         }
@@ -51,33 +47,26 @@ public class ResearchState extends PersistentState {
 
     private static ResearchState fromNbt(NbtCompound nbt) {
         ResearchState state = new ResearchState();
+        readList(nbt.getList("Researched", NbtElement.STRING_TYPE), state.researched);
+        // Старый формат (исследования у каждого игрока свои) — объединяем в общие
         NbtCompound players = nbt.getCompound("Players");
         for (String key : players.getKeys()) {
-            UUID uuid;
-            try {
-                uuid = UUID.fromString(key);
-            } catch (IllegalArgumentException e) {
-                continue;
-            }
-            Set<String> set = new HashSet<>();
-            NbtList list = players.getList(key, NbtElement.STRING_TYPE);
-            for (int i = 0; i < list.size(); i++) {
-                set.add(list.getString(i));
-            }
-            state.researched.put(uuid, set);
+            readList(players.getList(key, NbtElement.STRING_TYPE), state.researched);
         }
         return state;
     }
 
+    private static void readList(NbtList list, Set<String> into) {
+        for (int i = 0; i < list.size(); i++) {
+            into.add(list.getString(i));
+        }
+    }
+
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound players = new NbtCompound();
-        researched.forEach((uuid, set) -> {
-            NbtList list = new NbtList();
-            set.forEach(id -> list.add(NbtString.of(id)));
-            players.put(uuid.toString(), list);
-        });
-        nbt.put("Players", players);
+        NbtList list = new NbtList();
+        researched.forEach(id -> list.add(NbtString.of(id)));
+        nbt.put("Researched", list);
         return nbt;
     }
 }

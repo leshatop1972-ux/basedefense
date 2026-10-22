@@ -42,7 +42,7 @@ public abstract class CraftingScreenHandlerMixin {
             return;
         }
         Optional<Technology> tech = Technology.byRecipe(match.get().getId());
-        if (tech.isEmpty() || ResearchManager.isResearched(serverPlayer, tech.get())) {
+        if (tech.isEmpty() || ResearchManager.isResearched(world.getServer(), tech.get())) {
             return;
         }
 

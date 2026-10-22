@@ -20,6 +20,10 @@ public final class ModItems {
     public static final Item FARMER_SPAWN_EGG = register("farmer_spawn_egg",
             new SpawnEggItem(ModEntities.FARMER, 0x6E8F3E, 0xE8C25A, new Item.Settings()));
 
+    /** Яйцо призыва жителя-скотовода. */
+    public static final Item RANCHER_SPAWN_EGG = register("rancher_spawn_egg",
+            new SpawnEggItem(ModEntities.RANCHER, 0xA83A2E, 0x8B5A2B, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -29,6 +33,9 @@ public final class ModItems {
 
     public static void init() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> entries.add(FARMER_SPAWN_EGG));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
+            entries.add(FARMER_SPAWN_EGG);
+            entries.add(RANCHER_SPAWN_EGG);
+        });
     }
 }

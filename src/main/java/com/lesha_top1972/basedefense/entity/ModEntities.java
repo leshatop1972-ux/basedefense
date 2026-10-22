@@ -20,10 +20,18 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
+    public static final EntityType<RancherEntity> RANCHER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "rancher"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, RancherEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
     private ModEntities() {
     }
 
     public static void init() {
-        FabricDefaultAttributeRegistry.register(FARMER, FarmerEntity.createFarmerAttributes());
+        FabricDefaultAttributeRegistry.register(FARMER, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(RANCHER, SettlerEntity.createSettlerAttributes());
     }
 }

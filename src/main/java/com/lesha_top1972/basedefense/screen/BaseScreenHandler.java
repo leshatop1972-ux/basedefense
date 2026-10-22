@@ -40,12 +40,12 @@ public class BaseScreenHandler extends ScreenHandler {
         this.addProperties(research);
     }
 
-    /** На сервере значение каждый раз берётся из сохранённых исследований игрока. */
+    /** На сервере значение каждый раз берётся из общих исследований сервера. */
     private static PropertyDelegate serverResearch(PlayerEntity player) {
         return new PropertyDelegate() {
             @Override
             public int get(int index) {
-                return player instanceof ServerPlayerEntity serverPlayer ? ResearchManager.researchMask(serverPlayer) : 0;
+                return player.getServer() != null ? ResearchManager.researchMask(player.getServer()) : 0;
             }
 
             @Override
@@ -62,6 +62,11 @@ public class BaseScreenHandler extends ScreenHandler {
     /** Исследована ли технология (работает на клиенте). */
     public boolean isResearched(Technology tech) {
         return (research.get(0) & tech.bit()) != 0;
+    }
+
+    /** Можно ли уже исследовать технологию (предыдущая в цепочке открыта). */
+    public boolean isAvailable(Technology tech) {
+        return tech.isAvailable(research.get(0));
     }
 
     @Override
