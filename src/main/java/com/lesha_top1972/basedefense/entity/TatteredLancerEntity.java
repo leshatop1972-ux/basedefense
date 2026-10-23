@@ -15,9 +15,6 @@ import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -33,7 +30,6 @@ import net.minecraft.item.Items;
 import net.minecraft.item.ShieldItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.BlockStateParticleEffect;
-import net.minecraft.particle.DustColorTransitionParticleEffect;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -119,12 +115,6 @@ public class TatteredLancerEntity extends HostileEntity {
     public static final int RAT_TICKS = 200;
     public static final float RAT_CHANCE = 0.08f;
 
-    /** Клиенту: вторая фаза (аура, огонь из глаз) и номер сущности дуэлянта (нить между ними), −1 — нет. */
-    private static final TrackedData<Boolean> PHASE2 =
-            DataTracker.registerData(TatteredLancerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-    private static final TrackedData<Integer> DUELIST_ID =
-            DataTracker.registerData(TatteredLancerEntity.class, TrackedDataHandlerRegistry.INTEGER);
-
     private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.YELLOW,
             BossBar.Style.NOTCHED_10);
     private boolean phase2;
@@ -134,8 +124,6 @@ public class TatteredLancerEntity extends HostileEntity {
 
     /** Только на клиенте: текущее действие, когда началось, и зона ливня копий. */
     public int clientAction = NONE;
-    /** Действие до текущего (LAND после ливня — без удара, эффект скромнее). */
-    public int clientPrevAction = NONE;
     public int clientActionAge;
     public int clientRainAge = -10000;
     public int clientRainEndAge = -10000;
@@ -147,23 +135,6 @@ public class TatteredLancerEntity extends HostileEntity {
         super(type, world);
         this.experiencePoints = 120;
         this.setPersistent();
-    }
-
-    @Override
-    protected void initDataTracker() {
-        super.initDataTracker();
-        this.dataTracker.startTracking(PHASE2, false);
-        this.dataTracker.startTracking(DUELIST_ID, -1);
-    }
-
-    /** Вторая фаза (видно и на клиенте). */
-    public boolean isPhase2Synced() {
-        return this.dataTracker.get(PHASE2);
-    }
-
-    /** Номер сущности игрока‑дуэлянта или −1 (видно и на клиенте). */
-    public int getDuelistId() {
-        return this.dataTracker.get(DUELIST_ID);
     }
 
     public static DefaultAttributeContainer.Builder createAttributes() {
@@ -217,9 +188,6 @@ public class TatteredLancerEntity extends HostileEntity {
             this.retargetTimer = RETARGET_TICKS;
             this.switchTarget();
         }
-        if (this.getDuelistId() != -1 && !this.duelistActive()) {
-            this.dataTracker.set(DUELIST_ID, -1);
-        }
     }
 
     /** Раз в 20 секунд — переключиться на другого игрока поблизости (если он есть). */
@@ -247,7 +215,6 @@ public class TatteredLancerEntity extends HostileEntity {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.phase2 = nbt.getBoolean("Phase2");
-        this.dataTracker.set(PHASE2, this.phase2);
         if (this.hasCustomName()) {
             this.bossBar.setName(this.getDisplayName());
         }
@@ -287,7 +254,6 @@ public class TatteredLancerEntity extends HostileEntity {
             } else if (a == LEAP) {
                 this.clientLeapY = this.getY();
             }
-            this.clientPrevAction = this.clientAction;
             this.clientAction = a;
             this.clientActionAge = this.age;
         } else {
@@ -303,7 +269,9 @@ public class TatteredLancerEntity extends HostileEntity {
         }
     }
 
-    private static final DustParticleEffect ZONE_DUST = new DustParticleEffect(new Vector3f(0.35f, 0.6f, 1.0f), 1.2f);
+    private static final DustParticleEffect ZONE_DUST = new DustParticleEffect(new Vector3f(0.35f, 0.72f, 0.66f), 1.2f);
+
+    private static final DustParticleEffect ZONE_EDGE = new DustParticleEffect(new Vector3f(0.86f, 0.7f, 0.4f), 1.0f);
 
     /** Видна ли сейчас зона ливня копий (клиент) и насколько ярко (0..1). */
     public float clientZoneAlpha(float tickDelta) {
@@ -341,7 +309,7 @@ public class TatteredLancerEntity extends HostileEntity {
                         this.clientZone.z + Math.sin(a) * r, 0, 0.02, 0);
             }
             double a = this.random.nextDouble() * Math.PI * 2;
-            w.addParticle(ParticleTypes.SOUL_FIRE_FLAME, this.clientZone.x + Math.cos(a) * RAIN_RADIUS,
+            w.addParticle(ZONE_EDGE, this.clientZone.x + Math.cos(a) * RAIN_RADIUS,
                     this.clientZone.y + 0.1, this.clientZone.z + Math.sin(a) * RAIN_RADIUS, 0, 0.03, 0);
         }
     }
@@ -415,39 +383,15 @@ public class TatteredLancerEntity extends HostileEntity {
                 e.addVelocity(0, up, 0);
             }
             e.velocityModified = true;
-            this.hitParticles(e, shielded);
             if (e.hasStatusEffect(ModEffects.DUELIST)) {
                 this.heal(1.0f);
             } else if (e instanceof PlayerEntity p && !this.duelistActive()) {
                 p.addStatusEffect(new StatusEffectInstance(ModEffects.DUELIST, DUELIST_TICKS, 0, false, true, true), this);
                 this.duelist = p.getUuid();
                 this.duelistUntil = this.getWorld().getTime() + DUELIST_TICKS;
-                this.dataTracker.set(DUELIST_ID, p.getId());
                 this.sound(SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, 1.0f, 1.4f);
             }
         }
-    }
-
-    private static final DustColorTransitionParticleEffect HIT_DUST =
-            new DustColorTransitionParticleEffect(new Vector3f(0.55f, 0.85f, 1.0f), new Vector3f(0.1f, 0.2f, 0.6f), 1.1f);
-    private static final DustColorTransitionParticleEffect SHIELD_DUST =
-            new DustColorTransitionParticleEffect(new Vector3f(1.0f, 0.9f, 0.6f), new Vector3f(0.5f, 0.4f, 0.3f), 0.9f);
-
-    /** Вспышка на месте попадания: синие искры и холодный огонь (по щиту — тёплые искры). */
-    private void hitParticles(LivingEntity e, boolean shielded) {
-        ServerWorld s = this.sw();
-        if (s == null) {
-            return;
-        }
-        double y = e.getBodyY(0.6);
-        if (shielded) {
-            s.spawnParticles(ParticleTypes.ELECTRIC_SPARK, e.getX(), y, e.getZ(), 14, 0.25, 0.3, 0.25, 0.25);
-            s.spawnParticles(SHIELD_DUST, e.getX(), y, e.getZ(), 8, 0.3, 0.3, 0.3, 0.0);
-            return;
-        }
-        s.spawnParticles(ParticleTypes.ENCHANTED_HIT, e.getX(), y, e.getZ(), 10, 0.25, 0.35, 0.25, 0.35);
-        s.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, e.getX(), y, e.getZ(), 5, 0.2, 0.3, 0.2, 0.04);
-        s.spawnParticles(HIT_DUST, e.getX(), y, e.getZ(), 10, 0.35, 0.45, 0.35, 0.0);
     }
 
     /** «Тройной таран» выбивает щит: 7 секунд им нельзя пользоваться. */
@@ -617,7 +561,6 @@ public class TatteredLancerEntity extends HostileEntity {
 
     void enterPhase2() {
         this.phase2 = true;
-        this.dataTracker.set(PHASE2, true);
     }
 
     /** Бой: выбор атаки по расстоянию, тайминги ударов, рывки и прыжки. */

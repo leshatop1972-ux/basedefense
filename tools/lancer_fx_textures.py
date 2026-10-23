@@ -6,17 +6,12 @@
 (RenderLayer.getEyes) и красятся цветом вершин в коде (LancerFx), поэтому
 RGB = яркость (уже умножена на альфу), A = яркость.
 
-  ring.png    — ударное кольцо: резкий яркий край снаружи, мягкий хвост внутрь
-  crack.png   — трещины в земле после удара (лучи от центра с изломами)
-  rune.png    — руническая печать (кольца, засечки, звезда, руны) — небо при ливне и аура 2-й фазы
-  glint.png   — блик-звезда на острие копья (предупреждение перед атакой)
-  trail.png   — след острия: v=0 у древка → v=1 у острия (яркая кромка)
+  ring.png    — кольцо там, где воткнулось копьё: резкий край снаружи, мягкий хвост внутрь
+  rune.png    — руническая печать (кольца, засечки, звезда, руны) — в небе при ливне копий
   beam.png    — столб/луч: мягкий по ширине, с продольными прожилками
   arrow.png   — шевроны «сюда ударит таран» (идут вдоль v)
-  slash.png   — серп удара (дуга) для взмаха и подброса
   marker.png  — метка падения копья / приземления: кольцо с 4 засечками
   wall.png    — стена купола зоны: ярко внизу, тает вверх, прожилки
-  line.png    — мягкая линия (нить дуэлянта)
 """
 import math
 import os
@@ -38,7 +33,7 @@ def smooth(e0, e1, x):
 
 
 def save(name, w, h, fn):
-    """fn(u, v) -> (яркость 0..1, белизна 0..1): белизна 1 — чисто белый, 0 — голубоватый оттенок."""
+    """fn(u, v) -> яркость 0..1 (или (яркость, не используется))."""
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     p = img.load()
     for y in range(h):
@@ -51,11 +46,8 @@ def save(name, w, h, fn):
             b = clamp(b)
             if b <= 0.002:
                 continue
-            # лёгкий холодный оттенок у тусклых частей, белое ядро у ярких
-            r = b * (0.80 + 0.20 * white)
-            g = b * (0.90 + 0.10 * white)
-            bl = b
-            p[x, y] = (int(r * 255), int(g * 255), int(bl * 255), int(b * 255))
+            # нейтрально-серые: цвет (бирюза, золото, малиновый) задаётся в коде
+            p[x, y] = (int(b * 255), int(b * 255), int(b * 255), int(b * 255))
     img.save(os.path.join(ROOT, name))
 
 
@@ -74,46 +66,12 @@ def ring(u, v):
 
 
 RNG = random.Random(7)
-CRACKS = []
-for i in range(11):
-    a0 = i / 11 * math.tau + RNG.uniform(-0.2, 0.2)
-    pts = [(0.0, a0)]
-    rr, aa = 0.0, a0
-    while rr < 0.95:
-        rr += RNG.uniform(0.08, 0.16)
-        aa += RNG.uniform(-0.28, 0.28)
-        pts.append((min(rr, 0.97), aa))
-    CRACKS.append(pts)
-    if RNG.random() < 0.7:                                        # ответвление
-        k = RNG.randint(2, max(2, len(pts) - 2))
-        r1, a1 = pts[k]
-        CRACKS.append([(r1, a1), (r1 + 0.18, a1 + RNG.choice((-1, 1)) * 0.4),
-                       (min(0.95, r1 + 0.32), a1 + RNG.choice((-1, 1)) * 0.5)])
-SEGS = []
-for pts in CRACKS:
-    for (r0, a0), (r1, a1) in zip(pts, pts[1:]):
-        SEGS.append((r0 * math.cos(a0), r0 * math.sin(a0), r1 * math.cos(a1), r1 * math.sin(a1), r0))
 
 
 def seg_dist(px, py, x0, y0, x1, y1):
     vx, vy = x1 - x0, y1 - y0
     t = clamp(((px - x0) * vx + (py - y0) * vy) / (vx * vx + vy * vy + 1e-9))
     return math.hypot(px - x0 - vx * t, py - y0 - vy * t)
-
-
-def crack(u, v):
-    px, py = u * 2 - 1, v * 2 - 1
-    r = math.hypot(px, py)
-    if r > 1:
-        return 0
-    best = 0.0
-    for x0, y0, x1, y1, r0 in SEGS:
-        d = seg_dist(px, py, x0, y0, x1, y1)
-        width = 0.028 * (1.0 - 0.6 * r0)
-        best = max(best, math.exp(-(d / width) ** 2))
-    fade = smooth(1.0, 0.6, r)
-    glow = 0.35 * math.exp(-(r / 0.25) ** 2)                      # пятно в центре удара
-    return clamp(best * fade + glow), clamp(best * 0.8)
 
 
 RUNES = []
@@ -165,23 +123,6 @@ def rune(u, v):
     return clamp(b), clamp(b * 1.3 - 0.3)
 
 
-def glint(u, v):
-    dx, dy = u * 2 - 1, v * 2 - 1
-    r = math.hypot(dx, dy)
-    star = math.exp(-abs(dx) * 22) * smooth(1.0, 0.0, abs(dy)) + math.exp(-abs(dy) * 22) * smooth(1.0, 0.0, abs(dx))
-    diag = 0.45 * (math.exp(-abs(dx - dy) * 28) + math.exp(-abs(dx + dy) * 28)) * smooth(0.6, 0.0, r)
-    core = math.exp(-(r / 0.12) ** 2)
-    halo = 0.35 * math.exp(-(r / 0.4) ** 2)
-    b = star + diag + core + halo
-    return clamp(b), clamp(core + star * 0.6)
-
-
-def trail(u, v):
-    edge = math.exp(-((v - 0.93) / 0.05) ** 2)                    # кромка у острия
-    body = v ** 1.6 * 0.75
-    streak = 0.85 + 0.15 * math.sin(u * 40 + v * 7)
-    return clamp((body + edge) * streak * smooth(0.0, 0.08, 1 - v + 0.08)), clamp(edge)
-
 
 BEAM_STREAKS = [(RNG.uniform(0.2, 0.8), RNG.uniform(0.02, 0.05), RNG.uniform(0.3, 0.8)) for _ in range(7)]
 
@@ -204,18 +145,6 @@ def arrow(u, v):
     sides = 0.5 * math.exp(-((x - 0.95) / 0.04) ** 2)
     fill = 0.12 * smooth(1.0, 0.0, x)
     return clamp(chev + sides + fill), clamp(chev)
-
-
-def slash(u, v):
-    # серп: дуга между двумя смещёнными кругами, толще в середине, острые концы
-    dx, dy = u * 2 - 1, v * 2 - 1
-    r1 = math.hypot(dx, dy + 0.0)
-    r2 = math.hypot(dx, dy + 0.28)
-    inside = smooth(0.98, 0.9, r1) * smooth(0.86, 0.96, r2)
-    if dy > 0.05:
-        inside *= smooth(0.45, 0.05, dy)
-    edge = math.exp(-((r1 - 0.93) / 0.03) ** 2) * (1 if dy < 0.1 else smooth(0.45, 0.1, dy))
-    return clamp(inside * 0.8 + edge * 0.9), clamp(edge)
 
 
 def marker(u, v):
@@ -246,22 +175,12 @@ def wall(u, v):
     return clamp(base * (0.55 + 0.45 * st) + edge), clamp(edge)
 
 
-def line(u, v):
-    x = abs(v * 2 - 1)
-    return clamp(math.exp(-(x / 0.35) ** 2) + 0.6 * math.exp(-(x / 0.08) ** 2)), clamp(1 - x * 2)
-
-
 if __name__ == "__main__":
     os.makedirs(ROOT, exist_ok=True)
     save("ring.png", 128, 128, ring)
-    save("crack.png", 128, 128, crack)
     save("rune.png", 256, 256, rune)
-    save("glint.png", 64, 64, glint)
-    save("trail.png", 64, 32, trail)
     save("beam.png", 32, 128, beam)
     save("arrow.png", 32, 128, arrow)
-    save("slash.png", 128, 128, slash)
     save("marker.png", 64, 64, marker)
     save("wall.png", 64, 64, wall)
-    save("line.png", 16, 16, line)
     print("Готово:", os.path.normpath(ROOT))

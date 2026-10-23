@@ -38,9 +38,6 @@ public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity
     private final ModelPart pennant;
     private final ModelPart pennantTip;
     private final ModelPart plume;
-    /** Цепочки костей от корня — чтобы найти в мире остриё копья и глаза (следы, блики, огонь из глаз). */
-    private final ModelPart[] lanceChain;
-    private final ModelPart[] headChain;
 
     public TatteredLancerModel(ModelPart root) {
         super(root);
@@ -48,20 +45,6 @@ public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity
         this.pennant = this.bone("pennant");
         this.pennantTip = this.bone("pennant_tip");
         this.plume = this.bone("plume");
-        ModelPart boneRoot = this.bone("bone_root");
-        ModelPart body = this.bone("body");
-        ModelPart torso = this.bone("torso");
-        this.lanceChain = new ModelPart[]{root, boneRoot, body, torso, this.bone("right_arm"), this.bone("right_fore"),
-                this.bone("lance")};
-        this.headChain = new ModelPart[]{root, boneRoot, body, torso, this.head};
-    }
-
-    public ModelPart[] lanceChain() {
-        return this.lanceChain;
-    }
-
-    public ModelPart[] headChain() {
-        return this.headChain;
     }
 
     @Override
