@@ -21,11 +21,15 @@ import java.util.List;
 /**
  * «Яйцо кровожада»: 100 HP, ничего не делает, не двигается. Вокруг себя (радиус до 3 блоков)
  * постепенно растит «кровавую лужу» (до 14 блоков). Когда яйцо убито — лужа исчезает.
+ * Если яйцо прожило 80 с ({@link #HATCH_TICKS}) — лопается, и из него вылезают 2 мелких кровожада.
  */
 public class BloodEggEntity extends MobEntity implements BloodKin {
 
     public static final int MAX_POOLS = 14;
+    public static final int HATCH_TICKS = 1600;
     private final List<BlockPos> pools = new ArrayList<>();
+    /** Сколько тиков живёт яйцо (сохраняется в NBT). */
+    private int life;
 
     public BloodEggEntity(EntityType<? extends MobEntity> type, World world) {
         super(type, world);
@@ -53,9 +57,41 @@ public class BloodEggEntity extends MobEntity implements BloodKin {
             w.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_WARDEN_HEARTBEAT,
                     SoundCategory.HOSTILE, 0.6f, 0.8f);
         }
-        if (this.age % 30 == 0) {
-            BloodFx.splash(w, this.getX(), this.getY() + 1.0, this.getZ(), 3, 0.4);
+        this.life++;
+        boolean soon = this.life > HATCH_TICKS - 100;              // последние 5 с — бьётся чаще
+        if (this.age % (soon ? 6 : 30) == 0) {
+            BloodFx.splash(w, this.getX(), this.getY() + 1.0, this.getZ(), soon ? 6 : 3, 0.4);
         }
+        if (soon && this.age % 12 == 0) {
+            w.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_WARDEN_HEARTBEAT,
+                    SoundCategory.HOSTILE, 1.0f, 1.2f);
+        }
+        if (this.life >= HATCH_TICKS) {
+            this.hatch();
+        }
+    }
+
+    /** Яйцо лопается: 2 мелких кровожада, брызги, лужа исчезает. */
+    private void hatch() {
+        if (!(this.getWorld() instanceof net.minecraft.server.world.ServerWorld s)) {
+            return;
+        }
+        for (int k = 0; k < 2; k++) {
+            BloodlingEntity b = ModEntities.BLOODLING.create(s);
+            if (b == null) {
+                continue;
+            }
+            double a = this.random.nextDouble() * Math.PI * 2;
+            b.refreshPositionAndAngles(this.getX() + Math.cos(a) * 0.6, this.getY(), this.getZ() + Math.sin(a) * 0.6,
+                    this.random.nextFloat() * 360f, 0f);
+            b.initialize(s, s.getLocalDifficulty(this.getBlockPos()), net.minecraft.entity.SpawnReason.MOB_SUMMONED,
+                    null, null);
+            s.spawnEntity(b);
+        }
+        BloodFx.splash(s, this.getX(), this.getY() + 0.7, this.getZ(), 50, 0.7);
+        s.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_SLIME_DEATH,
+                SoundCategory.HOSTILE, 1.4f, 0.5f);
+        this.discard();
     }
 
     /** Одна клетка лужи на земле в радиусе 1–3 блока (только в воздухе над целым верхом блока). */
@@ -142,11 +178,13 @@ public class BloodEggEntity extends MobEntity implements BloodKin {
             arr[i] = this.pools.get(i).asLong();
         }
         nbt.putLongArray("Pools", arr);
+        nbt.putInt("Life", this.life);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        this.life = nbt.getInt("Life");
         this.pools.clear();
         for (long l : nbt.getLongArray("Pools")) {
             this.pools.add(BlockPos.fromLong(l));

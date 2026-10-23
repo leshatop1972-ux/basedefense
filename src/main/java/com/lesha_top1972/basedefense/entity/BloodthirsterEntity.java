@@ -1,5 +1,7 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.block.BloodPoolBlock;
+import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.combat.ShieldBlocker;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
@@ -111,6 +113,9 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.RED,
             BossBar.Style.NOTCHED_10);
     private boolean transforming;
+    /** Раз в 7 с в бою рядом появляется кровавая лужа. */
+    public static final int POOL_EVERY = 140;
+    private int poolTimer = POOL_EVERY;
 
     /** Только клиент: текущее действие и когда началось. */
     public int clientAction = NONE;
@@ -184,6 +189,39 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     protected void mobTick() {
         super.mobTick();
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+        if (this.getTarget() != null && this.getTarget().isAlive() && --this.poolTimer <= 0) {
+            this.poolTimer = POOL_EVERY;
+            this.spawnBossPool();
+        }
+    }
+
+    /** Лужа крестом (5 клеток + 0–3 случайных) в 2.5–6 блоках от босса; высыхает сама через 15 с. */
+    private void spawnBossPool() {
+        World w = this.getWorld();
+        double a = this.random.nextDouble() * Math.PI * 2;
+        double r = 2.5 + this.random.nextDouble() * 3.5;
+        BlockPos center = this.groundSpot(this.getX() + Math.cos(a) * r, this.getZ() + Math.sin(a) * r);
+        if (center == null) {
+            return;
+        }
+        List<BlockPos> cells = new ArrayList<>(List.of(center, center.north(), center.south(), center.east(), center.west()));
+        for (int k = this.random.nextInt(4); k > 0; k--) {
+            cells.add(center.add(this.random.nextInt(3) - 1 + (this.random.nextBoolean() ? 1 : -1), 0,
+                    this.random.nextInt(3) - 1));
+        }
+        BlockState pool = ModBlocks.BLOOD_POOL.getDefaultState();
+        for (BlockPos c : cells) {
+            for (int dy = 1; dy >= -1; dy--) {
+                BlockPos p = c.up(dy);
+                if (w.isAir(p) && w.getBlockState(p.down()).isSideSolidFullSquare(w, p.down(), Direction.UP)) {
+                    w.setBlockState(p, pool);
+                    w.scheduleBlockTick(p, ModBlocks.BLOOD_POOL, BloodPoolBlock.BOSS_POOL_TICKS + this.random.nextInt(20));
+                    break;
+                }
+            }
+        }
+        BloodFx.splash(w, center.getX() + 0.5, center.getY() + 0.3, center.getZ() + 0.5, 16, 0.8);
+        this.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.0f, 0.5f);
     }
 
     @Override

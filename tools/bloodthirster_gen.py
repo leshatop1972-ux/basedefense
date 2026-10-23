@@ -49,7 +49,7 @@ GLOW_HOT = (255, 170, 140)
 # 1. Босс: модель (Bedrock: y вверх, лицо в −z, правая сторона — −x)
 # =====================================================================
 NAME = "bloodthirster"
-M = Model(NAME, 256, 128)
+M = Model(NAME, 256, 256)
 bone, cube = M.bone, M.cube
 THIGH, SHIN = 13.0, 11.0
 UPPER, FORE = 13.0, 12.0
@@ -87,8 +87,6 @@ bone("torso", "body", (0, 28, 0))
 cube("torso", (-2.6, 28, -1.8), (5.2, 6.5, 3.6), "flesh", face="abdomen")
 cube("torso", (-5, 34, -3), (10, 10, 6), "flesh", face="ribcage")
 cube("torso", (-1.4, 34.5, -3.7), (2.8, 9, 1.0), "lacquer", face="sternum")
-cube("torso", (-7.6, 41.6, -2.6), (3.6, 2.6, 5.2), "lacquer", face="pauldron")
-cube("torso", (4.0, 41.6, -2.6), (3.6, 2.6, 5.2), "lacquer", face="pauldron")
 cube("torso", (-7.3, 43.4, -0.5), (1.0, 3.2, 1.0), "claw", face="spike", rot=(0, 0, 22), pivot=(-6.8, 43.4, 0))
 cube("torso", (6.3, 43.4, -0.5), (1.0, 3.2, 1.0), "claw", face="spike", rot=(0, 0, -22), pivot=(6.8, 43.4, 0))
 for k, y in enumerate((31.0, 35.0, 38.6, 42.0)):            # гребень позвоночника
@@ -103,6 +101,13 @@ cube("head", (-2.6, 50.5, 2.2), (5.2, 6, 2.4), "mask", face="occiput")
 cube("head", (-3.3, 54.6, -4.7), (6.6, 1.2, 1.0), "lacquer", face="brow")
 bone("jaw", "head", (0, 49.5, 1.0))
 cube("jaw", (-2.8, 46.2, -4.5), (5.6, 3.2, 5.6), "jaw", face="jaw")
+# Лицо и подбородок — тонкие пластины в 4 раза крупнее, кость уменьшена в анимациях до 0.25:
+# так на лице в 4 раза больше пикселей (не «квадратное» лицо Minecraft).
+FACE_S = 0.25
+bone("face", "head", (0, 49, -4.2))
+cube("face", (-12, 49, -5.2), (24, 32, 1), "face_hi", face="faceplate")
+bone("jaw_face", "jaw", (0, 46.2, -4.5))
+cube("jaw_face", (-11, 46.2, -5.5), (22, 12.8, 1), "face_hi", face="jawplate")
 # волосы: два звена, свисают по спине
 bone("hair", "head", (0, 55.5, 3.0))
 cube("hair", (-3.2, 43.5, 3.0), (6.4, 12.5, 1.2), "hair", face="hair1")
@@ -110,6 +115,19 @@ cube("hair", (-3.4, 49.5, -3.4), (0.9, 7.5, 6.2), "hair", face="hair_side")
 cube("hair", (2.5, 49.5, -3.4), (0.9, 7.5, 6.2), "hair", face="hair_side")
 bone("hair_tip", "hair", (0, 43.5, 3.3))
 cube("hair_tip", (-3.2, 33.5, 2.8), (6.4, 10, 1.0), "hair", face="hair2")
+# большой широкий плащ: мантия на плечах, высокий воротник, полотнище до колен (почти без анимации)
+bone("cloak", "torso", (0, 44, 3.6))
+# полотнище из трёх частей: середина и два крыла, загнутые вокруг тела (складки), низ расширяется
+cube("cloak", (-6, 29, 3.3), (12, 15, 0.8), "cloak", face="cloak_top")
+cube("cloak", (5.6, 29, 3.3), (4.6, 15, 0.8), "cloak", face="cloak_top", rot=(0, 28, 0), pivot=(5.8, 36, 3.7))
+cube("cloak", (-10.2, 29, 3.3), (4.6, 15, 0.8), "cloak", face="cloak_top", rot=(0, -28, 0), pivot=(-5.8, 36, 3.7))
+cube("cloak", (-7, 6, 3.7), (14, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, 0, 0), pivot=(0, 29.5, 3.7))
+cube("cloak", (6.6, 6, 3.7), (6.2, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, 32, 0), pivot=(6.8, 29.5, 3.9))
+cube("cloak", (-12.8, 6, 3.7), (6.2, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, -32, 0), pivot=(-6.8, 29.5, 3.9))
+cube("torso", (-8.8, 41.2, -3.4), (17.6, 3.6, 7.6), "cloak", face="mantle")
+cube("torso", (-4.4, 44.2, 1.2), (8.8, 5.6, 1.0), "cloak", face="collar", rot=(-14, 0, 0), pivot=(0, 44.2, 1.7))
+cube("torso", (-5.2, 44.2, -2.2), (1.0, 5.0, 3.6), "cloak", face="collar", rot=(0, 0, 12), pivot=(-4.7, 44.2, 0))
+cube("torso", (4.2, 44.2, -2.2), (1.0, 5.0, 3.6), "cloak", face="collar", rot=(0, 0, -12), pivot=(4.7, 44.2, 0))
 # венец из шипов за головой (только 2‑я фаза — прячется кодом)
 bone("halo", "head", (0, 56, 4.6))
 for k in range(11):
@@ -156,6 +174,137 @@ M.finalize()
 # =====================================================================
 def side(fname):
     return fname not in ("top", "bottom")
+
+
+def sh(col, k):
+    return tuple(clamp(ch * k) for ch in col[:3])
+
+
+def face_pixel(face, i, j, phase):
+    """Детальное лицо 24×32 (лоб, брови, миндалевидные глаза, нос, скулы, губы) и подбородок 22×13.
+    Не «пиксельная» маска: мягкая светотень по овалу, свет сверху‑слева."""
+    if face == "faceplate":
+        W, H = 24, 32
+        u = (i + 0.5) / W * 2 - 1          # −1..1 слева направо (как видит зритель)
+        v = (j + 0.5) / H                  # 0 сверху .. 1 снизу
+        x = abs(u)
+    else:
+        W, H = 22, 13
+        u = (i + 0.5) / W * 2 - 1
+        v = 1.0 + (j + 0.5) / H * 0.42     # продолжение лица ниже (1.0..1.42)
+        x = abs(u)
+    # основа: «фарфоровая» бордовая кожа, во 2‑й фазе — чёрный лак с алым подтоном
+    base = mix(BORDEAUX, RED, 0.55) if phase == 1 else mix(BLACK, BORDEAUX, 0.55)
+    hi = (196, 86, 92) if phase == 1 else (120, 40, 52)
+    # объём: овал лица (темнее к краям и к подбородку), блик на лбу и скулах
+    oval = 1.0 - 0.55 * x ** 2.2 - 0.25 * max(0.0, v - 0.85) ** 1.5
+    light_k = 0.78 + 0.32 * oval + 0.08 * (-u) * (1 - v)
+    col = sh(base, light_k)
+    forehead = math.exp(-((v - 0.16) / 0.12) ** 2) * math.exp(-(u / 0.55) ** 2)
+    cheek = math.exp(-((v - 0.58) / 0.07) ** 2) * math.exp(-((x - 0.58) / 0.14) ** 2)
+    col = mix(col, hi, 0.45 * forehead + 0.55 * cheek)
+    # впадины под скулами и у висков
+    hollow = math.exp(-((v - 0.68) / 0.06) ** 2) * math.exp(-((x - 0.72) / 0.12) ** 2)
+    col = mix(col, BORDEAUX_D, 0.55 * hollow)
+
+    # орнамент на лбу: тонкие расходящиеся линии‑филигрань (2‑я фаза светится)
+    if face == "faceplate" and 0.02 < v < 0.26:
+        for k in (0.0, 0.33, 0.66):
+            yy = 0.24 - (x * 0.45 + k * 0.12) - 0.05 * math.sin(x * 9 + k * 4)
+            if abs(v - yy) < 0.012 and x < 0.8:
+                return ("glow", mix(GLOW, RED, 0.3)) if phase == 2 else sh(BLACK_L, 1.1)
+        if x < 0.05 and v > 0.12:
+            return ("glow", GLOW) if phase == 2 else sh(BLACK, 1.0)
+    # брови: тонкие изогнутые дуги
+    if face == "faceplate":
+        by = 0.34 - 0.06 * math.sin(min(1.0, max(0.0, (x - 0.12) / 0.78)) * math.pi) + 0.03 * x
+        if 0.14 < x < 0.9 and abs(v - by) < 0.012 + 0.006 * (1 - x):
+            return sh(BLACK, 1.0)
+        # глаза: миндалевидные, слегка раскосые
+        ex, ey = 0.47, 0.42 - 0.035 * (x - 0.47) / 0.3
+        dx, dy = (x - ex) / 0.30, (v - ey) / 0.055
+        r = dx * dx + dy * dy * (1.0 + 0.6 * dx)
+        if r < 1.0:
+            if abs(dx) < 0.12 and abs(dy) < 0.8:
+                return ("glow", GLOW_HOT)                 # вертикальный зрачок
+            if dx * dx + dy * dy < 0.3:
+                return ("glow", GLOW)                     # радужка
+            return sh(BLACK, 1.0)                         # чёрный белок
+        if 1.0 <= r < 1.45 and dy < 0:
+            return sh(BLACK_L, 0.8)                       # ресницы / веко
+        if 1.0 <= r < 1.35 and dy >= 0:
+            col = mix(col, BORDEAUX_D, 0.6)               # тень под глазом
+        # кровавые слёзы от внутреннего уголка
+        tx = 0.21 + 0.02 * math.sin(v * 30)
+        if 0.47 < v < 0.8 and abs(x - tx) < 0.03 and u < 0:
+            k = (v - 0.46) / 0.4
+            return mix(SCARLET, mix(RED, BORDEAUX, 0.4), k) if phase == 1 else ("glow", mix(GLOW, RED, k * 0.6))
+        # нос: светлая спинка, тень с одной стороны, крылья
+        if 0.44 < v < 0.70:
+            if -0.06 < u < 0.02:
+                col = mix(col, hi, 0.35)
+            elif 0.02 <= u < 0.12:
+                col = mix(col, BORDEAUX_D, 0.4)
+        if 0.66 < v < 0.72 and 0.06 < x < 0.17:
+            return sh(BORDEAUX_D, 0.7)                    # ноздри
+        # губы: тонкая верхняя (низ пластины лица)
+        if v > 0.86:
+            lip = mix(CRIMSON, SCARLET, 0.3) if phase == 1 else mix(BLACK, CRIMSON, 0.5)
+            top = 0.905 - 0.02 * math.exp(-(x / 0.08) ** 2) + 0.025 * math.exp(-((x - 0.16) / 0.07) ** 2)
+            if x < 0.4 and v > top + x * 0.06:            # верхняя губа с «луком Купидона»
+                if v > 0.975:
+                    return sh(BLACK, 1.0)                 # тонкий разрез рта
+                return sh(lip, 0.85 + 0.2 * (1 - x))
+    else:
+        # подбородок: полная нижняя губа с бликом, ямка, кровавая капля
+        lip = mix(CRIMSON, SCARLET, 0.35) if phase == 1 else mix(BLACK, CRIMSON, 0.55)
+        if v < 1.14 and x < 0.40 - (v - 1.0) * 1.2:
+            if v < 1.015:
+                return sh(BLACK, 1.0)
+            k = 1.0 + 0.35 * math.exp(-((v - 1.07) / 0.03) ** 2) * math.exp(-(u + 0.1) ** 2 / 0.02)
+            return sh(lip, k)
+        if abs(u - 0.12) < 0.035 and 1.12 < v < 1.38:
+            return mix(SCARLET, RED, (v - 1.12) / 0.3) if phase == 1 else ("glow", mix(GLOW, RED, 0.4))
+        if 1.2 < v < 1.27 and x < 0.15:
+            col = mix(col, BORDEAUX_D, 0.4)               # ямка подбородка
+    return col
+
+
+def cloak_pixel(c, face, fname, i, j, w, h, phase, R):
+    """Плащ: снаружи бархат с мягкими складками, внутри алая подкладка, рваный низ (во 2‑й фазе
+    подол ровнее и с алой каймой)."""
+    outer = BLACK if phase == 2 else mix(BLACK, BORDEAUX, 0.45)
+    lining = SCARLET if phase == 1 else RED
+    fold = 0.82 + 0.22 * math.sin(i * 0.9) + 0.06 * math.sin(i * 2.3 + 1)
+    if face in ("cloak_top", "cloak_low"):
+        low = face == "cloak_low"
+        if fname in ("front", "back"):
+            if low and j >= h - 3:
+                tear = (i * 7 + 3) % 5 if phase == 1 else (i * 3) % 2
+                if j >= h - 1 - tear * (1 if phase == 1 else 0):
+                    return None                            # рваный край
+            if phase == 1 and R.random() < 0.025 and 2 < j < h - 3:
+                return None                                # прорехи
+            if fname == "front":
+                return mul(lining, (0.75 + 0.2 * math.sin(i * 0.9)) * (1 - 0.25 * j / h))
+            col = mul(outer, fold * (1 - 0.15 * j / h))
+            if phase == 2 and low and j in (h - 3, h - 4):
+                return ("glow", mix(GLOW, RED, 0.35))      # алая кайма подола
+            return mul(col, FACE_LIGHT[fname])
+        return mul(BLACK_L if phase == 1 else BLACK, FACE_LIGHT[fname])
+    if face == "mantle":
+        # мантия: плотный мех/бархат, тёмный, с алой оторочкой снизу
+        if side(fname) and j == h - 1:
+            return mul(lining if phase == 1 else GLOW, 0.8) if phase == 1 else ("glow", mix(GLOW, RED, 0.4))
+        col = mul(mix(BLACK, BORDEAUX, 0.35 if phase == 1 else 0.15), (0.85 + 0.3 * R.random()) * FACE_LIGHT[fname])
+        return col
+    if face == "collar":
+        if fname == "front":
+            return mul(lining, 0.85)
+        if side(fname) and j == 0:
+            return ("glow", GLOW) if phase == 2 else mul(BORDEAUX, FACE_LIGHT[fname])
+        return mul(outer, FACE_LIGHT[fname] * 0.95)
+    return mul(outer, FACE_LIGHT[fname])
 
 
 def make_painter(model, phase, seed):
@@ -281,6 +430,12 @@ def make_painter(model, phase, seed):
                             return ("glow", mix(GLOW, CRIMSON, 0.5)) if (i + j) % 3 == 0 else lit(fname, SCARLET)
                         return lit(fname, IVORY)
                     return lit(fname, BORDEAUX if phase == 1 else mix(BLACK, BORDEAUX, 0.4))
+                if mat == "face_hi":
+                    if fname != "front":
+                        return lit(fname, BORDEAUX_D)
+                    return face_pixel(face, i, j, phase)
+                if mat == "cloak":
+                    return cloak_pixel(c, face, fname, i, j, w, h, phase, R)
                 if mat == "hair":
                     col = BLACK if (i * 3 + 1) % 4 else BLACK_L
                     if (i * 5) % 7 == 0:
@@ -324,7 +479,7 @@ P2 = make_painter(M, 2, 71)
 # =====================================================================
 # 3. Анимации
 # =====================================================================
-A_BONES = ["root", "body", "torso", "neck", "head", "jaw", "hair", "hair_tip", "halo",
+A_BONES = ["root", "body", "torso", "neck", "head", "jaw", "face", "jaw_face", "cloak", "hair", "hair_tip", "halo",
            "right_arm", "right_fore", "right_hand", "right_claws", "sword_r",
            "left_arm", "left_fore", "left_hand", "left_claws", "sword_l",
            "right_leg", "right_shin", "right_foot", "left_leg", "left_shin", "left_foot",
@@ -387,6 +542,11 @@ def resolve(pr, model=M, swords=True):
     pose["neck"] = {"rot": pr["neck"]}
     pose["head"] = {"rot": pr["head"]}
     pose["jaw"] = {"rot": (pr["jaw"], 0, 0)}
+    pose["face"] = {"rot": (0, 0, 0), "scale": (FACE_S,) * 3}
+    pose["jaw_face"] = {"rot": (0, 0, 0), "scale": (FACE_S,) * 3}
+    # плащ почти не анимируется: только немного свисает, когда корпус наклонён
+    lean = pr["body"][0] + pr["torso"][0]
+    pose["cloak"] = {"rot": (-lean * 0.45 + 3 + max(0.0, pr["ribbon"]) * 0.25, 0, 0)}
     pose["halo"] = {"rot": (0, 0, 0), "scale": (pr["halo"],) * 3}
     # волосы висят вниз, что бы ни делала голова
     pitch = pr["body"][0] + pr["torso"][0] + pr["neck"][0] + pr["head"][0]
