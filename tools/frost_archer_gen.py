@@ -3,806 +3,868 @@
 текстура и светящаяся маска, текстура ледяной стрелы, иконка эффекта «Заморозка» и оверлей экрана.
 
 Запуск:  python tools/frost_archer_gen.py
-Проверка без игры:  python tools/mob_preview.py frost_archer attack
+Проверка без игры:  python tools/mob_preview.py frost_archer attack 0.3,1.0,1.6,2.0
 
-Модель описана здесь же (кости и кубы в координатах Bedrock, y вверх, лицо смотрит в −z).
-Анимации считаются кодом: позы рук и лука вычисляются обратной кинематикой, чтобы правая рука
-держала тетиву, а лук — левая. Повороты костей в Bedrock и в Java совпадают (см. BedrockModelLoader),
-поэтому математика ведётся в Java-пространстве (x, 24 − y, z).
+Морозная эльфийка‑лучница: серебристо‑белые длинные волосы, острые уши, ледяная тиара,
+корсет и юбка из панелей, сапоги до колен, ледяной наплечник, колчан на правом бедре.
+Руки и ноги из двух звеньев. Позы рук считаются обратной кинематикой (mobgen.Model.two_bone):
+правая рука достаёт стрелу из колчана, кладёт на тетиву и тянет к щеке, локоть поднят.
+Общие инструменты — tools/mobgen.py.
 """
-import json
 import math
 import os
 import random
 
 from PIL import Image
 
+from mobgen import (FACE_LIGHT, Model, Painter, add, blend, bake, clamp, ease, ease_out, eulerR, faces,
+                    lerp, lerp3, mix, mm, mul, rx_m, ry_m, rz_m, scl, sub, write_anims)
+
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 NAME = "frost_archer"
-TEX_W, TEX_H = 128, 128
-RND = random.Random(1972)
+M = Model(NAME, 128, 128)
+bone, cube = M.bone, M.cube
 
 # =====================================================================
-# 1. Модель
+# 1. Модель (Bedrock: y вверх, лицо в −z, правая сторона персонажа — −x)
 # =====================================================================
-BONES = []          # по порядку: родитель раньше ребёнка
-BONE = {}
-
-
-def bone(name, parent, pivot):
-    b = {"name": name, "pivot": list(pivot), "cubes": []}
-    if parent:
-        b["parent"] = parent
-    BONES.append(b)
-    BONE[name] = b
-    return b
-
-
-def cube(bname, origin, size, mat, inflate=0.0, rot=None, pivot=None, face=None):
-    c = {"origin": [round(v, 4) for v in origin], "size": [round(v, 4) for v in size], "mat": mat}
-    if inflate:
-        c["inflate"] = inflate
-    if rot:
-        c["rotation"] = [round(v, 3) for v in rot]
-        c["pivot"] = [round(v, 4) for v in pivot]
-    if face:
-        c["face"] = face
-    BONE[bname]["cubes"].append(c)
-    return c
-
-
-# --- туловище и подол (вместо ног — парящий рваный подол) ---
+UPPER, FORE = 5.5, 5.5          # длины звеньев руки
 bone("root", None, (0, 0, 0))
-bone("body", "root", (0, 12, 0))
-cube("body", (-4, 11, -2.5), (8, 5, 5), "robe")
-cube("body", (-4.5, 15, -3), (9, 2, 6), "leather", face="belt")
-cube("body", (-1, 15, -3.4), (2, 2, 1), "silver")
 
-bone("robe1", "body", (0, 11, 0))
-cube("robe1", (-4.5, 7, -3), (9, 4, 6), "robe", face="hem_trim")
-cube("robe1", (-2, 5, -3.5), (4, 6, 1), "azure", face="tabard")
-bone("robe2", "robe1", (0, 7, 0))
-cube("robe2", (-4, 3, -2.5), (8, 4, 5), "robe", face="hem_trim")
-bone("robe3", "robe2", (0, 3, 0))
-cube("robe3", (-3.5, -1, -2), (7, 4, 4), "robe_rag", face="frayed")
+# --- бёдра, пояс ---
+bone("body", "root", (0, 11, 0))
+cube("body", (-3.5, 9, -2), (7, 3, 4), "legging", face="hips")
+cube("body", (-3.8, 11, -2.3), (7.6, 1.4, 4.6), "belt")
+cube("body", (-1, 10.8, -2.7), (2, 1.8, 0.6), "silver_gem")
+cube("body", (3.3, 8.6, -1.6), (1.4, 2.4, 2.6), "pouch")
 
-bone("torso", "body", (0, 17, 0))
-cube("torso", (-4, 17, -2.5), (8, 7, 5), "robe", face="chest")
-cube("torso", (-5, 21, -3.5), (10, 3, 7), "fur", inflate=0.2)
+# --- колчан на правом бедре ---
+bone("quiver", "body", (-4.2, 11, 1.1))
+Q_ROT, Q_PIV = (-14, 0, 18), (-4.2, 11, 1.1)
+cube("quiver", (-5.3, 4.5, 0.0), (2.2, 7, 2.2), "quiver", rot=Q_ROT, pivot=Q_PIV)
+cube("quiver", (-5.45, 9.9, -0.15), (2.5, 0.7, 2.5), "silver", rot=Q_ROT, pivot=Q_PIV)
+cube("quiver", (-5.45, 5.6, -0.15), (2.5, 0.7, 2.5), "silver", rot=Q_ROT, pivot=Q_PIV)
+cube("quiver", (-5.1, 11.3, 0.3), (0.7, 2.6, 0.7), "fletch", rot=Q_ROT, pivot=Q_PIV)
+cube("quiver", (-4.2, 11.1, 1.2), (0.7, 2.4, 0.7), "fletch_w", rot=Q_ROT, pivot=Q_PIV)
+cube("quiver", (-4.9, 11.0, 1.4), (0.7, 2.2, 0.7), "fletch", rot=Q_ROT, pivot=Q_PIV)
+QUIVER_MOUTH = (-4.6, 12.3, 1.2)   # куда тянется рука за стрелой (Bedrock, до поворота колчана)
 
-bone("cape", "torso", (0, 23, 2.6))
-cube("cape", (-4.5, 11, 2.6), (9, 12, 1), "azure", face="cape")
+# --- юбка из панелей ---
+bone("skirt_fr", "body", (-1.95, 10.6, -2.2))
+cube("skirt_fr", (-3.9, 4.2, -2.6), (3.8, 6.4, 0.7), "skirt", face="skirt_front")
+bone("skirt_fl", "body", (1.95, 10.6, -2.2))
+cube("skirt_fl", (0.1, 4.2, -2.6), (3.8, 6.4, 0.7), "skirt", face="skirt_front")
+bone("skirt_b", "body", (0, 10.6, 2.2))
+cube("skirt_b", (-3.9, 3.6, 1.9), (7.8, 7, 0.7), "skirt", face="skirt_back")
+bone("skirt_sr", "body", (-3.7, 10.6, 0))
+cube("skirt_sr", (-4.2, 5.0, -1.9), (0.7, 5.6, 3.8), "skirt", face="skirt_side")
+bone("skirt_sl", "body", (3.7, 10.6, 0))
+cube("skirt_sl", (3.5, 5.0, -1.9), (0.7, 5.6, 3.8), "skirt", face="skirt_side")
 
-bone("quiver", "torso", (2.5, 20, 3.8))
-cube("quiver", (1, 13, 3.8), (3, 9, 3), "leather", face="quiver", rot=(0, 0, -18), pivot=(2.5, 17.5, 5.3))
-cube("quiver", (1.4, 21.5, 4.3), (1, 3, 1), "azure", rot=(0, 0, -18), pivot=(2.5, 17.5, 5.3))
-cube("quiver", (2.6, 21.0, 5.0), (1, 3, 1), "white", rot=(0, 0, -18), pivot=(2.5, 17.5, 5.3))
+# --- ноги: бедро → голень → стопа ---
+bone("right_leg", "body", (-1.9, 10, 0))
+cube("right_leg", (-3.55, 5, -1.65), (3.3, 5, 3.3), "legging", face="thigh")
+cube("right_leg", (-3.7, 7.4, -1.8), (3.6, 0.8, 3.6), "band")
+bone("right_shin", "right_leg", (-1.9, 5, 0))
+cube("right_shin", (-3.45, 1, -1.55), (3.1, 4, 3.1), "boot", face="boot")
+cube("right_shin", (-3.7, 4.0, -1.8), (3.6, 1.4, 3.6), "fur")
+cube("right_shin", (-2.9, 3.9, -2.4), (2, 2.2, 0.6), "ice", rot=(-8, 0, 0), pivot=(-1.9, 5, -2))
+bone("right_foot", "right_shin", (-1.9, 1, -0.2))
+cube("right_foot", (-3.3, -0.3, -2.9), (2.8, 1.4, 3.6), "boot", face="foot")
+cube("right_foot", (-2.9, -0.2, -3.3), (2, 1, 0.6), "silver")
+M.mirror_x("right_leg", "left_leg")
+M.mirror_x("right_shin", "left_shin", parent="left_leg")
+M.mirror_x("right_foot", "left_foot", parent="left_shin")
 
-# --- голова под капюшоном ---
-bone("head", "torso", (0, 24, 0))
-cube("head", (-3.5, 24, -3.5), (7, 7, 7), "skin", face="face")
-cube("head", (-4, 23.5, -4), (8, 2, 8), "fur", inflate=0.1)
-cube("head", (-4.5, 30.5, -4.5), (9, 2, 9), "hood")
-cube("head", (-4.5, 24, 2.5), (9, 7, 2), "hood")
-cube("head", (3.5, 24, -4.5), (1, 7, 7), "hood")
-cube("head", (-4.5, 24, -4.5), (1, 7, 7), "hood")
-cube("head", (-4.5, 29.5, -5), (9, 1, 1), "azure", face="brim")
-cube("head", (-1.5, 27, 4.5), (3, 4, 2), "hood", rot=(20, 0, 0), pivot=(0, 30, 4.5))
-# ледяная корона на капюшоне
-cube("head", (-0.5, 31.5, -5), (1, 3, 1), "ice", rot=(-12, 0, 0), pivot=(0, 31.5, -4.5))
-cube("head", (2, 31, -4.8), (1, 2, 1), "ice", rot=(0, 0, -15), pivot=(2.5, 31, -4.3))
-cube("head", (-3, 31, -4.8), (1, 2, 1), "ice", rot=(0, 0, 15), pivot=(-2.5, 31, -4.3))
-cube("head", (3.8, 30, -2), (1, 2, 1), "ice", rot=(0, 0, -32), pivot=(4.3, 30, -1.5))
-cube("head", (-4.8, 30, -2), (1, 2, 1), "ice", rot=(0, 0, 32), pivot=(-4.3, 30, -1.5))
+# --- корпус ---
+bone("torso", "body", (0, 12, 0))
+cube("torso", (-3, 12, -1.75), (6, 5, 3.5), "corset", face="corset")
+cube("torso", (-3.5, 17, -2), (7, 5, 4), "bodice", face="bodice")
+cube("torso", (-3, 18, -2.9), (6, 3, 1.1), "bodice", face="bust", rot=(-12, 0, 0), pivot=(0, 19.5, -2))
+cube("torso", (-4.3, 21.6, -2.6), (8.6, 2, 5.2), "fur", inflate=0.1)
+cube("torso", (-1, 23, -1), (2, 1, 2), "skin")
 
-# --- руки ---
-for side, sx in (("right", -1), ("left", 1)):
-    b = side + "_arm"
-    bone(b, "torso", (5 * sx, 23, 0))
-    x0 = 4 if sx > 0 else -7
-    cube(b, (x0, 14, -1.5), (3, 9, 3), "robe", face="sleeve")
-    cube(b, (x0 - 0.5, 21, -2), (4, 3, 4), "fur", inflate=0.1)
-    cube(b, (x0 - 0.25, 14.5, -1.75), (3.5, 3, 3.5), "leather", face="bracer")
-    cube(b, (x0 + 0.25, 13, -1.25), (2.5, 1.5, 2.5), "glove")
+bone("cape", "torso", (0, 23, 2.1))
+cube("cape", (-4.2, 14, 2.0), (8.4, 9, 0.8), "cape", face="cape")
 
-# --- лук (в левой руке) ---
-P = (5.5, 13.5, 0.0)            # точка хвата
-LIMB_PTS = [(1.5, 0.0), (4.0, 0.4), (6.5, 1.4), (8.6, 2.7), (9.8, 2.4)]   # (y, z) от хвата
+# --- руки: плечо → предплечье ---
+bone("right_arm", "torso", (-5, 22, 0))
+cube("right_arm", (-6.5, 16.5, -1.5), (3, 5.5, 3), "sleeve", face="upper")
+cube("right_arm", (-6.8, 19.3, -1.8), (3.6, 3, 3.6), "sleeve", face="puff")
+cube("right_arm", (-7.0, 21.0, -2.0), (3.8, 2, 4), "fur", inflate=0.1)
+bone("right_fore", "right_arm", (-5, 16.5, 0))
+cube("right_fore", (-6.5, 11, -1.5), (3, 5.5, 3), "glove", face="fore")
+cube("right_fore", (-6.75, 12.6, -1.75), (3.5, 3, 3.5), "bracer")
+cube("right_fore", (-6.3, 10.2, -1.3), (2.6, 1.3, 2.6), "glove", face="hand")
+# стрела в руке (видна, пока лучница достаёт её из колчана)
+bone("hand_arrow", "right_fore", (-5, 11, 0))
+cube("hand_arrow", (-5.25, 0.4, -0.25), (0.5, 10.6, 0.5), "shaft")
+cube("hand_arrow", (-5.5, -1.0, -0.5), (1, 1.5, 1), "ice")
+cube("hand_arrow", (-5.35, 8.6, -1.1), (0.2, 2, 2.2), "fletch")
+cube("hand_arrow", (-6.1, 8.6, -0.1), (2.2, 2, 0.2), "fletch")
+
+bone("left_arm", "torso", (5, 22, 0))
+cube("left_arm", (3.5, 16.5, -1.5), (3, 5.5, 3), "sleeve", face="upper")
+cube("left_arm", (3.2, 19.3, -1.8), (3.6, 3, 3.6), "sleeve", face="puff")
+cube("left_arm", (2.9, 21.0, -2.3), (4.4, 1.6, 4.6), "ice_armor", rot=(0, 0, 18), pivot=(5, 22, 0))
+cube("left_arm", (3.3, 19.9, -2.1), (3.8, 1.2, 4.2), "ice_armor", rot=(0, 0, 28), pivot=(5, 21, 0))
+cube("left_arm", (6.0, 22.2, -0.5), (1, 2.4, 1), "ice", rot=(0, 0, -28), pivot=(6.5, 22.2, 0))
+bone("left_fore", "left_arm", (5, 16.5, 0))
+cube("left_fore", (3.5, 11, -1.5), (3, 5.5, 3), "glove", face="fore")
+cube("left_fore", (3.25, 12.6, -1.75), (3.5, 3, 3.5), "bracer")
+cube("left_fore", (3.7, 10.2, -1.3), (2.6, 1.3, 2.6), "glove", face="hand")
+
+# --- лук в левой руке ---
+P = (5.0, 11.0, 0.0)            # точка хвата
+LIMB_PTS = [(1.5, 0.0), (4.0, 0.45), (6.5, 1.5), (8.6, 2.8), (9.8, 2.5)]   # (y, z) от хвата
 TIP = LIMB_PTS[-1]
-STRING_LEN = TIP[0]             # половина тетивы: от кончика до уровня хвата
-NOCK_Z0 = TIP[1]                # тетива в покое
-DRAW_MAX = 6.0                  # насколько оттягивается тетива (px)
-ARROW_BACK = 8.4                # хвост стрелы при полном натяжении (= NOCK_Z0 + DRAW_MAX)
-
-bone("bow", "left_arm", P)
-cube("bow", (P[0] - 0.5, P[1] - 1.5, P[2] - 0.75), (1, 3, 1.5), "glove", face="grip")
-cube("bow", (P[0] - 0.75, P[1] - 0.5, P[2] - 1.25), (1.5, 1, 0.5), "ice")
-
+STRING_LEN = TIP[0]
+NOCK_Z0 = TIP[1]
+DRAW_MAX = 6.0
+bone("bow", "left_fore", P)
+cube("bow", (P[0] - 0.55, P[1] - 1.5, P[2] - 0.75), (1.1, 3, 1.5), "grip")
+cube("bow", (P[0] - 0.75, P[1] - 0.6, P[2] - 1.3), (1.5, 1.2, 0.6), "ice")
 for lname, sgn in (("bow_top", 1), ("bow_bot", -1)):
     bone(lname, "bow", (P[0], P[1] + 1.5 * sgn, P[2]))
     pts = [(P[1] + y * sgn, P[2] + z) for y, z in LIMB_PTS]
     for i in range(len(pts) - 1):
         (y0, z0), (y1, z1) = pts[i], pts[i + 1]
         dy, dz = y1 - y0, z1 - z0
-        length = math.hypot(dy, dz)
-        rx = math.degrees(math.atan2(-dz, dy))          # локальная +y → (dy, dz)
+        rx = math.degrees(math.atan2(-dz, dy))
         th = 0.9 if i < 2 else 0.7
-        cube(lname, (P[0] - 0.5, y0, z0 - th / 2), (1, length, th), "wood", rot=(rx, 0, 0), pivot=(P[0], y0, z0))
+        cube(lname, (P[0] - 0.5, y0, z0 - th / 2), (1, math.hypot(dy, dz), th), "wood", rot=(rx, 0, 0),
+             pivot=(P[0], y0, z0))
     ty, tz = pts[-1]
     cube(lname, (P[0] - 0.5, ty - 0.5, tz - 0.5), (1, 1, 1), "ice")
+    cube(lname, (P[0] - 0.3, ty + 0.4 * sgn - 0.3, tz - 0.9), (0.6, 0.6, 0.8), "ice")
     s = lname.replace("bow_", "string_")
     bone(s, lname, (P[0], ty, tz))
     if sgn > 0:
         cube(s, (P[0] - 0.15, ty - STRING_LEN, tz - 0.15), (0.3, STRING_LEN, 0.3), "string")
     else:
         cube(s, (P[0] - 0.15, ty, tz - 0.15), (0.3, STRING_LEN, 0.3), "string")
-
 bone("bow_arrow", "bow", P)
 cube("bow_arrow", (P[0] - 0.25, P[1] - 0.25, P[2] - 3.5), (0.5, 0.5, 12), "shaft")
 cube("bow_arrow", (P[0] - 0.5, P[1] - 0.5, P[2] - 5), (1, 1, 1.5), "ice")
-cube("bow_arrow", (P[0] - 0.1, P[1] - 1, P[2] + 6.4), (0.2, 2, 2), "azure")
-cube("bow_arrow", (P[0] - 1, P[1] - 0.1, P[2] + 6.4), (2, 0.2, 2), "azure")
+cube("bow_arrow", (P[0] - 0.1, P[1] - 1, P[2] + 6.4), (0.2, 2, 2), "fletch")
+cube("bow_arrow", (P[0] - 1, P[1] - 0.1, P[2] + 6.4), (2, 0.2, 2), "fletch")
 
-# --- ледяные осколки, кружат вокруг ---
+# --- голова ---
+bone("head", "torso", (0, 23.5, 0))
+cube("head", (-4, 23.5, -4), (8, 8, 8), "head", face="face")
+cube("head", (-4, 23.5, -4), (8, 8, 8), "hair", inflate=0.35, face="hair_layer")
+cube("head", (-4.75, 18.6, -3.5), (1.3, 7, 1.3), "hair", face="lock")
+cube("head", (3.45, 18.6, -3.5), (1.3, 7, 1.3), "hair", face="lock")
+cube("head", (-6.0, 26.9, -0.4), (1.9, 1.0, 1.0), "skin", face="ear", rot=(0, 15, 18), pivot=(-4.1, 27.4, 0.1))
+cube("head", (4.1, 26.9, -0.4), (1.9, 1.0, 1.0), "skin", face="ear", rot=(0, -15, -18), pivot=(4.1, 27.4, 0.1))
+# ледяная тиара
+cube("head", (-4.45, 30.1, -4.5), (8.9, 0.6, 0.5), "silver")
+cube("head", (-0.6, 29.9, -4.85), (1.2, 1.2, 0.5), "ice")
+cube("head", (-0.5, 30.6, -4.7), (1, 3.2, 0.8), "ice", rot=(-8, 0, 0), pivot=(0, 30.6, -4.3))
+for sx in (-1, 1):
+    cube("head", (1.9 * sx - 0.4, 30.5, -4.6), (0.8, 2.2, 0.7), "ice", rot=(0, 0, -14 * sx), pivot=(1.9 * sx, 30.5, -4.25))
+    cube("head", (3.45 * sx - 0.35, 30.4, -4.4), (0.7, 1.6, 0.6), "ice", rot=(0, 0, -28 * sx), pivot=(3.45 * sx, 30.4, -4.1))
+
+# --- длинные волосы по спине (три звена, развеваются) ---
+bone("hair_back", "head", (0, 30.5, 4.3))
+cube("hair_back", (-4.3, 21, 4.15), (8.6, 9.5, 1.3), "hair", face="hair_long")
+bone("hair_mid", "hair_back", (0, 21, 4.8))
+cube("hair_mid", (-4, 14, 4.2), (8, 7, 1.2), "hair", face="hair_mid")
+bone("hair_tip", "hair_mid", (0, 14, 4.8))
+cube("hair_tip", (-3.4, 9, 4.25), (6.8, 5, 1.1), "hair", face="hair_tip")
+
+# --- ледяные осколки ---
 bone("shards", "root", (0, 19, 0))
 cube("shards", (8, 18, -0.5), (1, 3, 1), "ice", rot=(0, 45, 20), pivot=(8.5, 19.5, 0))
 cube("shards", (-9, 21, -0.5), (1, 2, 1), "ice", rot=(0, 45, -25), pivot=(-8.5, 22, 0))
-cube("shards", (-0.5, 16, 8), (1, 2, 1), "ice", rot=(30, 45, 0), pivot=(0, 17, 8.5))
+cube("shards", (-0.5, 16, 8.5), (1, 2, 1), "ice", rot=(30, 45, 0), pivot=(0, 17, 9))
+
+M.pack()
+M.finalize()
 
 # =====================================================================
-# 2. Развёртка UV (box UV, полки)
+# 2. Текстура
 # =====================================================================
+PT = Painter(M.tex_w, M.tex_h)
+R = PT.rnd
 
-
-def footprint(c):
-    w, h, d = (max(1, math.ceil(s - 1e-6)) for s in c["size"])
-    return w, h, d, 2 * (w + d), h + d
-
-
-def pack():
-    cubes = [c for b in BONES for c in b["cubes"]]
-    order = sorted(cubes, key=lambda c: (-footprint(c)[4], -footprint(c)[3]))
-    x = y = row_h = 0
-    for c in order:
-        fw, fh = footprint(c)[3:5]
-        if x + fw > TEX_W:
-            x, y, row_h = 0, y + row_h, 0
-        c["uv"] = [x, y]
-        x += fw
-        row_h = max(row_h, fh)
-    assert y + row_h <= TEX_H, "текстура мала: %d" % (y + row_h)
-
-
-pack()
-
-# =====================================================================
-# 3. Текстура
-# =====================================================================
-img = Image.new("RGBA", (TEX_W, TEX_H), (0, 0, 0, 0))
-glow = Image.new("RGBA", (TEX_W, TEX_H), (0, 0, 0, 0))
-PX, GL = img.load(), glow.load()
-
-
-def clamp(v):
-    return max(0, min(255, int(round(v))))
-
-
-def mul(c, k):
-    return tuple(clamp(ch * k) for ch in c[:3])
-
-
-def mix(a, b, t):
-    return tuple(clamp(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-
-def put(x, y, col, a=255):
-    if 0 <= x < TEX_W and 0 <= y < TEX_H:
-        PX[x, y] = (col[0], col[1], col[2], a)
-
-
-def glow_put(x, y, col):
-    put(x, y, col)
-    GL[x, y] = (col[0], col[1], col[2], 255)
-
-
-WHITE = (236, 242, 248)
-SNOW = (246, 249, 252)
-PALE = (205, 222, 236)
-SHADOW = (150, 176, 204)
+HAIR = (226, 236, 249)
+HAIR_S = (186, 205, 232)
+HAIR_D = (164, 186, 220)
+HAIR_H = (252, 253, 255)
+SKIN = (238, 233, 243)
+SKIN_S = (210, 206, 228)
+BLUSH = (242, 220, 232)
+LIPS = (226, 168, 196)
+LIPS_D = (200, 136, 170)
+IRIS = (96, 204, 255)
+IRIS_D = (36, 118, 212)
+EYE_W = (246, 248, 253)
+LASH = (40, 48, 84)
+BROW = (132, 152, 196)
+WHITE = (238, 243, 249)
+SNOW = (247, 250, 253)
+PALE = (206, 222, 238)
 AZURE = (58, 146, 214)
-AZURE_L = (112, 190, 240)
-AZURE_D = (30, 86, 150)
-NAVY = (22, 44, 78)
+AZURE_L = (118, 194, 242)
+AZURE_D = (32, 92, 160)
+NAVY = (24, 52, 98)
+SILVER = (202, 214, 228)
+SILVER_D = (138, 154, 178)
 ICE = (150, 228, 255)
-ICE_L = (225, 250, 255)
-ICE_D = (70, 170, 225)
-SILVER = (196, 208, 222)
-SKIN = (196, 220, 236)
-WOOD = (222, 228, 236)
-WOOD_D = (160, 176, 196)
-
-FACE_LIGHT = {"top": 1.07, "bottom": 0.72, "front": 1.0, "back": 0.86, "right": 0.92, "left": 0.92}
+ICE_L = (226, 250, 255)
+ICE_D = (72, 172, 228)
+WOOD = (224, 230, 238)
+WOOD_D = (160, 176, 198)
 
 
-def faces(c):
-    w, h, d = footprint(c)[:3]
-    u, v = c["uv"]
-    return {
-        "top": (u + d, v, w, d), "bottom": (u + d + w, v, w, d),
-        "right": (u, v + d, d, h), "front": (u + d, v + d, w, h),
-        "left": (u + d + w, v + d, d, h), "back": (u + 2 * d + w, v + d, w, h),
-    }
+def light(fname, col, k=1.0):
+    return mul(col, FACE_LIGHT[fname] * k * PT.noise(0.03))
 
 
-def noise(k=0.06):
-    return 1 + (RND.random() - 0.5) * 2 * k
+def hair_strand(i, j, w, h, fname, dark_bottom=True):
+    """Пряди: вертикальные полосы, блики сверху, тень снизу."""
+    h_ = (i * 37 + 11) % 5
+    col = HAIR if h_ > 1 else (HAIR_S if h_ == 1 else HAIR_D)
+    if j < 2 and h_ > 2:
+        col = HAIR_H
+    if dark_bottom:
+        col = mix(col, HAIR_D, 0.35 * j / max(1, h - 1))
+    return light(fname, col)
 
 
-def paint_cloth(rect, fname, base, trim=None, trim_rows=0, weave=True, edge=0.9):
-    x0, y0, w, h = rect
-    L = FACE_LIGHT[fname]
-    for j in range(h):
-        for i in range(w):
-            col = base
-            if weave and (i + j) % 2 == 0:
-                col = mul(col, 0.97)
-            g = 1.0 - 0.10 * (j / max(1, h - 1)) if fname not in ("top", "bottom") else 1.0
-            if trim and fname not in ("top", "bottom") and j >= h - trim_rows:
-                col = trim if j < h - 1 else mul(trim, 0.8)
-            k = L * g * noise(0.035)
-            if i in (0, w - 1) and fname not in ("top", "bottom"):
-                k *= edge
-            put(x0 + i, y0 + j, mul(col, k))
-
-
-def paint_fur(rect, fname):
-    x0, y0, w, h = rect
-    L = FACE_LIGHT[fname]
-    for j in range(h):
-        for i in range(w):
-            t = RND.random()
-            col = SNOW if t > 0.35 else (WHITE if t > 0.1 else PALE)
-            if fname not in ("top", "bottom") and j == h - 1 and (i % 2 == 0):
-                col = PALE
-            put(x0 + i, y0 + j, mul(col, L * (1.0 - 0.06 * j / max(1, h))))
-
-
-def paint_leather(rect, fname, stitch=True):
-    x0, y0, w, h = rect
-    L = FACE_LIGHT[fname]
-    for j in range(h):
-        for i in range(w):
-            col = AZURE_D
-            if stitch and fname not in ("top", "bottom") and (j == 0 or j == h - 1) and i % 2 == 0 and h > 2:
-                col = AZURE_L
-            put(x0 + i, y0 + j, mul(col, L * noise(0.05)))
-
-
-def paint_ice(rect, fname):
-    x0, y0, w, h = rect
-    for j in range(h):
-        for i in range(w):
-            t = (i + j) / max(1, w + h - 2)
-            col = mix(ICE_L, ICE_D, t)
-            if (i == 0 and j == 0) or RND.random() < 0.08:
-                col = ICE_L
-            glow_put(x0 + i, y0 + j, mul(col, 0.9 + 0.1 * FACE_LIGHT[fname]))
-
-
-def paint_solid(rect, fname, col, glowing=False):
-    x0, y0, w, h = rect
-    for j in range(h):
-        for i in range(w):
-            c = mul(col, FACE_LIGHT[fname] * noise(0.03))
-            (glow_put if glowing else put)(x0 + i, y0 + j, c)
-
-
-def paint_face(c):
+def paint_head_face(c):
     f = faces(c)
     for fname, rect in f.items():
-        x0, y0, w, h = rect
-        if fname != "front":
-            # под капюшоном: тёмные бока и затылок (почти не видны)
-            paint_solid(rect, fname, (40, 62, 92))
+        if fname == "front":
             continue
-        for j in range(h):
-            for i in range(w):
-                # тень от капюшона сверху, бледно‑голубая кожа ниже
-                t = j / (h - 1)
-                col = mix((34, 52, 84), SKIN, min(1.0, max(0.0, (t - 0.05) / 0.45)))
-                if j >= h - 2:                       # шарф‑маска на нижней части лица
-                    col = AZURE if j == h - 2 else AZURE_D
-                    if i % 2 == 0:
-                        col = mul(col, 1.08)
-                put(x0 + i, y0 + j, mul(col, noise(0.02)))
-        # глаза: светящиеся, 2×1 с бликом, на уровне тени
-        ey = y0 + 3
-        for ex in (x0 + 1, x0 + w - 3):
-            glow_put(ex, ey, (160, 236, 255))
-            glow_put(ex + 1, ey, (232, 252, 255))
-            put(ex, ey - 1, (26, 40, 66))
-            put(ex + 1, ey - 1, (26, 40, 66))
-        # тень носа и скул
-        put(x0 + w // 2, y0 + 4, mul(SKIN, 0.82))
-        put(x0, y0 + 4, mul(SKIN, 0.85))
-        put(x0 + w - 1, y0 + 4, mul(SKIN, 0.85))
+        if fname == "bottom":
+            PT.fill(rect, lambda i, j, w, h: light(fname, SKIN_S) if j < h - 2 else light(fname, HAIR_D))
+        else:
+            PT.fill(rect, lambda i, j, w, h, fn=fname: hair_strand(i, j, w, h, fn))
+    # лицо 8×8
+    H, S = "H", "S"
+    rows = [
+        "HHHHHHHH",
+        "HHHHHFHH",
+        "HFBFFBFH",
+        "HLDSSDLH",
+        "HWISSIWH",
+        "HRSSNSRH",
+        "HSSPpSSH",
+        "HTSSSSTH",
+    ]
+    x0, y0, w, h = f["front"]
+    pal = {
+        "H": None, "S": SKIN, "B": BROW, "L": LASH, "D": IRIS_D, "W": EYE_W,
+        "R": BLUSH, "N": mix(SKIN, SKIN_S, 0.5), "P": LIPS, "p": mix(LIPS, SKIN, 0.35),
+        "T": mix(SKIN, SKIN_S, 0.6), "F": mix(SKIN, SKIN_S, 0.45),
+    }
+    for j, row in enumerate(rows):
+        for i, ch in enumerate(row):
+            if ch == "H":
+                PT.put(x0 + i, y0 + j, hair_strand(i, j, w, h, "front", False))
+            elif ch == "I":
+                PT.glow_put(x0 + i, y0 + j, IRIS)
+            elif ch == "D":
+                PT.glow_put(x0 + i, y0 + j, IRIS_D)
+            else:
+                col = pal[ch]
+                if ch == "S" and j >= 6:
+                    col = mix(SKIN, SKIN_S, 0.25)
+                PT.put(x0 + i, y0 + j, mul(col, PT.noise(0.015)))
+    # уголок губ темнее, блик в глазах
+    PT.glow_put(x0 + 2, y0 + 4, mix(IRIS, ICE_L, 0.5))
+    PT.glow_put(x0 + 5, y0 + 4, mix(IRIS, ICE_L, 0.5))
+
+
+def paint_hair_layer(c):
+    f = faces(c)
+    for fname, rect in f.items():
+        if fname == "front":
+            fringe = ["HHHHHHHH", "HHHHH.HH", "HH....HH", "H......H", "H......H", "H......H", ".......H", "H......."]
+            PT.fill(rect, lambda i, j, w, h: hair_strand(i, j, w, h, "front", False) if fringe[j][i] == "H" else None)
+        elif fname == "bottom":
+            PT.fill(rect, lambda i, j, w, h: hair_strand(i, j, w, h, "bottom") if (i in (0, w - 1) or j == h - 1) else None)
+        elif fname == "top":
+            PT.fill(rect, lambda i, j, w, h: light("top", HAIR_S if i == w // 2 - 1 and j < h - 2 else
+                                                     (HAIR_H if (i + j) % 4 == 0 else HAIR)))
+        else:
+            # бока и затылок: пряди, внизу неровные кончики
+            def side(i, j, w, h, fn=fname):
+                if j == h - 1 and (i * 3 + len(fn)) % 3 == 0:
+                    return None
+                return hair_strand(i, j, w, h, fn)
+            PT.fill(rect, side)
+
+
+def paint_hair_part(c, kind):
+    for fname, rect in faces(c).items():
+        def fn(i, j, w, h, fname=fname):
+            if fname in ("front",):
+                col = light(fname, HAIR_D)        # сторона к спине — в тени
+            elif fname == "top":
+                col = light(fname, HAIR)
+            else:
+                col = hair_strand(i, j, w, h, fname)
+            if kind == "hair_mid" and j == 0 and fname not in ("top", "bottom"):
+                return ("glow", AZURE_L) if i % 3 == 1 else light(fname, AZURE)    # лента
+            if kind in ("hair_tip", "lock") and fname not in ("top", "bottom"):
+                teeth = (i * 5 + len(fname)) % 3
+                if j >= h - teeth:
+                    return None
+            if kind == "hair_tip" and fname == "bottom":
+                return None
+            return col
+        PT.fill(rect, fn)
+
+
+def paint_cloth(c, base, trim=None, trim_rows=1, pattern=None):
+    for fname, rect in faces(c).items():
+        def fn(i, j, w, h, fname=fname):
+            col = base
+            if pattern == "weave" and (i + j) % 2 == 0:
+                col = mul(col, 0.97)
+            if pattern == "diamond" and (i + j) % 4 == 0:
+                col = mix(col, AZURE_L, 0.25)
+            if trim and fname not in ("top", "bottom") and j >= h - trim_rows:
+                col = trim
+            k = 1.0 - (0.08 * j / max(1, h - 1) if fname not in ("top", "bottom") else 0)
+            if fname not in ("top", "bottom") and i in (0, w - 1):
+                k *= 0.93
+            return light(fname, col, k)
+        PT.fill(rect, fn)
 
 
 def paint_cube(c):
     mat, face = c["mat"], c.get("face")
+    F = faces(c)
     if face == "face":
-        paint_face(c)
+        paint_head_face(c)
         return
-    for fname, rect in faces(c).items():
-        x0, y0, w, h = rect
-        if mat == "robe":
-            trim_rows = 0
-            trim = None
-            if face in ("hem_trim", "sleeve"):
-                trim, trim_rows = AZURE, 1
-            paint_cloth(rect, fname, WHITE, trim, trim_rows)
-            if face == "chest" and fname == "front":
-                # V‑образная лазурная оторочка и руна в центре
-                for j in range(h):
-                    for i in range(w):
-                        if abs(i - (w - 1) / 2) == round(3 - j * 0.6) and j < 5:
-                            put(x0 + i, y0 + j, AZURE)
-                glow_put(x0 + w // 2 - 1, y0 + 4, ICE_L)
-                glow_put(x0 + w // 2, y0 + 4, ICE)
-                glow_put(x0 + w // 2 - 1, y0 + 5, ICE)
-                glow_put(x0 + w // 2, y0 + 5, ICE_L)
-            if face == "sleeve" and fname in ("front", "left", "right", "back"):
-                put(x0, y0 + 2, PALE)
-        elif mat == "robe_rag":
-            paint_cloth(rect, fname, WHITE)
-            if fname not in ("top", "bottom"):
-                # рваный край: нижние пиксели прозрачны зубцами, лазурная полоса выше
-                for i in range(w):
-                    cut = (i * 7 + len(fname) * 3) % 3
-                    for j in range(h - cut, h):
-                        PX[x0 + i, y0 + j] = (0, 0, 0, 0)
-                    if h - cut - 1 >= 0:
-                        put(x0 + i, y0 + h - cut - 1, mul(AZURE_L, FACE_LIGHT[fname]))
-                    put(x0 + i, y0 + 1, mul(AZURE, FACE_LIGHT[fname]))
-        elif mat == "azure":
-            paint_cloth(rect, fname, AZURE, mul(WHITE, 0.98), 1 if face in ("cape", "tabard") else 0)
-            if face == "cape" and fname == "back":
-                # снежинка‑узор на плаще
-                cx, cy = x0 + w // 2, y0 + 4
+    if face == "hair_layer":
+        paint_hair_layer(c)
+        return
+    if mat == "hair":
+        paint_hair_part(c, face)
+        return
+    if mat == "skin":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, SKIN if face != "ear" or i < w - 1 else SKIN_S))
+        return
+    if mat == "legging":
+        paint_cloth(c, WHITE, pattern="diamond")
+        if face == "hips":
+            pass
+        return
+    if mat == "band":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, SILVER if i % 2 == 0 and fn not in ("top", "bottom") else AZURE))
+        return
+    if mat == "boot":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = AZURE
+                if face == "boot" and fname == "front" and i == w // 2 - 1 + (j % 2):
+                    col = WHITE                                    # шнуровка
+                if face == "boot" and fname not in ("top", "bottom") and j == 0:
+                    col = SILVER
+                if face == "foot" and fname == "bottom":
+                    col = NAVY
+                if face == "foot" and fname not in ("top", "bottom") and j == h - 1:
+                    col = NAVY
+                return light(fname, col, 1.0 - 0.06 * j / max(1, h))
+            PT.fill(rect, fn)
+        return
+    if mat == "fur":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                t = R.random()
+                col = SNOW if t > 0.35 else (WHITE if t > 0.1 else PALE)
+                if fname not in ("top", "bottom") and j == h - 1 and i % 2 == 0:
+                    col = PALE
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "corset":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = WHITE
+                if fname in ("left", "right"):
+                    col = AZURE if i not in (0, w - 1) else AZURE_D
+                elif fname in ("front", "back"):
+                    mid = (w - 1) / 2
+                    if abs(i - mid) <= 0.5 and (j % 2 == 0):
+                        col = AZURE_L                                # шнуровка крест‑накрест
+                    elif abs(i - mid) <= 1.5 and (j % 2 == 1):
+                        col = AZURE
+                    elif i in (0, w - 1):
+                        col = AZURE_D                                # косточки корсета
+                    if j == 0 or j == h - 1:
+                        col = SILVER
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "bodice":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = WHITE
+                if face == "bust":
+                    col = mix(SNOW, PALE, j / max(1, h - 1) * 0.7)
+                    if fname == "front":
+                        if j == 0:
+                            col = AZURE_L                                   # кайма выреза
+                        elif i in (w // 2 - 1, w // 2):
+                            col = mix(col, PALE, 0.8)                       # ложбинка
+                        if j == h - 1:
+                            col = mul(PALE, 0.9)
+                    if fname == "top":
+                        col = AZURE_L
+                    return light(fname, col)
+                if fname in ("left", "right"):
+                    col = AZURE
+                if fname == "front" and (i == 0 or i == w - 1):
+                    col = AZURE
+                if fname == "back" and i == w // 2:
+                    col = AZURE_D
+                return light(fname, col)
+            PT.fill(rect, fn)
+            if face == "bodice" and fname == "front":
+                x0, y0, w, h = rect
+                PT.glow_put(x0 + w // 2, y0 + 0, ICE_L)              # кулон
+        return
+    if mat == "cape":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                if fname == "front":
+                    return light(fname, NAVY)                         # изнанка
+                col = AZURE
+                if fname not in ("top", "bottom") and j == h - 1:
+                    col = WHITE
+                if fname == "back" and (i == 0 or i == w - 1):
+                    col = AZURE_L
+                return light(fname, col, 1.0 - 0.1 * j / max(1, h))
+            PT.fill(rect, fn)
+            if fname == "back":
+                x0, y0, w, h = rect
+                cx, cy = x0 + w // 2, y0 + 3
                 for dx, dy in ((0, 0), (0, -2), (0, 2), (-2, 0), (2, 0), (-1, -1), (1, 1), (-1, 1), (1, -1)):
-                    put(cx + dx, cy + dy, WHITE)
-                glow_put(cx, cy, ICE_L)
-            if face == "brim":
-                for i in range(w):
-                    if i % 2 == 0:
-                        put(x0 + i, y0, AZURE_L)
-        elif mat == "fur":
-            paint_fur(rect, fname)
-        elif mat == "hood":
-            paint_fur(rect, fname)
-            if fname in ("back", "right", "left") and c["size"][0] <= 1.01:
-                pass
-        elif mat == "leather":
-            paint_leather(rect, fname, stitch=face != "quiver")
-            if face == "quiver" and fname in ("front", "back", "left", "right"):
-                for j in (1, h - 2):
-                    for i in range(w):
-                        put(x0 + i, y0 + j, mul(SILVER, FACE_LIGHT[fname]))
-            if face == "belt" and fname == "front":
-                for i in range(w):
-                    put(x0 + i, y0, mul(AZURE_L, 0.95))
-        elif mat == "glove":
-            paint_leather(rect, fname, stitch=False)
-            if face == "grip" and fname in ("front", "back", "left", "right"):
-                for j in range(h):
-                    put(x0 + (j % max(1, w)), y0 + j, AZURE_L)
-        elif mat == "silver":
-            paint_solid(rect, fname, SILVER)
-            if fname == "front":
-                glow_put(x0 + w // 2, y0 + h // 2, ICE_L)
-        elif mat == "ice":
-            paint_ice(rect, fname)
-        elif mat == "wood":
-            paint_solid(rect, fname, WOOD)
-            if fname in ("front", "back"):
-                for j in range(h):
-                    if j % 3 == 1:
-                        glow_put(x0, y0 + j, ICE)
-                    elif j % 3 == 2:
-                        put(x0, y0 + j, WOOD_D)
-        elif mat == "string":
-            paint_solid(rect, fname, (240, 250, 255), glowing=True)
-        elif mat == "shaft":
-            paint_solid(rect, fname, (238, 244, 250))
-        elif mat == "white":
-            paint_solid(rect, fname, SNOW)
-        elif mat == "skin":
-            paint_solid(rect, fname, SKIN)
-        else:
-            paint_solid(rect, fname, (255, 0, 255))
+                    PT.put(cx + dx, cy + dy, WHITE)
+                PT.glow_put(cx, cy, ICE_L)
+        return
+    if mat == "sleeve":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = WHITE
+                if face == "puff" and fname not in ("top", "bottom") and j == h - 1:
+                    col = AZURE
+                if face == "puff" and (i + j) % 3 == 0:
+                    col = mul(col, 0.95)
+                if face == "upper" and fname not in ("top", "bottom") and j == 2:
+                    col = AZURE_L
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "glove":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = SNOW
+                if face == "hand" and fname == "bottom":
+                    col = PALE
+                if face == "fore" and fname not in ("top", "bottom") and j == 0:
+                    col = AZURE_L
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "bracer":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = AZURE_D
+                if fname not in ("top", "bottom") and j in (0, h - 1):
+                    col = SILVER
+                if fname == "left" or fname == "right":
+                    if j == h // 2 and i == w // 2:
+                        return ("glow", ICE)
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "skirt":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = AZURE
+                outer = (fname == "front" and face != "skirt_back") or (fname == "back" and face == "skirt_back") \
+                    or (fname in ("left", "right") and face == "skirt_side")
+                if not outer and fname not in ("top", "bottom"):
+                    col = AZURE_D
+                if fname not in ("top", "bottom") and j >= h - 1:
+                    col = WHITE
+                if outer and i in (0, w - 1) and w > 2:
+                    col = SILVER
+                return light(fname, col, 1.0 - 0.08 * j / max(1, h))
+            PT.fill(rect, fn)
+            x0, y0, w, h = rect
+            outer = (fname == "front" and face == "skirt_front") or (fname == "back" and face == "skirt_back")
+            if outer:
+                # вышитая кайма: тонкая светлая линия по краю и ледяная бусина
+                for j in range(1, h - 2):
+                    PT.put(x0 + 1, y0 + j, mul(AZURE_L, 0.95))
+                    PT.put(x0 + w - 2, y0 + j, mul(AZURE_L, 0.95))
+                for i in range(1, w - 1):
+                    PT.put(x0 + i, y0 + h - 2, mul(AZURE_L, 0.95))
+                PT.glow_put(x0 + w // 2, y0 + 1, ICE_L)
+        return
+    if mat == "belt":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, SILVER if (i % 3 == 1 and fn in ("front", "back")) else NAVY))
+        return
+    if mat == "pouch":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, SILVER if j == 0 and fn == "left" else AZURE_D))
+        return
+    if mat == "quiver":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                col = AZURE_D if i not in (0, w - 1) else NAVY
+                if fname == "top":
+                    col = (20, 30, 50)
+                return light(fname, col)
+            PT.fill(rect, fn)
+            if fname in ("left", "right"):
+                x0, y0, w, h = rect
+                PT.glow_put(x0 + w // 2, y0 + h // 2, ICE)
+        return
+    if mat == "ice_armor":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                t = (i + j) / max(1, w + h - 2)
+                col = mix(ICE_L, ICE_D, t)
+                if j == 0 and fname not in ("top", "bottom"):
+                    return ("glow", ICE_L)
+                return light(fname, col)
+            PT.fill(rect, fn)
+        return
+    if mat == "ice":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                t = (i + j) / max(1, w + h - 2)
+                col = mix(ICE_L, ICE_D, t)
+                if (i == 0 and j == 0) or R.random() < 0.08:
+                    col = ICE_L
+                return ("glow", mul(col, 0.9 + 0.1 * FACE_LIGHT[fname]))
+            PT.fill(rect, fn)
+        return
+    if mat == "wood":
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                if fname in ("front", "back") and j % 3 == 1:
+                    return ("glow", ICE)
+                return light(fname, WOOD_D if (fname in ("front", "back") and j % 3 == 2) else WOOD)
+            PT.fill(rect, fn)
+        return
+    if mat == "grip":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, AZURE_L if (i + j) % 2 == 0 else AZURE_D))
+        return
+    if mat == "string":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h: ("glow", (240, 250, 255)))
+        return
+    if mat == "shaft":
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, (238, 244, 250)))
+        return
+    if mat in ("fletch", "fletch_w"):
+        for fname, rect in F.items():
+            PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, AZURE_L if mat == "fletch" else SNOW))
+        return
+    if mat in ("silver", "silver_gem"):
+        for fname, rect in F.items():
+            def fn(i, j, w, h, fname=fname):
+                if mat == "silver_gem" and fname == "front" and i == w // 2 and j == h // 2:
+                    return ("glow", ICE_L)
+                return light(fname, SILVER if (i + j) % 3 else SILVER_D)
+            PT.fill(rect, fn)
+        return
+    for fname, rect in F.items():
+        PT.fill(rect, lambda i, j, w, h: (255, 0, 255))
 
 
-for b in BONES:
-    for c in b["cubes"]:
-        paint_cube(c)
+for c in M.cubes():
+    paint_cube(c)
 
 # =====================================================================
-# 4. Анимации (обратная кинематика в Java‑пространстве)
+# 3. Анимации
 # =====================================================================
+A_BONES = ["root", "body", "torso", "head", "hair_back", "hair_mid", "hair_tip", "cape",
+           "right_arm", "right_fore", "left_arm", "left_fore", "bow", "bow_top", "bow_bot",
+           "string_top", "string_bot", "bow_arrow", "hand_arrow",
+           "right_leg", "right_shin", "right_foot", "left_leg", "left_shin", "left_foot",
+           "skirt_fr", "skirt_fl", "skirt_b", "skirt_sr", "skirt_sl", "quiver", "shards"]
+
+# лук у бедра (тетива вверх) и «на боку» при стрельбе — ориентация в пространстве модели
+BOW_IDLE = mm(rx_m(math.radians(104)), rz_m(math.radians(8)))
+BOW_AIM = mm(ry_m(math.radians(-4)), rz_m(math.radians(-68)))
 
 
-def rx_m(a):
-    c, s = math.cos(a), math.sin(a)
-    return [[1, 0, 0], [0, c, -s], [0, s, c]]
-
-
-def ry_m(a):
-    c, s = math.cos(a), math.sin(a)
-    return [[c, 0, s], [0, 1, 0], [-s, 0, c]]
-
-
-def rz_m(a):
-    c, s = math.cos(a), math.sin(a)
-    return [[c, -s, 0], [s, c, 0], [0, 0, 1]]
-
-
-def mm(a, b):
-    return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
-
-
-def mv(a, v):
-    return [sum(a[i][k] * v[k] for k in range(3)) for i in range(3)]
-
-
-def tr(a):
-    return [[a[j][i] for j in range(3)] for i in range(3)]
-
-
-def euler(deg):
-    x, y, z = (math.radians(d) for d in deg)
-    return mm(rz_m(z), mm(ry_m(y), rx_m(x)))
-
-
-def to_euler(R):
-    """R = Rz·Ry·Rx → (x, y, z) в градусах."""
-    sy = max(-1.0, min(1.0, -R[2][0]))
-    b = math.asin(sy)
-    a = math.atan2(R[2][1], R[2][2])
-    c = math.atan2(R[1][0], R[0][0])
-    return [math.degrees(a), math.degrees(b), math.degrees(c)]
-
-
-def norm(v):
-    l = math.sqrt(sum(x * x for x in v)) or 1
-    return [x / l for x in v]
-
-
-def add(a, b):
-    return [a[i] + b[i] for i in range(3)]
-
-
-def sub(a, b):
-    return [a[i] - b[i] for i in range(3)]
-
-
-def scl(a, k):
-    return [x * k for x in a]
-
-
-def jpos(p):
-    return [p[0], 24 - p[1], p[2]]
-
-
-PIV = {b["name"]: jpos(b["pivot"]) for b in BONES}
-PARENT = {b["name"]: b.get("parent") for b in BONES}
-
-
-def rel_pivot(name):
-    p = PARENT[name]
-    return sub(PIV[name], PIV[p]) if p else PIV[name]
-
-
-def chain_R(name, pose):
-    """Полный поворот кости в пространстве модели."""
-    R = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    path = []
-    n = name
-    while n:
-        path.append(n)
-        n = PARENT[n]
-    for n in reversed(path):
-        R = mm(R, euler(pose.get(n, {}).get("rot", (0, 0, 0))))
-    return R
-
-
-def world(name, local, pose):
-    """Точка local (Java, относительно опоры кости) → пространство модели."""
-    p = list(local)
-    n = name
-    while n:
-        st = pose.get(n, {})
-        p = mv(euler(st.get("rot", (0, 0, 0))), p)
-        off = st.get("pos", (0, 0, 0))            # Java‑смещение
-        p = add(add(p, rel_pivot(n)), off)
-        n = PARENT[n]
-    return p
-
-
-def arm_euler(d):
-    """Повороты руки, чтобы её ось (+y локально, вниз) смотрела в направлении d (в системе родителя)."""
-    d = norm(d)
-    a = -math.acos(max(-1, min(1, d[1])))
-    b = math.atan2(-d[0], -d[2]) if abs(math.sin(a)) > 1e-4 else 0.0
-    return [math.degrees(a), math.degrees(b), 0.0]
-
-
-HAND = {"left_arm": [0.5, 9.5, 0.0], "right_arm": [-0.5, 9.5, 0.0]}
-
-
-def point_arm(pose, arm, target_world):
-    """Направить руку на точку (в пространстве модели)."""
-    parent = PARENT[arm]
-    shoulder = world(arm, [0, 0, 0], pose)
-    Rp = chain_R(parent, pose)
-    d_local = mv(tr(Rp), sub(target_world, shoulder))
-    pose.setdefault(arm, {})["rot"] = arm_euler(d_local)
-
-
-def set_bow(pose, R_world):
-    """Повернуть лук так, чтобы его итоговая ориентация в модели была R_world."""
-    Rp = chain_R("left_arm", pose)
-    pose.setdefault("bow", {})["rot"] = to_euler(mm(tr(Rp), R_world))
+def bow_R(p):
+    """Плавный поворот лука из положения у бедра (p=0) в боевое (p=1)."""
+    return mm(rx_m(math.radians(104 * (1 - p))),
+              mm(ry_m(math.radians(-4 * p)), rz_m(math.radians(8 * (1 - p) - 68 * p))))
 
 
 def string_pose(pose, draw, flex):
-    """Тетива: кончики плеч + точка натяжения (нок) на draw px за тетивой покоя; flex — изгиб плеч (°)."""
+    """Тетива: нок на draw px за тетивой покоя, плечи лука согнуты на flex°."""
     pose["bow_top"] = {"rot": (-flex, 0, 0)}
     pose["bow_bot"] = {"rot": (flex, 0, 0)}
-    nock = (0.0, NOCK_Z0 + draw)                       # (y, z) Bedrock, от хвата
     for limb, sgn in (("bow_top", 1), ("bow_bot", -1)):
         rx = math.radians(-flex if sgn > 0 else flex)
-        Ly, Lz = 1.5 * sgn, 0.0
-        ty, tz = TIP[0] * sgn - Ly, TIP[1] - Lz       # кончик относительно опоры плеча
+        Ly = 1.5 * sgn
+        ty, tz = TIP[0] * sgn - Ly, TIP[1]
         c, s = math.cos(rx), math.sin(rx)
-        # Bedrock rx: (y, z) → (y·c + z·s, −y·s + z·c)
-        wy, wz = Ly + ty * c + tz * s, Lz - ty * s + tz * c
-        dy, dz = nock[0] - wy, nock[1] - wz             # в системе лука
-        ly, lz = dy * c - dz * s, dy * s + dz * c       # обратно в систему плеча
+        wy, wz = Ly + ty * c + tz * s, -ty * s + tz * c
+        dy, dz = 0.0 - wy, NOCK_Z0 + draw - wz
+        ly, lz = dy * c - dz * s, dy * s + dz * c
         length = math.hypot(ly, lz)
-        if sgn > 0:
-            r = math.degrees(math.atan2(lz, -ly))      # локальная −y → направление
-        else:
-            r = math.degrees(math.atan2(-lz, ly))      # локальная +y → направление
-        name = limb.replace("bow_", "string_")
-        pose[name] = {"rot": (r, 0, 0), "scale": (1, length / STRING_LEN, 1)}
+        r = math.degrees(math.atan2(lz, -ly)) if sgn > 0 else math.degrees(math.atan2(-lz, ly))
+        pose[limb.replace("bow_", "string_")] = {"rot": (r, 0, 0), "scale": (1, length / STRING_LEN, 1)}
     pose["bow_arrow"] = {"pos": (0, 0, draw - DRAW_MAX)}
 
 
 def nock_world(pose, draw):
-    # точка тетивы в системе лука (Java): y = 0, z = NOCK_Z0 + draw
-    return world("bow", [0, 0, NOCK_Z0 + draw], pose)
+    return M.world("bow", [0, 0, NOCK_Z0 + draw], pose)
 
 
-# --- позы ---
-BOW_IDLE = mm(rx_m(math.radians(104)), rz_m(math.radians(8)))     # лук горизонтально у бедра, тетива вверх
-BOW_AIM = mm(ry_m(math.radians(-4)), rz_m(math.radians(-68)))     # лук «на боку», почти горизонтально
+def hand_world(pose, side):
+    return M.world(side + "_fore", [0, FORE, 0], pose)
 
 
-def ease(t):
-    t = max(0.0, min(1.0, t))
-    return t * t * (3 - 2 * t)
+def skirt_follow(pose, sway=0.0, flare=0.0):
+    """Панели юбки следуют за бёдрами (вперёд — вместе с ногой, назад — задняя панель)."""
+    rl = pose.get("right_leg", {}).get("rot", (0, 0, 0))[0]
+    ll = pose.get("left_leg", {}).get("rot", (0, 0, 0))[0]
+    pose["skirt_fr"] = {"rot": (min(rl, 0) * 0.85 + max(rl, 0) * 0.15 - flare, 0, sway)}
+    pose["skirt_fl"] = {"rot": (min(ll, 0) * 0.85 + max(ll, 0) * 0.15 - flare, 0, sway)}
+    pose["skirt_b"] = {"rot": (max(rl, ll, 0) * 0.7 + 3 + flare, 0, sway)}
+    pose["skirt_sr"] = {"rot": (0, 0, 3 + flare * 1.2 + sway)}
+    pose["skirt_sl"] = {"rot": (0, 0, -3 - flare * 1.2 + sway)}
 
 
-def ease_out(t):
-    t = max(0.0, min(1.0, t))
-    return 1 - (1 - t) ** 3
+def legs(pose, r, l):
+    """r/l = (бедро, голень, стопа) в градусах; положительное — назад/носок вниз."""
+    pose["right_leg"] = {"rot": (r[0], 0, r[3] if len(r) > 3 else 2)}
+    pose["right_shin"] = {"rot": (r[1], 0, 0)}
+    pose["right_foot"] = {"rot": (r[2], 0, 0)}
+    pose["left_leg"] = {"rot": (l[0], 0, l[3] if len(l) > 3 else -2)}
+    pose["left_shin"] = {"rot": (l[1], 0, 0)}
+    pose["left_foot"] = {"rot": (l[2], 0, 0)}
 
 
-def lerp(a, b, t):
-    return a + (b - a) * t
-
-
-def lerp3(a, b, t):
-    return [lerp(a[i], b[i], t) for i in range(3)]
-
-
-def base_pose(t=0.0, idle_phase=True):
-    """Поза покоя: руки чуть в стороны, лук у бедра."""
-    pose = {}
-    w = 2 * math.pi * t / 3.0 if idle_phase else 0.0
-    pose["body"] = {"rot": (2 * math.sin(w + 1.0), 0, 0), "pos": (0, -0.5 * math.sin(w), 0)}
-    pose["robe1"] = {"rot": (3 * math.sin(w - 0.6), 0, 1.5 * math.sin(w * 1 + 0.3))}
-    pose["robe2"] = {"rot": (4 * math.sin(w - 1.2), 0, 2 * math.sin(w - 0.4))}
-    pose["robe3"] = {"rot": (5 * math.sin(w - 1.8), 0, 3 * math.sin(w - 1.1))}
-    pose["cape"] = {"rot": (4 + 3 * math.sin(w - 0.8), 0, 0)}
-    pose["head"] = {"rot": (2 * math.sin(w + 0.5), 0, 1.5 * math.sin(w * 1 - 0.7))}
-    pose["right_arm"] = {"rot": (2 * math.sin(w), 0, 10 + 2 * math.sin(w + 0.4))}
-    pose["left_arm"] = {"rot": (-12 + 2 * math.sin(w + 0.7), 0, -12 - 2 * math.sin(w + 0.2))}
-    set_bow(pose, BOW_IDLE)
-    string_pose(pose, 0.0, 0.0)
-    return pose
-
-
-def aim_pose(draw, flex, lean=0.0, tremble=0.0):
-    """Стойка с луком «на боку»: левое плечо вперёд, лук на уровне подбородка, правая рука у тетивы."""
-    pose = base_pose(0.0, False)
-    pose["body"] = {"rot": (lean, 0, 0), "pos": (0, 0, 0)}
-    pose["torso"] = {"rot": (-2, 38, 0)}
-    pose["head"] = {"rot": (-4, -34, 2)}
-    pose["cape"] = {"rot": (6, 0, 0)}
-    grip_target = [1.2 + tremble * 0.1, -1.6 + tremble * 0.12, -9.2]
-    point_arm(pose, "left_arm", grip_target)
-    set_bow(pose, BOW_AIM)
-    string_pose(pose, draw, flex)
-    point_arm(pose, "right_arm", nock_world(pose, draw))
-    return pose
-
-
-def blend(p1, p2, t):
-    out = {}
-    for n in set(p1) | set(p2):
-        a, b = p1.get(n, {}), p2.get(n, {})
-        st = {}
-        for k, dflt in (("rot", (0, 0, 0)), ("pos", (0, 0, 0)), ("scale", (1, 1, 1))):
-            if k in a or k in b:
-                st[k] = lerp3(a.get(k, dflt), b.get(k, dflt), t)
-        out[n] = st
-    return out
-
-
-# --- тайминги атаки (секунды); должны совпадать с FrostArcherEntity ---
-SPIN_END = 0.75
-RAISE_END = 1.25
-DRAW_END = 1.85
-RELEASE = 1.95
-FOLLOW_END = 2.15
-ATTACK_LEN = 2.5
-
-
-def attack_pose(t):
-    idle0 = base_pose(0.0, False)
-    if t < SPIN_END:
-        p = t / SPIN_END
-        e = ease(p)
-        pose = base_pose(0.0, False)
-        bump = math.sin(math.pi * p)
-        pose["root"] = {"rot": (0, -360 * e, 0)}
-        pose["body"] = {"rot": (4 * bump, 0, 10 * bump), "pos": (0, -1.2 * bump, 0)}
-        pose["robe1"] = {"rot": (8 * bump, 22 * bump, 6 * bump)}
-        pose["robe2"] = {"rot": (10 * bump, 28 * bump, 8 * bump)}
-        pose["robe3"] = {"rot": (12 * bump, 34 * bump, 10 * bump)}
-        pose["cape"] = {"rot": (4 + 40 * bump, 0, -10 * bump)}
-        pose["right_arm"] = {"rot": (0, 0, 10 + 45 * bump)}
-        pose["left_arm"] = {"rot": (-12, 0, -12 - 40 * bump)}
-        pose["head"] = {"rot": (-6 * bump, 0, -6 * bump)}
-        set_bow(pose, BOW_IDLE)
-        string_pose(pose, 0, 0)
-        return pose
-    if t < RAISE_END:
-        p = ease((t - SPIN_END) / (RAISE_END - SPIN_END))
-        aim = aim_pose(0.0, 0.0)
-        pose = blend(idle0, aim, p)
-        # лук поворачивается из положения у бедра в положение «на боку» — пересчитываем точно
-        R = mm(rx_m(math.radians(104 * (1 - p))), mm(ry_m(math.radians(-4 * p)), rz_m(math.radians(8 * (1 - p) - 68 * p))))
-        set_bow(pose, R)
-        string_pose(pose, 0, 0)
-        if p > 0.55:
-            q = (p - 0.55) / 0.45
-            pose["right_arm"]["rot"] = lerp3(pose["right_arm"]["rot"], aim_pose(0, 0)["right_arm"]["rot"], ease(q))
-        return pose
-    if t < DRAW_END:
-        p = (t - RAISE_END) / (DRAW_END - RAISE_END)
-        d = DRAW_MAX * ease_out(p)
-        return aim_pose(d, 8 * ease_out(p), lean=-3 * p)
-    if t < RELEASE:
-        tremble = math.sin(t * 90)
-        return aim_pose(DRAW_MAX + 0.12 * tremble, 8, lean=-3, tremble=tremble)
-    # выстрел: тетива щёлкает и дрожит, плечи лука пружинят, правая рука уходит назад, отдача корпусом
-    tp = t - RELEASE
-    if tp < 0.025:
-        d = DRAW_MAX * (1 - tp / 0.025)
-        flex = 8 * (1 - tp / 0.025)
-    else:
-        q = tp - 0.025
-        d = -1.6 * math.exp(-q * 11) * math.sin(q * 70 + 0.4)
-        flex = -3.0 * math.exp(-q * 10) * math.sin(q * 60 + 0.5)
-    recoil = math.exp(-tp * 9) * math.sin(min(math.pi / 2, tp * 40))
-    pose = aim_pose(0.0, 0.0, lean=-3 - 10 * recoil)
-    string_pose(pose, d, flex)
-    pose["bow"]["rot"] = add(pose["bow"]["rot"], [6 * recoil, 0, 0])
-    nock = nock_world(pose, 0)
-    back = add(nock, [-3.5, -1.5, 5.0])
-    follow = ease_out(min(1.0, tp / 0.12))
-    point_arm(pose, "right_arm", lerp3(nock, back, follow))
-    pose["head"]["rot"] = add(pose["head"]["rot"], [-4 * recoil, 0, 0])
-    pose["cape"] = {"rot": (6 + 14 * recoil, 0, 0)}
-    pose["robe1"] = {"rot": (-6 * recoil, 0, 0)}
-    pose["robe2"] = {"rot": (-8 * recoil, 0, 0)}
-    pose["robe3"] = {"rot": (-10 * recoil, 0, 0)}
-    if t >= FOLLOW_END:
-        p = ease((t - FOLLOW_END) / (ATTACK_LEN - FOLLOW_END))
-        pose = blend(pose, idle0, p)
-        R = mm(rx_m(math.radians(104 * p)), mm(ry_m(math.radians(-4 * (1 - p))), rz_m(math.radians(8 * p - 68 * (1 - p)))))
-        set_bow(pose, R)
-        string_pose(pose, d * (1 - p), flex * (1 - p))
+def base_pose(t=0.0, animate=True):
+    """Парение: ноги свободно свисают, носки вытянуты, лук у бедра."""
+    w = 2 * math.pi * t / 3.0 if animate else 0.0
+    sn = math.sin
+    pose = {
+        "body": {"rot": (1.5 * sn(w + 1.0), 0, 0), "pos": (0, -0.5 * sn(w), 0)},
+        "torso": {"rot": (1.0 * sn(w + 0.6), 0, 0)},
+        "head": {"rot": (2 * sn(w + 0.4), 0, 1.5 * sn(w - 0.6))},
+        "hair_back": {"rot": (-5 + 2.5 * sn(w - 0.8), 0, 1.5 * sn(w - 0.3))},
+        "hair_mid": {"rot": (4 + 3 * sn(w - 1.4), 0, 2 * sn(w - 0.9))},
+        "hair_tip": {"rot": (5 + 4 * sn(w - 2.0), 0, 2.5 * sn(w - 1.5))},
+        "cape": {"rot": (4 + 2.5 * sn(w - 0.9), 0, 0)},
+        "quiver": {"rot": (2 * sn(w - 0.5), 0, 0)},
+        "right_arm": {"rot": (3 * sn(w), 0, 9 + 2 * sn(w + 0.4))},
+        "right_fore": {"rot": (-12, 0, 0)},
+        "left_arm": {"rot": (-4 + 2 * sn(w + 0.7), 0, -10)},
+        "left_fore": {"rot": (-22, 0, 0)},
+    }
+    legs(pose, (-7 + 3 * sn(w), 12 + 3 * sn(w + 0.5), 28 + 3 * sn(w + 1.0)),
+         (4 + 3 * sn(w + 1.2), 18 + 3 * sn(w + 1.6), 32 + 3 * sn(w + 2.0)))
+    skirt_follow(pose, sway=1.5 * sn(w - 0.7))
+    M.set_world_rot(pose, "bow", BOW_IDLE)
+    string_pose(pose, 0, 0)
     return pose
 
 
 def move_pose(t, back=False):
     w = 2 * math.pi * t / 1.2
-    pose = base_pose(0.0, False)
+    sn = math.sin
+    pose = base_pose(0, False)
     if not back:
-        pose["body"] = {"rot": (9 + 2 * math.sin(w), 0, 3 * math.sin(w)), "pos": (0, -0.4 * math.sin(2 * w), 0)}
-        pose["robe1"] = {"rot": (8 + 4 * math.sin(w - 0.7), 0, 3 * math.sin(w - 0.5))}
-        pose["robe2"] = {"rot": (7 + 5 * math.sin(w - 1.4), 0, 4 * math.sin(w - 1.0))}
-        pose["robe3"] = {"rot": (9 + 6 * math.sin(w - 2.1), 0, 5 * math.sin(w - 1.5))}
-        pose["cape"] = {"rot": (20 + 6 * math.sin(w - 0.9), 0, 3 * math.sin(w - 0.6))}
-        pose["head"] = {"rot": (-12, 0, -2 * math.sin(w))}
-        pose["right_arm"] = {"rot": (20 + 6 * math.sin(w + 0.5), 0, 12)}
-        pose["left_arm"] = {"rot": (6 + 6 * math.sin(w + 0.9), 0, -14)}
+        pose["body"] = {"rot": (8 + 1.5 * sn(2 * w), 0, 2.5 * sn(w)), "pos": (0, -0.35 * sn(2 * w), 0)}
+        pose["torso"] = {"rot": (2, 5 * sn(w), 0)}
+        pose["head"] = {"rot": (-7, -5 * sn(w), 0)}
+        legs(pose, (-4 - 22 * sn(w), 14 + 14 * max(0.0, sn(w + 0.9)), 26 + 6 * sn(w + 1.5)),
+             (-4 + 22 * sn(w), 14 + 14 * max(0.0, -sn(w + 0.9)), 26 - 6 * sn(w + 1.5)))
+        pose["right_arm"] = {"rot": (14 * sn(w), 0, 9)}
+        pose["right_fore"] = {"rot": (-14 - 6 * max(0.0, sn(w)), 0, 0)}
+        pose["left_arm"] = {"rot": (-6 - 10 * sn(w), 0, -10)}
+        pose["hair_back"] = {"rot": (10 + 3 * sn(w - 0.8), 0, 2 * sn(w - 0.4))}
+        pose["hair_mid"] = {"rot": (14 + 4 * sn(w - 1.5), 0, 3 * sn(w - 1.0))}
+        pose["hair_tip"] = {"rot": (16 + 5 * sn(w - 2.2), 0, 4 * sn(w - 1.6))}
+        pose["cape"] = {"rot": (22 + 5 * sn(w - 0.9), 0, 2 * sn(w - 0.6))}
+        skirt_follow(pose, sway=2 * sn(w - 0.8), flare=-4)
     else:
-        pose["body"] = {"rot": (-9 + 2 * math.sin(w), 0, 3 * math.sin(w)), "pos": (0, -0.4 * math.sin(2 * w), 0)}
-        pose["robe1"] = {"rot": (-7 + 4 * math.sin(w - 0.7), 0, 3 * math.sin(w - 0.5))}
-        pose["robe2"] = {"rot": (-7 + 5 * math.sin(w - 1.4), 0, 4 * math.sin(w - 1.0))}
-        pose["robe3"] = {"rot": (-9 + 6 * math.sin(w - 2.1), 0, 5 * math.sin(w - 1.5))}
-        pose["cape"] = {"rot": (2 + 4 * math.sin(w - 0.9), 0, 0)}
-        pose["head"] = {"rot": (10, 0, -2 * math.sin(w))}
-        pose["right_arm"] = {"rot": (-18 + 5 * math.sin(w + 0.5), 0, 16)}
-        pose["left_arm"] = {"rot": (-30 + 5 * math.sin(w + 0.9), 0, -14)}
-    set_bow(pose, BOW_IDLE)
+        pose["body"] = {"rot": (-9 + 1.5 * sn(2 * w), 0, 2 * sn(w)), "pos": (0, -0.35 * sn(2 * w), 0)}
+        pose["head"] = {"rot": (8, 0, 0)}
+        legs(pose, (-20 - 8 * sn(w), 20 + 8 * sn(w + 0.8), 18 + 4 * sn(w + 1.4)),
+             (-14 + 8 * sn(w), 24 - 8 * sn(w + 0.8), 20 - 4 * sn(w + 1.4)))
+        pose["right_arm"] = {"rot": (-18 + 4 * sn(w), 0, 16)}
+        pose["right_fore"] = {"rot": (-20, 0, 0)}
+        pose["left_arm"] = {"rot": (-14 + 4 * sn(w + 0.9), 0, -12)}
+        pose["hair_back"] = {"rot": (-16 + 3 * sn(w - 0.8), 0, 2 * sn(w - 0.4))}
+        pose["hair_mid"] = {"rot": (-10 + 4 * sn(w - 1.5), 0, 3 * sn(w - 1.0))}
+        pose["hair_tip"] = {"rot": (-10 + 5 * sn(w - 2.2), 0, 4 * sn(w - 1.6))}
+        pose["cape"] = {"rot": (-2 + 3 * sn(w - 0.9), 0, 0)}
+        skirt_follow(pose, sway=2 * sn(w - 0.8), flare=3)
+    M.set_world_rot(pose, "bow", BOW_IDLE)
     string_pose(pose, 0, 0)
     return pose
 
 
-ANIM_BONES = ["root", "body", "robe1", "robe2", "robe3", "torso", "cape", "head", "right_arm", "left_arm",
-              "bow", "bow_top", "bow_bot", "string_top", "string_bot", "bow_arrow", "shards"]
+# --- атака (секунды); тики в FrostArcherEntity: выстрел 39, всего 50, звук натяжения 26 ---
+SPIN_END = 0.6
+REACH = 0.85        # рука у колчана — стрела появляется в руке
+PULL = 1.05         # стрела вынута, рука у груди
+NOCK = 1.25         # стрела на тетиве (в руке скрыта, на луке видна)
+DRAW_END = 1.85
+RELEASE = 1.95
+FOLLOW_END = 2.15
+ATTACK_LEN = 2.5
+
+GRIP_TARGET = [1.0, -1.0, -10.6]       # куда вытянута левая рука с луком (Java, модель)
+GRIP_NOCK = [1.2, -0.6, -7.4]          # лук ближе к себе, пока стрела ложится на тетиву
+POLE_LEFT = [1.0, 0.6, 0.2]            # локоть левой руки — вниз и наружу
+POLE_DRAW = [-1.0, -0.8, 1.3]          # локоть правой при натяжении — вверх и назад
+POLE_REACH = [-1.0, 0.2, 1.0]          # к колчану — наружу и назад
 
 
-def bake(fn, length, fps, loop, extra=None):
-    bones = {}
-    n = int(round(length * fps))
-    for k in range(n + 1):
-        t = k / fps
-        if t > length:
-            t = length
-        pose = fn(t)
-        if extra:
-            extra(pose, t)
-        key = ("%.4f" % t).rstrip("0").rstrip(".") or "0"
-        for name in ANIM_BONES:
-            st = pose.get(name, {})
-            out_name = name
-            ch = bones.setdefault(out_name, {})
-            r = st.get("rot", (0, 0, 0))
-            ch.setdefault("rotation", {})[key] = [round(v, 2) for v in r]
-            if "pos" in st:
-                px, py, pz = st["pos"]
-                ch.setdefault("position", {})[key] = [round(px, 3), round(-py, 3), round(pz, 3)]
-            if "scale" in st:
-                ch.setdefault("scale", {})[key] = [round(v, 4) for v in st["scale"]]
-    # скачок поворота больше 180° между кадрами (конец оборота −360° → 0°) — делаем мгновенным
-    # (pre/post), иначе линейная интерполяция провернёт модель обратно
-    for name, chans in bones.items():
-        rot = chans.get("rotation")
-        if not rot:
-            continue
-        keys = list(rot.keys())
-        for i in range(1, len(keys)):
-            prev, cur = rot[keys[i - 1]], rot[keys[i]]
-            prev = prev["post"] if isinstance(prev, dict) else prev
-            if any(abs(cur[j] - prev[j]) > 180 for j in range(3)):
-                pre = [cur[j] + round((prev[j] - cur[j]) / 360.0) * 360 for j in range(3)]
-                rot[keys[i]] = {"pre": pre, "post": cur}
-    # убрать каналы, которые не меняются и равны нулю/единице
-    for name in list(bones):
-        for cname in list(bones[name]):
-            vals = [v if isinstance(v, list) else v["post"] for v in bones[name][cname].values()]
-            neutral = [1, 1, 1] if cname == "scale" else [0, 0, 0]
-            if all(v == neutral for v in vals):
-                del bones[name][cname]
-        if not bones[name]:
-            del bones[name]
-    return {"loop": loop, "animation_length": length, "bones": bones}
+def stance(pose, s, lean=0.0):
+    """Стойка лучницы, s = 0..1 — насколько повернулась (левое плечо к цели)."""
+    pose["body"] = {"rot": (lerp(0, lean, s), 0, 0), "pos": (0, 0, 0)}
+    pose["torso"] = {"rot": (-2 * s, 34 * s, 0)}
+    pose["head"] = {"rot": (-3 * s, -30 * s, 2 * s)}
+    pose["cape"] = {"rot": (4 + 4 * s, 0, 0)}
+    pose["hair_back"] = {"rot": (-5 + 3 * s, -10 * s, 0)}
+    pose["hair_mid"] = {"rot": (4, 0, 0)}
+    pose["hair_tip"] = {"rot": (5, 0, 0)}
+    legs(pose, (lerp(-7, -12, s), lerp(12, 18, s), lerp(28, 30, s), lerp(2, 6, s)),
+         (lerp(4, 8, s), lerp(18, 26, s), lerp(32, 34, s), lerp(-2, -4, s)))
+    skirt_follow(pose)
+
+
+def aim_left(pose, s):
+    """Левая рука с луком: от бедра (s=0) к прицелу (s=1)."""
+    rest = base_pose(0, False)
+    if s <= 0:
+        pose["left_arm"], pose["left_fore"] = rest["left_arm"], rest["left_fore"]
+    else:
+        hand_rest = hand_world(dict(pose, left_arm=rest["left_arm"], left_fore=rest["left_fore"]), "left")
+        target = lerp3(hand_rest, GRIP_NOCK, ease(s))
+        M.two_bone(pose, "left_arm", "left_fore", target, POLE_LEFT, UPPER, FORE)
+    M.set_world_rot(pose, "bow", bow_R(ease(s)))
+
+
+def quiver_mouth(pose):
+    return M.world("quiver", M.local_of("quiver", QUIVER_MOUTH), pose)
+
+
+def attack_pose(t):
+    rest = base_pose(0, False)
+    if t < SPIN_END:
+        # оборот вокруг себя: волосы, плащ и юбка разлетаются, одно колено подтянуто
+        p = t / SPIN_END
+        b = math.sin(math.pi * p)
+        pose = base_pose(0, False)
+        pose["root"] = {"rot": (0, -360 * ease(p), 0)}
+        pose["body"] = {"rot": (3 * b, 0, 8 * b), "pos": (0, -1.0 * b, 0)}
+        pose["hair_back"] = {"rot": (-5 + 40 * b, 25 * b, 8 * b)}
+        pose["hair_mid"] = {"rot": (4 + 22 * b, 0, 6 * b)}
+        pose["hair_tip"] = {"rot": (5 + 18 * b, 0, 6 * b)}
+        pose["cape"] = {"rot": (4 + 45 * b, 0, -10 * b)}
+        pose["right_arm"] = {"rot": (0, 0, 9 + 55 * b)}
+        pose["right_fore"] = {"rot": (-12 - 10 * b, 0, 0)}
+        pose["left_arm"] = {"rot": (-4, 0, -10 - 35 * b)}
+        pose["head"] = {"rot": (-5 * b, 0, -6 * b)}
+        legs(pose, (-7 - 25 * b, 12 + 55 * b, 28 + 10 * b), (4 + 6 * b, 18 + 10 * b, 32))
+        skirt_follow(pose, flare=28 * b)
+        M.set_world_rot(pose, "bow", BOW_IDLE)
+        string_pose(pose, 0, 0)
+        return pose
+
+    if t < NOCK:
+        # достать стрелу из колчана и положить на тетиву, одновременно встать в стойку
+        s = ease((t - REACH) / (NOCK - REACH)) if t > REACH else 0.0
+        pose = base_pose(0, False)
+        stance(pose, s, lean=-2)
+        if t < REACH:
+            q = ease((t - SPIN_END) / (REACH - SPIN_END))
+            pose["torso"] = {"rot": (2 * q, -12 * q, 4 * q)}            # тянется к колчану
+            pose["head"] = {"rot": (6 * q, -10 * q, 0)}
+        aim_left(pose, s)
+        string_pose(pose, 0, 0)
+        hand_rest = hand_world(dict(pose, right_arm=rest["right_arm"], right_fore=rest["right_fore"]), "right")
+        mouth = quiver_mouth(pose)
+        chest = [-0.5, 6.5, -6.0]
+        nock = nock_world(pose, 0)
+        if t < REACH:
+            target = lerp3(hand_rest, mouth, ease((t - SPIN_END) / (REACH - SPIN_END)))
+            pole = POLE_REACH
+        elif t < PULL:
+            q = ease_out((t - REACH) / (PULL - REACH))
+            up = add(mouth, [0.5, -4.0, -0.5])
+            target = lerp3(mouth, up, q) if q < 0.5 else lerp3(up, chest, (q - 0.5) * 2)
+            pole = POLE_REACH
+        else:
+            q = ease((t - PULL) / (NOCK - PULL))
+            target = lerp3(chest, nock, q)
+            pole = lerp3(POLE_REACH, POLE_DRAW, q)
+        M.two_bone(pose, "right_arm", "right_fore", target, pole, UPPER, FORE)
+        return pose
+
+    if t < RELEASE:
+        # натяжение до щеки, затем лёгкая дрожь перед выстрелом
+        if t < DRAW_END:
+            p = (t - NOCK) / (DRAW_END - NOCK)
+            d, flex, tremble = DRAW_MAX * ease_out(p), 8 * ease_out(p), 0.0
+        else:
+            tremble = math.sin(t * 90)
+            d, flex = DRAW_MAX + 0.12 * tremble, 8.0
+        pose = base_pose(0, False)
+        stance(pose, 1.0, lean=-2 - 2 * (d / DRAW_MAX))
+        push = ease_out(min(1.0, (t - NOCK) / ((DRAW_END - NOCK) * 0.55)))
+        GRIP = add(lerp3(GRIP_NOCK, GRIP_TARGET, push), [0, tremble * 0.08, 0])
+        M.two_bone(pose, "left_arm", "left_fore", GRIP, POLE_LEFT, UPPER, FORE)
+        M.set_world_rot(pose, "bow", BOW_AIM)
+        string_pose(pose, d, flex)
+        M.two_bone(pose, "right_arm", "right_fore", nock_world(pose, d), POLE_DRAW, UPPER, FORE)
+        return pose
+
+    # выстрел: тетива щёлкает и дрожит, лук пружинит, рука уходит назад, корпус — отдача
+    tp = t - RELEASE
+    if tp < 0.025:
+        d, flex = DRAW_MAX * (1 - tp / 0.025), 8 * (1 - tp / 0.025)
+    else:
+        q = tp - 0.025
+        d = -1.6 * math.exp(-q * 11) * math.sin(q * 70 + 0.4)
+        flex = -3.0 * math.exp(-q * 10) * math.sin(q * 60 + 0.5)
+    recoil = math.exp(-tp * 9) * math.sin(min(math.pi / 2, tp * 40))
+    pose = base_pose(0, False)
+    stance(pose, 1.0, lean=-4 - 10 * recoil)
+    pose["hair_back"]["rot"] = add(pose["hair_back"]["rot"], [8 * recoil, 0, 0])
+    pose["cape"] = {"rot": (8 + 14 * recoil, 0, 0)}
+    M.two_bone(pose, "left_arm", "left_fore", GRIP_TARGET, POLE_LEFT, UPPER, FORE)
+    M.set_world_rot(pose, "bow", BOW_AIM)
+    pose["bow"]["rot"] = add(pose["bow"]["rot"], [6 * recoil, 0, 0])
+    string_pose(pose, d, flex)
+    nock = nock_world(pose, 0)
+    back = add(nock, [-3.0, -1.2, 4.5])
+    M.two_bone(pose, "right_arm", "right_fore", lerp3(nock, back, ease_out(min(1.0, tp / 0.12))), POLE_DRAW, UPPER, FORE)
+    if t >= FOLLOW_END:
+        p = ease((t - FOLLOW_END) / (ATTACK_LEN - FOLLOW_END))
+        pose = blend(pose, rest, p)
+        M.set_world_rot(pose, "bow", bow_R(1 - p))
+        string_pose(pose, d * (1 - p), flex * (1 - p))
+    return pose
 
 
 def shards(pose, t):
@@ -810,45 +872,15 @@ def shards(pose, t):
 
 
 animations = {
-    "animation.%s.idle" % NAME: bake(lambda t: base_pose(t), 3.0, 20, True, shards),
-    "animation.%s.move" % NAME: bake(lambda t: move_pose(t), 1.2, 20, True),
-    "animation.%s.move_back" % NAME: bake(lambda t: move_pose(t, True), 1.2, 20, True),
-    "animation.%s.attack" % NAME: bake(attack_pose, ATTACK_LEN, 40, False),
+    "animation.%s.idle" % NAME: bake(lambda t: base_pose(t), 3.0, 20, True, A_BONES, shards),
+    "animation.%s.move" % NAME: bake(lambda t: move_pose(t), 1.2, 20, True, A_BONES),
+    "animation.%s.move_back" % NAME: bake(lambda t: move_pose(t, True), 1.2, 20, True, A_BONES),
+    "animation.%s.attack" % NAME: bake(attack_pose, ATTACK_LEN, 40, False, A_BONES),
 }
 
 # =====================================================================
-# 5. Запись файлов
+# 4. Прочие текстуры: стрела, иконка эффекта, иней на экране
 # =====================================================================
-
-
-def write_geo():
-    out_bones = []
-    for b in BONES:
-        ob = {"name": b["name"], "pivot": b["pivot"]}
-        if "parent" in b:
-            ob["parent"] = b["parent"]
-        cubes = []
-        for c in b["cubes"]:
-            oc = {"origin": c["origin"], "size": c["size"], "uv": c["uv"]}
-            for k in ("inflate", "pivot", "rotation"):
-                if k in c:
-                    oc[k] = c[k]
-            cubes.append(oc)
-        if cubes:
-            ob["cubes"] = cubes
-        out_bones.append(ob)
-    geo = {"format_version": "1.12.0", "minecraft:geometry": [{
-        "description": {"identifier": "geometry." + NAME, "texture_width": TEX_W, "texture_height": TEX_H,
-                        "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1.5, 0]},
-        "bones": out_bones}]}
-    with open(os.path.join(ROOT, "geo", NAME + ".geo.json"), "w", encoding="utf-8") as f:
-        json.dump(geo, f, indent=1)
-
-
-def write_anims():
-    with open(os.path.join(ROOT, "animations", NAME + ".animation.json"), "w", encoding="utf-8") as f:
-        json.dump({"format_version": "1.8.0", "animations": animations}, f, separators=(",", ":"))
-
 
 def arrow_texture():
     """Текстура ледяной стрелы в раскладке ванильной стрелы 32×32 (бок 16×5, торец 5×5)."""
@@ -941,11 +973,11 @@ def overlay():
 
 
 if __name__ == "__main__":
-    write_geo()
-    write_anims()
-    img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
-    glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
+    M.write_geo(ROOT)
+    write_anims(ROOT, NAME, animations)
+    PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
+    PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
     arrow_texture()
     effect_icon()
     overlay()
-    print("готово:", NAME, "кубов:", sum(len(b["cubes"]) for b in BONES))
+    print("готово:", NAME, "кубов:", len(M.cubes()))

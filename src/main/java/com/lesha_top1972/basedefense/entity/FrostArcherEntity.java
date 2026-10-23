@@ -46,11 +46,11 @@ public class FrostArcherEntity extends HostileEntity {
     public static final byte STATUS_CANCEL = 5;
 
     /** На сколько блоков модель парит над землёй (для рендера и точки выстрела). */
-    public static final float HOVER = 0.45f;
+    public static final float HOVER = 0.4f;
 
     /** Тайминги (тики). Совпадают с анимацией attack (tools/frost_archer_gen.py). */
-    public static final int ATTACK_TICKS = 50;      // 2.5 с: оборот 0–15, подъём 15–25, натяжение 25–37
-    public static final int DRAW_START = 25;
+    public static final int ATTACK_TICKS = 50;      // 2.5 с: оборот 0–12, стрела из колчана 12–25, натяжение 25–37
+    public static final int DRAW_START = 26;
     public static final int RELEASE_TICK = 39;      // 1.95 с
     /** Выстрел раз в 6.5 с (от начала до начала). */
     public static final int SHOT_CYCLE = 130;

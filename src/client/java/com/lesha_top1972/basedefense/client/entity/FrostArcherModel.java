@@ -11,8 +11,9 @@ import java.util.Map;
 /**
  * Модель морозной лучницы (geo/frost_archer.geo.json, создаётся tools/frost_archer_gen.py).
  * Анимации: idle (парение), move (полёт вперёд), move_back (полёт спиной), attack
- * (оборот → лук «на боку» → натяжение тетивы → выстрел с отдачей → возврат).
- * Стрела на тетиве видна только во время натяжения.
+ * (оборот → стрела из колчана на бедре → лук «на боку» → натяжение → выстрел с отдачей → возврат).
+ * Стрела в руке видна, пока лучница достаёт её из колчана, на тетиве — пока натягивает; в остальное время
+ * стрел нет (модель и анимации — tools/frost_archer_gen.py).
  */
 public class FrostArcherModel extends BedrockEntityModel<FrostArcherEntity> {
 
@@ -22,18 +23,23 @@ public class FrostArcherModel extends BedrockEntityModel<FrostArcherEntity> {
     private static final BedrockAnimations.Clip MOVE_BACK = CLIPS.get("move_back");
     private static final BedrockAnimations.Clip ATTACK = CLIPS.get("attack");
 
-    /** Секунды анимации attack: стрела на тетиве (рука взяла тетиву → выстрел). */
-    private static final float ARROW_FROM = 1.1f;
-    private static final float ARROW_TO = FrostArcherEntity.RELEASE_TICK / 20f;
+    /** Секунды анимации attack (как в генераторе): стрела в руке REACH..NOCK, на тетиве NOCK..выстрел. */
+    private static final float REACH = 0.85f;
+    private static final float NOCK = 1.25f;
+    private static final float RELEASE = FrostArcherEntity.RELEASE_TICK / 20f;
     private static final float ATTACK_LEN = FrostArcherEntity.ATTACK_TICKS / 20f;
 
     private final ModelPart head;
-    private final ModelPart arrow;
+    private final ModelPart bowArrow;
+    private final ModelPart handArrow;
 
     public FrostArcherModel(ModelPart root) {
         super(root);
         this.head = this.bone("head");
-        this.arrow = this.bone("bow_arrow");
+        this.bowArrow = this.bone("bow_arrow");
+        this.handArrow = this.bone("hand_arrow");
+        this.bowArrow.visible = false;
+        this.handArrow.visible = false;
     }
 
     @Override
@@ -67,7 +73,8 @@ public class FrostArcherModel extends BedrockEntityModel<FrostArcherEntity> {
             this.play(ATTACK, st, attackW);
         }
 
-        this.arrow.visible = attacking && st >= ARROW_FROM && st < ARROW_TO;
+        this.handArrow.visible = attacking && st >= REACH && st < NOCK;
+        this.bowArrow.visible = attacking && st >= NOCK && st < RELEASE;
 
         this.head.yaw += headYaw * DEG * free;
         this.head.pitch += headPitch * DEG * free;
