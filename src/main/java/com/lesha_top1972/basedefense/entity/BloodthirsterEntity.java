@@ -69,7 +69,8 @@ import java.util.Set;
  *   <li>WALTZ — «багровый вальс» (мощная): 3 с вихря с мечами (по 4 каждые 0.4 с вокруг),
  *       затем крестовой разрез: 13 и сильный отброс.</li>
  * </ul>
- * Скорость в бою ≈ бег игрока − 15%. Темп спокойнее, чем у улана.
+ * Скорость в бою ≈ бег игрока − 15% (во 2‑й фазе +7%). Призыв и яйца — раз в 2 минуты.
+ * Темп спокойнее, чем у улана.
  */
 public class BloodthirsterEntity extends HostileEntity implements BloodKin {
 
@@ -106,6 +107,11 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     static final double BASE_SPEED = 0.23;
     static final double CHASE = 1.4;
     public static final float PHASE2_HEALTH = 300f;
+    /** Во 2‑й фазе скорость +7%. */
+    static final double PHASE2_SPEED = 1.07;
+    /** Перезарядка «зова выводка» и «кровавой кладки» — по 2 минуты. */
+    public static final int SUMMON_CD = 2400;
+    public static final int EGGS_CD = 2400;
 
     private static final TrackedData<Boolean> PHASE2 =
             DataTracker.registerData(BloodthirsterEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -151,6 +157,15 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
 
     void setPhase2() {
         this.dataTracker.set(PHASE2, true);
+        this.applyPhaseSpeed();
+    }
+
+    /** Скорость по фазе: во 2‑й на 7% быстрее (и шаг, и погоня). */
+    private void applyPhaseSpeed() {
+        var speed = this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        if (speed != null) {
+            speed.setBaseValue(this.isPhase2() ? BASE_SPEED * PHASE2_SPEED : BASE_SPEED);
+        }
     }
 
     @Override
@@ -234,6 +249,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.dataTracker.set(PHASE2, nbt.getBoolean("Phase2"));
+        this.applyPhaseSpeed();
         if (this.hasCustomName()) {
             this.bossBar.setName(this.getDisplayName());
         }
@@ -807,7 +823,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_ZOMBIE_INFECT, 1.0f, 0.6f);
                     }
                     if (t >= SUMMON_TICKS) {
-                        this.summonCd = 500;
+                        this.summonCd = SUMMON_CD;
                         this.finish(26);
                     }
                 }
@@ -825,7 +841,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.5f, 0.4f);
                     }
                     if (t >= EGGS_TICKS) {
-                        this.eggsCd = 600;
+                        this.eggsCd = EGGS_CD;
                         this.finish(30);
                     }
                 }
