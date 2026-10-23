@@ -29,6 +29,9 @@ public class FallingLanceEntity extends ProjectileEntity {
     public static final float DAMAGE = 6.5f;
     private int life;
     private int stuck = -1;
+    /** Только клиент: высота земли под копьём (метка падения) и показан ли уже эффект удара. */
+    public double clientGroundY = Double.NaN;
+    public boolean clientImpactShown;
 
     public FallingLanceEntity(EntityType<? extends FallingLanceEntity> type, World world) {
         super(type, world);
