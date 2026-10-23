@@ -115,6 +115,31 @@ public final class ModEntities {
                     .trackedUpdateRate(2)
                     .build());
 
+    /** Босс «Кровожад» (большой). */
+    public static final EntityType<BloodthirsterEntity> BLOODTHIRSTER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "bloodthirster"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BloodthirsterEntity::new)
+                    .dimensions(EntityDimensions.fixed(1.3f, 3.2f))
+                    .trackRangeBlocks(80)
+                    .build());
+
+    /** Мелкий кровожад (выводок босса). */
+    public static final EntityType<BloodlingEntity> BLOODLING = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "bloodling"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BloodlingEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 1.2f))
+                    .build());
+
+    /** Яйцо кровожада (растит кровавую лужу). */
+    public static final EntityType<BloodEggEntity> BLOOD_EGG = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "blood_egg"),
+            FabricEntityTypeBuilder.<BloodEggEntity>create(SpawnGroup.MISC, BloodEggEntity::new)
+                    .dimensions(EntityDimensions.fixed(1.0f, 1.4f))
+                    .build());
+
     private ModEntities() {
     }
 
@@ -130,5 +155,8 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(TATTERED_LANCER, TatteredLancerEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOODTHIRSTER, BloodthirsterEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOODLING, BloodlingEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOOD_EGG, BloodEggEntity.createAttributes());
     }
 }

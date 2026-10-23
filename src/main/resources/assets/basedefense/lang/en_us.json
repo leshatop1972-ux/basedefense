@@ -154,5 +154,12 @@
   "item.basedefense.tattered_lancer_spawn_egg": "Tattered Lancer Spawn Egg",
   "effect.basedefense.duelist": "Duelist",
   "entity.basedefense.falling_lance": "Spectral Lance",
-  "effect.basedefense.sneaky_rat": "Sneaky Rat"
+  "effect.basedefense.sneaky_rat": "Sneaky Rat",
+  "entity.basedefense.bloodthirster": "Bloodthirster",
+  "item.basedefense.bloodthirster_spawn_egg": "Bloodthirster Spawn Egg",
+  "entity.basedefense.bloodling": "Bloodling",
+  "item.basedefense.bloodling_spawn_egg": "Bloodling Spawn Egg",
+  "entity.basedefense.blood_egg": "Bloodthirster Egg",
+  "item.basedefense.blood_egg_spawn_egg": "Bloodthirster Egg Spawn Egg",
+  "block.basedefense.blood_pool": "Blood Pool"
 }

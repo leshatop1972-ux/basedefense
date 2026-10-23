@@ -154,5 +154,12 @@
   "item.basedefense.tattered_lancer_spawn_egg": "Яйцо призыва оборванного улана",
   "effect.basedefense.duelist": "Дуэлянт",
   "entity.basedefense.falling_lance": "Призрачное копьё",
-  "effect.basedefense.sneaky_rat": "Подлая крыса"
+  "effect.basedefense.sneaky_rat": "Подлая крыса",
+  "entity.basedefense.bloodthirster": "Кровожад",
+  "item.basedefense.bloodthirster_spawn_egg": "Яйцо призыва кровожада",
+  "entity.basedefense.bloodling": "Мелкий кровожад",
+  "item.basedefense.bloodling_spawn_egg": "Яйцо призыва мелкого кровожада",
+  "entity.basedefense.blood_egg": "Яйцо кровожада",
+  "item.basedefense.blood_egg_spawn_egg": "Яйцо призыва яйца кровожада",
+  "block.basedefense.blood_pool": "Кровавая лужа"
 }

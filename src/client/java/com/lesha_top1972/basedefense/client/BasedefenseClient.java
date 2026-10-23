@@ -1,5 +1,8 @@
 package com.lesha_top1972.basedefense.client;
 
+import com.lesha_top1972.basedefense.client.entity.BloodEggRenderer;
+import com.lesha_top1972.basedefense.client.entity.BloodlingRenderer;
+import com.lesha_top1972.basedefense.client.entity.BloodthirsterRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArcherRenderer;
 import com.lesha_top1972.basedefense.client.entity.FallingLanceRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArrowRenderer;
@@ -61,7 +64,14 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.TATTERED_LANCER, TatteredLancerRenderer::new);
         EntityRendererRegistry.register(ModEntities.FALLING_LANCE, FallingLanceRenderer::new);
         LancerZoneRenderer.init();
-        LancerFx.init();               // следы, кольца, метки, тряска камеры и т.п. в бою с уланом
+        LancerFx.init();               // эффекты «ливня копий» улана
+        // Босс «Кровожад», мелкие кровожады и яйца
+        EntityModelLayerRegistry.registerModelLayer(BloodthirsterRenderer.LAYER, () -> BedrockModelLoader.load("bloodthirster"));
+        EntityModelLayerRegistry.registerModelLayer(BloodlingRenderer.LAYER, () -> BedrockModelLoader.load("bloodling"));
+        EntityModelLayerRegistry.registerModelLayer(BloodEggRenderer.LAYER, () -> BedrockModelLoader.load("blood_egg"));
+        EntityRendererRegistry.register(ModEntities.BLOODTHIRSTER, BloodthirsterRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BLOODLING, BloodlingRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BLOOD_EGG, BloodEggRenderer::new);
         DuelistOverlay.init();
         RatOverlay.init();
 

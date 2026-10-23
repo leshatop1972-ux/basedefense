@@ -7,7 +7,8 @@
     python tools/mob_preview.py iron_zombie            — поза покоя спереди/сбоку/сзади
     python tools/mob_preview.py iron_knight attack1    — 8 кадров анимации
     python tools/mob_preview.py frost_archer attack 0.5,1.6,2.0  — кадры в заданные секунды
-    (угол обзора: переменная окружения PREVIEW_YAW, радианы)
+    (угол обзора: переменная окружения PREVIEW_YAW, радианы; PREVIEW_SCALE — масштаб для больших мобов,
+     PREVIEW_TEX — другая текстура (например bloodthirster_p2), PREVIEW_HIDE — кости через запятую, которые скрыть)
 Картинка пишется в tools/mob_preview.png (в мод не попадает).
 """
 import json
@@ -21,6 +22,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 import settler_preview as sp  # noqa: E402  (тот же 3D-рендер кубов, что у жителей)
 
 YAW = float(os.environ.get("PREVIEW_YAW", "0.6"))
+SCALE = float(os.environ.get("PREVIEW_SCALE", "6"))
+HIDE = set(filter(None, os.environ.get("PREVIEW_HIDE", "").split(",")))
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 DEG = math.pi / 180
 
@@ -74,6 +77,8 @@ def build_parts(geo):
 def _collect(parts, look, transform, out):
     """Как settler_preview.collect, но с масштабом части (как ModelPart: опора → поворот → масштаб)."""
     for p in parts:
+        if p["name"] in HIDE:
+            continue
         pitch, yaw, roll = p["rot"]
         px, py, pz = p["pivot"]
         sx, sy, sz = p.get("scale", (1, 1, 1))
@@ -215,8 +220,10 @@ def main():
     anim_name = sys.argv[2] if len(sys.argv) > 2 else None
     out = os.path.join(os.path.dirname(__file__), "mob_preview.png")
     geo = load_geo(name)
-    tex = Image.open(os.path.join(ASSETS, "textures", "entity", name + ".png")).convert("RGBA")
-    size, scale = (260, 300), 6
+    tex_name = os.environ.get("PREVIEW_TEX", name)
+    tex = Image.open(os.path.join(ASSETS, "textures", "entity", tex_name + ".png")).convert("RGBA")
+    scale = SCALE
+    size = (int(260 * max(1.0, scale / 5)), int(300 * max(1.0, scale / 5)))
     frames = []
     if anim_name:
         anims = load_anims(name)

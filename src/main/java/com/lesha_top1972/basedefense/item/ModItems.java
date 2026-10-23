@@ -61,6 +61,15 @@ public final class ModItems {
     public static final Item TATTERED_LANCER_SPAWN_EGG = register("tattered_lancer_spawn_egg",
             new SpawnEggItem(ModEntities.TATTERED_LANCER, 0x22565A, 0xD6AC4A, new Item.Settings()));
 
+    public static final Item BLOODTHIRSTER_SPAWN_EGG = register("bloodthirster_spawn_egg",
+            new SpawnEggItem(ModEntities.BLOODTHIRSTER, 0x6E0614, 0x1A0A0E, new Item.Settings()));
+
+    public static final Item BLOODLING_SPAWN_EGG = register("bloodling_spawn_egg",
+            new SpawnEggItem(ModEntities.BLOODLING, 0x96101C, 0xE04A42, new Item.Settings()));
+
+    public static final Item BLOOD_EGG_SPAWN_EGG = register("blood_egg_spawn_egg",
+            new SpawnEggItem(ModEntities.BLOOD_EGG, 0x4C0614, 0xFF4838, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -83,6 +92,9 @@ public final class ModItems {
             entries.add(IRON_KNIGHT_SPAWN_EGG);
             entries.add(FROST_ARCHER_SPAWN_EGG);
             entries.add(TATTERED_LANCER_SPAWN_EGG);
+            entries.add(BLOODTHIRSTER_SPAWN_EGG);
+            entries.add(BLOODLING_SPAWN_EGG);
+            entries.add(BLOOD_EGG_SPAWN_EGG);
         });
     }
 }

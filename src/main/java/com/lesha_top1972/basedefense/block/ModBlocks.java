@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.MapColor;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -43,6 +45,11 @@ public final class ModBlocks {
     public static final Block LUMBERJACK_HOUSE = house("lumberjack_house", HouseType.LUMBERJACK);
     /** Центральная площадь (колокол; сюда ходят жители, к ней ведут тропинки). */
     public static final Block TOWN_SQUARE = house("town_square", HouseType.TOWN_SQUARE);
+
+    /** Кровавая лужа вокруг яиц кровожада: 0.5 урона в секунду, ничего не выпадает. */
+    public static final Block BLOOD_POOL = register("blood_pool", new BloodPoolBlock(FabricBlockSettings.create()
+            .mapColor(MapColor.DARK_RED).strength(0.5f).sounds(BlockSoundGroup.SLIME).luminance(s -> 3)
+            .nonOpaque().dropsNothing()));
 
     private ModBlocks() {
     }
