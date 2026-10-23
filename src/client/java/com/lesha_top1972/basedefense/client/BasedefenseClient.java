@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.client;
 import com.lesha_top1972.basedefense.client.entity.FrostArcherRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArrowRenderer;
 import com.lesha_top1972.basedefense.client.entity.IronKnightRenderer;
+import com.lesha_top1972.basedefense.client.entity.TatteredLancerRenderer;
 import com.lesha_top1972.basedefense.client.entity.IronZombieRenderer;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
@@ -51,6 +52,8 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(FrostArcherRenderer.LAYER, () -> BedrockModelLoader.load("frost_archer"));
         EntityRendererRegistry.register(ModEntities.FROST_ARCHER, FrostArcherRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROST_ARROW, FrostArrowRenderer::new);
+        EntityModelLayerRegistry.registerModelLayer(TatteredLancerRenderer.LAYER, () -> BedrockModelLoader.load("tattered_lancer"));
+        EntityRendererRegistry.register(ModEntities.TATTERED_LANCER, TatteredLancerRenderer::new);
 
         // Эффект «Заморозка»: бело‑голубой экран
         FreezeOverlay.init();

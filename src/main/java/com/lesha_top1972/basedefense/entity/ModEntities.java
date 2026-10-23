@@ -96,6 +96,15 @@ public final class ModEntities {
                     .trackedUpdateRate(2)
                     .build());
 
+    /** Босс «Оборванный улан». */
+    public static final EntityType<TatteredLancerEntity> TATTERED_LANCER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "tattered_lancer"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TatteredLancerEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 2.2f))
+                    .trackRangeBlocks(80)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -110,5 +119,6 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(TATTERED_LANCER, TatteredLancerEntity.createAttributes());
     }
 }

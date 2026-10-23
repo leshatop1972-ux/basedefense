@@ -294,6 +294,23 @@ def dir_euler(d):
     return [math.degrees(a), math.degrees(b), 0.0]
 
 
+def cross(a, b):
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+
+def look_R(direction, down=(0, 1, 0), roll=0.0):
+    """Поворот, при котором локальная −z смотрит в direction, а локальная +y — по возможности «вниз»
+    (Java: +y вниз); roll — дополнительный поворот вокруг оси (градусы)."""
+    z = norm(scl(direction, -1))
+    x = cross(down, z)
+    if length(x) < 1e-4:
+        x = cross([0, 0, -1] if abs(z[2]) < 0.9 else [1, 0, 0], z)
+    x = norm(x)
+    y = cross(z, x)
+    R = [[x[0], y[0], z[0]], [x[1], y[1], z[1]], [x[2], y[2], z[2]]]
+    return mm(R, rz_m(math.radians(roll))) if roll else R
+
+
 def length(v):
     return math.sqrt(sum(x * x for x in v))
 

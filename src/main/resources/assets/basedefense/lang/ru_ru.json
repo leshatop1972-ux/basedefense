@@ -149,5 +149,7 @@
   "entity.basedefense.frost_archer": "Морозная лучница",
   "item.basedefense.frost_archer_spawn_egg": "Яйцо призыва морозной лучницы",
   "entity.basedefense.frost_arrow": "Ледяная стрела",
-  "effect.basedefense.freeze": "Заморозка"
+  "effect.basedefense.freeze": "Заморозка",
+  "entity.basedefense.tattered_lancer": "Оборванный улан",
+  "item.basedefense.tattered_lancer_spawn_egg": "Яйцо призыва оборванного улана"
 }

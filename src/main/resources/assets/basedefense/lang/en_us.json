@@ -149,5 +149,7 @@
   "entity.basedefense.frost_archer": "Frost Archer",
   "item.basedefense.frost_archer_spawn_egg": "Frost Archer Spawn Egg",
   "entity.basedefense.frost_arrow": "Frost Arrow",
-  "effect.basedefense.freeze": "Freeze"
+  "effect.basedefense.freeze": "Freeze",
+  "entity.basedefense.tattered_lancer": "Tattered Lancer",
+  "item.basedefense.tattered_lancer_spawn_egg": "Tattered Lancer Spawn Egg"
 }
