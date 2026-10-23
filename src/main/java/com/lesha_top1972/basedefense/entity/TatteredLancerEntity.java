@@ -128,8 +128,6 @@ public class TatteredLancerEntity extends HostileEntity {
     public int clientRainAge = -10000;
     public int clientRainEndAge = -10000;
     public Vec3d clientZone = Vec3d.ZERO;
-    /** Высота, с которой начался прыжок (клиент: метка места приземления). */
-    public double clientLeapY;
 
     public TatteredLancerEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -251,8 +249,6 @@ public class TatteredLancerEntity extends HostileEntity {
                 this.clientZone = this.getPos();
             } else if (a == RAIN_END) {
                 this.clientRainEndAge = this.age;
-            } else if (a == LEAP) {
-                this.clientLeapY = this.getY();
             }
             this.clientAction = a;
             this.clientActionAge = this.age;

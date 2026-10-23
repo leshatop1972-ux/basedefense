@@ -34,11 +34,9 @@ import static com.lesha_top1972.basedefense.entity.TatteredLancerEntity.*;
  * Эффекты боя с Оборванным уланом (только клиент):
  * <ul>
  *   <li>«ливень копий»: руническая печать в небе, луч от улана к ней, стена‑купол по краю зоны,
- *       след и метка на земле под каждым падающим копьём, кольцо там, где оно воткнулось;</li>
- *   <li>метки атак: стрелки на земле, куда пройдёт таран / «тройной таран», метка места приземления прыжка
- *       и спуска после ливня.</li>
+ *       след и метка на земле под каждым падающим копьём, кольцо там, где оно воткнулось.</li>
  * </ul>
- * Палитра под босса: выцветшая бирюза (сюртук), тусклое золото (галуны), малиновый (кушак) — метки атак.
+ * Палитра под босса: выцветшая бирюза (сюртук), тусклое золото (галуны), малиновый (кушак) — метки копий.
  * Текстуры — textures/fx/*.png (tools/lancer_fx_textures.py), смешивание аддитивное (RenderLayer.getEyes).
  */
 public final class LancerFx {
@@ -50,7 +48,6 @@ public final class LancerFx {
     private static final Identifier RING = tex("ring");
     private static final Identifier RUNE = tex("rune");
     private static final Identifier BEAM = tex("beam");
-    private static final Identifier ARROW = tex("arrow");
     private static final Identifier MARKER = tex("marker");
     private static final Identifier WALL = tex("wall");
 
@@ -74,11 +71,6 @@ public final class LancerFx {
     public static void init() {
         ClientTickEvents.END_WORLD_TICK.register(LancerFx::tick);
         WorldRenderEvents.AFTER_ENTITIES.register(LancerFx::render);
-    }
-
-    static Vec3d forward(float yawDeg) {
-        float y = yawDeg * MathHelper.RADIANS_PER_DEGREE;
-        return new Vec3d(-MathHelper.sin(y), 0, MathHelper.cos(y));
     }
 
     // ---------------- тик ----------------
@@ -133,39 +125,9 @@ public final class LancerFx {
         }
     }
 
-    /** Окна прицеливания «тройного тарана»: [начало, конец, длина стрелки]. */
-    private static final int[][] GRAND_AIM = {{1, 16, 9}, {26, 31, 9}, {41, 46, 9}, {56, 68, 12}};
-
     private static void drawLancer(Draw d, TatteredLancerEntity l, float tickDelta, float now) {
         Vec3d pos = l.getLerpedPos(tickDelta);
-        Vec3d f = forward(MathHelper.lerpAngleDegrees(tickDelta, l.prevBodyYaw, l.bodyYaw));
         int a = l.clientAction;
-        float t = l.age + tickDelta - l.clientActionAge;
-        Vec3d start = pos.add(0, 0.05, 0).add(f.multiply(0.6));
-
-        // --- метки атак ---
-        if (a == CHARGE && t < 11) {
-            d.strip(ARROW, start, f, 9f, 0.8f, -now * 0.15f, 9f / 4f - now * 0.15f, CRIMSON, 0.25f + 0.55f * t / 11f);
-        }
-        if (a == GRAND) {
-            for (int[] w : GRAND_AIM) {
-                if (t >= w[0] && t < w[1]) {
-                    float k = 0.3f + 0.7f * (t - w[0]) / (w[1] - w[0]);
-                    d.strip(ARROW, start, f, w[2], w[2] > 10 ? 1.6f : 0.9f, -now * 0.25f, w[2] / 4f - now * 0.25f,
-                            CRIMSON, k);
-                }
-            }
-        }
-        if (a == LEAP && t > LEAP_WINDUP + 1 && !l.isOnGround()) {
-            Vec3d land = predictLanding(l);
-            if (land != null) {
-                d.flat(MARKER, land.add(0, 0.06, 0), 3.2f, now * 3f, CRIMSON, 0.7f + 0.3f * MathHelper.sin(now * 0.8f));
-            }
-        }
-        if (a == RAIN_END && !l.isOnGround()) {
-            d.flat(MARKER, new Vec3d(pos.x, l.clientZone.y + 0.06, pos.z), 2.2f, now * 2f, GOLD, 0.6f);
-        }
-
         // --- ливень копий: печать в небе, луч, стена‑купол ---
         if (l.clientRainAge < 0) {
             return;
@@ -188,26 +150,6 @@ public final class LancerFx {
         if (zk > 0f) {
             drawWall(d, zone, (float) RAIN_RADIUS, rt >= RAIN_START ? 3.2f : 2.6f, now, zk * 0.5f);
         }
-    }
-
-    /** Простая баллистика по движению улана: где он коснётся земли (высота начала прыжка). */
-    private static Vec3d predictLanding(TatteredLancerEntity l) {
-        double x = l.getX();
-        double y = l.getY();
-        double z = l.getZ();
-        double vx = l.getX() - l.prevX;
-        double vy = l.getY() - l.prevY;
-        double vz = l.getZ() - l.prevZ;
-        for (int i = 0; i < 80; i++) {
-            vy = (vy - 0.08) * 0.98;
-            x += vx;
-            y += vy;
-            z += vz;
-            if (vy < 0 && y <= l.clientLeapY) {
-                return new Vec3d(x, l.clientLeapY, z);
-            }
-        }
-        return null;
     }
 
     private static void drawWall(Draw d, Vec3d c, float radius, float height, float now, float k) {
@@ -294,16 +236,7 @@ public final class LancerFx {
                     0, 0, 1, 1, rgb, k);
         }
 
-        /** Полоса на земле от from вдоль dir длиной len, полуширина hw; v — от vStart до vEnd вдоль. */
-        void strip(Identifier texture, Vec3d from, Vec3d dir, float len, float hw, float vStart, float vEnd,
-                   float[] rgb, float k) {
-            Vec3d side = new Vec3d(-dir.z, 0, dir.x).multiply(hw);
-            Vec3d to = from.add(dir.multiply(len));
-            this.quad(texture, this.rel(from.subtract(side)), this.rel(to.subtract(side)), this.rel(to.add(side)),
-                    this.rel(from.add(side)), 0, vStart, 1, vEnd, rgb, k);
-        }
-
-        /** Лента от a до b, повёрнутая к камере вокруг своей оси (луч). u — поперёк, v — вдоль. */
+            /** Лента от a до b, повёрнутая к камере вокруг своей оси (луч). u — поперёк, v — вдоль. */
         void segment(Identifier texture, Vec3d a, Vec3d b, float wa, float wb, float va, float vb, float[] rgb, float k) {
             float[] pa = this.rel(a);
             float[] pb = this.rel(b);

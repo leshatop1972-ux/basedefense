@@ -9,8 +9,7 @@ RGB = яркость (уже умножена на альфу), A = яркост
   ring.png    — кольцо там, где воткнулось копьё: резкий край снаружи, мягкий хвост внутрь
   rune.png    — руническая печать (кольца, засечки, звезда, руны) — в небе при ливне копий
   beam.png    — столб/луч: мягкий по ширине, с продольными прожилками
-  arrow.png   — шевроны «сюда ударит таран» (идут вдоль v)
-  marker.png  — метка падения копья / приземления: кольцо с 4 засечками
+  marker.png  — метка падения копья: кольцо с 4 засечками
   wall.png    — стена купола зоны: ярко внизу, тает вверх, прожилки
 """
 import math
@@ -137,16 +136,6 @@ def beam(u, v):
     return clamp(core + soft + st * 0.4), clamp(core)
 
 
-def arrow(u, v):
-    x = abs(u * 2 - 1)
-    # шевроны: «^» вдоль v, по 4 на текстуру
-    k = (v * 4 + x * 0.55) % 1
-    chev = math.exp(-((k - 0.5) / 0.09) ** 2) * smooth(1.0, 0.75, x)
-    sides = 0.5 * math.exp(-((x - 0.95) / 0.04) ** 2)
-    fill = 0.12 * smooth(1.0, 0.0, x)
-    return clamp(chev + sides + fill), clamp(chev)
-
-
 def marker(u, v):
     r, ang = polar(u, v)
     if r > 1:
@@ -180,7 +169,6 @@ if __name__ == "__main__":
     save("ring.png", 128, 128, ring)
     save("rune.png", 256, 256, rune)
     save("beam.png", 32, 128, beam)
-    save("arrow.png", 32, 128, arrow)
     save("marker.png", 64, 64, marker)
     save("wall.png", 64, 64, wall)
     print("Готово:", os.path.normpath(ROOT))
