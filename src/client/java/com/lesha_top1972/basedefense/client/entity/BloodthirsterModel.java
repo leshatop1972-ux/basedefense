@@ -24,7 +24,7 @@ public class BloodthirsterModel extends BedrockEntityModel<BloodthirsterEntity> 
     private static final BedrockAnimations.Clip[] WALK = {C.get("walk1"), C.get("walk2")};
     private static final BedrockAnimations.Clip[] RUN = {C.get("run1"), C.get("run2")};
     private static final BedrockAnimations.Clip[] ACTIONS = {
-            C.get("swing"), C.get("devour"), null, C.get("pounce_land"), C.get("transform"),
+            C.get("swing"), C.get("rift"), null, C.get("pounce_land"), C.get("transform"),
             C.get("slash"), C.get("thrust"), C.get("summon"), C.get("eggs"), null, C.get("exec_land")
     };
     private static final BedrockAnimations.Clip POUNCE_START = C.get("pounce_start");

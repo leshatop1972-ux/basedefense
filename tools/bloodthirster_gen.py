@@ -590,6 +590,8 @@ def _heavy_in(x):
 EASES = {"lin": lambda x: x, "ease": ease, "in": _heavy_in, "out": lambda x: 1 - _heavy_in(1 - x),
          "in3": ease_in, "out3": ease_out}
 
+SW = 1.45          # мечи в 1.45 раза крупнее модели (≈4 блока с масштабом босса)
+
 # Атаки растянуты на 20%: движения тяжелее и плавнее (тайминги в BloodthirsterEntity посчитаны так же)
 SLOW = 1.2
 
@@ -629,6 +631,27 @@ def lerp_key(name, a, b, t):
     if name in DIRS:
         return tuple(slerp_dir(a, b, t))
     return lerp_val(a, b, t)
+
+
+# Сколько секунд параметр отстаёт от корпуса (голова чуть опережает): даёт инерцию, захлёст
+# и «доводку» после удара — движения тяжелее и мягче, без деревянных одновременных поз.
+LAG = {"head": -0.04, "neck": -0.02,
+       "rh": 0.06, "lh": 0.06, "r_pole": 0.06, "l_pole": 0.06, "rhand": 0.07, "lhand": 0.07,
+       "rcurl": 0.08, "lcurl": 0.08, "rdir": 0.10, "ldir": 0.10, "rroll": 0.10, "lroll": 0.10,
+       "ribbon": 0.18, "hair": 0.16, "jaw": 0.03}
+TAIL = 0.2          # анимации атак длиннее на столько, чтобы «догоняющие» части успели доехать
+
+
+def layered(keys, t):
+    """Поза по ключам с запаздыванием частей (LAG). Для всех атак."""
+    pr = keyed(keys, t)
+    cache = {}
+    for name, lag in LAG.items():
+        tt = max(0.0, t - lag)
+        if tt not in cache:
+            cache[tt] = keyed(keys, tt)
+        pr[name] = cache[tt][name]
+    return pr
 
 
 def keyed(keys, t, base=DEFAULT):
@@ -824,7 +847,43 @@ def bake_clip(fn, length_s, fps, loop, bones):
             R = mm(axis_R(d, drift * k / max(1, n)), Rs[k])
             p[b]["rot"] = to_euler_safe(mm(tr(Rp), R))
     lookup = dict(zip(times, poses))
-    return bake(lambda t: lookup[t], length_s, fps, loop, bones, unwrap=True)
+    out = bake(lambda t: lookup[t], length_s, fps, loop, bones, unwrap=True)
+    anchor_end(out)
+    return out
+
+
+def canonical(r):
+    """Обычная запись Эйлера того же поворота (|y| ≤ 90°, x, z в −180..180) — такая же, как у покоя."""
+    from mobgen import euler, to_euler
+    return to_euler(euler(r))
+
+
+def anchor_end(anim):
+    """Непрерывные углы могут «уехать» на ±360° (или в равную запись) к концу анимации — тогда при
+    плавном переходе в покой кость прокручивается на оборот (так «багались» мечи и правая рука).
+    Здесь вторая половина анимации пересчитывается от обычной записи конечной позы, а в середине —
+    мгновенный переход pre/post между двумя равными записями (видимого скачка нет)."""
+    from mobgen import euler_near
+    for bone, chans in anim["bones"].items():
+        rot = chans.get("rotation")
+        if not rot or len(rot) < 3:
+            continue
+        keys = sorted(rot.keys(), key=float)
+        F = [rot[k]["post"] if isinstance(rot[k], dict) else rot[k] for k in keys]
+        end = canonical(F[-1])
+        end = euler_near(end, end)
+        if max(abs(end[i] - F[-1][i]) for i in range(3)) < 1.0:
+            continue
+        B = [None] * len(F)
+        B[-1] = end
+        for k in range(len(F) - 2, -1, -1):
+            B[k] = euler_near(F[k], B[k + 1])
+        m = len(F) // 2
+        for k in range(m, len(F)):
+            if k == m:
+                rot[keys[k]] = {"pre": [round(v, 2) for v in F[k]], "post": [round(v, 2) for v in B[k]]}
+            else:
+                rot[keys[k]] = [round(v, 2) for v in B[k]]
 
 
 def to_euler_safe(R):
@@ -921,42 +980,7 @@ SWING = [
 
 
 def swing(t):
-    return resolve(keyed(stretch(SWING), t))
-
-
-# «Жадное пожирание»: встаёт на дыбы с раскрытой пастью, бросается вниз и 3 с рвёт добычу лапами,
-# по очереди запихивая её в пасть; голова дёргается при каждом укусе.
-DEVOUR_REAR = dict(torso=(6, 0, 0), body=(-2, 0, 0), body_pos=(0, 1.5, 0), head=(-20, 0, 0), neck=(-10, 0, 0),
-                   rh=(-15, -12, -3), lh=(15, -12, -3), r_pole=(0.3, 0.7, 1), l_pole=(-0.3, 0.7, 1),
-                   rhand=(20, 0, -20), lhand=(20, 0, 20), rcurl=-20.0, lcurl=-20.0, jaw=52.0, ribbon=-4.0)
-DEVOUR_LEAN = dict(torso=(52, 0, 0), body=(16, 0, 0), body_pos=(0, 6.0, 0), head=(-40, 0, 0), neck=(-6, 0, 0),
-                   rf=(-3.6, 22, 3.2), lf=(3.6, 22, -2.6), jaw=34.0, rhand=(-20, 0, 0), lhand=(-20, 0, 0),
-                   r_pole=(0.6, -0.3, 1), l_pole=(-0.6, -0.3, 1), rh=(-7, 12, -14), lh=(7, 12, -14), ribbon=8.0)
-
-
-def devour(t):
-    pr = keyed([(0.0, HUNCH, "lin"), (0.45, DEVOUR_REAR, "out"), (0.7, DEVOUR_LEAN, "in"),
-                (3.4, DEVOUR_LEAN, "lin"), (3.8, HUNCH, "ease")], t)
-    k = min(1.0, max(0.0, (t - 0.7) / 0.15)) * min(1.0, max(0.0, (3.4 - t) / 0.2))
-    if k > 0:
-        w = 2 * math.pi * (t - 0.7) / 0.64                 # пара лап за 0.64 с
-        a = math.sin(w)
-        b = math.sin(w + math.pi)
-
-        def paw(s, x):
-            g = s * 0.5 + 0.5                              # 0 — схватить у земли, 1 — у пасти
-            return (x * (1 - 0.4 * g), 14.0 - 9.0 * g, -18.0 + 12.0 * g)
-        pr["rh"] = lerp_val(pr["rh"], paw(a, -7.0), k)
-        pr["lh"] = lerp_val(pr["lh"], paw(b, 7.0), k)
-        pr["rcurl"] = lerp(pr["rcurl"], 10 + 45 * (a * 0.5 + 0.5), k)
-        pr["lcurl"] = lerp(pr["lcurl"], 10 + 45 * (b * 0.5 + 0.5), k)
-        bite = abs(math.sin(w))
-        pr["jaw"] = lerp(pr["jaw"], 12 + 36 * bite, k)
-        pr["head"] = (-40 + 10 * bite * k, 10 * math.sin(w) * k, 4 * math.sin(w * 2) * k)
-        pr["torso"] = (52 + 4 * math.sin(w * 2) * k, 6 * math.sin(w) * k, 3 * math.sin(w) * k)
-        pr["body_pos"] = (0, 6.0 + 0.6 * math.sin(w * 2) * k, 0)
-        pr["hair"] = 6 * math.sin(w * 2)
-    return resolve(pr)
+    return resolve(layered(stretch(SWING), t))
 
 
 # «Голодный бросок»: распрямляется во весь рост, руки с когтями вскинуты в стороны, вопль;
@@ -981,7 +1005,7 @@ AIR = dict(body=(32, 0, 0), body_pos=(0, 0, 0), torso=(30, 0, 0), neck=(-20, 0, 
 
 
 def pounce_start(t):
-    pr = keyed(stretch(POUNCE_START), t)
+    pr = layered(stretch(POUNCE_START), t)
     if 0.66 < t < 1.02:                                     # дрожь от вопля
         k = math.sin(math.pi * (t - 0.66) / 0.36)
         pr["head"] = add(list(pr["head"]), [4 * math.sin(t * 90) * k, 5 * math.sin(t * 70) * k, 0])
@@ -1011,15 +1035,46 @@ POUNCE_LAND = [
 
 
 def pounce_land(t):
-    return resolve(keyed(stretch(POUNCE_LAND), t))
+    return resolve(layered(stretch(POUNCE_LAND), t))
+
+
+# «Разрыв земли» (вместо пожирания): встаёт на дыбы, обе лапы высоко над головой, рёв (0–0.8 с) —
+# обрушивает когти в землю (1.0 с: от удара вперёд бежит волна кровавых гейзеров) — вырывает когти,
+# снова вскидывает — второй, ещё более тяжёлый удар (1.85 с: три волны веером) — медленно поднимается.
+RIFT_UP = dict(UNFURL, rh=(-14, -24, -2), lh=(14, -24, -2), rcurl=-25.0, lcurl=-25.0, jaw=50.0, head=(-26, 0, 0))
+RIFT_SLAM = dict(HUNCH, body=(28, 0, 0), body_pos=(0, 9.5, 0), torso=(52, 0, 0), neck=(-8, 0, 0), head=(-44, 0, 0),
+                 rh=(-7, 14, -15), lh=(7, 14, -15), r_pole=(0.6, -0.3, 1), l_pole=(-0.6, -0.3, 1),
+                 rhand=(-40, 0, 0), lhand=(-40, 0, 0), rcurl=45.0, lcurl=45.0, jaw=30.0,
+                 rf=(-4.0, 22, 3.0), lf=(4.0, 22, -1.5), ribbon=24.0, hair=24.0)
+RIFT = [
+    (0.00, HUNCH, "lin"),
+    (0.55, RIFT_UP, "out"),
+    (0.80, dict(rh=(-13, -25, -1), lh=(13, -25, -1), body_pos=(0, -1.2, 0), jaw=54.0), "lin"),
+    (1.00, RIFT_SLAM, "in"),
+    (1.20, dict(body_pos=(0, 9.0, 0), ribbon=8.0, hair=8.0), "out"),
+    (1.55, dict(body=(6, 0, 0), body_pos=(0, 3.0, 0), torso=(14, 0, 0), head=(-24, 0, 0), rh=(-12, -20, 0),
+                lh=(12, -20, 0), r_pole=(0.2, 0.5, 1), l_pole=(-0.2, 0.5, 1), rhand=(10, 0, -20), lhand=(10, 0, 20),
+                rcurl=-15.0, lcurl=-15.0, jaw=48.0, ribbon=-4.0, hair=-4.0), "ease"),
+    (1.85, dict(RIFT_SLAM, body_pos=(0, 10.5, 0), torso=(58, 0, 0), body=(30, 0, 0)), "in"),
+    (2.10, dict(body_pos=(0, 9.8, 0), ribbon=8.0, hair=8.0), "out"),
+    (2.90, HUNCH, "ease"),
+]
+
+
+def rift(t):
+    pr = layered(RIFT, t)
+    if 0.55 < t < 0.8:                                      # дрожь от рёва
+        k = math.sin(math.pi * (t - 0.55) / 0.25)
+        pr["head"] = add(list(pr["head"]), [4 * math.sin(t * 90) * k, 5 * math.sin(t * 70) * k, 0])
+    return resolve(pr)
 
 
 # ---------- смена фазы: судороги → выпрямляется, мечи и венец появляются ----------
 UPRIGHT = dict(body=(0, 0, 0), body_pos=(0, 0.3, 0), torso=(-3, 0, 0), neck=(2, 0, 0), head=(4, 0, 0),
                rf=(-2.9, 22, 0.8), lf=(2.9, 22, -0.8), rh=(-9.0, 7.0, -3.5), lh=(9.0, 7.0, -3.5),
                r_pole=(0.5, -0.2, 1), l_pole=(-0.5, -0.2, 1), rhand=(-10, 0, 0), lhand=(-10, 0, 0),
-               rcurl=70.0, lcurl=70.0, rdir=(-0.5, 0.42, 0.75), ldir=(0.5, 0.42, 0.75), rroll=0.0, lroll=0.0,
-               jaw=2.0, ribbon=0.0, sw=1.0, halo=1.0, hair=0.0)
+               rcurl=70.0, lcurl=70.0, rdir=(-0.6, 0.26, 0.76), ldir=(0.6, 0.26, 0.76), rroll=0.0, lroll=0.0,
+               jaw=2.0, ribbon=0.0, sw=SW, halo=1.0, hair=0.0)
 
 
 def transform(t):
@@ -1033,8 +1088,8 @@ def transform(t):
                     rh=(-21, -10, 0), lh=(21, -10, 0), r_pole=(0, 0.5, 1), l_pole=(0, 0.5, 1), rhand=(0, 0, -20),
                     lhand=(0, 0, 20), rcurl=-10.0, lcurl=-10.0, jaw=36.0, sw=0.0, halo=0.0,
                     rdir=(-1, -0.3, 0), ldir=(1, -0.3, 0), ribbon=-10.0), "out"),
-        (2.20, dict(rcurl=70.0, lcurl=70.0, sw=0.15), "lin"),
-        (2.50, dict(sw=1.0, halo=1.0, jaw=20.0, head=(-20, 0, 0)), "out"),
+        (2.20, dict(rcurl=70.0, lcurl=70.0, sw=SW * 0.15), "lin"),
+        (2.50, dict(sw=SW, halo=1.0, jaw=20.0, head=(-20, 0, 0)), "out"),
         (3.00, UPRIGHT, "ease"),
     ]
     pr = keyed(keys, t)
@@ -1054,8 +1109,8 @@ def idle2(t):
     pr["head"] = (4 + 2 * math.sin(w + 1), -4 * math.sin(w * 0.5), 2 * math.sin(w))
     pr["rh"] = (-9.0, 7.0 + 0.4 * math.sin(w + 0.3), -3.5)
     pr["lh"] = (9.0, 7.0 + 0.4 * math.sin(w + 0.6), -3.5)
-    pr["rdir"] = (-0.5, 0.42 + 0.04 * math.sin(w), 0.75)
-    pr["ldir"] = (0.5, 0.42 + 0.04 * math.sin(w + 1), 0.75)
+    pr["rdir"] = (-0.6, 0.26 + 0.03 * math.sin(w), 0.76)
+    pr["ldir"] = (0.6, 0.26 + 0.03 * math.sin(w + 1), 0.76)
     pr["hair"] = 2 * math.sin(w - 0.8)
     pr["ribbon"] = 2 * math.sin(w - 0.4)
     return resolve(pr)
@@ -1095,64 +1150,77 @@ def run2(t):
     return resolve(pr)
 
 
-# «Кровавые ножницы»: руки с мечами широко разведены назад (тяжёлый замах, 0–0.75 с) → мечи сходятся
-# крест‑накрест перед грудью (удар 0.9 с) → оба меча медленно поднимаются над головой → двойной
-# удар сверху обоими мечами в землю (1.65 с), корпус падает вперёд, мечи застревают.
-SCISSOR_OPEN = dict(torso=(-12, 0, 0), body=(-4, 0, 0), head=(-14, 0, 0), neck=(-4, 0, 0), body_pos=(0, 2.2, 0),
-                    rh=(-19, -9, 8), lh=(19, -9, 8), r_pole=(0.2, 0.5, 1), l_pole=(-0.2, 0.5, 1),
-                    rdir=(-0.85, 0.05, 0.5), ldir=(0.85, 0.05, 0.5), rroll=-60.0, lroll=60.0,
-                    rf=(-3.6, 22, 3.0), lf=(3.6, 22, -2.0), jaw=30.0, ribbon=-6.0)
-SLASH = [
+# «Жатва»: тяжёлая серия из трёх ударов, каждый перетекает в следующий.
+# 1) правый меч заведён далеко назад‑вправо, корпус скручен — широкий горизонтальный разрез справа налево (≈1.05 с);
+# 2) инерция закручивает корпус — левый меч снизу‑слева рассекает вверх наискось направо (≈1.72 с);
+# 3) оба меча медленно взлетают над головой — двойной удар сверху в землю (2.45 с), мечи застревают.
+REAP = [
     (0.00, UPRIGHT, "lin"),
-    (0.55, SCISSOR_OPEN, "out"),
-    (0.75, dict(SCISSOR_OPEN, rh=(-19.5, -10, 9), lh=(19.5, -10, 9), torso=(-14, 0, 0)), "lin"),
-    (0.83, dict(rdir=(-0.5, -0.05, -0.86), ldir=(0.5, -0.05, -0.86), rh=(-10, -2, -11), lh=(10, -2, -11),
-                torso=(4, 0, 0)), "in"),
-    (0.90, dict(torso=(16, 0, 0), body=(10, 0, 0), head=(-20, 0, 0), body_pos=(0, 3.4, 0), rh=(3, 2, -15),
-                lh=(-3, 2, -15), r_pole=(1, 0, 0.5), l_pole=(-1, 0, 0.5), rdir=(0.85, 0.1, -0.5),
-                ldir=(-0.85, 0.1, -0.5), rroll=-80.0, lroll=80.0, rf=(-3.6, 22, -2.6), lf=(3.6, 22, 3.6),
-                ribbon=18.0, hair=12.0), "in"),
-    (1.10, dict(body_pos=(0, 3.0, 0), ribbon=10.0), "out"),
-    (1.40, dict(torso=(-16, 0, 0), body=(-4, 0, 0), head=(-26, 0, 0), body_pos=(0, 0.4, 0), rh=(-4, -22, -1),
-                lh=(4, -22, -1), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(0.15, -0.8, 0.55),
-                ldir=(-0.15, -0.8, 0.55), rroll=0.0, lroll=0.0, jaw=44.0, ribbon=-8.0), "ease"),
-    (1.65, dict(torso=(32, 0, 0), body=(18, 0, 0), head=(-34, 0, 0), body_pos=(0, 7.5, 0), rh=(-5, 12, -14),
-                lh=(5, 12, -14), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.6, -0.8),
-                ldir=(0.1, 0.6, -0.8), rf=(-3.6, 22, 2.8), lf=(3.6, 22, -4.0), jaw=24.0, ribbon=24.0,
-                hair=20.0), "in"),
-    (1.95, dict(body_pos=(0, 7.0, 0), ribbon=10.0, hair=8.0), "out"),
-    (2.15, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 2.6, 0), body=(4, 0, 0),
-                torso=(4, 0, 0)), "ease"),
-    (2.40, UPRIGHT, "ease"),
+    (0.60, dict(torso=(4, -58, 0), body=(2, -22, 0), head=(-2, 40, 0), body_pos=(0, 3.0, 0), rh=(-14, -2, 8),
+                r_pole=(0.2, 0.6, 1), rdir=(-0.75, 0.25, 0.6), rroll=-30.0, lh=(8, 4, -10), ldir=(0.35, 0.3, -0.9),
+                rf=(-3.6, 22, 3.4), lf=(3.4, 22, -3.6), ribbon=-6.0, jaw=20.0), "out"),
+    (0.78, dict(torso=(5, -62, 0), rh=(-15, -2, 9)), "lin"),
+    (0.92, dict(torso=(8, -30, 0), body=(4, -10, 0), rh=(-10, 0, -12), r_pole=(0.6, 0.3, 1), rdir=(-0.85, 0.1, -0.5),
+                rroll=-60.0, body_pos=(0, 3.6, 0)), "in"),
+    (1.05, dict(torso=(10, 8, 0), body=(6, 4, 0), head=(-8, -6, 0), rh=(2, 1, -15), r_pole=(1, 0, 0.6),
+                rdir=(0.0, 0.1, -1), rroll=-80.0, rf=(-3.6, 22, -1.0), lf=(3.6, 22, 1.5)), "lin"),
+    (1.20, dict(torso=(8, 44, 0), body=(6, 18, 0), head=(-6, -32, 0), rh=(9, 1, -10), rdir=(0.9, 0.12, -0.35),
+                rroll=-80.0, lh=(12, 4, 6), l_pole=(-0.2, 0.6, 1), ldir=(0.6, 0.35, 0.7), lroll=30.0,
+                ribbon=18.0, hair=14.0, rf=(-3.4, 22, -3.0), lf=(3.6, 22, 4.0)), "out"),
+    (1.45, dict(torso=(6, 58, 0), body=(4, 22, 0), head=(-4, -40, 0), rh=(8, 3, 2), rdir=(0.75, 0.2, 0.6),
+                rroll=-40.0, lh=(13, 5, 7), ldir=(0.55, 0.4, 0.72), body_pos=(0, 3.4, 0)), "ease"),
+    (1.62, dict(torso=(2, 30, 0), body=(2, 12, 0), lh=(8, -2, -13), l_pole=(-0.6, 0.4, 1), ldir=(0.75, 0.05, -0.6),
+                lroll=60.0), "in"),
+    (1.72, dict(torso=(-4, 0, 0), body=(0, 2, 0), head=(-10, 0, 0), lh=(-2, -8, -14), ldir=(0.0, -0.3, -0.95),
+                lroll=80.0), "lin"),
+    (1.85, dict(torso=(-8, -40, 0), body=(-2, -14, 0), head=(-14, 26, 0), lh=(-9, -14, -6), l_pole=(-1, 0.4, 0.6),
+                ldir=(-0.75, -0.55, -0.35), lroll=80.0, rh=(-9, 5, 4), rdir=(-0.6, 0.25, 0.75), rroll=0.0,
+                ribbon=14.0, hair=12.0, body_pos=(0, 2.4, 0)), "out"),
+    (2.05, dict(torso=(-18, 0, 0), body=(-4, 0, 0), head=(-26, 0, 0), body_pos=(0, -0.6, 0), rh=(-5, -22, 0),
+                lh=(5, -22, 0), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(0.15, -0.75, 0.6),
+                ldir=(-0.15, -0.75, 0.6), rroll=0.0, lroll=0.0, jaw=44.0, ribbon=-8.0, hair=-6.0,
+                rf=(-3.4, 22, 1.0), lf=(3.4, 22, -1.0)), "ease"),
+    (2.25, dict(rh=(-5, -23, 1), lh=(5, -23, 1), body_pos=(0, -1.0, 0), jaw=50.0), "lin"),
+    (2.45, dict(torso=(34, 0, 0), body=(20, 0, 0), head=(-34, 0, 0), body_pos=(0, 8.0, 0), rh=(-5, 12, -14),
+                lh=(5, 12, -14), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.42, -0.9),
+                ldir=(0.1, 0.42, -0.9), rf=(-3.6, 22, 2.8), lf=(3.6, 22, -4.0), jaw=24.0, ribbon=26.0,
+                hair=22.0), "in"),
+    (2.75, dict(body_pos=(0, 7.4, 0), ribbon=10.0, hair=8.0), "out"),
+    (3.05, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 2.6, 0), body=(4, 0, 0),
+                torso=(4, 0, 0), head=(-6, 0, 0)), "ease"),
+    (3.40, UPRIGHT, "ease"),
 ]
 
 
 def slash(t):
-    return resolve(keyed(SLASH, t))
+    return resolve(layered(REAP, t))
 
 
-# «Пронзающий выпад»: сжимается как пружина, мечи у бёдер → рывок с двойным уколом (0.75 с) →
-# мечи вспарывают вверх и в стороны (1.05 с, подбрасывает).
+# «Пронзатель»: медленно сжимается, мечи у бёдер остриями вперёд, вес назад (0–0.85 с) —
+# длинный выпад‑рывок с двойным уколом (0.9–1.3 с) — мечи вспарывают вверх и в стороны (1.55 с) — выпрямляется.
 THRUST = [
     (0.00, UPRIGHT, "lin"),
-    (0.50, dict(body=(-4, 0, 0), body_pos=(0, 4.0, 0), torso=(-2, 0, 0), head=(-4, 0, 0), rh=(-9, 5, 8),
-                lh=(9, 5, 8), rdir=(-0.05, 0.1, -1), ldir=(0.05, 0.1, -1), rf=(-3.2, 22, -5.0), lf=(3.2, 22, 5.5),
-                ribbon=-8.0, jaw=20.0), "out"),
-    (0.75, dict(body=(26, 0, 0), body_pos=(0, 3.0, 0), torso=(14, 0, 0), head=(-30, 0, 0), rh=(-3, -1, -18),
-                lh=(3, -1, -18), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.04, 0.05, -1),
-                ldir=(-0.04, 0.05, -1), rf=(-3.2, 22, 7.0), lf=(3.2, 22, -8.0), ribbon=34.0, hair=26.0,
-                jaw=36.0), "in"),
-    (0.90, dict(ribbon=24.0), "lin"),
-    (1.05, dict(body=(-6, 0, 0), torso=(-16, 0, 0), head=(-20, 0, 0), body_pos=(0, 2.0, 0), rh=(-10, -18, -6),
-                lh=(10, -18, -6), r_pole=(0.5, 0.6, 1), l_pole=(-0.5, 0.6, 1), rdir=(-0.5, -0.85, -0.2),
-                ldir=(0.5, -0.85, -0.2), rroll=-30.0, lroll=30.0, ribbon=10.0, hair=6.0), "out"),
-    (1.30, dict(body_pos=(0, 1.6, 0)), "lin"),
-    (1.80, UPRIGHT, "ease"),
+    (0.75, dict(body=(-6, 0, 0), body_pos=(0, 4.5, 0), torso=(-6, 0, 0), head=(-6, 0, 0), rh=(-9, 6, 9),
+                lh=(9, 6, 9), rdir=(-0.05, 0.08, -1), ldir=(0.05, 0.08, -1), rf=(-3.4, 22, -5.0), lf=(3.4, 22, 6.0),
+                jaw=24.0, ribbon=-10.0), "out"),
+    (0.88, dict(body_pos=(0, 5.0, 0), rh=(-9, 6, 10), lh=(9, 6, 10)), "lin"),
+    (1.10, dict(body=(26, 0, 0), body_pos=(0, 3.2, 0), torso=(14, 0, 0), head=(-30, 0, 0), rh=(-3, -1, -19),
+                lh=(3, -1, -19), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.04, 0.05, -1),
+                ldir=(-0.04, 0.05, -1), rf=(-3.2, 22, 7.0), lf=(3.2, 22, -9.0), ribbon=34.0, hair=26.0,
+                jaw=40.0), "in"),
+    (1.30, dict(body_pos=(0, 3.4, 0), ribbon=28.0), "lin"),
+    (1.55, dict(body=(-8, 0, 0), torso=(-18, 0, 0), head=(-22, 0, 0), body_pos=(0, 1.6, 0), rh=(-9, -19, -7),
+                lh=(9, -19, -7), r_pole=(0.5, 0.6, 1), l_pole=(-0.5, 0.6, 1), rdir=(-0.45, -0.85, -0.25),
+                ldir=(0.45, -0.85, -0.25), rroll=-30.0, lroll=30.0, ribbon=10.0, hair=6.0), "out"),
+    (1.85, dict(body_pos=(0, 1.2, 0)), "lin"),
+    (2.15, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), rh=(-10, 4, 0), lh=(10, 4, 0), torso=(0, 0, 0),
+                body=(2, 0, 0)), "ease"),
+    (2.50, UPRIGHT, "ease"),
 ]
 
 
 def thrust(t):
-    return resolve(keyed(stretch(THRUST), t))
+    return resolve(layered(THRUST, t))
 
 
 # «Зов выводка»: скрещённые мечи над головой, вопль, дрожь (из земли бьют фонтаны крови) —
@@ -1165,7 +1233,7 @@ SUMMON = [
     (1.30, dict(jaw=50.0, head=(-34, 0, 0)), "lin"),
     (1.50, dict(body=(18, 0, 0), torso=(24, 0, 0), neck=(-4, 0, 0), head=(-24, 0, 0), body_pos=(0, 7.0, 0),
                 rh=(-8, 13, -10), lh=(8, 13, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1),
-                rdir=(-0.15, 0.62, -0.8), ldir=(0.15, 0.62, -0.8), rf=(-3.4, 22, 2.4), lf=(3.4, 22, -2.4), jaw=20.0,
+                rdir=(-0.15, 0.42, -0.9), ldir=(0.15, 0.42, -0.9), rf=(-3.4, 22, 2.4), lf=(3.4, 22, -2.4), jaw=20.0,
                 ribbon=16.0), "in"),
     (1.90, dict(body_pos=(0, 6.5, 0)), "lin"),
     (2.25, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 2.5, 0), body=(4, 0, 0), torso=(2, 0, 0)), "ease"),
@@ -1174,7 +1242,7 @@ SUMMON = [
 
 
 def summon(t):
-    pr = keyed(stretch(SUMMON), t)
+    pr = layered(stretch(SUMMON), t)
     if 0.84 < t < 1.56:
         k = math.sin(math.pi * (t - 0.84) / 0.72)
         pr["torso"] = add(list(pr["torso"]), [2 * math.sin(t * 80) * k, 3 * math.sin(t * 60) * k, 0])
@@ -1191,8 +1259,8 @@ EGGS = [
                 ribbon=-6.0), "out"),
     (0.80, dict(jaw=42.0, head=(-24, 0, 0)), "lin"),
     (1.00, dict(body=(22, 0, 0), body_pos=(0, 10.0, 0), torso=(28, 0, 0), head=(-24, 0, 0), rh=(-8, 15, -10),
-                lh=(8, 15, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.66, -0.75),
-                ldir=(0.1, 0.66, -0.75), rf=(-3.0, 22, -3.5), lf=(3.0, 22, 5.0), toe_l=30.0, jaw=40.0,
+                lh=(8, 15, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.4, -0.91),
+                ldir=(0.1, 0.4, -0.91), rf=(-3.0, 22, -3.5), lf=(3.0, 22, 5.0), toe_l=30.0, jaw=40.0,
                 ribbon=12.0), "in"),
     (2.00, dict(body_pos=(0, 9.5, 0), head=(-34, 0, 0)), "lin"),
     (2.40, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 3.0, 0), body=(6, 0, 0), torso=(4, 0, 0)), "ease"),
@@ -1201,7 +1269,7 @@ EGGS = [
 
 
 def eggs(t):
-    return resolve(keyed(stretch(EGGS), t))
+    return resolve(layered(stretch(EGGS), t))
 
 
 # «Багровая казнь» (мощная, вместо вихря): приседает, мечи отведены назад как крылья, взмывает высоко,
@@ -1229,7 +1297,7 @@ EXEC_AIR = [(0.00, dict(EXEC_START[-1][1]), "lin"), (0.45, AIR_UP, "out"), (0.85
 EXEC_LAND = [
     (0.00, dict(UPRIGHT, body=(30, 0, 0), body_pos=(0, 10.5, 0), torso=(30, 0, 0), head=(-30, 0, 0),
                 rh=(-6, 15, -11), lh=(6, 15, -11), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1),
-                rdir=(-0.1, 0.66, -0.75), ldir=(0.1, 0.66, -0.75), rf=(-3.4, 22, -3.0), lf=(3.4, 22, 4.5),
+                rdir=(-0.1, 0.4, -0.91), ldir=(0.1, 0.4, -0.91), rf=(-3.4, 22, -3.0), lf=(3.4, 22, 4.5),
                 toe_l=30.0, jaw=40.0, ribbon=30.0, hair=26.0), "lin"),
     (0.25, dict(body_pos=(0, 9.8, 0), ribbon=8.0, hair=6.0), "out"),
     (0.80, dict(head=(-40, 0, 0), jaw=50.0), "lin"),
@@ -1244,37 +1312,37 @@ EXEC_LAND = [
 
 
 def exec_start(t):
-    return resolve(keyed(stretch(EXEC_START), t))
+    return resolve(layered(stretch(EXEC_START), t))
 
 
 def exec_air(t):
-    return resolve(keyed(EXEC_AIR, t))
+    return resolve(layered(EXEC_AIR, t))
 
 
 def exec_land(t):
-    return resolve(keyed(stretch(EXEC_LAND), t))
+    return resolve(layered(stretch(EXEC_LAND), t))
 
 
 animations = {
     "idle1": bake_clip(idle1, 2.6, 20, True, A_BONES),
     "walk1": bake_clip(walk1, 1.4, 20, True, A_BONES),
     "run1": bake_clip(run1, 0.8, 30, True, A_BONES),
-    "swing": bake_clip(swing, 2.2 * SLOW, 60, False, A_BONES),
-    "devour": bake_clip(devour, 3.8, 60, False, A_BONES),
+    "swing": bake_clip(swing, 2.2 * SLOW + TAIL, 60, False, A_BONES),
+    "rift": bake_clip(rift, 2.9 + TAIL, 60, False, A_BONES),
     "pounce_start": bake_clip(pounce_start, 1.2 * SLOW, 60, False, A_BONES),
     "pounce_air": bake_clip(pounce_air, 0.6, 20, True, A_BONES),
-    "pounce_land": bake_clip(pounce_land, 1.4 * SLOW, 60, False, A_BONES),
+    "pounce_land": bake_clip(pounce_land, 1.4 * SLOW + TAIL, 60, False, A_BONES),
     "transform": bake_clip(transform, 3.0, 60, False, A_BONES),
     "idle2": bake_clip(idle2, 3.0, 20, True, A_BONES),
     "walk2": bake_clip(walk2, 1.2, 20, True, A_BONES),
     "run2": bake_clip(run2, 0.7, 30, True, A_BONES),
-    "slash": bake_clip(slash, 2.4, 60, False, A_BONES),
-    "thrust": bake_clip(thrust, 1.8 * SLOW, 60, False, A_BONES),
-    "summon": bake_clip(summon, 2.6 * SLOW, 60, False, A_BONES),
-    "eggs": bake_clip(eggs, 2.8 * SLOW, 60, False, A_BONES),
+    "slash": bake_clip(slash, 3.4 + TAIL, 60, False, A_BONES),
+    "thrust": bake_clip(thrust, 2.5 + TAIL, 60, False, A_BONES),
+    "summon": bake_clip(summon, 2.6 * SLOW + TAIL, 60, False, A_BONES),
+    "eggs": bake_clip(eggs, 2.8 * SLOW + TAIL, 60, False, A_BONES),
     "exec_start": bake_clip(exec_start, 1.1, 60, False, A_BONES),
     "exec_air": bake_clip(exec_air, 1.3, 60, False, A_BONES),
-    "exec_land": bake_clip(exec_land, 2.2 * SLOW, 60, False, A_BONES),
+    "exec_land": bake_clip(exec_land, 2.2 * SLOW + TAIL, 60, False, A_BONES),
 }
 animations = {"animation.%s.%s" % (NAME, k): v for k, v in animations.items()}
 
