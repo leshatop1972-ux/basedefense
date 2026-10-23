@@ -192,15 +192,15 @@ HAIR = (226, 236, 249)
 HAIR_S = (186, 205, 232)
 HAIR_D = (164, 186, 220)
 HAIR_H = (252, 253, 255)
-SKIN = (238, 233, 243)
-SKIN_S = (210, 206, 228)
-BLUSH = (242, 220, 232)
-LIPS = (226, 168, 196)
-LIPS_D = (200, 136, 170)
-IRIS = (96, 204, 255)
-IRIS_D = (36, 118, 212)
-EYE_W = (246, 248, 253)
-LASH = (40, 48, 84)
+SKIN = (250, 235, 229)
+SKIN_S = (232, 210, 206)
+BLUSH = (247, 190, 199)
+LIPS = (230, 142, 162)
+LIPS_D = (206, 112, 136)
+IRIS = (124, 208, 255)
+IRIS_D = (50, 118, 208)
+EYE_W = (251, 251, 253)
+LASH = (38, 34, 62)
 BROW = (132, 152, 196)
 WHITE = (238, 243, 249)
 SNOW = (247, 250, 253)
@@ -244,20 +244,22 @@ def paint_head_face(c):
             PT.fill(rect, lambda i, j, w, h, fn=fname: hair_strand(i, j, w, h, fn))
     # лицо 8×8
     H, S = "H", "S"
+    # как у женских скинов Minecraft: глаза 2×2 (ресницы + тёмный верх радужки, белок + светлая радужка),
+    # румянец под глазами, маленькие розовые губы, без носа и бровей
     rows = [
         "HHHHHHHH",
-        "HHHHHFHH",
-        "HFBFFBFH",
+        "HHHHHHHH",
+        "HFFFFFFH",
         "HLDSSDLH",
         "HWISSIWH",
-        "HRSSNSRH",
+        "HRSSSSRH",
         "HSSPpSSH",
         "HTSSSSTH",
     ]
     x0, y0, w, h = f["front"]
     pal = {
         "H": None, "S": SKIN, "B": BROW, "L": LASH, "D": IRIS_D, "W": EYE_W,
-        "R": BLUSH, "N": mix(SKIN, SKIN_S, 0.5), "P": LIPS, "p": mix(LIPS, SKIN, 0.35),
+        "R": BLUSH, "N": mix(SKIN, SKIN_S, 0.5), "P": LIPS, "p": mix(LIPS, (255, 214, 222), 0.45),
         "T": mix(SKIN, SKIN_S, 0.6), "F": mix(SKIN, SKIN_S, 0.45),
     }
     for j, row in enumerate(rows):
@@ -267,22 +269,19 @@ def paint_head_face(c):
             elif ch == "I":
                 PT.glow_put(x0 + i, y0 + j, IRIS)
             elif ch == "D":
-                PT.glow_put(x0 + i, y0 + j, IRIS_D)
+                PT.put(x0 + i, y0 + j, IRIS_D)
             else:
                 col = pal[ch]
                 if ch == "S" and j >= 6:
                     col = mix(SKIN, SKIN_S, 0.25)
                 PT.put(x0 + i, y0 + j, mul(col, PT.noise(0.015)))
-    # уголок губ темнее, блик в глазах
-    PT.glow_put(x0 + 2, y0 + 4, mix(IRIS, ICE_L, 0.5))
-    PT.glow_put(x0 + 5, y0 + 4, mix(IRIS, ICE_L, 0.5))
 
 
 def paint_hair_layer(c):
     f = faces(c)
     for fname, rect in f.items():
         if fname == "front":
-            fringe = ["HHHHHHHH", "HHHHH.HH", "HH....HH", "H......H", "H......H", "H......H", ".......H", "H......."]
+            fringe = ["HHHHHHHH", "HHHHHHHH", "HH.H..HH", "H......H", "H......H", "H......H", "H......H", "........"]
             PT.fill(rect, lambda i, j, w, h: hair_strand(i, j, w, h, "front", False) if fringe[j][i] == "H" else None)
         elif fname == "bottom":
             PT.fill(rect, lambda i, j, w, h: hair_strand(i, j, w, h, "bottom") if (i in (0, w - 1) or j == h - 1) else None)
@@ -721,14 +720,13 @@ def move_pose(t, back=False):
     return pose
 
 
-# --- атака (секунды); тики в FrostArcherEntity: выстрел 39, всего 50, звук натяжения 26 ---
-SPIN_END = 0.6
-REACH = 0.85        # рука у колчана — стрела появляется в руке
-PULL = 1.05         # стрела вынута, рука у груди
-NOCK = 1.25         # стрела на тетиве (в руке скрыта, на луке видна)
-DRAW_END = 1.85
-RELEASE = 1.95
-FOLLOW_END = 2.15
+# --- атака (секунды); тики в FrostArcherEntity: звук натяжения 17, выстрел 32, всего 50 ---
+REACH = 0.35        # рука у колчана — стрела появляется в руке
+PULL = 0.6          # стрела вынута, рука у груди
+NOCK = 0.85         # стрела на тетиве (в руке скрыта, на луке видна)
+DRAW_END = 1.5
+RELEASE = 1.6
+SPIN_END = 2.25     # после выстрела: отлёт назад с оборотом вокруг себя
 ATTACK_LEN = 2.5
 
 GRIP_TARGET = [1.0, -1.0, -10.6]       # куда вытянута левая рука с луком (Java, модель)
@@ -753,7 +751,7 @@ def stance(pose, s, lean=0.0):
 
 
 def aim_left(pose, s):
-    """Левая рука с луком: от бедра (s=0) к прицелу (s=1)."""
+    """Левая рука с луком: от бедра (s=0) к положению для накладывания стрелы (s=1)."""
     rest = base_pose(0, False)
     if s <= 0:
         pose["left_arm"], pose["left_fore"] = rest["left_arm"], rest["left_fore"]
@@ -768,38 +766,26 @@ def quiver_mouth(pose):
     return M.world("quiver", M.local_of("quiver", QUIVER_MOUTH), pose)
 
 
+def shot_pose(t, d, flex, lean, grip, tremble=0.0):
+    pose = base_pose(0, False)
+    stance(pose, 1.0, lean=lean)
+    M.two_bone(pose, "left_arm", "left_fore", add(grip, [0, tremble * 0.08, 0]), POLE_LEFT, UPPER, FORE)
+    M.set_world_rot(pose, "bow", BOW_AIM)
+    string_pose(pose, d, flex)
+    return pose
+
+
 def attack_pose(t):
     rest = base_pose(0, False)
-    if t < SPIN_END:
-        # оборот вокруг себя: волосы, плащ и юбка разлетаются, одно колено подтянуто
-        p = t / SPIN_END
-        b = math.sin(math.pi * p)
-        pose = base_pose(0, False)
-        pose["root"] = {"rot": (0, -360 * ease(p), 0)}
-        pose["body"] = {"rot": (3 * b, 0, 8 * b), "pos": (0, -1.0 * b, 0)}
-        pose["hair_back"] = {"rot": (-5 + 40 * b, 25 * b, 8 * b)}
-        pose["hair_mid"] = {"rot": (4 + 22 * b, 0, 6 * b)}
-        pose["hair_tip"] = {"rot": (5 + 18 * b, 0, 6 * b)}
-        pose["cape"] = {"rot": (4 + 45 * b, 0, -10 * b)}
-        pose["right_arm"] = {"rot": (0, 0, 9 + 55 * b)}
-        pose["right_fore"] = {"rot": (-12 - 10 * b, 0, 0)}
-        pose["left_arm"] = {"rot": (-4, 0, -10 - 35 * b)}
-        pose["head"] = {"rot": (-5 * b, 0, -6 * b)}
-        legs(pose, (-7 - 25 * b, 12 + 55 * b, 28 + 10 * b), (4 + 6 * b, 18 + 10 * b, 32))
-        skirt_follow(pose, flare=28 * b)
-        M.set_world_rot(pose, "bow", BOW_IDLE)
-        string_pose(pose, 0, 0)
-        return pose
-
     if t < NOCK:
         # достать стрелу из колчана и положить на тетиву, одновременно встать в стойку
-        s = ease((t - REACH) / (NOCK - REACH)) if t > REACH else 0.0
+        s = ease((t - REACH * 0.6) / (NOCK - REACH * 0.6)) if t > REACH * 0.6 else 0.0
         pose = base_pose(0, False)
         stance(pose, s, lean=-2)
         if t < REACH:
-            q = ease((t - SPIN_END) / (REACH - SPIN_END))
-            pose["torso"] = {"rot": (2 * q, -12 * q, 4 * q)}            # тянется к колчану
-            pose["head"] = {"rot": (6 * q, -10 * q, 0)}
+            q = math.sin(math.pi * min(1.0, t / REACH)) if t < REACH else 0.0
+            pose["torso"] = {"rot": (2 * q, -12 * q + 34 * s, 4 * q)}     # тянется к колчану
+            pose["head"] = {"rot": (6 * q, -10 * q - 30 * s, 0)}
         aim_left(pose, s)
         string_pose(pose, 0, 0)
         hand_rest = hand_world(dict(pose, right_arm=rest["right_arm"], right_fore=rest["right_fore"]), "right")
@@ -807,7 +793,7 @@ def attack_pose(t):
         chest = [-0.5, 6.5, -6.0]
         nock = nock_world(pose, 0)
         if t < REACH:
-            target = lerp3(hand_rest, mouth, ease((t - SPIN_END) / (REACH - SPIN_END)))
+            target = lerp3(hand_rest, mouth, ease(t / REACH))
             pole = POLE_REACH
         elif t < PULL:
             q = ease_out((t - REACH) / (PULL - REACH))
@@ -822,24 +808,21 @@ def attack_pose(t):
         return pose
 
     if t < RELEASE:
-        # натяжение до щеки, затем лёгкая дрожь перед выстрелом
+        # натяжение до щеки (лук выдвигается вперёд), затем лёгкая дрожь перед выстрелом
+        push = ease_out(min(1.0, (t - NOCK) / ((DRAW_END - NOCK) * 0.55)))
+        grip = lerp3(GRIP_NOCK, GRIP_TARGET, push)
         if t < DRAW_END:
             p = (t - NOCK) / (DRAW_END - NOCK)
             d, flex, tremble = DRAW_MAX * ease_out(p), 8 * ease_out(p), 0.0
         else:
             tremble = math.sin(t * 90)
             d, flex = DRAW_MAX + 0.12 * tremble, 8.0
-        pose = base_pose(0, False)
-        stance(pose, 1.0, lean=-2 - 2 * (d / DRAW_MAX))
-        push = ease_out(min(1.0, (t - NOCK) / ((DRAW_END - NOCK) * 0.55)))
-        GRIP = add(lerp3(GRIP_NOCK, GRIP_TARGET, push), [0, tremble * 0.08, 0])
-        M.two_bone(pose, "left_arm", "left_fore", GRIP, POLE_LEFT, UPPER, FORE)
-        M.set_world_rot(pose, "bow", BOW_AIM)
-        string_pose(pose, d, flex)
+        pose = shot_pose(t, d, flex, -2 - 2 * (d / DRAW_MAX), grip, tremble)
         M.two_bone(pose, "right_arm", "right_fore", nock_world(pose, d), POLE_DRAW, UPPER, FORE)
         return pose
 
-    # выстрел: тетива щёлкает и дрожит, лук пружинит, рука уходит назад, корпус — отдача
+    # выстрел: тетива щёлкает и дрожит, лук пружинит, правая рука уходит назад;
+    # отдача отбрасывает назад — и она делает оборот вокруг себя, волосы и юбка разлетаются
     tp = t - RELEASE
     if tp < 0.025:
         d, flex = DRAW_MAX * (1 - tp / 0.025), 8 * (1 - tp / 0.025)
@@ -848,22 +831,48 @@ def attack_pose(t):
         d = -1.6 * math.exp(-q * 11) * math.sin(q * 70 + 0.4)
         flex = -3.0 * math.exp(-q * 10) * math.sin(q * 60 + 0.5)
     recoil = math.exp(-tp * 9) * math.sin(min(math.pi / 2, tp * 40))
-    pose = base_pose(0, False)
-    stance(pose, 1.0, lean=-4 - 10 * recoil)
-    pose["hair_back"]["rot"] = add(pose["hair_back"]["rot"], [8 * recoil, 0, 0])
-    pose["cape"] = {"rot": (8 + 14 * recoil, 0, 0)}
-    M.two_bone(pose, "left_arm", "left_fore", GRIP_TARGET, POLE_LEFT, UPPER, FORE)
-    M.set_world_rot(pose, "bow", BOW_AIM)
+    pose = shot_pose(t, d, flex, -4 - 10 * recoil, GRIP_TARGET)
     pose["bow"]["rot"] = add(pose["bow"]["rot"], [6 * recoil, 0, 0])
-    string_pose(pose, d, flex)
+    pose["cape"] = {"rot": (8 + 14 * recoil, 0, 0)}
     nock = nock_world(pose, 0)
     back = add(nock, [-3.0, -1.2, 4.5])
-    M.two_bone(pose, "right_arm", "right_fore", lerp3(nock, back, ease_out(min(1.0, tp / 0.12))), POLE_DRAW, UPPER, FORE)
-    if t >= FOLLOW_END:
-        p = ease((t - FOLLOW_END) / (ATTACK_LEN - FOLLOW_END))
-        pose = blend(pose, rest, p)
-        M.set_world_rot(pose, "bow", bow_R(1 - p))
+    M.two_bone(pose, "right_arm", "right_fore", lerp3(nock, back, ease_out(min(1.0, tp / 0.12))),
+               POLE_DRAW, UPPER, FORE)
+
+    spin_start = RELEASE + 0.1
+    if t >= spin_start:
+        p = min(1.0, (t - spin_start) / (SPIN_END - spin_start))
+        e = ease(p)
+        b = math.sin(math.pi * p)
+        # к концу оборота поза плавно приходит в покой
+        pose = blend(pose, rest, ease(min(1.0, p * 1.3)))
+        M.set_world_rot(pose, "bow", bow_R(1 - ease(min(1.0, p * 1.3))))
         string_pose(pose, d * (1 - p), flex * (1 - p))
+        pose["root"] = {"rot": (0, 360 * e, 0)}                 # оборот в сторону отдачи
+
+        def addrot(name, dx=0.0, dy=0.0, dz=0.0):
+            r = pose.setdefault(name, {}).get("rot", (0, 0, 0))
+            pose[name]["rot"] = [r[0] + dx, r[1] + dy, r[2] + dz]
+
+        addrot("body", -6 * b, 0, -8 * b)
+        addrot("hair_back", 40 * b, -25 * b, -8 * b)
+        addrot("hair_mid", 22 * b, 0, -6 * b)
+        addrot("hair_tip", 18 * b, 0, -6 * b)
+        addrot("cape", 40 * b, 0, 10 * b)
+        addrot("right_arm", 0, 0, 45 * b)
+        addrot("left_arm", 0, 0, -30 * b)
+        addrot("right_leg", -25 * b)
+        addrot("right_shin", 50 * b)
+        addrot("right_foot", 8 * b)
+        addrot("left_leg", 6 * b)
+        addrot("left_shin", 10 * b)
+        M.set_world_rot(pose, "bow", bow_R(1 - ease(min(1.0, p * 1.3))))
+        skirt_follow(pose, flare=28 * b)
+        if t >= SPIN_END:
+            pose = blend(pose, rest, ease((t - SPIN_END) / (ATTACK_LEN - SPIN_END)))
+            pose["root"] = {"rot": (0, 0, 0)}
+            M.set_world_rot(pose, "bow", BOW_IDLE)
+            string_pose(pose, 0, 0)
     return pose
 
 
@@ -979,5 +988,4 @@ if __name__ == "__main__":
     PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
     arrow_texture()
     effect_icon()
-    overlay()
     print("готово:", NAME, "кубов:", len(M.cubes()))

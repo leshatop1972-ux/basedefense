@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Модель морозной лучницы (geo/frost_archer.geo.json, создаётся tools/frost_archer_gen.py).
  * Анимации: idle (парение), move (полёт вперёд), move_back (полёт спиной), attack
- * (оборот → стрела из колчана на бедре → лук «на боку» → натяжение → выстрел с отдачей → возврат).
+ * (стрела из колчана на бедре → лук «на боку» → натяжение → выстрел → отлёт с оборотом вокруг себя → покой).
  * Стрела в руке видна, пока лучница достаёт её из колчана, на тетиве — пока натягивает; в остальное время
  * стрел нет (модель и анимации — tools/frost_archer_gen.py).
  */
@@ -24,8 +24,8 @@ public class FrostArcherModel extends BedrockEntityModel<FrostArcherEntity> {
     private static final BedrockAnimations.Clip ATTACK = CLIPS.get("attack");
 
     /** Секунды анимации attack (как в генераторе): стрела в руке REACH..NOCK, на тетиве NOCK..выстрел. */
-    private static final float REACH = 0.85f;
-    private static final float NOCK = 1.25f;
+    private static final float REACH = 0.35f;
+    private static final float NOCK = 0.85f;
     private static final float RELEASE = FrostArcherEntity.RELEASE_TICK / 20f;
     private static final float ATTACK_LEN = FrostArcherEntity.ATTACK_TICKS / 20f;
 

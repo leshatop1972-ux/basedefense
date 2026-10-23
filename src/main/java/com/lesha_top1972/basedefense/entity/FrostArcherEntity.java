@@ -34,7 +34,8 @@ import java.util.EnumSet;
  * держится на расстоянии и стреляет ледяными стрелами.
  * <ul>
  *   <li>40 HP, стрелы из луков и арбалетов наносят на 60% меньше урона;</li>
- *   <li>видит игрока за 25 блоков; выстрел раз в 6.5 с: оборот вокруг себя → натяжение → выстрел с отдачей;</li>
+ *   <li>видит игрока за 25 блоков; выстрел раз в 6.5 с: стрела из колчана → натяжение → выстрел →
+ *       отдача отбрасывает её назад, и она делает оборот вокруг себя;</li>
  *   <li>если подойти близко — отлетает спиной, один раз за перезарядку делает рывок назад;</li>
  *   <li>точность: 60%, если цель стоит, идёт медленно или бежит прямо на неё; 18%, если бежит в сторону/прочь;</li>
  *   <li>стрела: 14 урона + «Заморозка» на 2 с (FrostArrowEntity).</li>
@@ -49,9 +50,9 @@ public class FrostArcherEntity extends HostileEntity {
     public static final float HOVER = 0.4f;
 
     /** Тайминги (тики). Совпадают с анимацией attack (tools/frost_archer_gen.py). */
-    public static final int ATTACK_TICKS = 50;      // 2.5 с: оборот 0–12, стрела из колчана 12–25, натяжение 25–37
-    public static final int DRAW_START = 26;
-    public static final int RELEASE_TICK = 39;      // 1.95 с
+    public static final int ATTACK_TICKS = 50;      // 2.5 с: стрела из колчана 0–17, натяжение 17–30, выстрел 32, оборот 34–45
+    public static final int DRAW_START = 17;
+    public static final int RELEASE_TICK = 32;      // 1.6 с
     /** Выстрел раз в 6.5 с (от начала до начала). */
     public static final int SHOT_CYCLE = 130;
 
@@ -212,9 +213,9 @@ public class FrostArcherEntity extends HostileEntity {
         }
         this.playSound(SoundEvents.ENTITY_ARROW_SHOOT, 1.0f, 1.3f);
         this.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 1.6f);
-        // отдача: немного отлетает назад
-        Vec3d back = this.forward().multiply(-0.45);
-        this.addVelocity(back.x, 0.12, back.z);
+        // отдача: отлетает назад (в полёте делает оборот — анимация)
+        Vec3d back = this.forward().multiply(-0.7);
+        this.addVelocity(back.x, 0.22, back.z);
         this.velocityModified = true;
     }
 
@@ -317,7 +318,7 @@ public class FrostArcherEntity extends HostileEntity {
                 this.archer.getNavigation().stop();
                 this.archer.getMoveControl().strafeTo(0, 0);
                 this.archer.faceTarget(target);
-                if (this.attackTick == 1) {
+                if (this.attackTick == RELEASE_TICK + 2) {
                     this.archer.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.7f);
                 } else if (this.attackTick == DRAW_START) {
                     this.archer.playSound(SoundEvents.ITEM_CROSSBOW_LOADING_MIDDLE, 1.0f, 1.25f);
