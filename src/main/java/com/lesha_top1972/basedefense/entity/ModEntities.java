@@ -62,6 +62,22 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
+    /** Железный зомби (враг). */
+    public static final EntityType<IronZombieEntity> IRON_ZOMBIE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "iron_zombie"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, IronZombieEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 2.1f))
+                    .build());
+
+    /** Железный рыцарь (враг). */
+    public static final EntityType<IronKnightEntity> IRON_KNIGHT = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "iron_knight"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, IronKnightEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.8f, 2.3f))
+                    .build());
+
     private ModEntities() {
     }
 
@@ -73,5 +89,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(MINER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
     }
 }

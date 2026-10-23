@@ -1,6 +1,9 @@
 package com.lesha_top1972.basedefense.client;
 
+import com.lesha_top1972.basedefense.client.entity.IronKnightRenderer;
+import com.lesha_top1972.basedefense.client.entity.IronZombieRenderer;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
@@ -36,5 +39,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MINER, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.BLACKSMITH, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.LUMBERJACK, SettlerEntityRenderer::new);
+
+        // Враги: модели и анимации из Blockbench (assets/basedefense/geo и animations)
+        EntityModelLayerRegistry.registerModelLayer(IronZombieRenderer.LAYER, () -> BedrockModelLoader.load("iron_zombie"));
+        EntityModelLayerRegistry.registerModelLayer(IronKnightRenderer.LAYER, () -> BedrockModelLoader.load("iron_knight"));
+        EntityRendererRegistry.register(ModEntities.IRON_ZOMBIE, IronZombieRenderer::new);
+        EntityRendererRegistry.register(ModEntities.IRON_KNIGHT, IronKnightRenderer::new);
     }
 }

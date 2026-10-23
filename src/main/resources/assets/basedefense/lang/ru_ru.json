@@ -141,5 +141,9 @@
   "screen.basedefense.tablet.more": "+%s",
   "screen.basedefense.tablet.button.chosen": "Выбрано — ставь ПКМ",
   "screen.basedefense.tablet.button.locked": "Нужно исследование",
-  "screen.basedefense.tablet.button.select": "Выбрать для постройки"
+  "screen.basedefense.tablet.button.select": "Выбрать для постройки",
+  "entity.basedefense.iron_zombie": "Железный зомби",
+  "item.basedefense.iron_zombie_spawn_egg": "Яйцо призыва железного зомби",
+  "entity.basedefense.iron_knight": "Железный рыцарь",
+  "item.basedefense.iron_knight_spawn_egg": "Яйцо призыва железного рыцаря"
 }

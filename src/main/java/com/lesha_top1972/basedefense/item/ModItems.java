@@ -48,6 +48,13 @@ public final class ModItems {
     public static final Item LUMBERJACK_SPAWN_EGG = register("lumberjack_spawn_egg",
             new SpawnEggItem(ModEntities.LUMBERJACK, 0x2E5E2A, 0x8B2E2E, new Item.Settings()));
 
+    /** Яйца призыва врагов. */
+    public static final Item IRON_ZOMBIE_SPAWN_EGG = register("iron_zombie_spawn_egg",
+            new SpawnEggItem(ModEntities.IRON_ZOMBIE, 0x6B6F78, 0x8A1E1E, new Item.Settings()));
+
+    public static final Item IRON_KNIGHT_SPAWN_EGG = register("iron_knight_spawn_egg",
+            new SpawnEggItem(ModEntities.IRON_KNIGHT, 0xA4AAB2, 0xB01E23, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -66,6 +73,8 @@ public final class ModItems {
             entries.add(MINER_SPAWN_EGG);
             entries.add(BLACKSMITH_SPAWN_EGG);
             entries.add(LUMBERJACK_SPAWN_EGG);
+            entries.add(IRON_ZOMBIE_SPAWN_EGG);
+            entries.add(IRON_KNIGHT_SPAWN_EGG);
         });
     }
 }

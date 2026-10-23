@@ -141,5 +141,9 @@
   "screen.basedefense.tablet.more": "+%s",
   "screen.basedefense.tablet.button.chosen": "Selected — right-click to place",
   "screen.basedefense.tablet.button.locked": "Research needed",
-  "screen.basedefense.tablet.button.select": "Select to build"
+  "screen.basedefense.tablet.button.select": "Select to build",
+  "entity.basedefense.iron_zombie": "Iron Zombie",
+  "item.basedefense.iron_zombie_spawn_egg": "Iron Zombie Spawn Egg",
+  "entity.basedefense.iron_knight": "Iron Knight",
+  "item.basedefense.iron_knight_spawn_egg": "Iron Knight Spawn Egg"
 }
