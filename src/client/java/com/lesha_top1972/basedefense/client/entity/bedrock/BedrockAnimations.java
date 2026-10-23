@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Загружает анимации Blockbench (Bedrock, assets/basedefense/animations/&lt;имя&gt;.animation.json)
@@ -34,6 +35,11 @@ public final class BedrockAnimations {
     }
 
     public static Map<String, Clip> load(String name) {
+        return load(name, bone -> true);
+    }
+
+    /** То же, но только кости, прошедшие фильтр (имена как в Java-модели). */
+    public static Map<String, Clip> load(String name, Predicate<String> boneFilter) {
         JsonObject anims = BedrockModelLoader.readJson("animations/" + name + ".animation.json")
                 .getAsJsonObject("animations");
         Map<String, Clip> out = new HashMap<>();
@@ -52,6 +58,9 @@ public final class BedrockAnimations {
             if (an.has("bones")) {
                 for (Map.Entry<String, JsonElement> b : an.getAsJsonObject("bones").entrySet()) {
                     String bone = BedrockModelLoader.javaName(b.getKey());
+                    if (!boneFilter.test(bone)) {
+                        continue;
+                    }
                     JsonObject chans = b.getValue().getAsJsonObject();
                     addChannel(builder, bone, chans, "rotation", Transformation.Targets.ROTATE);
                     addChannel(builder, bone, chans, "position", Transformation.Targets.TRANSLATE);

@@ -35,7 +35,7 @@ import java.util.EnumSet;
 /**
  * Железный рыцарь: 65 HP, стрелы наносят на 45% меньше урона.
  * Бой: 2 удара мечом с замахом (10 урона, достаёт на 2 блока, между ударами 1.2 с),
- * третьим — вращение: ~3 секунды крутится и идёт к цели, раз в секунду 5 урона всем рядом (1 блок).
+ * третьим — вращение: ~3 секунды крутится и идёт к цели, раз в секунду 5 урона всем рядом (2 блока).
  * Без цели ходит как зомби, за целью бежит (90% скорости бега игрока).
  */
 public class IronKnightEntity extends HostileEntity {
@@ -53,7 +53,7 @@ public class IronKnightEntity extends HostileEntity {
     static final float SWING_DAMAGE = 10f;
     static final float SPIN_DAMAGE = 5f;
     static final double SWING_REACH = 2.0;
-    static final double SPIN_RADIUS = 1.0;
+    static final double SPIN_RADIUS = 2.0;
     static final float ARROW_FACTOR = 0.55f;
 
     /** Тайминги (тики). Должны совпадать с IronKnightModel. */
@@ -61,7 +61,7 @@ public class IronKnightEntity extends HostileEntity {
     public static final int SWING_TOTAL = 24;
     public static final int SPIN_WINDUP = 13;
     public static final int SPIN_TICKS = 60;
-    public static final int SPIN_RECOVER = 15;
+    public static final int SPIN_RECOVER = 20;
 
     /** Только на клиенте: анимация удара мечом. */
     public final AnimationState swingState = new AnimationState();

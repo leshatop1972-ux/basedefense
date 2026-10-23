@@ -6,22 +6,31 @@ import com.lesha_top1972.basedefense.entity.IronKnightEntity;
 import net.minecraft.client.model.ModelPart;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Модель железного рыцаря из Blockbench (geo/iron_knight.geo.json).
  * <ul>
- *   <li>idle / walk / run — плавно сменяются по скорости движения;</li>
+ *   <li>idle / walk / run — плавно сменяются по скорости движения; в idle и walk руки
+ *       и меч берутся из стойки (первый кадр attack1), чтобы меч не упирался в землю;</li>
  *   <li>attack1 (удар с замахом) — ускорен в 2.5 раза: 2.95 с → 1.18 с, попадание на ~0.7 с;</li>
  *   <li>attack2 (вращение) разрезан: замах 0–0.667 с, затем 3 с вращения (поза из середины
- *       анимации, поворот корня считается кодом, 8 оборотов), затем возврат 1.5–2.65 с (ускорен в 1.5 раза).</li>
+ *       анимации, поворот корня считается кодом, 8 оборотов), затем возврат 1.5–2.65 с.</li>
  * </ul>
  * Тайминги совпадают с IronKnightEntity (SWING_*, SPIN_*).
  */
 public class IronKnightModel extends BedrockEntityModel<IronKnightEntity> {
 
     private static final Map<String, BedrockAnimations.Clip> CLIPS = BedrockAnimations.load("iron_knight");
-    private static final BedrockAnimations.Clip IDLE = CLIPS.get("idle");
-    private static final BedrockAnimations.Clip WALK = CLIPS.get("walk");
+    /** Кости рук и меча: в покое и при ходьбе берутся из стойки (первый кадр attack1). */
+    private static final Set<String> ARMS = Set.of("r_upper", "r_fore", "r_hand", "sword", "l_upper", "l_fore", "l_hand");
+    /** idle и walk без рук — в оригинале меч опущен в землю. */
+    private static final Map<String, BedrockAnimations.Clip> BODY = BedrockAnimations.load("iron_knight", b -> !ARMS.contains(b));
+    private static final BedrockAnimations.Clip IDLE = BODY.get("idle");
+    private static final BedrockAnimations.Clip WALK = BODY.get("walk");
+    /** Стойка «меч перед собой» — руки из первого кадра attack1. */
+    private static final BedrockAnimations.Clip GUARD =
+            BedrockAnimations.load("iron_knight", ARMS::contains).get("attack1");
     private static final BedrockAnimations.Clip RUN = CLIPS.get("run");
     private static final BedrockAnimations.Clip SWING = CLIPS.get("attack1");
     private static final BedrockAnimations.Clip SPIN = CLIPS.get("attack2");
@@ -75,6 +84,7 @@ public class IronKnightModel extends BedrockEntityModel<IronKnightEntity> {
         float spinAnimT = -1f;
         float spinW = 0f;
         float rootYaw = Float.NaN;
+        boolean recovering = false;
         float st = (animationProgress - entity.spinStartAge) / 20f;
         float total = WINDUP_S + SPIN_S + RECOVER_S;
         if (SPIN != null && st >= 0 && st < total) {
@@ -92,7 +102,9 @@ public class IronKnightModel extends BedrockEntityModel<IronKnightEntity> {
                 rootYaw = -(20f + s / SPIN_S * SPIN_DEGREES) * DEG;
             } else {
                 float s = st - WINDUP_S - SPIN_S;
-                spinAnimT = SPIN_ANIM_RECOVER + s / RECOVER_S * (SPIN.length() - SPIN_ANIM_RECOVER);
+                spinAnimT = Math.min(SPIN_ANIM_RECOVER + s / RECOVER_S * (SPIN.length() - SPIN_ANIM_RECOVER),
+                        SPIN.length() - 0.01f);
+                recovering = true;
             }
             spinW = clamp01(Math.min(st / 0.15f, (total - st) / 0.2f));
         }
@@ -105,6 +117,7 @@ public class IronKnightModel extends BedrockEntityModel<IronKnightEntity> {
         float run = clamp01((limbDistance - 0.55f) / 0.35f);
         this.play(IDLE, animationProgress / 20f, free * (1f - move));
         this.play(WALK, limbAngle * 0.05f * WALK_SCALE, free * move * (1f - run));
+        this.play(GUARD, 0f, free * (1f - move * run));
         this.play(RUN, limbAngle * 0.05f * RUN_SCALE, free * move * run);
 
         if (swingT >= 0) {
@@ -114,6 +127,10 @@ public class IronKnightModel extends BedrockEntityModel<IronKnightEntity> {
             this.play(SPIN, spinAnimT, spinW);
             if (!Float.isNaN(rootYaw)) {
                 this.base.yaw = rootYaw;
+            } else if (recovering) {
+                // В анимации возврат идёт от −720°: при плавном затухании веса это давало
+                // лишний быстрый оборот. Убираем эти два оборота — остаётся только покачивание.
+                this.base.yaw += 4f * (float) Math.PI * spinW;
             }
         }
 
