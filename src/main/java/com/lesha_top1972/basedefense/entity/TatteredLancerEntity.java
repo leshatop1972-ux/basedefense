@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Босс «Оборванный улан» — мёртвый дуэлянт с турнирным копьём. 350 HP, полоска босса.
+ * Босс «Оборванный улан» — мёртвый дуэлянт с турнирным копьём. 400 HP, полоска босса.
  * <p>Атаки (анимации — tools/lancer_gen.py, тайминги совпадают):</p>
  * <ul>
  *   <li>THRUST — три укола (5 + 5 + 7);</li>
@@ -100,10 +100,12 @@ public class TatteredLancerEntity extends HostileEntity {
     public static final int BACKSTEP_TICKS = 14;
     public static final int ROAR_TICKS = 30;
     public static final int GRAND_TICKS = 79;
-    /** Ливень копий: взлёт 0–24, зона с 24, копья 74–134, потом спуск. */
+    /** Ливень копий: взлёт 0–24, зона с 24, копья 74–134, висит до 194, потом спуск. */
     public static final int RAIN_RISE = 24;
     public static final int RAIN_START = 74;
     public static final int RAIN_STOP = 134;
+    /** После ливня улан ещё 3 с висит в воздухе. */
+    public static final int RAIN_HOVER_END = RAIN_STOP + 60;
     public static final double RAIN_RADIUS = 13.0;
     public static final double RAIN_HEIGHT = 6.0;
 
@@ -135,7 +137,7 @@ public class TatteredLancerEntity extends HostileEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 350.0)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 400.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.26)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 6.0)
@@ -1005,7 +1007,7 @@ public class TatteredLancerEntity extends HostileEntity {
             if (t == RAIN_RISE) {
                 l.sound(SoundEvents.BLOCK_BEACON_ACTIVATE, 1.5f, 1.4f);
             }
-            if (t >= RAIN_RISE && t % 5 == 0) {
+            if (t >= RAIN_RISE && t < RAIN_STOP + 20 && t % 5 == 0) {
                 for (PlayerEntity p : l.getWorld().getEntitiesByClass(PlayerEntity.class,
                         new Box(this.zone, this.zone).expand(RAIN_RADIUS, 3.0, RAIN_RADIUS), p -> p.isAlive() && !p.isSpectator())) {
                     if (p.squaredDistanceTo(this.zone.x, p.getY(), this.zone.z) <= RAIN_RADIUS * RAIN_RADIUS) {
@@ -1019,7 +1021,7 @@ public class TatteredLancerEntity extends HostileEntity {
             if (t >= RAIN_START && t < RAIN_STOP && t % 3 == 0) {
                 this.spawnLances(target);
             }
-            if (t >= RAIN_STOP) {
+            if (t >= RAIN_HOVER_END) {
                 this.action = RAIN_END;
                 this.tick = 0;
                 l.setNoGravity(false);
