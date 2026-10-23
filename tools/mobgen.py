@@ -378,8 +378,23 @@ def blend(p1, p2, t):
 # =====================================================================
 # Анимации
 # =====================================================================
-def bake(fn, length_s, fps, loop, bones, extra=None):
+def euler_near(rot, prev):
+    """Тот же поворот в записи Эйлера, ближайшей к prev: (x, y, z) ≡ (x+180, 180−y, z+180) и ±360.
+    Убирает «перевороты» IK‑костей между кадрами (иначе кость прокручивается за кадр)."""
+    best, best_d = None, 1e9
+    for cand in ((rot[0], rot[1], rot[2]), (rot[0] + 180, 180 - rot[1], rot[2] + 180)):
+        c = [cand[i] + round((prev[i] - cand[i]) / 360.0) * 360 for i in range(3)]
+        d = max(abs(c[i] - prev[i]) for i in range(3))
+        if d < best_d:
+            best, best_d = c, d
+    return best
+
+
+def bake(fn, length_s, fps, loop, bones, extra=None, unwrap=False):
+    """unwrap=True — непрерывные углы (euler_near) для всех костей; конец анимации при этом должен
+    вернуться к той же записи, что и начало (иначе при смешивании кость сделает лишний оборот)."""
     out = {}
+    prev = {}
     n = int(round(length_s * fps))
     for k in range(n + 1):
         t = min(k / fps, length_s)
@@ -390,7 +405,11 @@ def bake(fn, length_s, fps, loop, bones, extra=None):
         for name in bones:
             st = pose.get(name, {})
             ch = out.setdefault(name, {})
-            ch.setdefault("rotation", {})[key] = [round(v, 2) for v in st.get("rot", (0, 0, 0))]
+            r = list(st.get("rot", (0, 0, 0)))
+            if unwrap:
+                r = euler_near(r, prev[name]) if name in prev else r
+                prev[name] = r
+            ch.setdefault("rotation", {})[key] = [round(v, 2) for v in r]
             if "pos" in st:
                 px, py, pz = st["pos"]
                 ch.setdefault("position", {})[key] = [round(px, 3), round(-py, 3), round(pz, 3)]

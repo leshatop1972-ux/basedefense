@@ -30,8 +30,15 @@ public class BloodthirsterRenderer extends MobEntityRenderer<BloodthirsterEntity
     }
 
     public BloodthirsterRenderer(EntityRendererFactory.Context context) {
-        super(context, new BloodthirsterModel(context.getPart(LAYER)), 1.1f);
+        super(context, new BloodthirsterModel(context.getPart(LAYER)), 1.4f);
         this.addFeature(new PhaseGlow(this));
+    }
+
+    /** Модель огромная: ×1.3 (хитбокс 1.6×4.0 подобран под этот масштаб). */
+    @Override
+    protected void scale(BloodthirsterEntity entity, MatrixStack matrices, float amount) {
+        float k = BloodthirsterEntity.MODEL_SCALE;
+        matrices.scale(k, k, k);
     }
 
     @Override

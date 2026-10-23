@@ -50,27 +50,27 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Босс «Кровожад»: высокое алое чудовище, 600 HP, две фазы (вторая — с 300 HP).
- * Модель и анимации — tools/bloodthirster_gen.py, тайминги ниже совпадают с анимациями.
+ * Босс «Кровожад»: огромное (×1.3 модель, хитбокс 1.6×4.0) алое чудовище, 600 HP, две фазы (вторая — с 300 HP).
+ * Модель и анимации — tools/bloodthirster_gen.py (проверка рывков — tools/anim_check.py), тайминги ниже
+ * совпадают с анимациями. Урон атак +25% к первой версии, дальность +1.2 блока, перерывы длиннее.
  * <p>1‑я фаза (сгорбленный зверь, когти):</p>
  * <ul>
- *   <li>SWING — неуклюжий замах лапой сверху вниз: 8;</li>
- *   <li>DEVOUR — «жадное пожирание»: 3 с быстро сгребает лапами, по 3 урона в секунду;</li>
- *   <li>POUNCE — распрямляется во весь рост и прыгает в точку, где цель была за 0.3 с до прыжка: 15
+ *   <li>SWING — разворот, лапа высоко за головой и удар всем телом в землю: 10 (+ трещина вперёд);</li>
+ *   <li>DEVOUR — «жадное пожирание»: встаёт на дыбы, бросается и 3 с рвёт добычу, по 3.75 в секунду;</li>
+ *   <li>POUNCE — распрямляется во весь рост и прыгает в точку, где цель была за 0.3 с до прыжка: 19
  *       (успел убежать — увернулся).</li>
  * </ul>
- * <p>Смена фазы (TRANSFORM, 3 с, неуязвим): выпрямляется, венец из шипов, два красно‑чёрных меча.</p>
+ * <p>Смена фазы (TRANSFORM, 3 с, неуязвим): выпрямляется, венец из шипов, два огромных красно‑чёрных меча.</p>
  * <p>2‑я фаза:</p>
  * <ul>
- *   <li>SLASH — два быстрых разреза мечами: 7 + 7;</li>
- *   <li>THRUST — «пронзающий выпад»: рывок вперёд с двойным уколом: 10;</li>
- *   <li>SUMMON — «зов выводка»: 2 мелких кровожада;</li>
- *   <li>EGGS — «кровавая кладка»: 3 яйца кровожада вокруг (вокруг яиц растёт кровавая лужа);</li>
- *   <li>WALTZ — «багровый вальс» (мощная): 3 с вихря с мечами (по 4 каждые 0.4 с вокруг),
- *       затем крестовой разрез: 13 и сильный отброс.</li>
+ *   <li>SLASH — широкий горизонтальный разрез + рубящий сверху: 8.75 + 8.75;</li>
+ *   <li>THRUST — «пронзающий выпад»: рывок с двойным уколом 12.5 и вспарывающий взмах вверх 7.5 (подбрасывает);</li>
+ *   <li>SUMMON — «зов выводка»: фонтаны крови, из них 2 мелких кровожада (раз в 2 мин);</li>
+ *   <li>EGGS — «кровавая кладка»: земля вскипает кровью, 3 яйца (раз в 2 мин);</li>
+ *   <li>EXEC — «багровая казнь» (мощная): взмывает и обрушивается мечами в точку цели — 20 и кольцо кровавых
+ *       гейзеров, затем вырывает мечи широким разрезом в обе стороны — 10.</li>
  * </ul>
- * Скорость в бою ≈ бег игрока − 15% (во 2‑й фазе +7%). Призыв и яйца — раз в 2 минуты.
- * Темп спокойнее, чем у улана.
+ * Скорость в бою ≈ бег игрока − 15% (во 2‑й фазе +7%). Раз в 7 с рядом появляется кровавая лужа.
  */
 public class BloodthirsterEntity extends HostileEntity implements BloodKin {
 
@@ -84,24 +84,36 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     public static final int THRUST = 6;
     public static final int SUMMON = 7;
     public static final int EGGS = 8;
-    public static final int WALTZ = 9;
+    public static final int EXEC = 9;
+    public static final int EXEC_LAND = 10;
     public static final byte STATUS_BASE = 70;
 
     /** Длительности (тики), как у анимаций. */
-    public static final int SWING_TICKS = 36;
-    public static final int DEVOUR_TICKS = 72;
-    public static final int POUNCE_WINDUP = 20;
-    public static final int LAND_TICKS = 24;
+    public static final int SWING_TICKS = 44;
+    public static final int DEVOUR_TICKS = 76;
+    public static final int POUNCE_WINDUP = 24;
+    public static final int LAND_TICKS = 28;
     public static final int TRANSFORM_TICKS = 60;
     /** На этом тике смены фазы появляются мечи и венец (и меняется облик). */
     public static final int TRANSFORM_SWITCH = 44;
-    public static final int SLASH_TICKS = 32;
-    public static final int THRUST_TICKS = 26;
-    public static final int SUMMON_TICKS = 40;
-    public static final int EGGS_TICKS = 44;
-    public static final int WALTZ_OPEN = 12;
-    public static final int WALTZ_SPIN_END = 72;
-    public static final int WALTZ_TICKS = 100;
+    public static final int SLASH_TICKS = 40;
+    public static final int THRUST_TICKS = 36;
+    public static final int SUMMON_TICKS = 52;
+    public static final int EGGS_TICKS = 56;
+    public static final int EXEC_WINDUP = 18;
+    public static final int EXEC_LAND_TICKS = 44;
+
+    /** Урон (×1.25 к первой версии). */
+    static final float DMG_SWING = 10f;
+    static final float DMG_DEVOUR = 3.75f;
+    static final float DMG_POUNCE = 19f;
+    static final float DMG_SLASH = 8.75f;
+    static final float DMG_THRUST = 12.5f;
+    static final float DMG_RIP = 7.5f;
+    static final float DMG_EXEC = 20f;
+    static final float DMG_EXEC_RIP = 10f;
+    /** Масштаб модели в рендере (и всех расстояний ударов). */
+    public static final float MODEL_SCALE = 1.3f;
 
     /** Скорость: 0.23 × 1.4 ≈ 0.32 → бег игрока − 15% (как у рыцаря 0.23 × 1.49 = 90%). */
     static final double BASE_SPEED = 0.23;
@@ -282,7 +294,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     @Override
     public void handleStatus(byte status) {
         int a = status - STATUS_BASE;
-        if (a >= SWING && a <= WALTZ) {
+        if (a >= SWING && a <= EXEC_LAND) {
             this.clientAction = a;
             this.clientActionAge = this.age;
         } else {
@@ -439,18 +451,52 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         return null;
     }
 
-    void spawnBloodlings(LivingEntity target) {
+    /** Точки для мелких кровожадов: по бокам впереди. */
+    List<BlockPos> bloodlingSpots() {
+        Vec3d f = this.forward();
+        Vec3d side = new Vec3d(-f.z, 0, f.x);
+        List<BlockPos> out = new ArrayList<>();
+        for (int k = -1; k <= 1; k += 2) {
+            Vec3d p = this.getPos().add(f.multiply(2.2)).add(side.multiply(3.0 * k));
+            BlockPos spot = this.groundSpot(p.x, p.z);
+            out.add(spot != null ? spot : this.getBlockPos());
+        }
+        return out;
+    }
+
+    /** Точки для яиц: три стороны, 5–8 блоков. */
+    List<BlockPos> eggSpots() {
+        List<BlockPos> out = new ArrayList<>();
+        double start = this.random.nextDouble() * Math.PI * 2;
+        for (int k = 0; k < 3; k++) {
+            double a = start + k * (Math.PI * 2 / 3) + (this.random.nextDouble() - 0.5) * 0.6;
+            double r = 5.0 + this.random.nextDouble() * 3.0;
+            BlockPos spot = this.groundSpot(this.getX() + Math.cos(a) * r, this.getZ() + Math.sin(a) * r);
+            if (spot != null) {
+                out.add(spot);
+            }
+        }
+        return out;
+    }
+
+    /** Фонтан крови из земли: столб брызг высотой h (растёт с силой k 0..1). */
+    void geyser(BlockPos p, double h, int count) {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
-        Vec3d f = this.forward();
-        Vec3d side = new Vec3d(-f.z, 0, f.x);
-        for (int k = -1; k <= 1; k += 2) {
-            Vec3d p = this.getPos().add(f.multiply(1.6)).add(side.multiply(2.4 * k));
-            BlockPos spot = this.groundSpot(p.x, p.z);
-            if (spot == null) {
-                spot = this.getBlockPos();
-            }
+        double x = p.getX() + 0.5;
+        double z = p.getZ() + 0.5;
+        for (double y = 0.1; y < h; y += 0.5) {
+            BloodFx.splash(s, x, p.getY() + y, z, count, 0.15 + y * 0.05);
+        }
+        s.spawnParticles(ParticleTypes.CRIMSON_SPORE, x, p.getY() + 0.3, z, 8, 0.4, 0.2, 0.4, 0.02);
+    }
+
+    void spawnBloodlings(List<BlockPos> spots, LivingEntity target) {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        for (BlockPos spot : spots) {
             BloodlingEntity b = ModEntities.BLOODLING.create(s);
             if (b == null) {
                 continue;
@@ -461,22 +507,17 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                 b.setTarget(target);
             }
             s.spawnEntity(b);
-            BloodFx.splash(s, b.getX(), b.getY() + 0.4, b.getZ(), 24, 0.5);
+            this.geyser(spot, 3.0, 10);
+            BloodFx.splash(s, b.getX(), b.getY() + 0.6, b.getZ(), 40, 0.7);
+            this.placePool(spot, 2);
         }
     }
 
-    void spawnEggs() {
+    void spawnEggs(List<BlockPos> spots) {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
-        double start = this.random.nextDouble() * Math.PI * 2;
-        for (int k = 0; k < 3; k++) {
-            double a = start + k * (Math.PI * 2 / 3) + (this.random.nextDouble() - 0.5) * 0.6;
-            double r = 5.0 + this.random.nextDouble() * 3.0;
-            BlockPos spot = this.groundSpot(this.getX() + Math.cos(a) * r, this.getZ() + Math.sin(a) * r);
-            if (spot == null) {
-                continue;
-            }
+        for (BlockPos spot : spots) {
             BloodEggEntity egg = ModEntities.BLOOD_EGG.create(s);
             if (egg == null) {
                 continue;
@@ -484,25 +525,106 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             egg.refreshPositionAndAngles(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5,
                     this.random.nextFloat() * 360f, 0f);
             s.spawnEntity(egg);
-            BloodFx.splash(s, egg.getX(), egg.getY() + 0.5, egg.getZ(), 30, 0.6);
+            this.geyser(spot, 4.0, 12);
+            BloodFx.splash(s, egg.getX(), egg.getY() + 0.8, egg.getZ(), 50, 0.9);
         }
     }
 
-    /** Бой: выбор атаки по расстоянию и фазе, тайминги ударов, прыжок, смена фазы. */
+    /** Временная кровавая лужа радиусом r вокруг точки (высыхает сама, как лужи раз в 7 с). */
+    void placePool(BlockPos center, int r) {
+        World w = this.getWorld();
+        BlockState pool = ModBlocks.BLOOD_POOL.getDefaultState();
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+                if (dx * dx + dz * dz > r * r + 1 || this.random.nextFloat() < 0.25f) {
+                    continue;
+                }
+                for (int dy = 1; dy >= -1; dy--) {
+                    BlockPos p = center.add(dx, dy, dz);
+                    if (w.isAir(p) && w.getBlockState(p.down()).isSideSolidFullSquare(w, p.down(), Direction.UP)) {
+                        w.setBlockState(p, pool);
+                        w.scheduleBlockTick(p, ModBlocks.BLOOD_POOL, BloodPoolBlock.BOSS_POOL_TICKS + this.random.nextInt(40));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /** Дуга брызг и «следов взмаха» от угла a0 до a1 (градусы относительно взгляда, + — влево) радиусом r. */
+    void bloodArc(double a0, double a1, double r, double y, int steps) {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        float yaw = this.getYaw() * MathHelper.RADIANS_PER_DEGREE;
+        for (int i = 0; i <= steps; i++) {
+            double a = Math.toRadians(a0 + (a1 - a0) * i / steps);
+            double fx = -Math.sin(yaw - a);
+            double fz = Math.cos(yaw - a);
+            double x = this.getX() + fx * r;
+            double z = this.getZ() + fz * r;
+            BloodFx.splash(s, x, this.getY() + y, z, 4, 0.2);
+            if (i % 2 == 0) {
+                s.spawnParticles(ParticleTypes.SWEEP_ATTACK, x, this.getY() + y, z, 1, 0, 0, 0, 0);
+            }
+        }
+    }
+
+    /** Трещина по земле вперёд от точки d на длину len (пыль блоков + кровь). */
+    void crackLine(double d, double len) {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        Vec3d f = this.forward();
+        for (double k = d; k <= d + len; k += 0.6) {
+            Vec3d p = this.getPos().add(f.multiply(k));
+            BlockState ground = this.getWorld().getBlockState(BlockPos.ofFloored(p.x, this.getY() - 0.5, p.z));
+            if (!ground.isAir()) {
+                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), p.x, this.getY() + 0.1, p.z,
+                        8, 0.3, 0.1, 0.3, 0.25);
+            }
+            BloodFx.splash(s, p.x, this.getY() + 0.2, p.z, 3, 0.25);
+        }
+    }
+
+    /** Кольцо кровавых гейзеров вокруг себя (радиусы 1.5..r). */
+    void geyserRing(double r) {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        for (double rr = 1.5; rr <= r; rr += 1.5) {
+            int n = (int) (rr * 4);
+            for (int i = 0; i < n; i++) {
+                double a = i * Math.PI * 2 / n + rr;
+                double x = this.getX() + Math.cos(a) * rr;
+                double z = this.getZ() + Math.sin(a) * rr;
+                BloodFx.splash(s, x, this.getY() + 0.4 + rr * 0.15, z, 6, 0.2);
+            }
+        }
+        s.spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY() + 0.5, this.getZ(), 2, 0.6, 0.1, 0.6, 0);
+    }
+
+    @Override
+    public Box getVisibilityBoundingBox() {
+        return this.getBoundingBox().expand(3.0, 1.5, 3.0);      // плащ и мечи выходят за хитбокс
+    }
+
+    /** Бой: выбор атаки по расстоянию и фазе, тайминги ударов, прыжки, смена фазы. */
     static class BrawlGoal extends Goal {
         private final BloodthirsterEntity boss;
         private int action = NONE;
         private int tick;
-        private int cooldown = 30;
+        private int cooldown = 40;
         private int lastAction = NONE;
         private int pathDelay;
-        private int pounceCd = 60;
-        private int waltzCd = 200;
+        private int pounceCd = 80;
+        private int execCd = 200;
         private int summonCd = 160;
         private int eggsCd = 260;
         private Vec3d aim = Vec3d.ZERO;
         private Vec3d leapVel = Vec3d.ZERO;
         private Vec3d dashDir = Vec3d.ZERO;
+        private List<BlockPos> spots = new ArrayList<>();
         private final Set<Integer> hitIds = new HashSet<>();
 
         BrawlGoal(BloodthirsterEntity boss) {
@@ -538,8 +660,8 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         public void stop() {
             this.boss.setAttacking(false);
             this.boss.getNavigation().stop();
-            if (this.action == TRANSFORM) {
-                this.finishTransform();
+            if (this.action == TRANSFORM && !this.boss.isPhase2()) {
+                this.boss.setPhase2();
             }
             this.boss.transforming = false;
             this.action = NONE;
@@ -563,27 +685,27 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             List<int[]> options = new ArrayList<>();
             BloodthirsterEntity b = this.boss;
             if (!b.isPhase2()) {
-                if (dist < 4.6) {
+                if (dist < 5.8) {
                     options.add(new int[]{SWING, 50});
                     options.add(new int[]{DEVOUR, 35});
                 }
-                if (this.pounceCd <= 0 && dist > 3.0 && dist < 16) {
-                    options.add(new int[]{POUNCE, dist < 4.6 ? 12 : 60});
+                if (this.pounceCd <= 0 && dist > 3.5 && dist < 18) {
+                    options.add(new int[]{POUNCE, dist < 5.8 ? 12 : 60});
                 }
             } else {
-                if (dist < 4.8) {
+                if (dist < 6.0) {
                     options.add(new int[]{SLASH, 45});
                     options.add(new int[]{THRUST, 15});
-                } else if (dist < 11) {
+                } else if (dist < 12) {
                     options.add(new int[]{THRUST, 45});
                 }
-                if (this.waltzCd <= 0 && dist < 11) {
-                    options.add(new int[]{WALTZ, 30});
+                if (this.execCd <= 0 && dist > 3.0 && dist < 18) {
+                    options.add(new int[]{EXEC, 35});
                 }
-                if (this.summonCd <= 0 && dist < 20 && b.countNearby(BloodlingEntity.class, 32) < 4) {
+                if (this.summonCd <= 0 && dist < 22 && b.countNearby(BloodlingEntity.class, 32) < 4) {
                     options.add(new int[]{SUMMON, 25});
                 }
-                if (this.eggsCd <= 0 && dist < 20 && b.countNearby(BloodEggEntity.class, 32) < 6) {
+                if (this.eggsCd <= 0 && dist < 22 && b.countNearby(BloodEggEntity.class, 32) < 6) {
                     options.add(new int[]{EGGS, 25});
                 }
             }
@@ -612,8 +734,8 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             if (this.pounceCd > 0) {
                 this.pounceCd--;
             }
-            if (this.waltzCd > 0) {
-                this.waltzCd--;
+            if (this.execCd > 0) {
+                this.execCd--;
             }
             if (this.summonCd > 0) {
                 this.summonCd--;
@@ -646,7 +768,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                 this.chase(target, dist);
                 return;
             }
-            if (!b.getVisibilityCache().canSee(target) || dist > 24) {
+            if (!b.getVisibilityCache().canSee(target) || dist > 26) {
                 this.chase(target, dist);
                 return;
             }
@@ -661,7 +783,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
 
         private void chase(LivingEntity target, double dist) {
             BloodthirsterEntity b = this.boss;
-            if (dist > 3.4 || !b.getVisibilityCache().canSee(target)) {
+            if (dist > 4.4 || !b.getVisibilityCache().canSee(target)) {
                 if (--this.pathDelay <= 0) {
                     this.pathDelay = 8;
                     b.getNavigation().startMovingTo(target, CHASE);
@@ -678,10 +800,32 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             b.velocityModified = true;
         }
 
-        private void finishTransform() {
+        private void brake() {
+            Vec3d v = this.boss.getVelocity();
+            this.boss.setVelocity(v.x * 0.5, v.y, v.z * 0.5);
+        }
+
+        /** Прыжок в точку aim: подъём vy, время полёта ≈ 2·vy/0.08 тиков. */
+        private void leapTo(double vy, double maxSpeed) {
             BloodthirsterEntity b = this.boss;
-            b.setPhase2();
-            b.transforming = false;
+            Vec3d d = new Vec3d(this.aim.x - b.getX(), 0, this.aim.z - b.getZ());
+            double flight = 2 * vy / 0.08 - 1;
+            double speed = Math.min(maxSpeed, d.length() / flight);
+            this.leapVel = d.lengthSquared() > 0.01 ? d.normalize().multiply(speed) : Vec3d.ZERO;
+            b.setVelocity(this.leapVel.x, vy, this.leapVel.z);
+            b.velocityModified = true;
+        }
+
+        /** В полёте держим горизонтальную скорость; true — приземлился. */
+        private boolean flying(int sinceJump) {
+            BloodthirsterEntity b = this.boss;
+            Vec3d v = b.getVelocity();
+            b.setVelocity(this.leapVel.x, v.y, this.leapVel.z);
+            if ((b.isOnGround() && sinceJump > 3) || sinceJump > 70) {
+                b.setVelocity(0, b.getVelocity().y, 0);
+                return true;
+            }
+            return false;
         }
 
         private void runAction(LivingEntity target) {
@@ -689,250 +833,286 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             int t = this.tick;
             switch (this.action) {
                 case SWING -> {
-                    // замах 0–17, удар на 20, тяжёлое восстановление
-                    if (target != null && t < 15) {
+                    // разворот 0–8, лапа за головой 17–20 (рёв), удар всем телом на 23, лапы волочатся
+                    if (target != null && t < 18) {
                         b.faceTarget(target);
                     }
-                    if (t == 10) {
-                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.0f, 0.7f);
+                    if (t == 14) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.75f);
                     }
-                    if (t == 20) {
-                        b.coneHit(4.6, 70, 8f, 1.2, 0.3, false);
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.55f);
-                        b.groundDust(3.0, 0.8, 20);
-                        b.bloodAhead(3.0, 0.6, 12, 0.6);
+                    if (t == 23) {
+                        b.coneHit(5.8, 70, DMG_SWING, 1.4, 0.4, false);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5f, 0.6f);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.3f, 0.6f);
+                        b.groundDust(3.6, 1.0, 30);
+                        b.crackLine(2.5, 4.0);
+                        b.bloodAhead(3.6, 0.6, 20, 0.9);
                     }
                     if (t >= SWING_TICKS) {
-                        this.finish(34);
+                        this.finish(55);
                     }
                 }
                 case DEVOUR -> {
-                    // наклон 0–8, сгребает 8–66 (по 3 урона в 28, 48, 68), выпрямляется
+                    // на дыбы 0–9 (вопль), бросок 9–14, пожирание 14–68 (по 3.75 на 26/46/66), выпрямляется
                     if (target != null) {
                         b.faceTarget(target);
-                        if (t >= 8 && t < 66 && b.distanceTo(target) > 2.4) {
-                            Vec3d f = b.forward().multiply(0.06);
+                        if (t >= 14 && t < 68 && b.distanceTo(target) > 3.2) {
+                            Vec3d f = b.forward().multiply(0.07);
                             b.addVelocity(f.x, 0, f.z);
                         }
                     }
-                    if (t >= 8 && t < 68 && t % 3 == 0) {
-                        b.bloodAhead(2.0, 1.3 + b.random.nextDouble() * 0.6, 3, 0.5);
+                    if (t == 3) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.9f);
                     }
-                    if (t >= 8 && t < 68 && t % 6 == 0) {
-                        b.sound(SoundEvents.ENTITY_GENERIC_EAT, 1.0f, 0.5f + b.random.nextFloat() * 0.2f);
+                    if (t == 13) {
+                        b.groundDust(2.8, 1.0, 20);
                     }
-                    if (t == 28 || t == 48 || t == 68) {
-                        b.coneHit(3.4, 60, 3f, 0.15, 0, true);
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_WEAK, 1.0f, 0.6f);
+                    if (t >= 14 && t < 70 && t % 3 == 0) {
+                        b.bloodAhead(2.6, 1.2 + b.random.nextDouble() * 1.0, 5, 0.7);
+                    }
+                    if (t >= 14 && t < 70 && t % 6 == 0) {
+                        b.sound(SoundEvents.ENTITY_GENERIC_EAT, 1.1f, 0.45f + b.random.nextFloat() * 0.2f);
+                    }
+                    if (t == 26 || t == 46 || t == 66) {
+                        b.coneHit(4.4, 60, DMG_DEVOUR, 0.15, 0, true);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_WEAK, 1.0f, 0.5f);
+                        b.bloodAhead(2.8, 1.4, 16, 0.9);
                     }
                     if (t >= DEVOUR_TICKS) {
-                        this.finish(40);
+                        this.finish(60);
                     }
                 }
-                case POUNCE -> this.runPounce(target);
+                case POUNCE -> {
+                    // во весь рост с воплем (следит до 18), прыжок на 24 в запомненную точку
+                    if (t < 18 && target != null) {
+                        b.faceTarget(target);
+                    }
+                    if (t == 8) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.7f);
+                    }
+                    if (t == 18) {
+                        this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(7));
+                    }
+                    if (t == POUNCE_WINDUP) {
+                        this.leapTo(0.85, 1.35);
+                        b.groundDust(0, 1.0, 24);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_STEP, 1.6f, 0.5f);
+                    }
+                    if (t > POUNCE_WINDUP && this.flying(t - POUNCE_WINDUP)) {
+                        this.action = LAND;
+                        this.tick = 0;
+                        b.sendAction(LAND);
+                        b.radiusHit(3.4, DMG_POUNCE, 1.2, 0.5, false);
+                        b.groundDust(0, 1.8, 50);
+                        b.geyserRing(3.0);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f, 0.6f);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.4f, 0.5f);
+                    }
+                }
                 case LAND -> {
+                    if (t == 10) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 0.8f);
+                    }
                     if (t >= LAND_TICKS) {
-                        this.pounceCd = 140;
-                        this.finish(30);
+                        this.pounceCd = 200;
+                        this.finish(45);
                     }
                 }
                 case TRANSFORM -> {
                     b.getNavigation().stop();
                     if (t == 1) {
-                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.4f, 0.6f);
-                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.6), b.getZ(), 30, 0.8);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.55f);
+                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.6), b.getZ(), 40, 1.0);
                     }
-                    if (t < TRANSFORM_SWITCH && t % 5 == 0) {
+                    if (t < TRANSFORM_SWITCH && t % 4 == 0) {
                         BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.3 + b.random.nextDouble() * 0.5),
-                                b.getZ(), 8, 0.6);
+                                b.getZ(), 10, 0.8);
                     }
                     if (t == TRANSFORM_SWITCH) {
-                        this.finishTransform();
-                        b.transforming = true;                       // неуязвим до конца анимации
-                        b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.2f, 1.25f);
-                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.5), b.getZ(), 80, 1.4);
-                        b.push(4.0, 1.4, 0.3);
+                        b.setPhase2();
+                        b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.4f, 1.2f);
+                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.5), b.getZ(), 100, 1.8);
+                        b.geyserRing(6.0);
+                        b.push(5.0, 1.6, 0.35);
                     }
                     if (t >= TRANSFORM_TICKS) {
                         b.transforming = false;
-                        this.summonCd = 120;
-                        this.eggsCd = 240;
-                        this.waltzCd = 160;
-                        this.finish(20);
+                        this.summonCd = 160;
+                        this.eggsCd = 300;
+                        this.execCd = 200;
+                        this.finish(30);
                     }
                 }
                 case SLASH -> {
-                    if (target != null && t < 8) {
+                    // замах 0–8, горизонтальный разрез на 12, меч над головой 16, рубящий сверху на 22
+                    if (target != null && (t < 9 || (t > 13 && t < 19))) {
                         b.faceTarget(target);
                     }
-                    if (t == 7 || t == 14) {
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.1f, t == 7 ? 0.8f : 0.95f);
+                    if (t == 9 || t == 19) {
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, t == 9 ? 0.6f : 0.75f);
                     }
-                    if (t == 9 || t == 16) {
-                        if (b.coneHit(4.6, 85, 7f, 0.6, 0.1, true) == 0) {
-                            b.bloodAhead(2.6, 1.6, 4, 0.8);
-                        }
+                    if (t == 12) {
+                        b.coneHit(5.8, 90, DMG_SLASH, 0.9, 0.15, true);
+                        b.bloodArc(-70, 70, 3.6, 1.8, 14);
+                    }
+                    if (t == 22) {
+                        b.coneHit(5.8, 60, DMG_SLASH, 0.9, 0.1, true);
+                        b.bloodArc(30, -30, 3.8, 1.2, 8);
+                        b.crackLine(3.0, 2.5);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.6f);
                     }
                     if (t >= SLASH_TICKS) {
-                        this.finish(32);
+                        this.finish(55);
                     }
                 }
                 case THRUST -> {
-                    if (target != null && t < 10) {
+                    // пружина 0–10, рывок 11–17 с уколом, вспарывающий взмах вверх на 21
+                    if (target != null && t < 11) {
                         b.faceTarget(target);
                     }
                     if (t == 6) {
-                        b.sound(SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 0.9f, 0.6f);
+                        b.sound(SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 1.0f, 0.5f);
                     }
-                    if (t == 10) {
+                    if (t == 11) {
                         this.dashDir = b.forward();
+                        b.groundDust(-0.5, 0.8, 20);
                     }
-                    if (t >= 10 && t < 16) {
-                        this.dash(0.75);
-                        for (LivingEntity e : b.victims(2.0)) {
+                    if (t >= 11 && t < 17) {
+                        this.dash(0.9);
+                        for (LivingEntity e : b.victims(2.6)) {
                             Vec3d to = new Vec3d(e.getX() - b.getX(), 0, e.getZ() - b.getZ());
                             if ((to.lengthSquared() < 0.01 || to.normalize().dotProduct(this.dashDir) > 0.3)
                                     && this.hitIds.add(e.getId())) {
-                                b.strike(e, 10f, 1.0, 0.2, false);
-                                b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.1f, 0.7f);
+                                b.strike(e, DMG_THRUST, 1.0, 0.2, false);
+                                b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.6f);
                             }
                         }
-                        if (b.horizontalCollision && t > 11) {
-                            this.tick = 16;
+                        if (b.horizontalCollision && t > 12) {
+                            this.tick = 17;
                         }
                     }
-                    if (t >= 16 && t < 20) {
-                        Vec3d v = b.getVelocity();
-                        b.setVelocity(v.x * 0.5, v.y, v.z * 0.5);
+                    if (t >= 17 && t < 21) {
+                        this.brake();
+                    }
+                    if (t == 21) {
+                        b.coneHit(5.5, 70, DMG_RIP, 0.5, 0.75, true);
+                        b.bloodArc(-40, 40, 2.6, 2.6, 10);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.9f);
                     }
                     if (t >= THRUST_TICKS) {
-                        this.finish(30);
+                        this.finish(55);
                     }
                 }
                 case SUMMON -> {
+                    // мечи скрещены над головой, вопль 10–26; фонтаны крови в точках 12–30; удар мечами на 30
                     if (target != null && t < 20) {
                         b.faceTarget(target);
                     }
-                    if (t == 8) {
-                        b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.0f, 0.6f);
+                    if (t == 10) {
+                        this.spots = b.bloodlingSpots();
+                        b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.2f, 0.5f);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 1.1f);
                     }
-                    if (t == 26) {
-                        b.spawnBloodlings(target);
-                        b.groundDust(1.6, 1.0, 16);
-                        b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.4f, 0.5f);
-                        b.sound(SoundEvents.ENTITY_ZOMBIE_INFECT, 1.0f, 0.6f);
+                    if (t > 10 && t < 30 && t % 3 == 0) {
+                        for (BlockPos p : this.spots) {
+                            b.geyser(p, 0.6 + (t - 10) * 0.12, 3);
+                        }
+                    }
+                    if (t == 30) {
+                        b.spawnBloodlings(this.spots, target);
+                        b.groundDust(2.0, 1.4, 30);
+                        b.crackLine(1.0, 3.0);
+                        b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.6f, 0.4f);
+                        b.sound(SoundEvents.ENTITY_ZOMBIE_INFECT, 1.2f, 0.5f);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.4f, 0.7f);
                     }
                     if (t >= SUMMON_TICKS) {
                         this.summonCd = SUMMON_CD;
-                        this.finish(26);
+                        this.finish(40);
                     }
                 }
                 case EGGS -> {
-                    if (t == 8) {
-                        b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.0f, 0.5f);
+                    // руки с мечами раскинуты 0–16 (вопль), мечи в землю на 20, земля кипит, яйца на 26
+                    if (t == 6) {
+                        this.spots = b.eggSpots();
+                        b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.2f, 0.4f);
+                    }
+                    if (t == 12) {
+                        b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 0.9f, 1.4f);
+                    }
+                    if (t > 6 && t < 26 && t % 2 == 0) {
+                        for (BlockPos p : this.spots) {
+                            b.geyser(p, 0.4 + (t - 6) * 0.1, 2);
+                        }
                     }
                     if (t == 20) {
-                        b.groundDust(1.2, 1.2, 24);
-                        BloodFx.splash(b.getWorld(), b.getX(), b.getY() + 0.3, b.getZ(), 30, 1.2);
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.5f);
+                        b.groundDust(1.6, 1.6, 36);
+                        b.geyserRing(4.5);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.4f);
                     }
-                    if (t == 22) {
-                        b.spawnEggs();
-                        b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.5f, 0.4f);
+                    if (t == 26) {
+                        b.spawnEggs(this.spots);
+                        b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.6f, 0.35f);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.4f, 0.6f);
                     }
                     if (t >= EGGS_TICKS) {
                         this.eggsCd = EGGS_CD;
-                        this.finish(30);
+                        this.finish(45);
                     }
                 }
-                case WALTZ -> this.runWaltz(target);
+                case EXEC -> {
+                    // присед с мечами‑крыльями (следит до 14), взмывает на 18, обрушивается в точку цели
+                    if (t < 14 && target != null) {
+                        b.faceTarget(target);
+                    }
+                    if (t == 4) {
+                        b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.0f, 1.5f);
+                    }
+                    if (t == 14) {
+                        this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(6));
+                    }
+                    if (t == EXEC_WINDUP) {
+                        this.leapTo(1.15, 1.4);
+                        b.groundDust(0, 1.2, 30);
+                        BloodFx.splash(b.getWorld(), b.getX(), b.getY() + 0.3, b.getZ(), 30, 1.0);
+                        b.sound(SoundEvents.ENTITY_ENDER_DRAGON_FLAP, 1.5f, 0.6f);
+                    }
+                    if (t > EXEC_WINDUP && t % 3 == 0) {
+                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.5), b.getZ(), 4, 0.6);
+                    }
+                    if (t > EXEC_WINDUP && this.flying(t - EXEC_WINDUP)) {
+                        this.action = EXEC_LAND;
+                        this.tick = 0;
+                        b.sendAction(EXEC_LAND);
+                        b.radiusHit(4.5, DMG_EXEC, 1.0, 0.8, false);
+                        b.groundDust(0, 2.2, 60);
+                        b.geyserRing(5.0);
+                        b.placePool(b.getBlockPos(), 2);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
+                        b.sound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 0.6f);
+                    }
+                }
+                case EXEC_LAND -> {
+                    // стоит на колене с мечами в земле, на 23 вырывает их широким разрезом в обе стороны
+                    if (t > 2 && t < 20 && t % 3 == 0) {
+                        b.geyserRing(2.0 + t * 0.12);
+                    }
+                    if (t == 18) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.7f);
+                    }
+                    if (t == 23) {
+                        b.radiusHit(5.5, DMG_EXEC_RIP, 1.8, 0.4, true);
+                        b.bloodArc(-100, 100, 4.0, 1.4, 20);
+                        b.bloodArc(80, 280, 4.0, 1.4, 20);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 0.5f);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.6f);
+                    }
+                    if (t >= EXEC_LAND_TICKS) {
+                        this.execCd = 500;
+                        this.finish(55);
+                    }
+                }
                 default -> this.finish(20);
-            }
-        }
-
-        /** «Голодный бросок»: распрямляется (0–14 следит за целью), запоминает точку, прыгает на 20. */
-        private void runPounce(LivingEntity target) {
-            BloodthirsterEntity b = this.boss;
-            int t = this.tick;
-            if (t < 14 && target != null) {
-                b.faceTarget(target);
-            }
-            if (t == 6) {
-                b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.9f);
-            }
-            if (t == 14) {
-                this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(6));
-            }
-            if (t == POUNCE_WINDUP) {
-                Vec3d d = new Vec3d(this.aim.x - b.getX(), 0, this.aim.z - b.getZ());
-                double speed = Math.min(1.25, d.length() / 19.0);
-                this.leapVel = d.lengthSquared() > 0.01 ? d.normalize().multiply(speed) : Vec3d.ZERO;
-                b.setVelocity(this.leapVel.x, 0.8, this.leapVel.z);
-                b.velocityModified = true;
-                b.groundDust(0, 0.8, 16);
-                b.sound(SoundEvents.ENTITY_RAVAGER_STEP, 1.5f, 0.6f);
-            }
-            if (t > POUNCE_WINDUP) {
-                Vec3d v = b.getVelocity();
-                b.setVelocity(this.leapVel.x, v.y, this.leapVel.z);
-                if ((b.isOnGround() && t > POUNCE_WINDUP + 3) || t > POUNCE_WINDUP + 60) {
-                    this.action = LAND;
-                    this.tick = 0;
-                    b.setVelocity(0, b.getVelocity().y, 0);
-                    b.sendAction(LAND);
-                    b.radiusHit(2.4, 15f, 1.0, 0.4, false);
-                    b.groundDust(0, 1.4, 40);
-                    BloodFx.splash(b.getWorld(), b.getX(), b.getY() + 0.4, b.getZ(), 24, 1.0);
-                    b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5f, 0.7f);
-                    b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.2f, 0.6f);
-                }
-            }
-        }
-
-        /** «Багровый вальс»: раскрытие 0–12, вихрь 12–72 (по 4 каждые 8 т), крестовой разрез на 82. */
-        private void runWaltz(LivingEntity target) {
-            BloodthirsterEntity b = this.boss;
-            int t = this.tick;
-            if (t < WALTZ_OPEN && target != null) {
-                b.faceTarget(target);
-            }
-            if (t == 2) {
-                b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 0.8f, 1.6f);
-            }
-            if (t >= WALTZ_OPEN && t < WALTZ_SPIN_END) {
-                if (target != null) {
-                    Vec3d d = new Vec3d(target.getX() - b.getX(), 0, target.getZ() - b.getZ());
-                    if (d.lengthSquared() > 2.0) {
-                        Vec3d v = d.normalize().multiply(0.2);
-                        b.setVelocity(v.x, b.getVelocity().y, v.z);
-                        b.velocityModified = true;
-                    }
-                }
-                if ((t - WALTZ_OPEN) % 8 == 0) {
-                    b.radiusHit(3.4, 4f, 0.5, 0.1, true);
-                    b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.7f + b.random.nextFloat() * 0.3f);
-                    if (b.getWorld() instanceof ServerWorld s) {
-                        double a = b.random.nextDouble() * Math.PI * 2;
-                        BloodFx.splash(s, b.getX() + Math.cos(a) * 2.4, b.getBodyY(0.5), b.getZ() + Math.sin(a) * 2.4,
-                                5, 0.4);
-                    }
-                }
-            }
-            if (t >= WALTZ_SPIN_END && t < 82 && target != null) {
-                b.faceTarget(target);
-                Vec3d v = b.getVelocity();
-                b.setVelocity(v.x * 0.5, v.y, v.z * 0.5);
-            }
-            if (t == 82) {
-                b.coneHit(5.2, 100, 13f, 1.8, 0.4, true);
-                b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.5f, 0.5f);
-                b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.2f, 0.8f);
-                b.groundDust(2.5, 1.5, 30);
-                b.bloodAhead(2.8, 1.0, 20, 1.0);
-            }
-            if (t >= WALTZ_TICKS) {
-                this.waltzCd = 360;
-                this.finish(40);
             }
         }
     }

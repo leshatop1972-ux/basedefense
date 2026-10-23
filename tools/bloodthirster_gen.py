@@ -22,8 +22,8 @@ import os
 
 from PIL import Image
 
-from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, ease, ease_in, ease_out, faces, lerp, look_R, mix,
-                    mm, mul, mv, norm, rx_m, ry_m, scl, write_anims)
+from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, cross, dot, ease, ease_in, ease_out, faces, length,
+                    lerp, look_R, mix, mm, mul, mv, norm, rx_m, ry_m, scl, sub, tr, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 
@@ -108,6 +108,27 @@ bone("face", "head", (0, 49, -4.2))
 cube("face", (-12, 49, -5.2), (24, 32, 1), "face_hi", face="faceplate")
 bone("jaw_face", "jaw", (0, 46.2, -4.5))
 cube("jaw_face", (-11, 46.2, -5.5), (22, 12.8, 1), "face_hi", face="jawplate")
+# кольцо‑венец на лбу с камнем (как на скрине), три шипа над ним
+RC = (0, 59.4, -4.6)
+for k in range(12):
+    cube("head", (RC[0] - 0.7, RC[1] + 2.0, RC[2] - 0.45), (1.4, 0.75, 0.9), "bone", face="ring",
+         rot=(0, 0, k * 30), pivot=RC)
+cube("head", (-1.1, 58.3, -5.1), (2.2, 2.2, 0.9), "gem", face="gem")
+for k, a in enumerate((-30, 0, 30)):
+    cube("head", (-0.4, 61.8, -4.9), (0.8, 2.2 + (1.2 if a == 0 else 0), 0.8), "bone", face="crest_spike",
+         rot=(0, 0, a), pivot=(0, 61.4, -4.5))
+# рога‑серпы: три звена, из висков вбок и вверх (левый строится, правый — зеркально)
+bone("horn_l", "head", (3.0, 54.0, -0.6))
+px, py = 3.0, 54.0
+for ln, th, ang in ((4.4, 2.2, 8), (4.0, 1.8, 30), (3.6, 1.3, 58), (2.6, 0.8, 88)):
+    cube("horn_l", (px, py - th / 2, -0.6 - th / 2), (ln, th, th), "bone", face="horn",
+         rot=(0, 0, -ang), pivot=(px, py, -0.6))
+    px += ln * math.cos(math.radians(ang)) * 0.92
+    py += ln * math.sin(math.radians(ang)) * 0.92
+M.mirror_x("horn_l", "horn_r")
+# клыки‑жвалы по бокам челюсти
+cube("jaw", (-2.9, 43.6, -4.6), (0.8, 3.0, 0.8), "bone", face="fang", rot=(18, 0, 8), pivot=(-2.5, 46.4, -4.2))
+cube("jaw", (2.1, 43.6, -4.6), (0.8, 3.0, 0.8), "bone", face="fang", rot=(18, 0, -8), pivot=(2.5, 46.4, -4.2))
 # волосы: два звена, свисают по спине
 bone("hair", "head", (0, 55.5, 3.0))
 cube("hair", (-3.2, 43.5, 3.0), (6.4, 12.5, 1.2), "hair", face="hair1")
@@ -117,13 +138,9 @@ bone("hair_tip", "hair", (0, 43.5, 3.3))
 cube("hair_tip", (-3.2, 33.5, 2.8), (6.4, 10, 1.0), "hair", face="hair2")
 # большой широкий плащ: мантия на плечах, высокий воротник, полотнище до колен (почти без анимации)
 bone("cloak", "torso", (0, 44, 3.6))
-# полотнище из трёх частей: середина и два крыла, загнутые вокруг тела (складки), низ расширяется
-cube("cloak", (-6, 29, 3.3), (12, 15, 0.8), "cloak", face="cloak_top")
-cube("cloak", (5.6, 29, 3.3), (4.6, 15, 0.8), "cloak", face="cloak_top", rot=(0, 28, 0), pivot=(5.8, 36, 3.7))
-cube("cloak", (-10.2, 29, 3.3), (4.6, 15, 0.8), "cloak", face="cloak_top", rot=(0, -28, 0), pivot=(-5.8, 36, 3.7))
-cube("cloak", (-7, 6, 3.7), (14, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, 0, 0), pivot=(0, 29.5, 3.7))
-cube("cloak", (6.6, 6, 3.7), (6.2, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, 32, 0), pivot=(6.8, 29.5, 3.9))
-cube("cloak", (-12.8, 6, 3.7), (6.2, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, -32, 0), pivot=(-6.8, 29.5, 3.9))
+# полотнище — два прямоугольника («квадратный» плащ), низ чуть шире и отходит от тела
+cube("cloak", (-9.5, 29, 3.3), (19, 15, 0.8), "cloak", face="cloak_top")
+cube("cloak", (-11.5, 6, 3.7), (23, 23.5, 0.8), "cloak", face="cloak_low", rot=(10, 0, 0), pivot=(0, 29.5, 3.7))
 cube("torso", (-8.8, 41.2, -3.4), (17.6, 3.6, 7.6), "cloak", face="mantle")
 cube("torso", (-4.4, 44.2, 1.2), (8.8, 5.6, 1.0), "cloak", face="collar", rot=(-14, 0, 0), pivot=(0, 44.2, 1.7))
 cube("torso", (-5.2, 44.2, -2.2), (1.0, 5.0, 3.6), "cloak", face="collar", rot=(0, 0, 12), pivot=(-4.7, 44.2, 0))
@@ -138,27 +155,42 @@ cube("halo", (-2.2, 54.4, 4.2), (4.4, 1.0, 1.0), "halo", face="halo_bar")
 
 # руки: длинные, кисти с тремя когтями
 bone("right_arm", "torso", (-6.6, 42, 0))
-cube("right_arm", (-8.0, 29, -1.4), (2.8, 13, 2.8), "flesh", face="upper")
+cube("right_arm", (-8.2, 29, -1.6), (3.2, 13, 3.2), "flesh", face="upper")
 cube("right_arm", (-8.4, 35.5, -1.8), (3.6, 1.2, 3.6), "lacquer", face="band")
 bone("right_fore", "right_arm", (-6.6, 29, 0))
-cube("right_fore", (-7.9, 17, -1.3), (2.6, 12, 2.6), "flesh", face="fore")
+cube("right_fore", (-8.1, 17, -1.5), (3.0, 12, 3.0), "flesh", face="fore")
 cube("right_fore", (-8.2, 17.2, -1.6), (3.2, 3.2, 3.2), "lacquer", face="bracer")
 cube("right_fore", (-7.2, 28.0, 1.0), (1.0, 1.0, 2.4), "claw", face="spike", rot=(30, 0, 0), pivot=(-6.7, 28.5, 1.2))
 bone("right_hand", "right_fore", (-6.6, 17, 0))
 cube("right_hand", (-8.0, 14, -1.7), (2.8, 3, 3.4), "flesh", face="palm")
 bone("right_claws", "right_hand", (-6.6, 14.2, -0.3))
-for k, (dx, dz, ln) in enumerate(((-7.8, -1.7, 7.0), (-6.95, -1.7, 8.0), (-6.1, -1.7, 7.0))):
-    cube("right_claws", (dx, 14.2 - ln, dz), (0.75, ln, 0.75), "claw", face="finger")
-cube("right_claws", (-6.9, 10.8, 0.6), (0.75, 4.2, 0.75), "claw", face="finger")
+for k, (dx, ln) in enumerate(((-8.0, 9.0), (-7.0, 10.5), (-6.0, 9.0))):
+    cube("right_claws", (dx, 14.2 - ln, -1.9), (0.95, ln, 0.95), "claw", face="finger",
+         rot=(-12, 0, (k - 1) * 6), pivot=(dx + 0.47, 14.2, -1.4))
+cube("right_claws", (-7.0, 9.4, 0.4), (0.9, 4.8, 0.9), "claw", face="finger", rot=(25, 0, 0), pivot=(-6.6, 14.2, 0.8))
 # меч в правой руке: ось вдоль −z, рукоять в кулаке (только 2‑я фаза — прячется кодом)
 SG = (-6.6, 15.4, -0.2)
 bone("sword_r", "right_hand", SG)
 sx, sy, sz = SG
-cube("sword_r", (sx - 0.5, sy - 0.5, sz - 1.0), (1.0, 1.0, 4.4), "sword", face="grip")
-cube("sword_r", (sx - 0.8, sy - 0.8, sz + 3.2), (1.6, 1.6, 1.4), "sword", face="pommel")
-cube("sword_r", (sx - 0.55, sy - 2.6, sz - 1.8), (1.1, 5.2, 0.8), "sword", face="guard")
-cube("sword_r", (sx - 0.3, sy - 1.0, sz - 22.0), (0.6, 2.0, 20.2), "sword", face="blade")
-cube("sword_r", (sx - 0.2, sy - 0.6, sz - 25.0), (0.4, 1.2, 3.0), "sword", face="point")
+cube("sword_r", (sx - 0.55, sy - 0.55, sz - 1.2), (1.1, 1.1, 5.0), "sword", face="grip")
+cube("sword_r", (sx - 0.9, sy - 0.9, sz + 3.6), (1.8, 1.8, 1.6), "sword", face="pommel")
+cube("sword_r", (sx - 0.3, sy - 0.3, sz + 5.0), (0.6, 0.6, 1.6), "sword", face="pommel_spike")
+# крестовина: широкая, концы загнуты к клинку
+cube("sword_r", (sx - 0.65, sy - 4.2, sz - 2.4), (1.3, 8.4, 1.2), "sword", face="guard")
+cube("sword_r", (sx - 0.5, sy + 3.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(-25, 0, 0),
+     pivot=(sx, sy + 4.0, sz - 2.0))
+cube("sword_r", (sx - 0.5, sy - 4.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(25, 0, 0),
+     pivot=(sx, sy - 4.0, sz - 2.0))
+cube("sword_r", (sx - 0.8, sy - 0.8, sz - 3.4), (1.6, 1.6, 1.2), "gem", face="sword_gem")
+# клинок: широкий у основания, сужается к острию (4 части), зубцы по обуху
+cube("sword_r", (sx - 0.35, sy - 1.8, sz - 13.4), (0.7, 3.6, 10.2), "sword", face="blade")
+cube("sword_r", (sx - 0.3, sy - 1.45, sz - 25.4), (0.6, 2.9, 12.0), "sword", face="blade")
+cube("sword_r", (sx - 0.25, sy - 0.95, sz - 31.4), (0.5, 1.9, 6.0), "sword", face="blade")
+cube("sword_r", (sx - 0.2, sy - 0.45, sz - 34.4), (0.4, 0.9, 3.0), "sword", face="point")
+for z in (-8.0, -14.0, -20.0):
+    cube("sword_r", (sx - 0.2, sy + 1.2, sz + z), (0.4, 1.4, 1.4), "sword", face="serration", rot=(45, 0, 0),
+         pivot=(sx, sy + 1.6, sz + z + 0.7))
+SWORD_TIP = 34.4
 M.mirror_x("right_arm", "left_arm")
 M.mirror_x("right_fore", "left_fore", parent="left_arm")
 M.mirror_x("right_hand", "left_hand", parent="left_fore")
@@ -180,93 +212,81 @@ def sh(col, k):
     return tuple(clamp(ch * k) for ch in col[:3])
 
 
-def face_pixel(face, i, j, phase):
-    """Детальное лицо 24×32 (лоб, брови, миндалевидные глаза, нос, скулы, губы) и подбородок 22×13.
-    Не «пиксельная» маска: мягкая светотень по овалу, свет сверху‑слева."""
-    if face == "faceplate":
-        W, H = 24, 32
-        u = (i + 0.5) / W * 2 - 1          # −1..1 слева направо (как видит зритель)
-        v = (j + 0.5) / H                  # 0 сверху .. 1 снизу
-        x = abs(u)
-    else:
-        W, H = 22, 13
-        u = (i + 0.5) / W * 2 - 1
-        v = 1.0 + (j + 0.5) / H * 0.42     # продолжение лица ниже (1.0..1.42)
-        x = abs(u)
-    # основа: «фарфоровая» бордовая кожа, во 2‑й фазе — чёрный лак с алым подтоном
-    base = mix(BORDEAUX, RED, 0.55) if phase == 1 else mix(BLACK, BORDEAUX, 0.55)
-    hi = (196, 86, 92) if phase == 1 else (120, 40, 52)
-    # объём: овал лица (темнее к краям и к подбородку), блик на лбу и скулах
-    oval = 1.0 - 0.55 * x ** 2.2 - 0.25 * max(0.0, v - 0.85) ** 1.5
-    light_k = 0.78 + 0.32 * oval + 0.08 * (-u) * (1 - v)
-    col = sh(base, light_k)
-    forehead = math.exp(-((v - 0.16) / 0.12) ** 2) * math.exp(-(u / 0.55) ** 2)
-    cheek = math.exp(-((v - 0.58) / 0.07) ** 2) * math.exp(-((x - 0.58) / 0.14) ** 2)
-    col = mix(col, hi, 0.45 * forehead + 0.55 * cheek)
-    # впадины под скулами и у висков
-    hollow = math.exp(-((v - 0.68) / 0.06) ** 2) * math.exp(-((x - 0.72) / 0.12) ** 2)
-    col = mix(col, BORDEAUX_D, 0.55 * hollow)
+BONE_W = (232, 206, 200)          # бледная кость с розовым отливом (рога, кольцо, узоры маски)
+BONE_S = (178, 136, 134)
+BONE_D = (120, 78, 80)
 
-    # орнамент на лбу: тонкие расходящиеся линии‑филигрань (2‑я фаза светится)
-    if face == "faceplate" and 0.02 < v < 0.26:
-        for k in (0.0, 0.33, 0.66):
-            yy = 0.24 - (x * 0.45 + k * 0.12) - 0.05 * math.sin(x * 9 + k * 4)
-            if abs(v - yy) < 0.012 and x < 0.8:
-                return ("glow", mix(GLOW, RED, 0.3)) if phase == 2 else sh(BLACK_L, 1.1)
-        if x < 0.05 and v > 0.12:
-            return ("glow", GLOW) if phase == 2 else sh(BLACK, 1.0)
-    # брови: тонкие изогнутые дуги
+
+def face_pixel(face, i, j, phase):
+    """Маска‑лицо 24×32 и подбородок 22×13 в духе скрина пользователя: тёмно‑алая маска,
+    бледные костяные узоры (дуги над глазами, гребень от камня ко лбу, скуловые пластины),
+    узкие горящие глаза под тяжёлыми надбровьями, оскал с клыками. Мягкая светотень."""
     if face == "faceplate":
-        by = 0.34 - 0.06 * math.sin(min(1.0, max(0.0, (x - 0.12) / 0.78)) * math.pi) + 0.03 * x
-        if 0.14 < x < 0.9 and abs(v - by) < 0.012 + 0.006 * (1 - x):
-            return sh(BLACK, 1.0)
-        # глаза: миндалевидные, слегка раскосые
-        ex, ey = 0.47, 0.42 - 0.035 * (x - 0.47) / 0.3
-        dx, dy = (x - ex) / 0.30, (v - ey) / 0.055
-        r = dx * dx + dy * dy * (1.0 + 0.6 * dx)
-        if r < 1.0:
-            if abs(dx) < 0.12 and abs(dy) < 0.8:
-                return ("glow", GLOW_HOT)                 # вертикальный зрачок
-            if dx * dx + dy * dy < 0.3:
-                return ("glow", GLOW)                     # радужка
-            return sh(BLACK, 1.0)                         # чёрный белок
-        if 1.0 <= r < 1.45 and dy < 0:
-            return sh(BLACK_L, 0.8)                       # ресницы / веко
-        if 1.0 <= r < 1.35 and dy >= 0:
-            col = mix(col, BORDEAUX_D, 0.6)               # тень под глазом
-        # кровавые слёзы от внутреннего уголка
-        tx = 0.21 + 0.02 * math.sin(v * 30)
-        if 0.47 < v < 0.8 and abs(x - tx) < 0.03 and u < 0:
-            k = (v - 0.46) / 0.4
-            return mix(SCARLET, mix(RED, BORDEAUX, 0.4), k) if phase == 1 else ("glow", mix(GLOW, RED, k * 0.6))
-        # нос: светлая спинка, тень с одной стороны, крылья
-        if 0.44 < v < 0.70:
-            if -0.06 < u < 0.02:
-                col = mix(col, hi, 0.35)
-            elif 0.02 <= u < 0.12:
-                col = mix(col, BORDEAUX_D, 0.4)
-        if 0.66 < v < 0.72 and 0.06 < x < 0.17:
-            return sh(BORDEAUX_D, 0.7)                    # ноздри
-        # губы: тонкая верхняя (низ пластины лица)
-        if v > 0.86:
-            lip = mix(CRIMSON, SCARLET, 0.3) if phase == 1 else mix(BLACK, CRIMSON, 0.5)
-            top = 0.905 - 0.02 * math.exp(-(x / 0.08) ** 2) + 0.025 * math.exp(-((x - 0.16) / 0.07) ** 2)
-            if x < 0.4 and v > top + x * 0.06:            # верхняя губа с «луком Купидона»
-                if v > 0.975:
-                    return sh(BLACK, 1.0)                 # тонкий разрез рта
-                return sh(lip, 0.85 + 0.2 * (1 - x))
+        u = (i + 0.5) / 24 * 2 - 1
+        v = (j + 0.5) / 32
     else:
-        # подбородок: полная нижняя губа с бликом, ямка, кровавая капля
-        lip = mix(CRIMSON, SCARLET, 0.35) if phase == 1 else mix(BLACK, CRIMSON, 0.55)
-        if v < 1.14 and x < 0.40 - (v - 1.0) * 1.2:
-            if v < 1.015:
-                return sh(BLACK, 1.0)
-            k = 1.0 + 0.35 * math.exp(-((v - 1.07) / 0.03) ** 2) * math.exp(-(u + 0.1) ** 2 / 0.02)
-            return sh(lip, k)
-        if abs(u - 0.12) < 0.035 and 1.12 < v < 1.38:
-            return mix(SCARLET, RED, (v - 1.12) / 0.3) if phase == 1 else ("glow", mix(GLOW, RED, 0.4))
-        if 1.2 < v < 1.27 and x < 0.15:
-            col = mix(col, BORDEAUX_D, 0.4)               # ямка подбородка
+        u = (i + 0.5) / 22 * 2 - 1
+        v = 1.0 + (j + 0.5) / 13 * 0.42
+    x = abs(u)
+    base = mix(CRIMSON, RED, 0.45) if phase == 1 else mix(BLACK, CRIMSON, 0.45)
+    shade = 0.8 + 0.3 * (1.0 - 0.6 * x ** 2) - 0.2 * max(0.0, v - 0.9)
+    col = sh(base, shade)
+    glow2 = phase == 2
+
+    def bone(k=1.0):
+        return sh(mix(BONE_S, BONE_W, 0.5 + 0.5 * (1 - x)), k)
+
+    if face == "faceplate":
+        # центральный гребень от камня вниз по переносице
+        if x < 0.07 and v < 0.62:
+            return ("glow", GLOW) if (glow2 and v < 0.3) else bone(1.0 if x < 0.04 else 0.85)
+        # костяные дуги: от центра вверх‑вбок (как рога), две параллельные
+        for off, wdt in ((0.0, 0.022), (0.075, 0.016)):
+            yy = 0.30 - 0.32 * x ** 1.3 - off
+            if 0.08 < x < 0.98 and abs(v - yy) < wdt + 0.01 * (1 - x):
+                return bone(1.0 - 0.2 * x)
+        # надбровья — тяжёлые тёмные дуги, под ними глаза
+        brow = 0.36 + 0.07 * x
+        if 0.1 < x < 0.86 and brow - 0.03 < v < brow + 0.012:
+            return sh(BLACK, 1.0)
+        ex, ey = 0.46, 0.415 + 0.05 * (x - 0.46)
+        dx, dy = (x - ex) / 0.30, (v - ey) / 0.04
+        if dx * dx + dy * dy < 1.0:
+            if dx * dx + (dy * 2.2) ** 2 < 0.3:
+                return ("glow", GLOW_HOT)
+            return ("glow", GLOW)
+        if dx * dx * 0.7 + ((v - ey) / 0.07) ** 2 < 1.0:
+            return sh(BLACK, 0.9)                         # тёмная глазница вокруг огня
+        # скуловые костяные пластины с канавкой
+        cheek_y = 0.56 + 0.08 * x
+        if 0.3 < x < 0.95 and abs(v - cheek_y) < 0.05:
+            if abs(v - cheek_y) < 0.012:
+                return sh(BONE_D, 0.9)
+            return bone(0.95)
+        # кровавая слеза из левого глаза
+        if u < 0 and abs(x - 0.33 - 0.015 * math.sin(v * 40)) < 0.03 and 0.46 < v < 0.84:
+            return ("glow", mix(GLOW, RED, 0.4)) if glow2 else mix(SCARLET, RED, (v - 0.46) / 0.4)
+        # нос: две тёмные щели
+        if 0.66 < v < 0.72 and 0.07 < x < 0.15:
+            return sh(BLACK, 1.0)
+        # оскал: тёмный рот с верхними клыками
+        if v > 0.84 and x < 0.62 - 0.4 * (v - 0.84):
+            tooth = (i % 3 != 2) and v > 0.88 and (v < 0.97 - 0.03 * (i % 3))
+            if x > 0.12 and (i * 7) % 5 == 0 and v > 0.86:
+                tooth = True                              # длинные клыки
+            return bone(1.05) if tooth else sh(BLACK, 1.0)
+        # мелкая филигрань на лбу (2‑я фаза светится)
+        if v < 0.2 and abs((u * 8) % 1 - 0.5) < 0.06 and x < 0.5:
+            return ("glow", mix(GLOW, RED, 0.3)) if glow2 else sh(BORDEAUX_D, 1.0)
+        return col
+    # подбородок: нижние клыки, костяная пластина‑«жвало»
+    if v < 1.16 and x < 0.6:
+        tooth = (i % 3 != 1) and v < 1.12 - 0.02 * (i % 2)
+        return bone(1.0) if tooth else sh(BLACK, 1.0)
+    if x < 0.08:
+        return ("glow", mix(GLOW, RED, 0.4)) if glow2 else bone(0.9)
+    if abs(v - (1.25 + 0.2 * x)) < 0.025 and x < 0.8:
+        return bone(0.9)
     return col
 
 
@@ -386,8 +406,12 @@ def make_painter(model, phase, seed):
                 if mat == "claw":
                     t = j / max(1, h - 1)
                     if face in ("finger", "toe"):
-                        return lit(fname, mix(IVORY_D, BLACK, min(1.0, t * 1.4)) if phase == 1 else mix(BORDEAUX, BLACK, t))
-                    return lit(fname, mix(BLACK_L, BLACK, t))
+                        # бледные костяные когти, к концу — тёмно‑алые
+                        col = mix(BONE_W, BONE_S, t * 0.7)
+                        if t > 0.75:
+                            col = mix(col, CRIMSON if phase == 1 else BLACK, (t - 0.75) * 3)
+                        return lit(fname, col)
+                    return lit(fname, mix(BONE_S, BONE_D, t))
                 if mat == "mask":
                     if face == "skull" and fname == "front":
                         # гладкая маска: раскосые щели глаз с огнём, кровавые слёзы, разрез рта
@@ -430,6 +454,23 @@ def make_painter(model, phase, seed):
                             return ("glow", mix(GLOW, CRIMSON, 0.5)) if (i + j) % 3 == 0 else lit(fname, SCARLET)
                         return lit(fname, IVORY)
                     return lit(fname, BORDEAUX if phase == 1 else mix(BLACK, BORDEAUX, 0.4))
+                if mat == "bone":
+                    t = j / max(1, h - 1)
+                    if face == "horn":
+                        k = (i * 2 + j) % 7 == 0
+                        col = mix(BONE_W, BONE_S, 0.25 + 0.35 * t) if not k else BONE_D
+                        if c["size"][0] < 3.0:               # кончик рога краснеет
+                            col = mix(col, SCARLET, 0.6) if phase == 1 else mix(col, GLOW, 0.4)
+                        return lit(fname, col)
+                    if face == "fang":
+                        return lit(fname, mix(BONE_W, BORDEAUX, t * 0.8))
+                    if phase == 2 and face == "ring" and fname in ("front", "top"):
+                        return ("glow", mix(GLOW, BONE_W, 0.3))
+                    return lit(fname, mix(BONE_W, BONE_S, 0.3 + 0.4 * t))
+                if mat == "gem":
+                    if fname in ("front", "top") and 0 < i < w - 1 and 0 < j < h - 1:
+                        return ("glow", GLOW_HOT)
+                    return ("glow", GLOW) if fname == "front" or face == "gem" else lit(fname, CRIMSON)
                 if mat == "face_hi":
                     if fname != "front":
                         return lit(fname, BORDEAUX_D)
@@ -449,21 +490,27 @@ def make_painter(model, phase, seed):
                         return ("glow", GLOW_HOT if t < 0.15 else GLOW)
                     return lit(fname, mix(BLACK_L, BLACK, t))
                 if mat == "sword":
-                    if face == "blade" or face == "point":
+                    if face in ("blade", "point"):
                         if fname in ("left", "right"):
-                            # плоскость клинка: чёрная сталь, алая кромка снизу/сверху, канавка
+                            # плоскость клинка: чёрная сталь с алыми волнами, светящаяся кромка, дол
                             if j in (0, h - 1):
-                                return ("glow", GLOW)
-                            if j == h // 2 and face == "blade":
-                                return lit(fname, mix(BLACK, CRIMSON, 0.6))
-                            return lit(fname, BLACK if (i // 3) % 2 else BLACK_L)
+                                return ("glow", GLOW_HOT if face == "point" else GLOW)
+                            if j == h // 2:
+                                return ("glow", mix(GLOW, CRIMSON, 0.55))
+                            wave = math.sin(i * 0.55 + j * 1.3)
+                            col = mix(BLACK, CRIMSON, 0.25 + 0.25 * wave) if wave > 0.3 else BLACK_L if wave > -0.4 else BLACK
+                            return lit(fname, col)
                         if fname in ("top", "bottom"):
                             return ("glow", GLOW)
                         return lit(fname, RED)
-                    if face == "pommel":
-                        return ("glow", GLOW) if fname in ("back", "top") else lit(fname, CRIMSON)
-                    if face == "guard":
-                        return lit(fname, BLACK_L if j in (0, h - 1) else BLACK)
+                    if face == "serration":
+                        return ("glow", GLOW) if fname in ("top", "front") else lit(fname, BLACK)
+                    if face in ("pommel", "pommel_spike"):
+                        return ("glow", GLOW) if face == "pommel" and fname in ("back", "top") else lit(fname, BLACK_L)
+                    if face in ("guard", "guard_tip"):
+                        if side(fname) and (j in (0, h - 1) or i in (0, w - 1)):
+                            return lit(fname, mix(BLACK_L, CRIMSON, 0.5))
+                        return lit(fname, BLACK if (i + j) % 3 else BLACK_L)
                     return lit(fname, CRIMSON if (i + j) % 2 else BORDEAUX)   # обмотка рукояти
                 return (255, 0, 255)
             PT.fill(rect, fn)
@@ -513,7 +560,42 @@ def lerp_val(a, b, t):
     return lerp(a, b, t)
 
 
-EASES = {"lin": lambda x: x, "ease": ease, "out": ease_out, "in": ease_in}
+# «in»/«out» — квадратичные (резко, но без телепортации кости за кадр на быстрых ударах)
+EASES = {"lin": lambda x: x, "ease": ease, "out": lambda x: 1 - (1 - x) ** 2, "in": lambda x: x * x,
+         "in3": ease_in, "out3": ease_out}
+
+
+# Кисти движутся по дуге вокруг плеча (сферическая интерполяция направления + длины), а направления
+# мечей и сгибов — по дуге большого круга. Иначе при линейной интерполяции кисть может пройти
+# сквозь плечо (рука «выворачивается» за кадр), а меч — через нулевой вектор (переворот на 180°).
+SHOULDER = {"rh": (-6.6, -14.0, 0.0), "lh": (6.6, -14.0, 0.0)}
+DIRS = ("rdir", "ldir", "r_pole", "l_pole")
+
+
+def slerp_dir(a, b, t):
+    a, b = norm(list(a)), norm(list(b))
+    c = max(-1.0, min(1.0, dot(a, b)))
+    ang = math.acos(c)
+    if ang < 1e-4:
+        return a
+    if ang > math.pi - 1e-3:                               # почти противоположные: обход через «вверх»
+        mid = norm(add(cross(a, [0, 1, 0]) if abs(a[1]) < 0.9 else cross(a, [1, 0, 0]), [0, 0, 0]))
+        return slerp_dir(a, mid, t * 2) if t < 0.5 else slerp_dir(mid, b, t * 2 - 1)
+    s0 = math.sin((1 - t) * ang) / math.sin(ang)
+    s1 = math.sin(t * ang) / math.sin(ang)
+    return [a[i] * s0 + b[i] * s1 for i in range(3)]
+
+
+def lerp_key(name, a, b, t):
+    if name in SHOULDER:
+        o = SHOULDER[name]
+        va, vb = sub(list(a), list(o)), sub(list(b), list(o))
+        la, lb = length(va), length(vb)
+        d = slerp_dir(va, vb, t)
+        return tuple(add(list(o), scl(d, lerp(la, lb, t))))
+    if name in DIRS:
+        return tuple(slerp_dir(a, b, t))
+    return lerp_val(a, b, t)
 
 
 def keyed(keys, t, base=DEFAULT):
@@ -530,8 +612,84 @@ def keyed(keys, t, base=DEFAULT):
         if t <= t1:
             t0, p0, _ = full[k - 1]
             f = EASES[e]((t - t0) / (t1 - t0)) if t1 > t0 else 1.0
-            return {n: lerp_val(p0[n], p1[n], f) for n in p1}
+            return {n: lerp_key(n, p0[n], p1[n], f) for n in p1}
     return dict(full[-1][1])
+
+
+def frame_X(y_axis, x_hint):
+    """Поворот, у которого локальная +y (вдоль кости) = y_axis, а локальная +x — по x_hint
+    (ось сгиба сустава: одинакова для обоих звеньев, поэтому кости не «прокручиваются»)."""
+    y = norm(y_axis)
+    x = sub(x_hint, scl(y, dot(x_hint, y)))
+    if length(x) < 1e-6:
+        x = cross(y, [0, 0, 1]) if abs(y[2]) < 0.9 else cross(y, [1, 0, 0])
+    x = norm(x)
+    z = cross(x, y)
+    return [[x[0], y[0], z[0]], [x[1], y[1], z[1]], [x[2], y[2], z[2]]]
+
+
+# Непрерывность между кадрами одной анимации: направление сгиба суставов (чтобы локоть/колено не
+# перескакивали на другую сторону, когда цель почти на линии сгиба). Сбрасывается в bake_clip.
+PREV_PN = {}
+
+
+def smooth01(e0, e1, x):
+    t = max(0.0, min(1.0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
+
+
+def limb_ik(model, pose, upper, lower, target, pole, a, b, side_sign, fallback=None):
+    """IK из двух звеньев без «прокручивания»: обе кости повёрнуты вокруг общей оси сгиба
+    n = dn × pn (side_sign: +1 руки, −1 ноги — чтобы в покое совпасть с моделью)."""
+    S = model.world(upper, [0, 0, 0], pose)
+    d = sub(target, S)
+    dist = max(abs(a - b) + 0.05, min(a + b - 0.05, length(d)))
+    dn = norm(d)
+    al = math.acos(max(-1.0, min(1.0, (a * a + dist * dist - b * b) / (2 * a * dist))))
+    pole = norm(pole)
+    if fallback is not None:                              # сгиб почти вдоль руки — плавно берём запасной
+        k = smooth01(0.8, 0.97, abs(dot(pole, dn)))
+        pole = norm(add(scl(pole, 1 - k), scl(norm(fallback), k)))
+    p = sub(pole, scl(dn, dot(pole, dn)))
+    pn = norm(p) if length(p) > 1e-6 else [0, 0, -1]
+    prev = PREV_PN.get(upper)
+    if prev is not None:
+        pp = sub(prev, scl(dn, dot(prev, dn)))
+        if length(pp) > 1e-3:                             # сгиб поворачивается не быстрее 12° за кадр
+            pp = norm(pp)
+            ang = math.acos(max(-1.0, min(1.0, dot(pp, pn))))
+            if ang > math.radians(12):
+                ax = cross(pp, pn)
+                ax = norm(ax) if length(ax) > 1e-6 else dn
+                pn = mv(axis_R(ax, math.radians(12)), pp)
+    PREV_PN[upper] = pn
+    E = add(S, scl(add(scl(dn, math.cos(al)), scl(pn, math.sin(al))), a))
+    T = add(S, scl(dn, dist))
+    n = scl(norm(cross(dn, pn)), side_sign)
+    model.set_world_rot(pose, upper, frame_X(sub(E, S), n))
+    model.set_world_rot(pose, lower, frame_X(sub(T, E), n))
+
+
+def arc_R(a, b):
+    """Кратчайший поворот, переводящий направление a в b."""
+    a, b = norm(a), norm(b)
+    c = dot(a, b)
+    if c > 0.99999:
+        return [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    ax = cross(a, b)
+    if length(ax) < 1e-6:
+        ax = cross(a, [1, 0, 0]) if abs(a[0]) < 0.9 else cross(a, [0, 1, 0])
+    ax = norm(ax)
+    ang = math.acos(max(-1.0, min(1.0, c)))
+    return axis_R(ax, ang)
+
+
+def axis_R(k, ang):
+    x, y, z = k
+    c, s_, v = math.cos(ang), math.sin(ang), 1 - math.cos(ang)
+    return [[c + x * x * v, x * y * v - z * s_, x * z * v + y * s_],
+            [y * x * v + z * s_, c + y * y * v, y * z * v - x * s_],
+            [z * x * v - y * s_, z * y * v + x * s_, c + z * z * v]]
 
 
 def resolve(pr, model=M, swords=True):
@@ -557,7 +715,7 @@ def resolve(pr, model=M, swords=True):
     Rroot = model.chain_R("root", pose)
     for s, key, toe in (("right", "rf", "toe_r"), ("left", "lf", "toe_l")):
         tgt = model.world("root", [pr[key][0], pr[key][1] - 24, pr[key][2]], pose)   # опора root — на земле (y 24)
-        model.two_bone(pose, s + "_leg", s + "_shin", tgt, mv(Rroot, [0, -0.3, -1]), THIGH, SHIN)
+        limb_ik(model, pose, s + "_leg", s + "_shin", tgt, mv(Rroot, [0, -0.3, -1]), THIGH, SHIN, -1)
         model.set_world_rot(pose, s + "_foot", mm(Rroot, rx_m(math.radians(pr[toe]))))
     # лоскуты следуют за бёдрами
     rl = pose["right_leg"]["rot"][0]
@@ -572,18 +730,77 @@ def resolve(pr, model=M, swords=True):
     Rt = model.chain_R("torso", pose)
     for s, key, pole in (("right", "rh", "r_pole"), ("left", "lh", "l_pole")):
         tgt = model.world("torso", list(pr[key]), pose)
-        model.two_bone(pose, s + "_arm", s + "_fore", tgt, mv(Rt, list(pr[pole])), UPPER, FORE)
+        out = mv(Rt, [-1.0 if s == "right" else 1.0, 0.2, 0.4])   # запасной сгиб: локоть наружу‑назад
+        limb_ik(model, pose, s + "_arm", s + "_fore", tgt, mv(Rt, list(pr[pole])), UPPER, FORE, 1, out)
     pose["right_hand"] = {"rot": pr["rhand"]}
     pose["left_hand"] = {"rot": pr["lhand"]}
     pose["right_claws"] = {"rot": (-pr["rcurl"], 0, 0)}
     pose["left_claws"] = {"rot": (-pr["lcurl"], 0, 0)}
     if swords:
+        # меч: кратчайший поворот от направления «вперёд из кисти» к нужному + крен вокруг клинка
+        # (без внезапных переворотов у вертикали, как было с look_R)
         Rr = model.chain_R("root", pose)
-        for b, key, roll in (("sword_r", "rdir", "rroll"), ("sword_l", "ldir", "lroll")):
-            d = mv(Rr, list(norm(pr[key])))
-            model.set_world_rot(pose, b, look_R(d, roll=pr[roll]))
+        for b, hand, key, roll in (("sword_r", "right_hand", "rdir", "rroll"), ("sword_l", "left_hand", "ldir", "lroll")):
+            d = norm(mv(Rr, list(norm(pr[key]))))
+            Rh = model.chain_R(hand, pose)
+            hx = mv(Rh, [1, 0, 0])                         # ось сгиба кисти — плоскость клинка
+            hy = mv(Rh, [0, 1, 0])
+            k = smooth01(0.75, 0.95, abs(dot(hx, d)))
+            hint = norm(add(scl(hx, 1 - k), scl(hy, k)))
+            x = norm(sub(hint, scl(d, dot(hint, d))))
+            z = scl(d, -1)
+            y = cross(z, x)
+            Rw = [[x[0], y[0], z[0]], [x[1], y[1], z[1]], [x[2], y[2], z[2]]]
+            Rw = mm(axis_R(d, math.radians(pr[roll])), Rw)
+            model.set_world_rot(pose, b, Rw)
+            pose.setdefault("_sword", {})[b] = (d, Rw, model.chain_R(model.parent[b], pose))
             pose[b]["scale"] = (pr["sw"],) * 3
     return pose
+
+
+def twist_about(d, Ra, Rb):
+    """Угол (рад) поворота вокруг оси d, переводящий Ra в Rb (оба с одной осью клинка d)."""
+    xa = [Ra[0][0], Ra[1][0], Ra[2][0]]
+    xb = [Rb[0][0], Rb[1][0], Rb[2][0]]
+    return math.atan2(dot(cross(xa, xb), d), dot(xa, xb))
+
+
+def bake_clip(fn, length_s, fps, loop, bones):
+    """Как mobgen.bake, но мечи без переворотов: ориентация клинка «переносится» от кадра к кадру
+    (кратчайший поворот за направлением), а накопленный крен плавно убирается к концу анимации —
+    начало и конец совпадают с обычной позой (для плавного смешивания с покоем)."""
+    PREV_PN.clear()
+    n = int(round(length_s * fps))
+    times = [min(k / fps, length_s) for k in range(n + 1)]
+    poses = [fn(t) for t in times]
+    for b in ("sword_r", "sword_l"):
+        if not all("_sword" in p and b in p["_sword"] for p in poses):
+            continue
+        Rs = []
+        for k, p in enumerate(poses):
+            d, Rc, _ = p["_sword"][b]
+            if k == 0:
+                R = Rc
+            else:
+                dp = poses[k - 1]["_sword"][b][0]
+                R = mm(arc_R(dp, d), Rs[-1])
+            Rs.append(R)
+        drift = twist_about(poses[-1]["_sword"][b][0], Rs[-1], poses[-1]["_sword"][b][1])
+        for k, p in enumerate(poses):
+            d, _, Rp = p["_sword"][b]
+            R = mm(axis_R(d, drift * k / max(1, n)), Rs[k])
+            p[b]["rot"] = to_euler_safe(mm(tr(Rp), R))
+    lookup = dict(zip(times, poses))
+    return bake(lambda t: lookup[t], length_s, fps, loop, bones, unwrap=True)
+
+
+def to_euler_safe(R):
+    from mobgen import to_euler
+    if abs(R[2][0]) > 0.99999:                            # шарнирный замок: крен в 0, всё в тангаж
+        b = -90.0 if R[2][0] > 0 else 90.0
+        a = math.degrees(math.atan2(-R[1][2], R[1][1]))
+        return [a, b, 0.0]
+    return to_euler(R)
 
 
 def gait(w, stride, lift, base_y=22.0, width=2.8, z0=0.0):
@@ -650,18 +867,23 @@ def run1(t):
     return resolve(pr)
 
 
-# «Неуклюжий замах»: правая лапа заносится высоко за голову и рушится вниз наискось (удар на 1.0 с)
+# «Неуклюжий замах»: разворот и рёв, лапа высоко за головой, пауза‑напряжение — и всем телом обрушивает
+# её в землю перед собой (удар на 1.15 с), когти застревают и волочатся назад.
 SWING = [
     (0.00, HUNCH, "lin"),
-    (0.70, dict(torso=(10, -28, -10), body=(2, -14, 0), body_pos=(0, 2.4, 0), head=(-14, 18, 0),
-                rh=(-9.5, -21, 5), r_pole=(0.2, 1, 0.6), rhand=(30, 0, 0), rcurl=-10.0,
-                lh=(8, 6, -10), rf=(-3.4, 22, 2.6), lf=(3.0, 22, -3.0), jaw=26.0), "out"),
-    (0.88, dict(torso=(6, -34, -12), rh=(-10, -22, 7.5), head=(-10, 22, 0)), "lin"),
-    (1.02, dict(torso=(46, 30, 8), body=(14, 18, 0), body_pos=(0, 4.6, 0), head=(-38, -16, 0),
-                rh=(4, 9, -14), r_pole=(1, 0, 0.6), rhand=(-40, 0, 0), rcurl=40.0,
-                lh=(9, 4, -6), rf=(-3.4, 22, 3.6), lf=(3.0, 22, -5.0), jaw=12.0, hair=20.0, ribbon=10.0), "in"),
-    (1.25, dict(torso=(50, 34, 10), rh=(5, 11, -12), hair=8.0), "out"),
-    (1.80, HUNCH, "ease"),
+    (0.40, dict(torso=(28, -38, -6), body=(6, -16, 0), body_pos=(0, 4.6, 0), head=(-26, 26, 0), rh=(-11, 8, 6),
+                r_pole=(0.6, -0.4, 1), lh=(6, 8, -13), rhand=(10, 0, 0), rcurl=10.0, jaw=24.0,
+                rf=(-3.6, 22, 2.6), lf=(3.0, 22, -3.4)), "out"),
+    (0.85, dict(torso=(-2, -44, -14), body=(-6, -18, 0), body_pos=(0, 1.2, 0), head=(-6, 30, 0), neck=(-6, 0, 0),
+                rh=(-9, -24, 9), r_pole=(0.3, 1, 0.5), rhand=(40, 0, 0), rcurl=-15.0, lh=(9, 2, -12), jaw=44.0,
+                ribbon=-4.0), "ease"),
+    (1.00, dict(torso=(-4, -46, -15), rh=(-9.5, -25, 10), jaw=48.0), "lin"),
+    (1.15, dict(torso=(56, 30, 10), body=(18, 18, 0), body_pos=(0, 7.5, 0), head=(-44, -18, 0), neck=(-10, 0, 0),
+                rh=(4, 15, -16), r_pole=(1, 0, 0.6), rhand=(-50, 0, 0), rcurl=45.0, lh=(10, 6, -6),
+                rf=(-3.6, 22, 4.2), lf=(3.4, 22, -6.0), jaw=20.0, hair=24.0, ribbon=14.0), "in"),
+    (1.35, dict(torso=(60, 32, 11), body_pos=(0, 8.0, 0), rh=(4.5, 16, -15.5), hair=10.0), "out"),
+    (1.75, dict(torso=(48, 16, 6), rh=(-3, 13, -10), rcurl=55.0, body_pos=(0, 6.0, 0), jaw=14.0), "ease"),
+    (2.20, HUNCH, "ease"),
 ]
 
 
@@ -669,77 +891,89 @@ def swing(t):
     return resolve(keyed(SWING, t))
 
 
-# «Жадное пожирание»: подаётся вперёд, лапы по очереди быстро сгребают добычу в пасть (3 с)
-DEVOUR_LEAN = dict(torso=(48, 0, 0), body=(12, 0, 0), body_pos=(0, 4.8, 0), head=(-34, 0, 0),
-                   rf=(-3.4, 22, 2.8), lf=(3.4, 22, -2.2), jaw=30.0)
+# «Жадное пожирание»: встаёт на дыбы с раскрытой пастью, бросается вниз и 3 с рвёт добычу лапами,
+# по очереди запихивая её в пасть; голова дёргается при каждом укусе.
+DEVOUR_REAR = dict(torso=(6, 0, 0), body=(-2, 0, 0), body_pos=(0, 1.5, 0), head=(-20, 0, 0), neck=(-10, 0, 0),
+                   rh=(-15, -12, -3), lh=(15, -12, -3), r_pole=(0.3, 0.7, 1), l_pole=(-0.3, 0.7, 1),
+                   rhand=(20, 0, -20), lhand=(20, 0, 20), rcurl=-20.0, lcurl=-20.0, jaw=52.0, ribbon=-4.0)
+DEVOUR_LEAN = dict(torso=(52, 0, 0), body=(16, 0, 0), body_pos=(0, 6.0, 0), head=(-40, 0, 0), neck=(-6, 0, 0),
+                   rf=(-3.6, 22, 3.2), lf=(3.6, 22, -2.6), jaw=34.0, rhand=(-20, 0, 0), lhand=(-20, 0, 0),
+                   r_pole=(0.6, -0.3, 1), l_pole=(-0.6, -0.3, 1), rh=(-7, 12, -14), lh=(7, 12, -14), ribbon=8.0)
 
 
 def devour(t):
-    pr = keyed([(0.0, HUNCH, "lin"), (0.4, DEVOUR_LEAN, "out"), (3.3, DEVOUR_LEAN, "lin"), (3.6, HUNCH, "ease")], t)
-    k = min(1.0, t / 0.4) * min(1.0, max(0.0, (3.6 - t) / 0.3))
+    pr = keyed([(0.0, HUNCH, "lin"), (0.45, DEVOUR_REAR, "out"), (0.7, DEVOUR_LEAN, "in"),
+                (3.4, DEVOUR_LEAN, "lin"), (3.8, HUNCH, "ease")], t)
+    k = min(1.0, max(0.0, (t - 0.7) / 0.15)) * min(1.0, max(0.0, (3.4 - t) / 0.2))
     if k > 0:
-        w = 2 * math.pi * (t - 0.4) / 0.3                  # одна лапа за 0.15 с
+        w = 2 * math.pi * (t - 0.7) / 0.64                 # пара лап за 0.64 с
         a = math.sin(w)
         b = math.sin(w + math.pi)
-        # лапа: вперёд‑вниз (схватить) → к пасти (сгрести)
+
         def paw(s, x):
-            reach = (x * 1.0, 13.0 - 5.0 * (s * 0.5 + 0.5), -16.0 + 9.0 * (s * 0.5 + 0.5))
-            return reach
-        r = paw(a, -6.0)
-        l = paw(b, 6.0)
-        pr["rh"] = lerp_val(pr["rh"], r, k)
-        pr["lh"] = lerp_val(pr["lh"], l, k)
-        pr["rcurl"] = lerp(pr["rcurl"], 20 + 30 * (a * 0.5 + 0.5), k)
-        pr["lcurl"] = lerp(pr["lcurl"], 20 + 30 * (b * 0.5 + 0.5), k)
-        pr["jaw"] = lerp(pr["jaw"], 16 + 22 * abs(math.sin(w)), k)
-        pr["head"] = (-34 + 6 * math.sin(w * 2) * k, 8 * math.sin(w) * k, 0)
-        pr["torso"] = (48 + 3 * math.sin(w * 2) * k, 4 * math.sin(w) * k, 0)
-        pr["hair"] = 4 * math.sin(w * 2)
+            g = s * 0.5 + 0.5                              # 0 — схватить у земли, 1 — у пасти
+            return (x * (1 - 0.4 * g), 14.0 - 9.0 * g, -18.0 + 12.0 * g)
+        pr["rh"] = lerp_val(pr["rh"], paw(a, -7.0), k)
+        pr["lh"] = lerp_val(pr["lh"], paw(b, 7.0), k)
+        pr["rcurl"] = lerp(pr["rcurl"], 10 + 45 * (a * 0.5 + 0.5), k)
+        pr["lcurl"] = lerp(pr["lcurl"], 10 + 45 * (b * 0.5 + 0.5), k)
+        bite = abs(math.sin(w))
+        pr["jaw"] = lerp(pr["jaw"], 12 + 36 * bite, k)
+        pr["head"] = (-40 + 10 * bite * k, 10 * math.sin(w) * k, 4 * math.sin(w * 2) * k)
+        pr["torso"] = (52 + 4 * math.sin(w * 2) * k, 6 * math.sin(w) * k, 3 * math.sin(w) * k)
+        pr["body_pos"] = (0, 6.0 + 0.6 * math.sin(w * 2) * k, 0)
+        pr["hair"] = 6 * math.sin(w * 2)
     return resolve(pr)
 
 
-# «Голодный бросок»: распрямляется во весь рост, руки в стороны, вопль; приседает и прыгает (на 1.0 с)
-UNFURL = dict(body=(-10, 0, 0), body_pos=(0, -0.6, 0), torso=(-14, 0, 0), neck=(-12, 0, 0), head=(-18, 0, 0),
-              rh=(-22, -14, 2), lh=(22, -14, 2), r_pole=(0, 0.4, 1), l_pole=(0, 0.4, 1), rhand=(10, 0, -30),
-              lhand=(10, 0, 30), rcurl=-20.0, lcurl=-20.0, jaw=44.0, ribbon=-6.0, rf=(-4.2, 22, 0.5),
-              lf=(4.2, 22, -0.5), hair=-8.0)
-CROUCH = dict(body=(20, 0, 0), body_pos=(0, 7.5, 0), torso=(40, 0, 0), neck=(-14, 0, 0), head=(-40, 0, 0),
-              rh=(-9, 4, -8), lh=(9, 4, -8), rhand=(-20, 0, 0), lhand=(-20, 0, 0), rcurl=30.0, lcurl=30.0, jaw=20.0,
-              rf=(-3.6, 22, 3.5), lf=(3.6, 22, -2.5), ribbon=4.0)
+# «Голодный бросок»: распрямляется во весь рост, руки с когтями вскинуты в стороны, вопль;
+# резко приседает и прыгает (прыжок на 1.2 с)
+UNFURL = dict(body=(-12, 0, 0), body_pos=(0, -0.8, 0), torso=(-16, 0, 0), neck=(-12, 0, 0), head=(-20, 0, 0),
+              rh=(-18, -22, 1), lh=(18, -22, 1), r_pole=(0, 0.4, 1), l_pole=(0, 0.4, 1), rhand=(20, 0, -30),
+              lhand=(20, 0, 30), rcurl=-25.0, lcurl=-25.0, jaw=48.0, ribbon=-8.0, rf=(-4.2, 22, 0.5),
+              lf=(4.2, 22, -0.5), hair=-10.0)
+CROUCH = dict(body=(22, 0, 0), body_pos=(0, 8.5, 0), torso=(42, 0, 0), neck=(-14, 0, 0), head=(-42, 0, 0),
+              rh=(-9, 5, -8), lh=(9, 5, -8), rhand=(-20, 0, 0), lhand=(-20, 0, 0), rcurl=30.0, lcurl=30.0, jaw=24.0,
+              rf=(-3.8, 22, 3.6), lf=(3.8, 22, -2.6), ribbon=6.0)
 POUNCE_START = [
     (0.00, HUNCH, "lin"),
     (0.55, UNFURL, "out"),
-    (0.75, dict(UNFURL, head=(-24, 0, 0), jaw=50.0), "lin"),
-    (1.00, CROUCH, "in"),
+    (0.85, dict(UNFURL, head=(-28, 0, 0), jaw=56.0, rh=(-19, -23, 2), lh=(19, -23, 2)), "lin"),
+    (1.20, CROUCH, "in"),
 ]
-AIR = dict(body=(30, 0, 0), body_pos=(0, 0, 0), torso=(30, 0, 0), neck=(-20, 0, 0), head=(-36, 0, 0),
-           rh=(-6.5, 1, -22), lh=(6.5, 1, -22), r_pole=(0.4, -1, 0.3), l_pole=(-0.4, -1, 0.3), rhand=(-60, 0, 0),
-           lhand=(-60, 0, 0), rcurl=-14.0, lcurl=-14.0, jaw=46.0, rf=(-3.2, 14, 9), lf=(3.2, 12, 7), toe_r=40.0,
+AIR = dict(body=(32, 0, 0), body_pos=(0, 0, 0), torso=(30, 0, 0), neck=(-20, 0, 0), head=(-38, 0, 0),
+           rh=(-7, 1, -22), lh=(7, 1, -22), r_pole=(0.4, -1, 0.3), l_pole=(-0.4, -1, 0.3), rhand=(-60, 0, 0),
+           lhand=(-60, 0, 0), rcurl=-20.0, lcurl=-20.0, jaw=50.0, rf=(-3.2, 14, 9), lf=(3.2, 12, 7), toe_r=40.0,
            toe_l=40.0, ribbon=40.0, hair=40.0)
 
 
 def pounce_start(t):
-    return resolve(keyed(POUNCE_START, t))
+    pr = keyed(POUNCE_START, t)
+    if 0.55 < t < 0.85:                                     # дрожь от вопля
+        k = math.sin(math.pi * (t - 0.55) / 0.3)
+        pr["head"] = add(list(pr["head"]), [4 * math.sin(t * 90) * k, 5 * math.sin(t * 70) * k, 0])
+    return resolve(pr)
 
 
 def pounce_air(t):
     w = 2 * math.pi * t / 0.6
     pr = P(HUNCH, **AIR)
-    pr["rcurl"] = -14 + 8 * math.sin(w)
-    pr["lcurl"] = -14 + 8 * math.sin(w + 1)
+    pr["rcurl"] = -20 + 8 * math.sin(w)
+    pr["lcurl"] = -20 + 8 * math.sin(w + 1)
     pr["ribbon"] = 40 + 8 * math.sin(w)
     pr["hair"] = 40 + 6 * math.sin(w + 1)
-    pr["jaw"] = 46 + 4 * math.sin(2 * w)
+    pr["jaw"] = 50 + 4 * math.sin(2 * w)
     return resolve(pr)
 
 
+# приземление: обе лапы впечатываются в землю, низкая поза, медленно поднимается с рыком
 POUNCE_LAND = [
-    (0.00, dict(HUNCH, body=(30, 0, 0), body_pos=(0, 9.5, 0), torso=(52, 0, 0), head=(-46, 0, 0),
-                rh=(-9, 12, -14), lh=(9, 12, -14), rhand=(-40, 0, 0), lhand=(-40, 0, 0), rcurl=40.0, lcurl=40.0,
-                jaw=36.0, rf=(-4.0, 22, 3.0), lf=(4.0, 22, -1.0), ribbon=30.0, hair=30.0), "lin"),
-    (0.25, dict(body_pos=(0, 8.5, 0), ribbon=6.0, hair=6.0, rh=(-9, 13.5, -13), lh=(9, 13.5, -13)), "out"),
-    (0.65, dict(body_pos=(0, 6.0, 0), torso=(46, 0, 0)), "ease"),
-    (1.20, HUNCH, "ease"),
+    (0.00, dict(HUNCH, body=(30, 0, 0), body_pos=(0, 10.0, 0), torso=(54, 0, 0), head=(-46, 0, 0),
+                rh=(-8, 13, -15), lh=(8, 13, -15), rhand=(-40, 0, 0), lhand=(-40, 0, 0), rcurl=45.0, lcurl=45.0,
+                jaw=40.0, rf=(-4.2, 22, 3.0), lf=(4.2, 22, -1.0), ribbon=30.0, hair=30.0), "lin"),
+    (0.25, dict(body_pos=(0, 9.0, 0), ribbon=6.0, hair=6.0, rh=(-8, 14, -14), lh=(8, 14, -14)), "out"),
+    (0.70, dict(body_pos=(0, 8.2, 0), torso=(50, 0, 0), head=(-34, 0, 0), jaw=50.0), "ease"),
+    (1.40, HUNCH, "ease"),
 ]
 
 
@@ -751,7 +985,7 @@ def pounce_land(t):
 UPRIGHT = dict(body=(0, 0, 0), body_pos=(0, 0.3, 0), torso=(-3, 0, 0), neck=(2, 0, 0), head=(4, 0, 0),
                rf=(-2.9, 22, 0.8), lf=(2.9, 22, -0.8), rh=(-9.0, 7.0, -3.5), lh=(9.0, 7.0, -3.5),
                r_pole=(0.5, -0.2, 1), l_pole=(-0.5, -0.2, 1), rhand=(-10, 0, 0), lhand=(-10, 0, 0),
-               rcurl=70.0, lcurl=70.0, rdir=(-0.45, 0.78, -0.45), ldir=(0.45, 0.78, -0.45), rroll=0.0, lroll=0.0,
+               rcurl=70.0, lcurl=70.0, rdir=(-0.5, 0.42, 0.75), ldir=(0.5, 0.42, 0.75), rroll=0.0, lroll=0.0,
                jaw=2.0, ribbon=0.0, sw=1.0, halo=1.0, hair=0.0)
 
 
@@ -787,8 +1021,8 @@ def idle2(t):
     pr["head"] = (4 + 2 * math.sin(w + 1), -4 * math.sin(w * 0.5), 2 * math.sin(w))
     pr["rh"] = (-9.0, 7.0 + 0.4 * math.sin(w + 0.3), -3.5)
     pr["lh"] = (9.0, 7.0 + 0.4 * math.sin(w + 0.6), -3.5)
-    pr["rdir"] = (-0.45, 0.78, -0.45 + 0.05 * math.sin(w))
-    pr["ldir"] = (0.45, 0.78, -0.45 + 0.05 * math.sin(w + 1))
+    pr["rdir"] = (-0.5, 0.42 + 0.04 * math.sin(w), 0.75)
+    pr["ldir"] = (0.5, 0.42 + 0.04 * math.sin(w + 1), 0.75)
     pr["hair"] = 2 * math.sin(w - 0.8)
     pr["ribbon"] = 2 * math.sin(w - 0.4)
     return resolve(pr)
@@ -828,19 +1062,25 @@ def run2(t):
     return resolve(pr)
 
 
-# «Двойной разрез»: правый меч справа налево (0.45 с), левый слева направо (0.8 с)
+# «Двойной разрез»: глубокий замах правым мечом за спину → широкий горизонтальный разрез (0.6 с);
+# левый меч взлетает над головой → косой рубящий удар сверху (1.1 с), корпус падает вперёд.
 SLASH = [
     (0.00, UPRIGHT, "lin"),
-    (0.30, dict(torso=(0, -34, 0), body=(0, -12, 0), head=(0, 24, 0), rh=(-15, -6, 6), r_pole=(0.2, 1, 0.4),
-                rdir=(-0.8, -0.2, 0.55), lh=(7, 5, -8), ldir=(0.2, 0.4, -1), rf=(-3.2, 22, 2.8),
-                lf=(3.0, 22, -2.4), body_pos=(0, 1.2, 0)), "out"),
-    (0.45, dict(torso=(6, 34, 0), body=(4, 16, 0), head=(-4, -20, 0), rh=(6, 3, -14), r_pole=(1, 0, 0.6),
-                rdir=(0.85, 0.1, -0.5), rroll=-30.0, ribbon=10.0, hair=10.0), "in"),
-    (0.58, dict(lh=(15, -6, 6), l_pole=(-0.2, 1, 0.4), ldir=(0.8, -0.2, 0.55), rh=(4, 6, -10)), "out"),
-    (0.80, dict(torso=(6, -32, 0), body=(4, -14, 0), head=(-4, 20, 0), lh=(-6, 3, -14), l_pole=(-1, 0, 0.6),
-                ldir=(-0.85, 0.1, -0.5), lroll=30.0, rf=(-3.0, 22, -2.4), lf=(3.2, 22, 3.0)), "in"),
-    (1.00, dict(ribbon=4.0, hair=4.0), "lin"),
-    (1.60, UPRIGHT, "ease"),
+    (0.42, dict(torso=(2, -55, 0), body=(0, -20, 0), head=(0, 38, 0), rh=(-14, -12, 9), r_pole=(0.2, 1, 0.4),
+                rdir=(-0.55, -0.5, 0.65), rroll=-40.0, lh=(8, 4, -10), ldir=(0.3, 0.3, -1), rf=(-3.4, 22, 3.2),
+                lf=(3.2, 22, -3.6), body_pos=(0, 1.8, 0), ribbon=-6.0), "out"),
+    (0.60, dict(torso=(8, 48, 0), body=(6, 22, 0), head=(-6, -34, 0), rh=(9, 2, -14), r_pole=(1, 0, 0.5),
+                rdir=(0.95, 0.05, -0.25), rroll=-80.0, ribbon=16.0, hair=14.0, body_pos=(0, 2.8, 0),
+                rf=(-3.4, 22, -3.0), lf=(3.4, 22, 4.0)), "in"),
+    (0.80, dict(lh=(9, -22, 4), l_pole=(-0.3, 1, 0.5), ldir=(0.2, -0.7, 0.7), rh=(6, 5, -11), torso=(-8, 30, 0),
+                head=(-14, -20, 0), body_pos=(0, 1.0, 0), rroll=-40.0), "out"),
+    (1.10, dict(torso=(26, -18, 0), body=(16, -8, 0), head=(-30, 10, 0), body_pos=(0, 5.0, 0), lh=(-4, 12, -15),
+                l_pole=(-1, 0, 0.5), ldir=(-0.55, 0.42, -0.72), rh=(-12, 2, 4), rdir=(-0.6, 0.2, 0.8), rroll=0.0,
+                rf=(-3.4, 22, 3.0), lf=(3.4, 22, -5.0), ribbon=20.0, hair=18.0), "in"),
+    (1.40, dict(body_pos=(0, 4.6, 0), ribbon=8.0, hair=6.0), "lin"),
+    (1.50, dict(ldir=(-0.2, 0.12, -1), lh=(2, 6, -14)), "ease"),
+    (1.65, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 2.2, 0)), "ease"),
+    (2.00, UPRIGHT, "ease"),
 ]
 
 
@@ -848,17 +1088,23 @@ def slash(t):
     return resolve(keyed(SLASH, t))
 
 
-# «Пронзающий выпад»: оба меча назад, рывок вперёд, двойной укол (попадание 0.65 с)
+# «Пронзающий выпад»: сжимается как пружина, мечи у бёдер → рывок с двойным уколом (0.75 с) →
+# мечи вспарывают вверх и в стороны (1.05 с, подбрасывает).
 THRUST = [
     (0.00, UPRIGHT, "lin"),
-    (0.45, dict(body=(6, 0, 0), body_pos=(0, 3.5, 0), torso=(4, 0, 0), head=(-8, 0, 0), rh=(-8, 4, 7),
-                lh=(8, 4, 7), rdir=(-0.05, 0.05, -1), ldir=(0.05, 0.05, -1), rf=(-3.0, 22, -4.0),
-                lf=(3.0, 22, 4.0), ribbon=-4.0), "out"),
-    (0.65, dict(body=(24, 0, 0), body_pos=(0, 3.0, 0), torso=(12, 0, 0), head=(-26, 0, 0), rh=(-3.5, -1, -17),
-                lh=(3.5, -1, -17), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.05, 0.05, -1),
-                ldir=(-0.05, 0.05, -1), rf=(-3.0, 22, 6.0), lf=(3.0, 22, -7.0), ribbon=30.0, hair=24.0), "in"),
-    (0.85, dict(ribbon=12.0, hair=10.0), "lin"),
-    (1.30, UPRIGHT, "ease"),
+    (0.50, dict(body=(-4, 0, 0), body_pos=(0, 4.0, 0), torso=(-2, 0, 0), head=(-4, 0, 0), rh=(-9, 5, 8),
+                lh=(9, 5, 8), rdir=(-0.05, 0.1, -1), ldir=(0.05, 0.1, -1), rf=(-3.2, 22, -5.0), lf=(3.2, 22, 5.5),
+                ribbon=-8.0, jaw=20.0), "out"),
+    (0.75, dict(body=(26, 0, 0), body_pos=(0, 3.0, 0), torso=(14, 0, 0), head=(-30, 0, 0), rh=(-3, -1, -18),
+                lh=(3, -1, -18), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.04, 0.05, -1),
+                ldir=(-0.04, 0.05, -1), rf=(-3.2, 22, 7.0), lf=(3.2, 22, -8.0), ribbon=34.0, hair=26.0,
+                jaw=36.0), "in"),
+    (0.90, dict(ribbon=24.0), "lin"),
+    (1.05, dict(body=(-6, 0, 0), torso=(-16, 0, 0), head=(-20, 0, 0), body_pos=(0, 2.0, 0), rh=(-10, -18, -6),
+                lh=(10, -18, -6), r_pole=(0.5, 0.6, 1), l_pole=(-0.5, 0.6, 1), rdir=(-0.5, -0.85, -0.2),
+                ldir=(0.5, -0.85, -0.2), rroll=-30.0, lroll=30.0, ribbon=10.0, hair=6.0), "out"),
+    (1.30, dict(body_pos=(0, 1.6, 0)), "lin"),
+    (1.80, UPRIGHT, "ease"),
 ]
 
 
@@ -866,36 +1112,48 @@ def thrust(t):
     return resolve(keyed(THRUST, t))
 
 
-# «Зов выводка»: мечи скрещены над головой, затем вонзаются вниз — из крови встают мелкие (1.3 с)
+# «Зов выводка»: скрещённые мечи над головой, вопль, дрожь (из земли бьют фонтаны крови) —
+# мечи вонзаются в землю (1.5 с), из фонтанов вылезают мелкие.
 SUMMON = [
     (0.00, UPRIGHT, "lin"),
-    (0.70, dict(torso=(-12, 0, 0), head=(-24, 0, 0), neck=(-8, 0, 0), rh=(-3, -22, -4), lh=(3, -22, -4),
-                r_pole=(1, 0.3, 0.3), l_pole=(-1, 0.3, 0.3), rdir=(0.6, -0.8, 0.1), ldir=(-0.6, -0.8, 0.1),
-                jaw=30.0, body_pos=(0, -0.4, 0)), "out"),
-    (1.00, dict(jaw=40.0), "lin"),
-    (1.30, dict(body=(16, 0, 0), torso=(20, 0, 0), head=(-20, 0, 0), body_pos=(0, 5.5, 0), rh=(-8, 12, -9),
-                lh=(8, 12, -9), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.15, 1, -0.2),
-                ldir=(0.15, 1, -0.2), rf=(-3.4, 22, 2.0), lf=(3.4, 22, -2.0), jaw=16.0, ribbon=14.0), "in"),
-    (1.55, dict(body_pos=(0, 5.0, 0)), "lin"),
-    (2.00, UPRIGHT, "ease"),
+    (0.70, dict(torso=(-14, 0, 0), neck=(-10, 0, 0), head=(-30, 0, 0), rh=(-3, -23, -3), lh=(3, -23, -3),
+                r_pole=(1, 0.3, 0.3), l_pole=(-1, 0.3, 0.3), rdir=(0.55, -0.83, 0.1), ldir=(-0.55, -0.83, 0.1),
+                jaw=44.0, body_pos=(0, -0.5, 0), ribbon=-8.0), "out"),
+    (1.30, dict(jaw=50.0, head=(-34, 0, 0)), "lin"),
+    (1.50, dict(body=(18, 0, 0), torso=(24, 0, 0), neck=(-4, 0, 0), head=(-24, 0, 0), body_pos=(0, 7.0, 0),
+                rh=(-8, 13, -10), lh=(8, 13, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1),
+                rdir=(-0.15, 0.62, -0.8), ldir=(0.15, 0.62, -0.8), rf=(-3.4, 22, 2.4), lf=(3.4, 22, -2.4), jaw=20.0,
+                ribbon=16.0), "in"),
+    (1.90, dict(body_pos=(0, 6.5, 0)), "lin"),
+    (2.25, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 2.5, 0), body=(4, 0, 0), torso=(2, 0, 0)), "ease"),
+    (2.60, UPRIGHT, "ease"),
 ]
 
 
 def summon(t):
-    return resolve(keyed(SUMMON, t))
+    pr = keyed(SUMMON, t)
+    if 0.7 < t < 1.3:
+        k = math.sin(math.pi * (t - 0.7) / 0.6)
+        pr["torso"] = add(list(pr["torso"]), [2 * math.sin(t * 80) * k, 3 * math.sin(t * 60) * k, 0])
+        pr["head"] = add(list(pr["head"]), [4 * math.sin(t * 70) * k, 5 * math.sin(t * 50) * k, 0])
+    return resolve(pr)
 
 
-# «Кровавая кладка»: опускается на колено, вонзает оба меча в землю (1.0 с) — вокруг вырастают яйца
+# «Кровавая кладка»: руки с мечами раскинуты в стороны и вверх (как на картинке), затем вонзает оба меча
+# в землю на колене (1.0 с) — земля вокруг вскипает кровью, вырастают яйца (1.3 с).
 EGGS = [
     (0.00, UPRIGHT, "lin"),
-    (0.55, dict(torso=(-6, 0, 0), head=(-12, 0, 0), rh=(-6, -16, -8), lh=(6, -16, -8), rdir=(-0.2, -1, -0.1),
-                ldir=(0.2, -1, -0.1), r_pole=(1, 0, 0.5), l_pole=(-1, 0, 0.5), jaw=20.0), "out"),
-    (1.00, dict(body=(20, 0, 0), body_pos=(0, 9.5, 0), torso=(26, 0, 0), head=(-22, 0, 0), rh=(-7, 14, -10),
-                lh=(7, 14, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.05, 1, -0.1),
-                ldir=(0.05, 1, -0.1), rf=(-3.0, 22, -3.5), lf=(3.0, 22, 5.0), toe_l=30.0, jaw=34.0,
-                ribbon=10.0), "in"),
-    (1.70, dict(body_pos=(0, 9.0, 0), head=(-30, 0, 0)), "lin"),
-    (2.20, UPRIGHT, "ease"),
+    (0.60, dict(torso=(-10, 0, 0), head=(-20, 0, 0), rh=(-21, -14, 0), lh=(21, -14, 0), r_pole=(0, 0.5, 1),
+                l_pole=(0, 0.5, 1), rdir=(-0.6, -0.8, 0), ldir=(0.6, -0.8, 0), jaw=36.0, body_pos=(0, -0.3, 0),
+                ribbon=-6.0), "out"),
+    (0.80, dict(jaw=42.0, head=(-24, 0, 0)), "lin"),
+    (1.00, dict(body=(22, 0, 0), body_pos=(0, 10.0, 0), torso=(28, 0, 0), head=(-24, 0, 0), rh=(-8, 15, -10),
+                lh=(8, 15, -10), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.66, -0.75),
+                ldir=(0.1, 0.66, -0.75), rf=(-3.0, 22, -3.5), lf=(3.0, 22, 5.0), toe_l=30.0, jaw=40.0,
+                ribbon=12.0), "in"),
+    (2.00, dict(body_pos=(0, 9.5, 0), head=(-34, 0, 0)), "lin"),
+    (2.40, dict(rdir=(-0.85, 0.2, 0.45), ldir=(0.85, 0.2, 0.45), body_pos=(0, 3.0, 0), body=(6, 0, 0), torso=(4, 0, 0)), "ease"),
+    (2.80, UPRIGHT, "ease"),
 ]
 
 
@@ -903,65 +1161,77 @@ def eggs(t):
     return resolve(keyed(EGGS, t))
 
 
-# «Багровый вальс» (мощная): раскрывается — вихрь с мечами в стороны (цикл) — финальный крестовой разрез
-WALTZ_OPEN = dict(UPRIGHT, torso=(-6, 0, 0), head=(-6, 0, 0), rh=(-20, -6, -2), lh=(20, -6, -2),
-                  r_pole=(0, 0.6, 1), l_pole=(0, 0.6, 1), rdir=(-1, 0.05, -0.25), ldir=(1, 0.05, 0.25),
-                  rroll=-80.0, lroll=80.0, body_pos=(0, 0.8, 0), ribbon=12.0, hair=10.0)
-
-
-def waltz_start(t):
-    return resolve(keyed([(0.0, UPRIGHT, "lin"), (0.45, dict(WALTZ_OPEN, root_y=40.0), "out"),
-                          (0.6, dict(root_y=0.0), "in")], t))
-
-
-def waltz_spin(t):
-    w = 2 * math.pi * t / 0.4
-    pr = P(WALTZ_OPEN, root_y=-360.0 * t / 0.4)
-    pr["rf"], pr["lf"] = gait(w, 2.0, 2.0, width=3.0)
-    pr["body_pos"] = (0, 0.8 + 0.4 * abs(math.sin(w)), 0)
-    pr["ribbon"] = 44 + 6 * math.sin(w)
-    pr["hair"] = 34 + 6 * math.sin(w)
-    pr["torso"] = (-6, 0, 4 * math.sin(w))
-    return resolve(pr)
-
-
-WALTZ_END = [
-    (0.00, WALTZ_OPEN, "lin"),
-    (0.30, dict(torso=(-20, 0, 0), head=(-20, 0, 0), rh=(-10, -20, 2), lh=(10, -20, 2), r_pole=(0.5, 0.4, 1),
-                l_pole=(-0.5, 0.4, 1), rdir=(0.5, -0.8, 0.4), ldir=(-0.5, -0.8, 0.4), rroll=0.0, lroll=0.0,
-                body_pos=(0, -0.6, 0), jaw=34.0, ribbon=-4.0, hair=-4.0), "out"),
-    (0.50, dict(body=(20, 0, 0), torso=(26, 0, 0), head=(-30, 0, 0), body_pos=(0, 5.0, 0), rh=(5, 10, -14),
-                lh=(-5, 10, -14), r_pole=(1, 0, 0.5), l_pole=(-1, 0, 0.5), rdir=(0.75, 0.55, -0.4),
-                ldir=(-0.75, 0.55, -0.4), rf=(-3.2, 22, 3.0), lf=(3.2, 22, -5.0), ribbon=34.0, hair=30.0), "in"),
-    (0.75, dict(body_pos=(0, 4.6, 0), ribbon=16.0, hair=12.0), "lin"),
-    (1.40, UPRIGHT, "ease"),
+# «Багровая казнь» (мощная, вместо вихря): приседает, мечи отведены назад как крылья, взмывает высоко,
+# в воздухе вскидывает мечи над головой и обрушивается вниз остриями (удар при приземлении),
+# стоит на колене с мечами в земле — и вырывает их широким разрезом в обе стороны (1.15 с после приземления).
+EXEC_START = [
+    (0.00, UPRIGHT, "lin"),
+    (0.60, dict(body=(24, 0, 0), body_pos=(0, 8.0, 0), torso=(20, 0, 0), head=(-30, 0, 0), rh=(-14, -2, 8),
+                lh=(14, -2, 8), r_pole=(0.3, 0.5, 1), l_pole=(-0.3, 0.5, 1), rdir=(-0.5, -0.3, 0.8),
+                ldir=(0.5, -0.3, 0.8), rf=(-3.6, 22, 2.5), lf=(3.6, 22, -2.5), jaw=30.0, ribbon=10.0), "out"),
+    (0.90, dict(body=(-10, 0, 0), body_pos=(0, -2.0, 0), torso=(-10, 0, 0), head=(-10, 0, 0), rh=(-6, -22, 2),
+                lh=(6, -22, 2), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(0.25, -0.95, 0.2),
+                ldir=(-0.25, -0.95, 0.2), rf=(-3.0, 16, 3.0), lf=(3.0, 15, -2.0), toe_r=30.0, toe_l=30.0,
+                ribbon=-10.0), "in"),
+]
+AIR_UP = dict(body=(-20, 0, 0), body_pos=(0, 0, 0), torso=(-18, 0, 0), head=(-14, 0, 0), rh=(-5, -21, 4),
+              lh=(5, -21, 4), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(0.2, -0.6, 0.8),
+              ldir=(-0.2, -0.6, 0.8), rf=(-3.2, 14, 4), lf=(3.2, 15, 2), toe_r=40.0, toe_l=40.0, ribbon=-20.0,
+              hair=-16.0, jaw=30.0)
+AIR_DOWN = dict(body=(30, 0, 0), torso=(26, 0, 0), head=(-36, 0, 0), rh=(-4, 6, -14), lh=(4, 6, -14),
+                r_pole=(1, 0, 0.4), l_pole=(-1, 0, 0.4), rdir=(0.05, 0.9, -0.45), ldir=(-0.05, 0.9, -0.45),
+                rf=(-3.2, 18, -2), lf=(3.2, 17, 3), ribbon=40.0, hair=36.0, jaw=46.0)
+EXEC_AIR = [(0.00, dict(EXEC_START[-1][1]), "lin"), (0.45, AIR_UP, "out"), (0.85, AIR_DOWN, "in"),
+            (1.30, AIR_DOWN, "lin")]
+EXEC_LAND = [
+    (0.00, dict(UPRIGHT, body=(30, 0, 0), body_pos=(0, 10.5, 0), torso=(30, 0, 0), head=(-30, 0, 0),
+                rh=(-6, 15, -11), lh=(6, 15, -11), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1),
+                rdir=(-0.1, 0.66, -0.75), ldir=(0.1, 0.66, -0.75), rf=(-3.4, 22, -3.0), lf=(3.4, 22, 4.5),
+                toe_l=30.0, jaw=40.0, ribbon=30.0, hair=26.0), "lin"),
+    (0.25, dict(body_pos=(0, 9.8, 0), ribbon=8.0, hair=6.0), "out"),
+    (0.80, dict(head=(-40, 0, 0), jaw=50.0), "lin"),
+    (0.95, dict(torso=(34, 0, 0), body_pos=(0, 10.2, 0)), "lin"),
+    (1.15, dict(body=(4, 0, 0), body_pos=(0, 3.0, 0), torso=(-6, 0, 0), head=(-10, 0, 0), rh=(-21, -4, -4),
+                lh=(21, -4, -4), r_pole=(0, 0.5, 1), l_pole=(0, 0.5, 1), rdir=(-1, -0.1, 0.15),
+                ldir=(1, -0.1, 0.15), rroll=-80.0, lroll=80.0, rf=(-4.2, 22, 0.5), lf=(4.2, 22, -0.5), toe_l=0.0,
+                ribbon=20.0, hair=16.0, jaw=30.0), "in"),
+    (1.50, dict(body_pos=(0, 2.6, 0), ribbon=10.0), "lin"),
+    (2.20, UPRIGHT, "ease"),
 ]
 
 
-def waltz_end(t):
-    return resolve(keyed(WALTZ_END, t))
+def exec_start(t):
+    return resolve(keyed(EXEC_START, t))
+
+
+def exec_air(t):
+    return resolve(keyed(EXEC_AIR, t))
+
+
+def exec_land(t):
+    return resolve(keyed(EXEC_LAND, t))
 
 
 animations = {
-    "idle1": bake(idle1, 2.6, 20, True, A_BONES),
-    "walk1": bake(walk1, 1.4, 20, True, A_BONES),
-    "run1": bake(run1, 0.8, 30, True, A_BONES),
-    "swing": bake(swing, 1.8, 40, False, A_BONES),
-    "devour": bake(devour, 3.6, 40, False, A_BONES),
-    "pounce_start": bake(pounce_start, 1.0, 40, False, A_BONES),
-    "pounce_air": bake(pounce_air, 0.6, 20, True, A_BONES),
-    "pounce_land": bake(pounce_land, 1.2, 40, False, A_BONES),
-    "transform": bake(transform, 3.0, 40, False, A_BONES),
-    "idle2": bake(idle2, 3.0, 20, True, A_BONES),
-    "walk2": bake(walk2, 1.2, 20, True, A_BONES),
-    "run2": bake(run2, 0.7, 30, True, A_BONES),
-    "slash": bake(slash, 1.6, 40, False, A_BONES),
-    "thrust": bake(thrust, 1.3, 40, False, A_BONES),
-    "summon": bake(summon, 2.0, 40, False, A_BONES),
-    "eggs": bake(eggs, 2.2, 40, False, A_BONES),
-    "waltz_start": bake(waltz_start, 0.6, 40, False, A_BONES),
-    "waltz_spin": bake(waltz_spin, 0.4, 40, True, A_BONES),
-    "waltz_end": bake(waltz_end, 1.4, 40, False, A_BONES),
+    "idle1": bake_clip(idle1, 2.6, 20, True, A_BONES),
+    "walk1": bake_clip(walk1, 1.4, 20, True, A_BONES),
+    "run1": bake_clip(run1, 0.8, 30, True, A_BONES),
+    "swing": bake_clip(swing, 2.2, 60, False, A_BONES),
+    "devour": bake_clip(devour, 3.8, 60, False, A_BONES),
+    "pounce_start": bake_clip(pounce_start, 1.2, 60, False, A_BONES),
+    "pounce_air": bake_clip(pounce_air, 0.6, 20, True, A_BONES),
+    "pounce_land": bake_clip(pounce_land, 1.4, 60, False, A_BONES),
+    "transform": bake_clip(transform, 3.0, 60, False, A_BONES),
+    "idle2": bake_clip(idle2, 3.0, 20, True, A_BONES),
+    "walk2": bake_clip(walk2, 1.2, 20, True, A_BONES),
+    "run2": bake_clip(run2, 0.7, 30, True, A_BONES),
+    "slash": bake_clip(slash, 2.0, 60, False, A_BONES),
+    "thrust": bake_clip(thrust, 1.8, 60, False, A_BONES),
+    "summon": bake_clip(summon, 2.6, 60, False, A_BONES),
+    "eggs": bake_clip(eggs, 2.8, 60, False, A_BONES),
+    "exec_start": bake_clip(exec_start, 0.9, 60, False, A_BONES),
+    "exec_air": bake_clip(exec_air, 1.3, 60, False, A_BONES),
+    "exec_land": bake_clip(exec_land, 2.2, 60, False, A_BONES),
 }
 animations = {"animation.%s.%s" % (NAME, k): v for k, v in animations.items()}
 

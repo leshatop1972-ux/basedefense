@@ -13,7 +13,8 @@ import static com.lesha_top1972.basedefense.entity.BloodthirsterEntity.*;
  * Модель босса «Кровожад» (geo/bloodthirster.geo.json, создаёт tools/bloodthirster_gen.py).
  * Движение по фазе: idle1/walk1/run1 (сгорбленный) или idle2/walk2/run2 (выпрямленный, с мечами).
  * Атаки по статусу с сервера; бросок — pounce_start → pounce_air (до приземления) → pounce_land,
- * «багровый вальс» — waltz_start → waltz_spin (цикл) → waltz_end. Мечи и венец видны только во 2‑й фазе
+ * «багровая казнь» — exec_start → exec_air (держит последнюю позу до приземления) → exec_land.
+ * Мечи и венец видны только во 2‑й фазе
  * (и с середины смены облика).
  */
 public class BloodthirsterModel extends BedrockEntityModel<BloodthirsterEntity> {
@@ -24,16 +25,14 @@ public class BloodthirsterModel extends BedrockEntityModel<BloodthirsterEntity> 
     private static final BedrockAnimations.Clip[] RUN = {C.get("run1"), C.get("run2")};
     private static final BedrockAnimations.Clip[] ACTIONS = {
             C.get("swing"), C.get("devour"), null, C.get("pounce_land"), C.get("transform"),
-            C.get("slash"), C.get("thrust"), C.get("summon"), C.get("eggs"), null
+            C.get("slash"), C.get("thrust"), C.get("summon"), C.get("eggs"), null, C.get("exec_land")
     };
     private static final BedrockAnimations.Clip POUNCE_START = C.get("pounce_start");
     private static final BedrockAnimations.Clip POUNCE_AIR = C.get("pounce_air");
-    private static final BedrockAnimations.Clip WALTZ_START = C.get("waltz_start");
-    private static final BedrockAnimations.Clip WALTZ_SPIN = C.get("waltz_spin");
-    private static final BedrockAnimations.Clip WALTZ_END = C.get("waltz_end");
+    private static final BedrockAnimations.Clip EXEC_START = C.get("exec_start");
+    private static final BedrockAnimations.Clip EXEC_AIR = C.get("exec_air");
     private static final float POUNCE_START_LEN = POUNCE_WINDUP / 20f;
-    private static final float WALTZ_OPEN_S = WALTZ_OPEN / 20f;
-    private static final float WALTZ_SPIN_S = WALTZ_SPIN_END / 20f;
+    private static final float EXEC_START_LEN = EXEC_WINDUP / 20f;
     /** С этого момента смены облика видны мечи и венец (они вырастают в анимации). */
     private static final float SWORDS_APPEAR = 2.0f;
 
@@ -68,24 +67,16 @@ public class BloodthirsterModel extends BedrockEntityModel<BloodthirsterEntity> 
                 ct = t < POUNCE_START_LEN ? t : t - POUNCE_START_LEN;
                 w = t < POUNCE_START_LEN ? clamp01(t / 0.1f) : 1f;
             }
-        } else if (a == WALTZ) {
-            if (t < WALTZ_OPEN_S) {
-                clip = WALTZ_START;
-                ct = t;
-                w = clamp01(t / 0.1f);
-            } else if (t < WALTZ_SPIN_S) {
-                clip = WALTZ_SPIN;
-                ct = t - WALTZ_OPEN_S;
-                w = 1f;
-            } else if (t < WALTZ_SPIN_S + WALTZ_END.length()) {
-                clip = WALTZ_END;
-                ct = t - WALTZ_SPIN_S;
-                w = clamp01((WALTZ_END.length() - ct) / 0.2f);
+        } else if (a == EXEC) {
+            if (t < 5f) {
+                clip = t < EXEC_START_LEN ? EXEC_START : EXEC_AIR;
+                ct = t < EXEC_START_LEN ? t : Math.min(t - EXEC_START_LEN, EXEC_AIR.length());
+                w = t < EXEC_START_LEN ? clamp01(t / 0.1f) : 1f;
             }
         } else if (a >= 0 && a < ACTIONS.length && ACTIONS[a] != null && t >= 0 && t < ACTIONS[a].length()) {
             clip = ACTIONS[a];
             ct = t;
-            float in = a == LAND ? 1f : clamp01(t / 0.12f);
+            float in = (a == LAND || a == EXEC_LAND) ? 1f : clamp01(t / 0.12f);
             w = Math.min(in, clamp01((clip.length() - t) / 0.25f));
         }
         float free = 1f - w;

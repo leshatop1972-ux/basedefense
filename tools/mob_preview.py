@@ -8,7 +8,7 @@
     python tools/mob_preview.py iron_knight attack1    — 8 кадров анимации
     python tools/mob_preview.py frost_archer attack 0.5,1.6,2.0  — кадры в заданные секунды
     (угол обзора: переменная окружения PREVIEW_YAW, радианы; PREVIEW_SCALE — масштаб для больших мобов,
-     PREVIEW_TEX — другая текстура (например bloodthirster_p2), PREVIEW_HIDE — кости через запятую, которые скрыть)
+     PREVIEW_FOCUS — высота в центре кадра (крупный план), PREVIEW_TEX — другая текстура (например bloodthirster_p2), PREVIEW_HIDE — кости через запятую, которые скрыть)
 Картинка пишется в tools/mob_preview.png (в мод не попадает).
 """
 import json
@@ -23,6 +23,7 @@ import settler_preview as sp  # noqa: E402  (тот же 3D-рендер куб�
 
 YAW = float(os.environ.get("PREVIEW_YAW", "0.6"))
 SCALE = float(os.environ.get("PREVIEW_SCALE", "6"))
+FOCUS = os.environ.get("PREVIEW_FOCUS")          # высота (px Bedrock) в центре кадра — для крупных планов
 HIDE = set(filter(None, os.environ.get("PREVIEW_HIDE", "").split(",")))
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 DEG = math.pi / 180
@@ -215,6 +216,10 @@ def apply_anim(parts, anim, t, weight=1.0):
     walk(parts)
 
 
+def base(size, scale):
+    return None if FOCUS is None else size[1] / 2 + float(FOCUS) * scale
+
+
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "iron_zombie"
     anim_name = sys.argv[2] if len(sys.argv) > 2 else None
@@ -235,11 +240,11 @@ def main():
             parts = build_parts(geo)
             apply_anim(parts, an, t)
             sp.PARTS = parts
-            frames.append((sp.render(tex, None, YAW, scale=scale, size=size), "t=%.2f" % t))
+            frames.append((sp.render(tex, None, YAW, scale=scale, size=size, baseline=base(size, scale)), "t=%.2f" % t))
     else:
         for yaw in (0.0, math.pi / 2, math.pi):
             sp.PARTS = build_parts(geo)
-            frames.append((sp.render(tex, None, yaw, scale=scale, size=size), ""))
+            frames.append((sp.render(tex, None, yaw, scale=scale, size=size, baseline=base(size, scale)), ""))
     sheet = Image.new("RGBA", (size[0] * len(frames), size[1]), (60, 64, 72, 255))
     for i, (img, _) in enumerate(frames):
         sheet.alpha_composite(img, (i * size[0], 0))

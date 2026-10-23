@@ -115,12 +115,12 @@ public final class ModEntities {
                     .trackedUpdateRate(2)
                     .build());
 
-    /** Босс «Кровожад» (большой). */
+    /** Босс «Кровожад» (огромный: модель ×1.3). */
     public static final EntityType<BloodthirsterEntity> BLOODTHIRSTER = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "bloodthirster"),
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BloodthirsterEntity::new)
-                    .dimensions(EntityDimensions.fixed(1.3f, 3.2f))
+                    .dimensions(EntityDimensions.fixed(1.6f, 4.0f))
                     .trackRangeBlocks(80)
                     .build());
 
