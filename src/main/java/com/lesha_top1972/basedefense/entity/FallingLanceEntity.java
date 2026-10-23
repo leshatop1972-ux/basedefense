@@ -21,12 +21,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 /**
- * Призрачное копьё из «ливня копий» улана: падает с неба, при ударе о землю или цель — 7 урона
- * всем рядом (радиус 1.3), втыкается и через секунду рассыпается. Монстров не задевает.
+ * Призрачное копьё из «ливня копий» улана: падает с неба, при ударе о землю или цель —
+ * 6.5 урона всем рядом (радиус 1.3), втыкается и через секунду рассыпается. Монстров не задевает.
  */
 public class FallingLanceEntity extends ProjectileEntity {
 
-    public static final float DAMAGE = 7f;
+    public static final float DAMAGE = 6.5f;
     private int life;
     private int stuck = -1;
 

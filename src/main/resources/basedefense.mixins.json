@@ -6,7 +6,8 @@
   "mixins": [
     "MobEntityAccessor",
     "LivingEntityMixin",
-    "MobEntityMixin"
+    "MobEntityMixin",
+    "LivingEntityCombatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

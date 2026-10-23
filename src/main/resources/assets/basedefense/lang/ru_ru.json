@@ -153,5 +153,6 @@
   "entity.basedefense.tattered_lancer": "Оборванный улан",
   "item.basedefense.tattered_lancer_spawn_egg": "Яйцо призыва оборванного улана",
   "effect.basedefense.duelist": "Дуэлянт",
-  "entity.basedefense.falling_lance": "Призрачное копьё"
+  "entity.basedefense.falling_lance": "Призрачное копьё",
+  "effect.basedefense.sneaky_rat": "Подлая крыса"
 }

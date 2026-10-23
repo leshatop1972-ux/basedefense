@@ -23,6 +23,10 @@ public final class ModEffects {
     public static final StatusEffect DUELIST = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "duelist"), new DuelistEffect());
 
+    /** Подлая крыса: −20% урона, −0.5 HP каждые 2 с (вешает улан с шансом 8% на атакующих). */
+    public static final StatusEffect SNEAKY_RAT = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "sneaky_rat"), new SneakyRatEffect());
+
     private ModEffects() {
     }
 

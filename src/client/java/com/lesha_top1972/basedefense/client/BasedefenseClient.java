@@ -12,6 +12,7 @@ import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.DuelistOverlay;
 import com.lesha_top1972.basedefense.client.render.FreezeOverlay;
 import com.lesha_top1972.basedefense.client.render.LancerZoneRenderer;
+import com.lesha_top1972.basedefense.client.render.RatOverlay;
 import com.lesha_top1972.basedefense.client.render.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
@@ -60,6 +61,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FALLING_LANCE, FallingLanceRenderer::new);
         LancerZoneRenderer.init();
         DuelistOverlay.init();
+        RatOverlay.init();
 
         // Эффект «Заморозка»: бело‑голубой экран
         FreezeOverlay.init();

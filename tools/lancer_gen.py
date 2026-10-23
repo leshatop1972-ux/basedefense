@@ -916,6 +916,32 @@ def duelist_icon():
     a.save(os.path.join(ROOT, "textures", "mob_effect", "duelist.png"))
 
 
+def rat_icon():
+    """Иконка 18×18: серая крыса с хвостом на мутно‑зелёном пятне."""
+    a = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
+    p = a.load()
+    for y in range(18):
+        for x in range(18):
+            if (x - 8.5) ** 2 / 64 + (y - 9) ** 2 / 49 < 1:
+                p[x, y] = (110, 124, 36, 160)
+    body = ["......xxxxx.......", ".....xxxxxxx......", "...xxxxxxxxxx.....", "..xxxxxxxxxxxx....",
+            ".oxxxxxxxxxxxxx...", "eoxxxxxxxxxxxxxx..", ".xxxxxxxxxxxxxxx..", "..xxxxxxxxxxxxx.t.",
+            "...x..x....x..x..t", ".................t"]
+    for j, row in enumerate(body):
+        for i, ch in enumerate(row):
+            if 5 + j > 17:
+                continue
+            if ch == "x":
+                p[i, 5 + j] = (120, 116, 112, 255) if j > 1 else (150, 146, 140, 255)
+            elif ch == "o":
+                p[i, 5 + j] = (230, 170, 180, 255)
+            elif ch == "e":
+                p[i, 5 + j] = (200, 40, 40, 255)
+            elif ch == "t":
+                p[i, 5 + j] = (210, 150, 160, 255)
+    a.save(os.path.join(ROOT, "textures", "mob_effect", "sneaky_rat.png"))
+
+
 def zone_texture():
     """Круг зоны 128×128: мягкое синее свечение, яркое кольцо по краю, руническое кольцо внутри."""
     s = 128
@@ -944,6 +970,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(ROOT, "textures", "misc"), exist_ok=True)
     falling_lance_texture()
     duelist_icon()
+    rat_icon()
     zone_texture()
     M.write_geo(ROOT)
     write_anims(ROOT, NAME, animations)

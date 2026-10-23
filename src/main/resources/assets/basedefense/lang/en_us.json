@@ -153,5 +153,6 @@
   "entity.basedefense.tattered_lancer": "Tattered Lancer",
   "item.basedefense.tattered_lancer_spawn_egg": "Tattered Lancer Spawn Egg",
   "effect.basedefense.duelist": "Duelist",
-  "entity.basedefense.falling_lance": "Spectral Lance"
+  "entity.basedefense.falling_lance": "Spectral Lance",
+  "effect.basedefense.sneaky_rat": "Sneaky Rat"
 }

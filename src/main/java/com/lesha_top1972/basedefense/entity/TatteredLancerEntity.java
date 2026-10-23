@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.combat.ShieldBlocker;
 import com.lesha_top1972.basedefense.effect.ModEffects;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
@@ -24,6 +25,9 @@ import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.item.ShieldItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.DustParticleEffect;
@@ -49,24 +53,25 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Босс «Оборванный улан» — мёртвый дуэлянт с турнирным копьём. 300 HP, полоска босса.
+ * Босс «Оборванный улан» — мёртвый дуэлянт с турнирным копьём. 350 HP, полоска босса.
  * <p>Атаки (анимации — tools/lancer_gen.py, тайминги совпадают):</p>
  * <ul>
- *   <li>THRUST — три укола (5.5 + 5.5 + 7.5);</li>
- *   <li>CHARGE — таран на ~9 блоков (12.5);</li>
- *   <li>LEAP — прыжок с сальто и удар в землю (11.5 в радиусе 3.2, подбрасывает);</li>
- *   <li>SWEEP — круговой взмах (8.5 вокруг);</li>
- *   <li>UPPERCUT — «вихревой подъём»: закрутка, взлёт с оборотом, копьё снизу вверх (9.5, подбрасывает),
+ *   <li>THRUST — три укола (5 + 5 + 7);</li>
+ *   <li>CHARGE — таран на ~9 блоков (12);</li>
+ *   <li>LEAP — прыжок с сальто и удар в землю (11 в радиусе 3.2, подбрасывает);</li>
+ *   <li>SWEEP — круговой взмах (8 вокруг);</li>
+ *   <li>UPPERCUT — «вихревой подъём»: закрутка, взлёт с оборотом, копьё снизу вверх (9, подбрасывает),
  *       часто следом прыжок‑добивание;</li>
  *   <li>BACKSTEP — отскок с вращением копья, часто следом таран;</li>
- *   <li>RAIN — «ливень копий» (обе фазы): взлетает на 6 блоков, под ним синяя зона радиусом 8 (замедление I),
- *       через 2.5 с с неба падают призрачные копья (по 7);</li>
+ *   <li>RAIN — «ливень копий» (обе фазы): взлетает на 6 блоков, под ним синяя зона радиусом 13 (замедление I),
+ *       через 2.5 с с неба падают призрачные копья (по 6.5);</li>
  *   <li>GRAND — «тройной таран» (только 2‑я фаза): три рывка сквозь цель с разворотами
- *       (по 11) и финальный выпад с ударной волной на 12 блоков (14);</li>
+ *       (по 10.5) и финальный выпад с ударной волной на 12 блоков (13.5), выбивает щит;</li>
  *   <li>ROAR — на половине здоровья: салют шляпой, вторая фаза (атакует чаще).</li>
  * </ul>
  * Эффект «Дуэлянт»: первый удар по игроку вешает его на 30 с (только на одного за раз); бьёт дуэлянта —
- * лечится на 1, а дуэлянт наносит ему на 20% больше урона. Раз в 20 с переключается на другого игрока.
+ * лечится на 1, а дуэлянт наносит ему на 20% больше урона. Раз в 13 с переключается на другого игрока.
+ * «Подлая крыса»: 8% за удар по улану — на атакующего (не на дуэлянта), 10 с. «Тройной таран» выбивает щит на 7 с.
  */
 public class TatteredLancerEntity extends HostileEntity {
 
@@ -99,11 +104,14 @@ public class TatteredLancerEntity extends HostileEntity {
     public static final int RAIN_RISE = 24;
     public static final int RAIN_START = 74;
     public static final int RAIN_STOP = 134;
-    public static final double RAIN_RADIUS = 8.0;
+    public static final double RAIN_RADIUS = 13.0;
     public static final double RAIN_HEIGHT = 6.0;
 
     public static final int DUELIST_TICKS = 600;
-    public static final int RETARGET_TICKS = 400;
+    public static final int RETARGET_TICKS = 260;
+    public static final int SHIELD_BREAK_TICKS = 140;
+    public static final int RAT_TICKS = 200;
+    public static final float RAT_CHANCE = 0.08f;
 
     private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.YELLOW,
             BossBar.Style.NOTCHED_10);
@@ -127,7 +135,7 @@ public class TatteredLancerEntity extends HostileEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 300.0)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 350.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.26)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 6.0)
@@ -219,7 +227,14 @@ public class TatteredLancerEntity extends HostileEntity {
         if (source.getAttacker() instanceof LivingEntity attacker && attacker.hasStatusEffect(ModEffects.DUELIST)) {
             amount *= 1.2f;
         }
-        return super.damage(source, amount);
+        boolean hurt = super.damage(source, amount);
+        // «Подлая крыса»: 8% за каждый удар по улану (дуэлянту — никогда)
+        if (hurt && !this.getWorld().isClient && source.getAttacker() instanceof PlayerEntity p
+                && !p.hasStatusEffect(ModEffects.DUELIST) && this.random.nextFloat() < RAT_CHANCE) {
+            p.addStatusEffect(new StatusEffectInstance(ModEffects.SNEAKY_RAT, RAT_TICKS, 0, false, true, true), this);
+            this.sound(SoundEvents.ENTITY_SILVERFISH_AMBIENT, 1.0f, 0.7f);
+        }
+        return hurt;
     }
 
     @Override
@@ -352,10 +367,11 @@ public class TatteredLancerEntity extends HostileEntity {
             e.timeUntilRegen = 0;
         }
         if (e.damage(this.getDamageSources().mobAttack(this), damage)) {
-            if (knock > 0) {
+            boolean shielded = e instanceof ShieldBlocker sb && sb.basedefense$blockedThisTick();
+            if (knock > 0 && !shielded) {
                 e.takeKnockback(knock, this.getX() - e.getX(), this.getZ() - e.getZ());
             }
-            if (up > 0) {
+            if (up > 0 && !shielded) {
                 e.addVelocity(0, up, 0);
             }
             e.velocityModified = true;
@@ -368,6 +384,28 @@ public class TatteredLancerEntity extends HostileEntity {
                 this.sound(SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, 1.0f, 1.4f);
             }
         }
+    }
+
+    /** «Тройной таран» выбивает щит: 7 секунд им нельзя пользоваться. */
+    void breakShield(LivingEntity e) {
+        if (!(e instanceof PlayerEntity p)) {
+            return;
+        }
+        Set<Item> shields = new HashSet<>();
+        shields.add(Items.SHIELD);
+        if (p.getMainHandStack().getItem() instanceof ShieldItem) {
+            shields.add(p.getMainHandStack().getItem());
+        }
+        if (p.getOffHandStack().getItem() instanceof ShieldItem) {
+            shields.add(p.getOffHandStack().getItem());
+        }
+        for (Item item : shields) {
+            p.getItemCooldownManager().set(item, SHIELD_BREAK_TICKS);
+        }
+        if (p.isBlocking()) {
+            p.clearActiveItem();
+        }
+        this.getWorld().sendEntityStatus(p, (byte) 30);          // звук ломающегося щита
     }
 
     /** Удар конусом вперёд: reach — от центра улана до края цели, halfAngle — половина угла. */
@@ -403,7 +441,7 @@ public class TatteredLancerEntity extends HostileEntity {
     }
 
     /** Удар по линии вперёд: длина length, ширина ±halfWidth. */
-    int lineHit(double length, double halfWidth, float damage, double knock, double up) {
+    int lineHit(double length, double halfWidth, float damage, double knock, double up, boolean breakShield) {
         Vec3d f = this.forward();
         int n = 0;
         for (LivingEntity e : this.victims(length)) {
@@ -412,6 +450,9 @@ public class TatteredLancerEntity extends HostileEntity {
             double side = Math.abs(to.x * f.z - to.z * f.x);
             if (along > -0.5 && along < length && side < halfWidth + e.getWidth() / 2) {
                 this.strike(e, damage, knock, up, false);
+                if (breakShield) {
+                    this.breakShield(e);
+                }
                 n++;
             }
         }
@@ -697,13 +738,16 @@ public class TatteredLancerEntity extends HostileEntity {
             }
         }
 
-        private void dashHits(float damage, double knock, double up) {
+        private void dashHits(float damage, double knock, double up, boolean breakShield) {
             TatteredLancerEntity l = this.lancer;
             for (LivingEntity e : l.victims(1.6)) {
                 Vec3d to = new Vec3d(e.getX() - l.getX(), 0, e.getZ() - l.getZ());
                 if (to.lengthSquared() < 0.01 || to.normalize().dotProduct(this.dashDir) > 0.2) {
                     if (this.hitIds.add(e.getId())) {
                         l.strike(e, damage, knock, up, false);
+                        if (breakShield) {
+                            l.breakShield(e);
+                        }
                         l.sound(SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.2f, 0.7f);
                     }
                 }
@@ -742,7 +786,7 @@ public class TatteredLancerEntity extends HostileEntity {
                     if (t == 6 || t == 12 || t == 20) {
                         Vec3d f = l.forward().multiply(t == 20 ? 0.45 : 0.25);
                         l.addVelocity(f.x, 0, f.z);
-                        l.coneHit(3.8, 35, t == 20 ? 7.5f : 5.5f, t == 20 ? 0.8 : 0.3, 0, true);
+                        l.coneHit(3.8, 35, t == 20 ? 7f : 5f, t == 20 ? 0.8 : 0.3, 0, true);
                         l.tipParticles(3.0);
                         l.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, t == 20 ? 0.8f : 1.2f);
                     }
@@ -765,7 +809,7 @@ public class TatteredLancerEntity extends HostileEntity {
                         if (t % 3 == 0) {
                             l.sound(SoundEvents.ENTITY_HORSE_GALLOP, 0.8f, 1.2f);
                         }
-                        this.dashHits(12.5f, 1.6, 0.45);
+                        this.dashHits(12f, 1.6, 0.45, false);
                         if (l.horizontalCollision && t > 13) {
                             this.tick = 24;
                         }
@@ -802,7 +846,7 @@ public class TatteredLancerEntity extends HostileEntity {
                             l.faceTarget(target);
                         }
                         if ((l.isOnGround() && t > LEAP_WINDUP + 3) || t > LEAP_WINDUP + 60) {
-                            this.landNow(11.5f);
+                            this.landNow(11f);
                         }
                     }
                 }
@@ -816,7 +860,7 @@ public class TatteredLancerEntity extends HostileEntity {
                         l.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.7f);
                     }
                     if (t == 12) {
-                        l.radiusHit(3.8, 8.5f, 1.3, 0.2);
+                        l.radiusHit(3.8, 8f, 1.3, 0.2);
                         l.sweepParticles();
                     }
                     if (t >= SWEEP_TICKS) {
@@ -837,7 +881,7 @@ public class TatteredLancerEntity extends HostileEntity {
                         l.velocityModified = true;
                     }
                     if (t == 12) {
-                        int n = l.coneHit(3.5, 50, 9.5f, 0.3, 1.0, false);
+                        int n = l.coneHit(3.5, 50, 9f, 0.3, 1.0, false);
                         l.sound(SoundEvents.ITEM_TRIDENT_THROW, 1.2f, 0.8f);
                         ServerWorld s = l.sw();
                         if (s != null) {
@@ -923,7 +967,7 @@ public class TatteredLancerEntity extends HostileEntity {
                 if (t % 3 == 0) {
                     l.sound(SoundEvents.ENTITY_HORSE_GALLOP, 0.9f, 1.3f);
                 }
-                this.dashHits(11f, 1.4, 0.4);
+                this.dashHits(10.5f, 1.4, 0.4, true);
             } else if (t >= 25 && t < 68) {
                 Vec3d v = l.getVelocity();
                 l.setVelocity(v.x * 0.5, v.y, v.z * 0.5);
@@ -931,7 +975,7 @@ public class TatteredLancerEntity extends HostileEntity {
             if (t == 68) {
                 Vec3d f = l.forward().multiply(0.6);
                 l.addVelocity(f.x, 0, f.z);
-                l.lineHit(12.0, 1.6, 14f, 2.0, 0.5);
+                l.lineHit(12.0, 1.6, 13.5f, 2.0, 0.5, true);
                 l.shockwaveParticles(12.0);
                 l.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f, 0.9f);
                 l.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.5f, 0.6f);
