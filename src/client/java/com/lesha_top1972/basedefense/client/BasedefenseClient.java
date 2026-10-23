@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.client;
 
 import com.lesha_top1972.basedefense.client.entity.FrostArcherRenderer;
+import com.lesha_top1972.basedefense.client.entity.FallingLanceRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArrowRenderer;
 import com.lesha_top1972.basedefense.client.entity.IronKnightRenderer;
 import com.lesha_top1972.basedefense.client.entity.TatteredLancerRenderer;
@@ -8,7 +9,9 @@ import com.lesha_top1972.basedefense.client.entity.IronZombieRenderer;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
+import com.lesha_top1972.basedefense.client.render.DuelistOverlay;
 import com.lesha_top1972.basedefense.client.render.FreezeOverlay;
+import com.lesha_top1972.basedefense.client.render.LancerZoneRenderer;
 import com.lesha_top1972.basedefense.client.render.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
@@ -54,6 +57,9 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FROST_ARROW, FrostArrowRenderer::new);
         EntityModelLayerRegistry.registerModelLayer(TatteredLancerRenderer.LAYER, () -> BedrockModelLoader.load("tattered_lancer"));
         EntityRendererRegistry.register(ModEntities.TATTERED_LANCER, TatteredLancerRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FALLING_LANCE, FallingLanceRenderer::new);
+        LancerZoneRenderer.init();
+        DuelistOverlay.init();
 
         // Эффект «Заморозка»: бело‑голубой экран
         FreezeOverlay.init();

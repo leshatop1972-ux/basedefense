@@ -105,6 +105,16 @@ public final class ModEntities {
                     .trackRangeBlocks(80)
                     .build());
 
+    /** Призрачное копьё «ливня копий». */
+    public static final EntityType<FallingLanceEntity> FALLING_LANCE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "falling_lance"),
+            FabricEntityTypeBuilder.<FallingLanceEntity>create(SpawnGroup.MISC, FallingLanceEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.4f, 0.4f))
+                    .trackRangeBlocks(80)
+                    .trackedUpdateRate(2)
+                    .build());
+
     private ModEntities() {
     }
 

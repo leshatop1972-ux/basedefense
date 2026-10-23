@@ -151,5 +151,7 @@
   "entity.basedefense.frost_arrow": "Frost Arrow",
   "effect.basedefense.freeze": "Freeze",
   "entity.basedefense.tattered_lancer": "Tattered Lancer",
-  "item.basedefense.tattered_lancer_spawn_egg": "Tattered Lancer Spawn Egg"
+  "item.basedefense.tattered_lancer_spawn_egg": "Tattered Lancer Spawn Egg",
+  "effect.basedefense.duelist": "Duelist",
+  "entity.basedefense.falling_lance": "Spectral Lance"
 }

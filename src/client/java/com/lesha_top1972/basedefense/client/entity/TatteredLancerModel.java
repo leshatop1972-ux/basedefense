@@ -11,8 +11,9 @@ import java.util.Map;
 /**
  * Модель босса «Оборванный улан» (geo/tattered_lancer.geo.json, создаётся tools/lancer_gen.py).
  * Движение: idle / walk / run плавно сменяются по скорости. Атаки (по статусу с сервера):
- * thrust, charge, sweep, uppercut, backstep, roar; прыжок — leap_start → leap_air (сальто, держит
- * позу до приземления) → leap_land. Вымпел и перо дополнительно трепещут кодом.
+ * thrust, charge, sweep, uppercut, backstep, roar, grand; прыжок — leap_start → leap_air (сальто, держит
+ * позу до приземления) → leap_land; ливень копий — rain_rise → rain_hover (парит) → rain_descend → leap_land.
+ * Вымпел и перо дополнительно трепещут кодом.
  */
 public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity> {
 
@@ -22,8 +23,11 @@ public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity
     private static final BedrockAnimations.Clip RUN = C.get("run");
     private static final BedrockAnimations.Clip[] ACTIONS = {
             C.get("thrust"), C.get("charge"), null, C.get("leap_land"), C.get("sweep"), C.get("uppercut"),
-            C.get("backstep"), C.get("roar")
+            C.get("backstep"), C.get("roar"), C.get("grand"), null, null
     };
+    private static final BedrockAnimations.Clip RAIN_RISE = C.get("rain_rise");
+    private static final BedrockAnimations.Clip RAIN_HOVER = C.get("rain_hover");
+    private static final BedrockAnimations.Clip RAIN_DESCEND = C.get("rain_descend");
     private static final BedrockAnimations.Clip LEAP_START = C.get("leap_start");
     private static final BedrockAnimations.Clip LEAP_AIR = C.get("leap_air");
     private static final float LEAP_START_LEN = TatteredLancerEntity.LEAP_WINDUP / 20f;
@@ -65,6 +69,18 @@ public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity
                     ct = t - LEAP_START_LEN;
                     w = 1f;
                 }
+            }
+        } else if (a == TatteredLancerEntity.RAIN) {
+            if (t < 12f) {
+                clip = t < RAIN_RISE.length() ? RAIN_RISE : RAIN_HOVER;
+                ct = t < RAIN_RISE.length() ? t : t - RAIN_RISE.length();
+                w = t < RAIN_RISE.length() ? clamp01(t / 0.1f) : 1f;
+            }
+        } else if (a == TatteredLancerEntity.RAIN_END) {
+            if (t < 6f) {
+                clip = RAIN_DESCEND;
+                ct = t;
+                w = 1f;
             }
         } else if (a >= 0 && a < ACTIONS.length && ACTIONS[a] != null && t >= 0 && t < ACTIONS[a].length()) {
             clip = ACTIONS[a];

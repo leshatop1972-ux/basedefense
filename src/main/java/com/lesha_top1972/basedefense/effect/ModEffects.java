@@ -19,6 +19,10 @@ public final class ModEffects {
     public static final StatusEffect FREEZE = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "freeze"), new FreezeEffect());
 
+    /** Дуэлянт (метка улана): улан лечится от ударов по нему, а дуэлянт бьёт улана на 20% сильнее. */
+    public static final StatusEffect DUELIST = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "duelist"), new DuelistEffect());
+
     private ModEffects() {
     }
 

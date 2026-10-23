@@ -15,7 +15,7 @@
 import math
 import os
 
-from mobgen import (FACE_LIGHT, Model, Painter, add, bake, ease, ease_in, ease_out, faces, lerp, lerp3, look_R,
+from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, ease, ease_in, ease_out, faces, lerp, lerp3, look_R,
                     mix, mm, mul, mv, norm, rx_m, ry_m, rz_m, scl, sub, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -131,34 +131,36 @@ M.finalize()
 PT = Painter(M.tex_w, M.tex_h, seed=31)
 R = PT.rnd
 
-TEAL = (34, 86, 90)
-TEAL_L = (60, 124, 126)
-TEAL_D = (18, 50, 56)
-GOLD = (214, 172, 74)
-GOLD_L = (246, 214, 120)
-GOLD_D = (150, 110, 40)
-CRIMSON = (158, 34, 44)
-CRIMSON_L = (196, 62, 66)
-CRIMSON_D = (100, 20, 30)
-BLACK = (30, 30, 36)
-BLACK_L = (50, 50, 60)
-BROWN = (92, 58, 36)
-BROWN_L = (126, 84, 52)
-BROWN_D = (58, 36, 22)
-SHIRT = (236, 232, 222)
-SKIN = (214, 172, 142)
-SKIN_S = (182, 140, 114)
-SKIN_D = (150, 110, 90)
-HAIR = (96, 56, 42)
-HAIR_L = (128, 80, 58)
-HAIR_S = (174, 178, 190)          # седая прядь
-EYE = (255, 196, 70)
+TEAL = (38, 80, 80)                 # выцветший бирюзовый
+TEAL_L = (62, 112, 108)
+TEAL_D = (20, 46, 50)
+GOLD = (182, 150, 78)               # потускневшее золото
+GOLD_L = (214, 188, 112)
+GOLD_D = (122, 96, 48)
+CRIMSON = (124, 30, 40)
+CRIMSON_L = (156, 50, 56)
+CRIMSON_D = (78, 18, 26)
+BLACK = (28, 30, 32)
+BLACK_L = (48, 50, 52)
+BROWN = (80, 54, 36)
+BROWN_L = (108, 76, 50)
+BROWN_D = (50, 34, 22)
+SHIRT = (206, 200, 176)             # пожелтевшее жабо
+SKIN = (126, 150, 116)              # кожа мертвеца
+SKIN_S = (98, 120, 90)
+SKIN_D = (72, 90, 68)
+BONE = (214, 208, 184)
+ROT = (70, 46, 50)
+HAIR = (60, 62, 60)
+HAIR_L = (88, 92, 88)
+HAIR_S = (196, 200, 196)            # седая прядь
+EYE = (150, 228, 255)               # холодный мертвенный огонь
 STEEL = (188, 194, 204)
 STEEL_D = (120, 126, 140)
 WOOD = (84, 52, 34)
 WOOD_L = (112, 72, 46)
-FEATHER = (244, 244, 246)
-FUR = (70, 64, 60)
+FEATHER = (226, 226, 220)
+FUR = (62, 58, 54)
 
 
 def light(fname, col, k=1.0):
@@ -179,18 +181,19 @@ def paint_cube(c):
                 continue
             PT.fill(rect, lambda i, j, w, h, fn=fname: light(fn, HAIR if fn != "bottom" else SKIN_D))
         x0, y0, w, h = F["front"]
+        # лицо мертвеца: тёмные впадины глаз с холодным огнём, провал носа, оскал, швы на щеке
         rows = [
             "HHHHHHHH",
             "HHHHHHHH",
             "HSSSSSSH",
-            "HBBSSBBH",
-            "HWESSEWH",
+            "HKKSSKKH",
+            "HKESSEKH",
             "HSSNNScH",
-            "HSmmmmSH",
-            "HSSggSSH",
+            "HStDtDtH",
+            "HSSjSjSH",
         ]
-        pal = {"S": SKIN, "B": HAIR, "W": (238, 234, 226), "N": SKIN_S, "m": HAIR_L, "g": HAIR,
-               "c": (200, 120, 120)}
+        pal = {"S": SKIN, "K": (34, 40, 36), "N": (52, 60, 50), "c": ROT, "t": BONE, "D": (30, 22, 24),
+               "j": SKIN_D}
         for j, row in enumerate(rows):
             for i, ch in enumerate(row):
                 if ch == "H":
@@ -202,8 +205,10 @@ def paint_cube(c):
                     if ch == "S" and j >= 5:
                         col = mix(SKIN, SKIN_S, 0.25)
                     PT.put(x0 + i, y0 + j, mul(col, PT.noise(0.02)))
-        # шрам через щёку
-        PT.put(x0 + 6, y0 + 4, (196, 128, 120))
+        # шов через щёку и трупные пятна
+        PT.put(x0 + 6, y0 + 5, (40, 34, 30))
+        PT.put(x0 + 6, y0 + 3, ROT)
+        PT.put(x0 + 1, y0 + 2, SKIN_S)
         return
 
     if mat == "hair":
@@ -246,6 +251,13 @@ def paint_cube(c):
                         return light(fname, GOLD)
                     if outer and i in (0, w - 1):
                         return light(fname, GOLD_D)
+                torn = R.random()
+                if face in ("coat_front", "coat_back", "cape") and side_face(fname) and torn < 0.05 and j < h - 2:
+                    return None                                        # дыры в истлевшей ткани
+                if face == "sleeve" and side_face(fname) and torn < 0.12:
+                    return light(fname, SKIN_S)                        # прорехи, видна мёртвая кожа
+                if face == "chest" and fname == "front" and i in (1, 2) and 1 <= j <= 4:
+                    return light(fname, BONE if j % 2 == 1 else (36, 26, 28))   # рёбра сквозь разорванный сюртук
                 if face == "chest" and fname == "front":
                     # золотые шнуры‑бранденбуры и вырез под жабо
                     if j % 2 == 1 and 0 < i < w - 1 and i not in (w // 2 - 1, w // 2):
@@ -319,6 +331,8 @@ def paint_cube(c):
         for fname, rect in F.items():
             def fn(i, j, w, h, fname=fname):
                 col = BLACK
+                if face == "brim" and fname in ("top", "bottom") and i >= w - 2 and 3 <= j <= 5:
+                    return None                                     # рваный край полей
                 if face == "brim" and fname == "top" and (i in (0, w - 1) or j in (0, h - 1)):
                     col = BLACK_L
                 if face == "crown" and fname == "top":
@@ -329,8 +343,10 @@ def paint_cube(c):
     if mat == "feather":
         for fname, rect in F.items():
             def fn(i, j, w, h, fname=fname):
+                if fname in ("left", "right") and j == 0 and (i * 3) % 4 == 1:
+                    return None                                     # облезлое перо
                 if fname in ("left", "right") and (i + j) % 3 == 0:
-                    return light(fname, mul(FEATHER, 0.86))
+                    return light(fname, mul(FEATHER, 0.82))
                 return light(fname, FEATHER)
             PT.fill(rect, fn)
         return
@@ -679,13 +695,21 @@ def sweep(t):
 
 
 UPPERCUT = [
+    # «Вихревой подъём»: закрутка низко → взлёт с оборотом, копьё снизу вверх → приземление
     (0.00, GUARD, "lin"),
-    (0.30, dict(body=(20, 10, 0), body_pos=(0, 3.5, 0), torso=(4, -10, 0), head=(-14, -10, 0), grip=(-4.0, 2.0, -2.0),
-                dir=(0.05, 0.75, -0.6), sup_d=5, rleg=(30, 60, 14, 5), lleg=(-36, 64, 16, -5), coat=4), "out"),
-    (0.42, dict(body=(-12, 20, 0), body_pos=(0, -1.5, 0), torso=(-6, 20, 0), head=(-20, -30, 0), grip=(-2.0, -14.0, -4.0),
-                dir=(0.05, -0.85, -0.5), rleg=(10, 6, 30, 4), lleg=(-20, 10, 30, -4), coat=15, cape=25, plume=20), "in"),
-    (0.60, dict(body=(-10, 20, 0), body_pos=(0, -1, 0)), "lin"),
-    (1.10, GUARD, "ease"),
+    (0.30, dict(body=(18, -25, 0), body_pos=(0, 3.2, 0), torso=(6, -50, 0), head=(-10, 55, 0), grip=(-6.0, -1.0, 4.0),
+                dir=(-0.6, 0.5, 0.6), sup=1.0, sup_d=5, rleg=(24, 60, 14, 8), lleg=(-34, 62, 16, -8), coat=4), "out"),
+    (0.38, dict(body=(6, -10, 0), torso=(0, -20, 0), grip=(-7.0, -3.0, 0.0), dir=(-1, 0.4, -0.3), dir_mode=1.0,
+                sup=0.0, larm=(-20, 0, -70), lfore=(-10, 0, 0), head=(-6, 20, 0)), "in"),
+    (0.62, dict(root_y=-360.0, body=(-14, 0, 0), body_pos=(0, -1.5, 0), torso=(-8, 15, 0), head=(-24, -15, 0),
+                grip=(-2.5, -16.0, -3.0), dir=(0.1, -1, -0.3), rleg=(8, 4, 34, 3), lleg=(-24, 20, 30, -3), coat=30,
+                cape=40, plume=24, pennant=-30), "out"),
+    (0.62001, dict(root_y=0.0), "lin"),
+    (0.85, dict(body=(-10, 0, 0), body_pos=(0, -1, 0), coat=20, cape=26), "lin"),
+    (1.05, dict(body=(14, 10, 0), body_pos=(0, 2.4, 0), rleg=(20, 40, 10, 4), lleg=(-20, 44, 12, -4),
+                grip=(-3.0, -4.0, -2.0), dir=(0.04, 0.1, -1), dir_mode=0.0, sup=1.0, coat=6, cape=10, plume=4,
+                pennant=0, larm=(-10, 0, -12), lfore=(-20, 0, 0), torso=(0, 8, 0), head=(-4, -18, 0)), "in"),
+    (1.30, GUARD, "ease"),
 ]
 
 
@@ -724,6 +748,105 @@ def roar(t):
     return resolve(keyed(ROAR, t))
 
 
+# --- особая атака второй фазы: «Тройной таран» (тики в сущности: рывки 16–25, 31–40, 46–55, удар 68) ---
+DASH = dict(body=(30, 0, 0), body_pos=(0, 1.5, 0), torso=(0, -4, 0), head=(-24, 4, 0), coat=40, cape=45, plume=35,
+            pennant=30, **CHARGE_COUCH)
+COIL = dict(body=(24, 0, 0), body_pos=(0, 2.8, 0), torso=(0, -10, 0), head=(-18, 10, 0), rleg=(42, 52, 14, 4),
+            lleg=(-44, 62, 18, -4), coat=8, cape=10, plume=10, pennant=10, **CHARGE_COUCH)
+SKID = dict(body=(-12, 0, 0), body_pos=(0, 2.4, 0), rleg=(-20, 30, -10, 6), lleg=(-44, 20, -12, -6),
+            grip=(-4.0, -9.0, 1.0), dir=(0, -0.45, -1), coat=-12, cape=-6, plume=-10, pennant=-20, head=(-4, 0, 0),
+            torso=(-4, 0, 0))
+DASHES = [(0.80, 1.25), (1.55, 2.00), (2.30, 2.75)]
+GRAND = [
+    (0.00, GUARD, "lin"),
+    (0.40, dict(grip=(-4.0, -16.0, -1.0), dir=(0.05, -1, 0.1), sup=0.0, larm=(-150, 0, -20), lfore=(-10, 0, 0),
+                body=(-8, 0, 0), torso=(0, 0, 0), head=(-20, 0, 0), coat=6, cape=10, plume=14,
+                rleg=(6, 4, 4, 6), lleg=(-6, 4, 4, -6)), "out"),
+    (0.80, COIL, "in"),
+]
+for k, (d0, d1) in enumerate(DASHES):
+    GRAND.append((d1, DASH, "lin"))
+    if k < 2:
+        mid = d1 + 0.1
+        end = DASHES[k + 1][0]
+        GRAND.append((mid, dict(SKID, root_y=-180.0), "out"))
+        GRAND.append((end, dict(COIL, root_y=-360.0), "in"))
+        GRAND.append((end + 0.00001, dict(root_y=0.0), "lin"))
+GRAND += [
+    (2.85, dict(SKID, root_y=-180.0), "out"),
+    (3.05, dict(root_y=-360.0, body=(0, 0, 0), body_pos=(0, 2.2, 0), torso=(-4, -20, 0), head=(2, 4, 0),
+                grip=(-5.2, -3.6, 5.6), dir=(0.02, 0.1, -1), sup=1.0, sup_d=5, lleg=(-24, 40, 12, -4),
+                rleg=(30, 40, 10, 5), coat=4, cape=8, plume=4, pennant=12, larm=(-10, 0, -12), lfore=(-20, 0, 0)), "in"),
+    (3.05001, dict(root_y=0.0), "lin"),
+    (3.30, dict(body=(-4, 0, 0), body_pos=(0, 2.6, 0), torso=(-6, -28, 0), grip=(-5.8, -3.0, 6.4)), "out"),
+    (3.40, dict(grip=(0.5, -4.0, -10.5), dir=(0, 0.04, -1), torso=(12, 30, 0), body=(20, 24, 0), body_pos=(0, 3.6, 0),
+                head=(-12, -42, 0), lleg=(-52, 46, 16, -6), rleg=(44, 0, 0, 6), coat=30, cape=30, plume=26,
+                pennant=-40, sup_d=4), "in"),
+    (3.60, dict(coat=18, cape=18), "lin"),
+    (3.95, GUARD, "ease"),
+]
+
+
+def grand(t):
+    pr = keyed(GRAND, t)
+    for d0, d1 in DASHES:
+        if d0 <= t < d1:
+            w = 2 * math.pi * (t - d0) / 0.3
+            k = min(1.0, (t - d0) / 0.06) * min(1.0, (d1 - t) / 0.06)
+            r, l = legs_cycle(w, 48, 80, (10, 10, 10, 4), (-10, 10, 10, -4))
+            pr["rleg"] = lerp_val(pr["rleg"], r, k)
+            pr["lleg"] = lerp_val(pr["lleg"], l, k)
+            pr["body_pos"] = (0, 1.4 - 1.0 * abs(math.sin(w)) * k, 0)
+    return resolve(pr)
+
+
+# --- «Ливень копий»: взлёт с двойным оборотом, копьё к небу, парение, спуск ---
+RAIN_TOP = dict(root_y=-720.0, body=(-16, 0, 0), body_pos=(0, 0, 0), torso=(-6, 0, 0), head=(-22, 0, 0),
+                grip=(-3.5, -19.0, -0.5), dir=(0.02, -1, 0.05), dir_mode=0.0, sup=0.0, larm=(-20, 0, -95),
+                lfore=(-10, 0, 0), rleg=(6, 20, 44, 6), lleg=(-12, 34, 44, -2), coat=-14, cape=20, plume=30,
+                pennant=0)
+RAIN_RISE = [
+    (0.00, GUARD, "lin"),
+    (0.25, dict(body=(12, 0, 0), body_pos=(0, 3, 0), rleg=(28, 60, 14, 4), lleg=(-28, 60, 14, -4),
+                grip=(-4.0, -3.0, 2.0), dir=(0, 0.3, -1)), "out"),
+    (0.45, dict(body=(-8, 0, 0), body_pos=(0, -1, 0), rleg=(4, 6, 40, 2), lleg=(-4, 10, 40, -2),
+                grip=(-3.5, -10.0, -1.0), dir=(0, -0.7, -0.6), sup=0.0, larm=(-30, 0, -60), lfore=(-10, 0, 0)), "in"),
+    (1.10, RAIN_TOP, "out"),
+    (1.10001, dict(root_y=0.0), "lin"),
+    (1.20, dict(root_y=0.0), "lin"),
+]
+
+
+def rain_rise(t):
+    return resolve(keyed(RAIN_RISE, t))
+
+
+def rain_hover(t):
+    w = 2 * math.pi * t / 1.0
+    pr = P(RAIN_TOP, root_y=0.0)
+    pr["body_pos"] = (0, -0.4 * math.sin(w), 0)
+    pr["body"] = (-16 + 2 * math.sin(w + 0.5), 0, 0)
+    pr["dir"] = (0.02 + 0.04 * math.sin(w), -1, 0.05)
+    pr["larm"] = (-20 + 6 * math.sin(w + 1.0), 0, -95)
+    pr["rleg"] = (6 + 4 * math.sin(w), 20, 44, 6)
+    pr["lleg"] = (-12 - 4 * math.sin(w), 34, 44, -2)
+    pr["coat"] = -10 + 6 * math.sin(w)
+    pr["cape"] = 20 + 6 * math.sin(w - 0.6)
+    pr["plume"] = 30 + 6 * math.sin(w - 0.9)
+    return resolve(pr)
+
+
+def rain_descend(t):
+    w = 2 * math.pi * t / 0.6
+    pr = P(PLUNGE, body=(-6, 0, 0))
+    pr["grip"] = (-1.6, -12.0, -2.0)
+    pr["dir"] = (0, 0.8, -0.6)
+    pr["coat"] = 26 + 6 * math.sin(w)
+    pr["cape"] = 36 + 6 * math.sin(w - 0.6)
+    pr["plume"] = 26 + 5 * math.sin(w - 0.9)
+    return resolve(pr)
+
+
 animations = {
     "animation.%s.idle" % NAME: bake(idle, 2.4, 20, True, A_BONES),
     "animation.%s.walk" % NAME: bake(walk, 1.0, 20, True, A_BONES),
@@ -734,12 +857,94 @@ animations = {
     "animation.%s.leap_air" % NAME: bake(leap_air, 1.6, 40, False, A_BONES),
     "animation.%s.leap_land" % NAME: bake(leap_land, 0.8, 40, False, A_BONES),
     "animation.%s.sweep" % NAME: bake(sweep, 1.3, 40, False, A_BONES),
-    "animation.%s.uppercut" % NAME: bake(uppercut, 1.1, 40, False, A_BONES),
+    "animation.%s.uppercut" % NAME: bake(uppercut, 1.3, 40, False, A_BONES),
     "animation.%s.backstep" % NAME: bake(backstep, 0.7, 40, False, A_BONES),
     "animation.%s.roar" % NAME: bake(roar, 1.5, 40, False, A_BONES),
+    "animation.%s.grand" % NAME: bake(grand, 3.95, 40, False, A_BONES),
+    "animation.%s.rain_rise" % NAME: bake(rain_rise, 1.2, 40, False, A_BONES),
+    "animation.%s.rain_hover" % NAME: bake(rain_hover, 1.0, 20, True, A_BONES),
+    "animation.%s.rain_descend" % NAME: bake(rain_descend, 0.6, 20, True, A_BONES),
 }
 
+# =====================================================================
+# 4. Прочие текстуры: призрачное копьё, иконка «Дуэлянта», зона ливня копий
+# =====================================================================
+from PIL import Image  # noqa: E402
+
+
+def falling_lance_texture():
+    """Призрачное копьё в раскладке ванильной стрелы 32×32 (бок 16×5 — остриё справа, торец 5×5)."""
+    a = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    p = a.load()
+    for x in range(16):
+        c = (150, 200, 255, 255) if x % 3 else (200, 230, 255, 255)
+        p[x, 2] = c
+        if 2 <= x <= 11:
+            p[x, 1] = (90, 150, 240, 200) if x % 2 else (0, 0, 0, 0)
+    for x, ys, col in ((11, (1, 2, 3), (170, 220, 255)), (12, (0, 1, 2, 3, 4), (210, 240, 255)),
+                       (13, (1, 2, 3), (235, 250, 255)), (14, (1, 2, 3), (255, 255, 255)), (15, (2,), (255, 255, 255))):
+        for y in ys:
+            p[x, y] = col + (255,)
+    for y in (0, 1, 3, 4):
+        p[1, y] = (60, 110, 230, 255)
+        p[2, y] = (90, 150, 245, 255)
+    for x in range(5):
+        for y in range(5, 10):
+            if x in (1, 3) or y in (6, 8):
+                p[x, y] = (110, 170, 250, 255)
+    p[2, 7] = (240, 250, 255, 255)
+    a.save(os.path.join(ROOT, "textures", "entity", "falling_lance.png"))
+
+
+def duelist_icon():
+    """Иконка 18×18: два скрещённых копья на синем щите."""
+    a = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
+    p = a.load()
+    for y in range(18):
+        for x in range(18):
+            dx, dy = x - 8.5, y - 8.0
+            if abs(dx) + max(0, dy) * 0.6 < 8 and dy > -8 and abs(dx) < 7.5:
+                edge = abs(dx) + max(0, dy) * 0.6 > 6.6 or dy < -6.9
+                p[x, y] = (150, 190, 255, 255) if edge else (40, 80, 170, 255)
+    for k in range(2, 16):
+        for (x, y) in ((k, k), (17 - k, k)):
+            p[x, y] = (230, 236, 250, 255)
+    for (x, y) in ((2, 2), (3, 2), (2, 3), (15, 2), (14, 2), (15, 3)):
+        p[x, y] = (255, 255, 255, 255)
+    for (x, y) in ((4, 12), (5, 13), (13, 12), (12, 13)):
+        p[x, y] = (240, 210, 120, 255)
+    a.save(os.path.join(ROOT, "textures", "mob_effect", "duelist.png"))
+
+
+def zone_texture():
+    """Круг зоны 128×128: мягкое синее свечение, яркое кольцо по краю, руническое кольцо внутри."""
+    s = 128
+    a = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    p = a.load()
+    for y in range(s):
+        for x in range(s):
+            dx, dy = (x + 0.5 - s / 2) / (s / 2), (y + 0.5 - s / 2) / (s / 2)
+            r = math.hypot(dx, dy)
+            if r > 1.0:
+                continue
+            ang = math.atan2(dy, dx)
+            alpha = 0.18 + 0.25 * r * r
+            if r > 0.93:
+                alpha = 0.95
+            elif 0.80 < r < 0.84:
+                alpha = 0.55 if int((ang + math.pi) / (2 * math.pi) * 48) % 2 == 0 else 0.15
+            elif 0.55 < r < 0.57:
+                alpha = 0.4
+            col = (70, 140, 255) if r < 0.93 else (170, 210, 255)
+            p[x, y] = col + (clamp(alpha * 255),)
+    a.save(os.path.join(ROOT, "textures", "misc", "lance_zone.png"))
+
+
 if __name__ == "__main__":
+    os.makedirs(os.path.join(ROOT, "textures", "misc"), exist_ok=True)
+    falling_lance_texture()
+    duelist_icon()
+    zone_texture()
     M.write_geo(ROOT)
     write_anims(ROOT, NAME, animations)
     PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
