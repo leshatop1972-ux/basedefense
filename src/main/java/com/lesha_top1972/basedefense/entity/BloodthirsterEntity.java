@@ -52,23 +52,24 @@ import java.util.Set;
 /**
  * Босс «Кровожад»: огромное (×1.3 модель, хитбокс 1.6×4.0) алое чудовище, 600 HP, две фазы (вторая — с 300 HP).
  * Модель и анимации — tools/bloodthirster_gen.py (проверка рывков — tools/anim_check.py), тайминги ниже
- * совпадают с анимациями. Урон атак +25% к первой версии, дальность +1.2 блока, перерывы длиннее.
+ * совпадают с анимациями (атаки растянуты на 20% — тяжелее и плавнее). Урон: +25% к первой версии и ещё +1,
+ * дальность +1.2 блока.
  * <p>1‑я фаза (сгорбленный зверь, когти):</p>
  * <ul>
- *   <li>SWING — разворот, лапа высоко за головой и удар всем телом в землю: 10 (+ трещина вперёд);</li>
- *   <li>DEVOUR — «жадное пожирание»: встаёт на дыбы, бросается и 3 с рвёт добычу, по 3.75 в секунду;</li>
- *   <li>POUNCE — распрямляется во весь рост и прыгает в точку, где цель была за 0.3 с до прыжка: 19
+ *   <li>SWING — разворот, лапа высоко за головой и удар всем телом в землю: 11 (+ трещина вперёд);</li>
+ *   <li>DEVOUR — «жадное пожирание»: встаёт на дыбы, бросается и 3 с рвёт добычу, по 4.75 в секунду;</li>
+ *   <li>POUNCE — распрямляется во весь рост и прыгает в точку, где цель была за 0.3 с до прыжка: 20
  *       (успел убежать — увернулся).</li>
  * </ul>
  * <p>Смена фазы (TRANSFORM, 3 с, неуязвим): выпрямляется, венец из шипов, два огромных красно‑чёрных меча.</p>
  * <p>2‑я фаза:</p>
  * <ul>
- *   <li>SLASH — широкий горизонтальный разрез + рубящий сверху: 8.75 + 8.75;</li>
- *   <li>THRUST — «пронзающий выпад»: рывок с двойным уколом 12.5 и вспарывающий взмах вверх 7.5 (подбрасывает);</li>
- *   <li>SUMMON — «зов выводка»: фонтаны крови, из них 2 мелких кровожада (раз в 2 мин);</li>
+ *   <li>SLASH — «кровавые ножницы»: мечи крест‑накрест перед грудью 9.75 + двойной удар сверху в землю 10.75;</li>
+ *   <li>THRUST — «пронзающий выпад»: рывок с двойным уколом 13.5 и вспарывающий взмах вверх 8.5 (подбрасывает);</li>
+ *   <li>SUMMON — «зов выводка»: фонтан крови, из него 1 мелкий кровожад (раз в 2 мин);</li>
  *   <li>EGGS — «кровавая кладка»: земля вскипает кровью, 3 яйца (раз в 2 мин);</li>
- *   <li>EXEC — «багровая казнь» (мощная): взмывает и обрушивается мечами в точку цели — 20 и кольцо кровавых
- *       гейзеров, затем вырывает мечи широким разрезом в обе стороны — 10.</li>
+ *   <li>EXEC — «багровая казнь» (мощная): взмывает и обрушивается мечами в точку цели — 21 и кольцо кровавых
+ *       гейзеров, затем вырывает мечи широким разрезом в обе стороны — 11.</li>
  * </ul>
  * Скорость в бою ≈ бег игрока − 15% (во 2‑й фазе +7%). Раз в 7 с рядом появляется кровавая лужа.
  */
@@ -89,29 +90,30 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     public static final byte STATUS_BASE = 70;
 
     /** Длительности (тики), как у анимаций. */
-    public static final int SWING_TICKS = 44;
+    public static final int SWING_TICKS = 53;
     public static final int DEVOUR_TICKS = 76;
-    public static final int POUNCE_WINDUP = 24;
-    public static final int LAND_TICKS = 28;
+    public static final int POUNCE_WINDUP = 29;
+    public static final int LAND_TICKS = 34;
     public static final int TRANSFORM_TICKS = 60;
     /** На этом тике смены фазы появляются мечи и венец (и меняется облик). */
     public static final int TRANSFORM_SWITCH = 44;
-    public static final int SLASH_TICKS = 40;
-    public static final int THRUST_TICKS = 36;
-    public static final int SUMMON_TICKS = 52;
-    public static final int EGGS_TICKS = 56;
-    public static final int EXEC_WINDUP = 18;
-    public static final int EXEC_LAND_TICKS = 44;
+    public static final int SLASH_TICKS = 48;
+    public static final int THRUST_TICKS = 43;
+    public static final int SUMMON_TICKS = 62;
+    public static final int EGGS_TICKS = 67;
+    public static final int EXEC_WINDUP = 22;
+    public static final int EXEC_LAND_TICKS = 53;
 
-    /** Урон (×1.25 к первой версии). */
-    static final float DMG_SWING = 10f;
-    static final float DMG_DEVOUR = 3.75f;
-    static final float DMG_POUNCE = 19f;
-    static final float DMG_SLASH = 8.75f;
-    static final float DMG_THRUST = 12.5f;
-    static final float DMG_RIP = 7.5f;
-    static final float DMG_EXEC = 20f;
-    static final float DMG_EXEC_RIP = 10f;
+    /** Урон (×1.25 к первой версии и ещё +1 каждой атаке). */
+    static final float DMG_SWING = 11f;
+    static final float DMG_DEVOUR = 4.75f;
+    static final float DMG_POUNCE = 20f;
+    static final float DMG_SCISSOR = 9.75f;
+    static final float DMG_SLAM = 10.75f;
+    static final float DMG_THRUST = 13.5f;
+    static final float DMG_RIP = 8.5f;
+    static final float DMG_EXEC = 21f;
+    static final float DMG_EXEC_RIP = 11f;
     /** Масштаб модели в рендере (и всех расстояний ударов). */
     public static final float MODEL_SCALE = 1.3f;
 
@@ -451,16 +453,15 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         return null;
     }
 
-    /** Точки для мелких кровожадов: по бокам впереди. */
+    /** Точка для мелкого кровожада (по одному за призыв): впереди, случайно слева или справа. */
     List<BlockPos> bloodlingSpots() {
         Vec3d f = this.forward();
         Vec3d side = new Vec3d(-f.z, 0, f.x);
+        int k = this.random.nextBoolean() ? 1 : -1;
+        Vec3d p = this.getPos().add(f.multiply(2.4)).add(side.multiply(2.8 * k));
+        BlockPos spot = this.groundSpot(p.x, p.z);
         List<BlockPos> out = new ArrayList<>();
-        for (int k = -1; k <= 1; k += 2) {
-            Vec3d p = this.getPos().add(f.multiply(2.2)).add(side.multiply(3.0 * k));
-            BlockPos spot = this.groundSpot(p.x, p.z);
-            out.add(spot != null ? spot : this.getBlockPos());
-        }
+        out.add(spot != null ? spot : this.getBlockPos());
         return out;
     }
 
@@ -833,14 +834,14 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             int t = this.tick;
             switch (this.action) {
                 case SWING -> {
-                    // разворот 0–8, лапа за головой 17–20 (рёв), удар всем телом на 23, лапы волочатся
-                    if (target != null && t < 18) {
+                    // разворот 0–10, лапа за головой 20–24 (рёв), удар всем телом на 28, лапы волочатся
+                    if (target != null && t < 22) {
                         b.faceTarget(target);
                     }
-                    if (t == 14) {
+                    if (t == 17) {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.75f);
                     }
-                    if (t == 23) {
+                    if (t == 28) {
                         b.coneHit(5.8, 70, DMG_SWING, 1.4, 0.4, false);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5f, 0.6f);
                         b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.3f, 0.6f);
@@ -849,7 +850,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.bloodAhead(3.6, 0.6, 20, 0.9);
                     }
                     if (t >= SWING_TICKS) {
-                        this.finish(55);
+                        this.finish(60);
                     }
                 }
                 case DEVOUR -> {
@@ -879,18 +880,18 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.bloodAhead(2.8, 1.4, 16, 0.9);
                     }
                     if (t >= DEVOUR_TICKS) {
-                        this.finish(60);
+                        this.finish(65);
                     }
                 }
                 case POUNCE -> {
-                    // во весь рост с воплем (следит до 18), прыжок на 24 в запомненную точку
-                    if (t < 18 && target != null) {
+                    // во весь рост с воплем (следит до 23), прыжок на 29 в запомненную точку
+                    if (t < 23 && target != null) {
                         b.faceTarget(target);
                     }
-                    if (t == 8) {
+                    if (t == 10) {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.7f);
                     }
-                    if (t == 18) {
+                    if (t == 23) {
                         this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(7));
                     }
                     if (t == POUNCE_WINDUP) {
@@ -910,12 +911,12 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case LAND -> {
-                    if (t == 10) {
+                    if (t == 12) {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 0.8f);
                     }
                     if (t >= LAND_TICKS) {
-                        this.pounceCd = 200;
-                        this.finish(45);
+                        this.pounceCd = 220;
+                        this.finish(50);
                     }
                 }
                 case TRANSFORM -> {
@@ -944,41 +945,52 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case SLASH -> {
-                    // замах 0–8, горизонтальный разрез на 12, меч над головой 16, рубящий сверху на 22
-                    if (target != null && (t < 9 || (t > 13 && t < 19))) {
+                    // «Кровавые ножницы»: мечи разведены назад 0–15, крест‑накрест перед грудью на 18,
+                    // мечи над головой 22–28, двойной удар сверху в землю на 33
+                    if (target != null && (t < 15 || (t > 20 && t < 30))) {
                         b.faceTarget(target);
                     }
-                    if (t == 9 || t == 19) {
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, t == 9 ? 0.6f : 0.75f);
+                    if (t == 8) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 0.9f, 1.2f);
                     }
-                    if (t == 12) {
-                        b.coneHit(5.8, 90, DMG_SLASH, 0.9, 0.15, true);
-                        b.bloodArc(-70, 70, 3.6, 1.8, 14);
+                    if (t == 16) {
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.55f);
                     }
-                    if (t == 22) {
-                        b.coneHit(5.8, 60, DMG_SLASH, 0.9, 0.1, true);
-                        b.bloodArc(30, -30, 3.8, 1.2, 8);
-                        b.crackLine(3.0, 2.5);
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.6f);
+                    if (t == 18) {
+                        b.coneHit(5.8, 60, DMG_SCISSOR, 0.7, 0.1, true);
+                        b.bloodArc(-60, 0, 3.2, 1.9, 8);
+                        b.bloodArc(60, 0, 3.2, 1.9, 8);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.7f);
+                    }
+                    if (t == 30) {
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, 0.45f);
+                    }
+                    if (t == 33) {
+                        b.coneHit(6.2, 45, DMG_SLAM, 1.2, 0.6, true);
+                        b.crackLine(2.5, 4.5);
+                        b.groundDust(3.2, 1.2, 30);
+                        b.bloodAhead(3.4, 0.5, 24, 1.0);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.6f, 0.6f);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.3f, 0.6f);
                     }
                     if (t >= SLASH_TICKS) {
-                        this.finish(55);
+                        this.finish(60);
                     }
                 }
                 case THRUST -> {
-                    // пружина 0–10, рывок 11–17 с уколом, вспарывающий взмах вверх на 21
-                    if (target != null && t < 11) {
+                    // пружина 0–12, рывок 13–20 с уколом, вспарывающий взмах вверх на 25
+                    if (target != null && t < 13) {
                         b.faceTarget(target);
                     }
-                    if (t == 6) {
+                    if (t == 7) {
                         b.sound(SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 1.0f, 0.5f);
                     }
-                    if (t == 11) {
+                    if (t == 13) {
                         this.dashDir = b.forward();
                         b.groundDust(-0.5, 0.8, 20);
                     }
-                    if (t >= 11 && t < 17) {
-                        this.dash(0.9);
+                    if (t >= 13 && t < 20) {
+                        this.dash(0.8);
                         for (LivingEntity e : b.victims(2.6)) {
                             Vec3d to = new Vec3d(e.getX() - b.getX(), 0, e.getZ() - b.getZ());
                             if ((to.lengthSquared() < 0.01 || to.normalize().dotProduct(this.dashDir) > 0.3)
@@ -987,38 +999,38 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                                 b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.6f);
                             }
                         }
-                        if (b.horizontalCollision && t > 12) {
-                            this.tick = 17;
+                        if (b.horizontalCollision && t > 14) {
+                            this.tick = 20;
                         }
                     }
-                    if (t >= 17 && t < 21) {
+                    if (t >= 20 && t < 25) {
                         this.brake();
                     }
-                    if (t == 21) {
+                    if (t == 25) {
                         b.coneHit(5.5, 70, DMG_RIP, 0.5, 0.75, true);
                         b.bloodArc(-40, 40, 2.6, 2.6, 10);
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.9f);
                     }
                     if (t >= THRUST_TICKS) {
-                        this.finish(55);
+                        this.finish(60);
                     }
                 }
                 case SUMMON -> {
-                    // мечи скрещены над головой, вопль 10–26; фонтаны крови в точках 12–30; удар мечами на 30
-                    if (target != null && t < 20) {
+                    // мечи скрещены над головой, вопль; фонтан крови в точке 12–36; удар мечами на 36
+                    if (target != null && t < 24) {
                         b.faceTarget(target);
                     }
-                    if (t == 10) {
+                    if (t == 12) {
                         this.spots = b.bloodlingSpots();
                         b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.2f, 0.5f);
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 1.1f);
                     }
-                    if (t > 10 && t < 30 && t % 3 == 0) {
+                    if (t > 12 && t < 36 && t % 3 == 0) {
                         for (BlockPos p : this.spots) {
-                            b.geyser(p, 0.6 + (t - 10) * 0.12, 3);
+                            b.geyser(p, 0.6 + (t - 12) * 0.1, 3);
                         }
                     }
-                    if (t == 30) {
+                    if (t == 36) {
                         b.spawnBloodlings(this.spots, target);
                         b.groundDust(2.0, 1.4, 30);
                         b.crackLine(1.0, 3.0);
@@ -1032,25 +1044,25 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case EGGS -> {
-                    // руки с мечами раскинуты 0–16 (вопль), мечи в землю на 20, земля кипит, яйца на 26
-                    if (t == 6) {
+                    // руки с мечами раскинуты 0–19 (вопль), мечи в землю на 24, земля кипит, яйца на 31
+                    if (t == 7) {
                         this.spots = b.eggSpots();
                         b.sound(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.2f, 0.4f);
                     }
-                    if (t == 12) {
+                    if (t == 14) {
                         b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 0.9f, 1.4f);
                     }
-                    if (t > 6 && t < 26 && t % 2 == 0) {
+                    if (t > 7 && t < 31 && t % 2 == 0) {
                         for (BlockPos p : this.spots) {
-                            b.geyser(p, 0.4 + (t - 6) * 0.1, 2);
+                            b.geyser(p, 0.4 + (t - 7) * 0.085, 2);
                         }
                     }
-                    if (t == 20) {
+                    if (t == 24) {
                         b.groundDust(1.6, 1.6, 36);
                         b.geyserRing(4.5);
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.4f);
                     }
-                    if (t == 26) {
+                    if (t == 31) {
                         b.spawnEggs(this.spots);
                         b.sound(SoundEvents.ENTITY_SLIME_SQUISH, 1.6f, 0.35f);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.4f, 0.6f);
@@ -1061,14 +1073,14 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case EXEC -> {
-                    // присед с мечами‑крыльями (следит до 14), взмывает на 18, обрушивается в точку цели
-                    if (t < 14 && target != null) {
+                    // присед с мечами‑крыльями (следит до 17), взмывает на 22, обрушивается в точку цели
+                    if (t < 17 && target != null) {
                         b.faceTarget(target);
                     }
-                    if (t == 4) {
+                    if (t == 5) {
                         b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.0f, 1.5f);
                     }
-                    if (t == 14) {
+                    if (t == 17) {
                         this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(6));
                     }
                     if (t == EXEC_WINDUP) {
@@ -1093,14 +1105,14 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case EXEC_LAND -> {
-                    // стоит на колене с мечами в земле, на 23 вырывает их широким разрезом в обе стороны
-                    if (t > 2 && t < 20 && t % 3 == 0) {
-                        b.geyserRing(2.0 + t * 0.12);
+                    // стоит на колене с мечами в земле, на 28 вырывает их широким разрезом в обе стороны
+                    if (t > 2 && t < 24 && t % 3 == 0) {
+                        b.geyserRing(2.0 + t * 0.1);
                     }
-                    if (t == 18) {
+                    if (t == 22) {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.7f);
                     }
-                    if (t == 23) {
+                    if (t == 28) {
                         b.radiusHit(5.5, DMG_EXEC_RIP, 1.8, 0.4, true);
                         b.bloodArc(-100, 100, 4.0, 1.4, 20);
                         b.bloodArc(80, 280, 4.0, 1.4, 20);
@@ -1108,8 +1120,8 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.6f);
                     }
                     if (t >= EXEC_LAND_TICKS) {
-                        this.execCd = 500;
-                        this.finish(55);
+                        this.execCd = 540;
+                        this.finish(60);
                     }
                 }
                 default -> this.finish(20);
