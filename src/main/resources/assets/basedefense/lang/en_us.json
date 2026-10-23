@@ -145,5 +145,9 @@
   "entity.basedefense.iron_zombie": "Iron Zombie",
   "item.basedefense.iron_zombie_spawn_egg": "Iron Zombie Spawn Egg",
   "entity.basedefense.iron_knight": "Iron Knight",
-  "item.basedefense.iron_knight_spawn_egg": "Iron Knight Spawn Egg"
+  "item.basedefense.iron_knight_spawn_egg": "Iron Knight Spawn Egg",
+  "entity.basedefense.frost_archer": "Frost Archer",
+  "item.basedefense.frost_archer_spawn_egg": "Frost Archer Spawn Egg",
+  "entity.basedefense.frost_arrow": "Frost Arrow",
+  "effect.basedefense.freeze": "Freeze"
 }

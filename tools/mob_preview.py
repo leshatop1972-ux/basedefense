@@ -6,6 +6,8 @@
 Запуск:
     python tools/mob_preview.py iron_zombie            — поза покоя спереди/сбоку/сзади
     python tools/mob_preview.py iron_knight attack1    — 8 кадров анимации
+    python tools/mob_preview.py frost_archer attack 0.5,1.6,2.0  — кадры в заданные секунды
+    (угол обзора: переменная окружения PREVIEW_YAW, радианы)
 Картинка пишется в tools/mob_preview.png (в мод не попадает).
 """
 import json
@@ -18,6 +20,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
 import settler_preview as sp  # noqa: E402  (тот же 3D-рендер кубов, что у жителей)
 
+YAW = float(os.environ.get("PREVIEW_YAW", "0.6"))
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 DEG = math.pi / 180
 
@@ -66,6 +69,29 @@ def build_parts(geo):
                     rot=rot, cubes=cubes, children=children, tag=None)
 
     return [make(b, (0, 0, 0)) for b in by_parent.get(None, [])]
+
+
+def _collect(parts, look, transform, out):
+    """Как settler_preview.collect, но с масштабом части (как ModelPart: опора → поворот → масштаб)."""
+    for p in parts:
+        pitch, yaw, roll = p["rot"]
+        px, py, pz = p["pivot"]
+        sx, sy, sz = p.get("scale", (1, 1, 1))
+
+        def tf(v, pitch=pitch, yaw=yaw, roll=roll, px=px, py=py, pz=pz, sx=sx, sy=sy, sz=sz, parent=transform):
+            v = (v[0] * sx, v[1] * sy, v[2] * sz)
+            v = sp.rot_x(v, pitch)
+            v = sp.rot_y(v, yaw)
+            v = sp.rot_z(v, roll)
+            return parent((v[0] + px, v[1] + py, v[2] + pz))
+
+        for cube in p["cubes"]:
+            for verts, u1, v1, u2, v2 in sp.cuboid_quads(cube):
+                out.append(([tf(vv) for vv in verts], u1, v1, u2, v2))
+        _collect(p["children"], look, tf, out)
+
+
+sp.collect = _collect
 
 
 # --------------------------- анимации ---------------------------
@@ -177,6 +203,9 @@ def apply_anim(parts, anim, t, weight=1.0):
                     px, py, pz = px + v[0] * weight, py - v[1] * weight, pz + v[2] * weight
                 p["rot"] = (pitch, yaw, roll)
                 p["pivot"] = (px, py, pz)
+                if "scale" in ch:
+                    v = sample(ch["scale"], t)
+                    p["scale"] = tuple(1 + (v[j] - 1) * weight for j in range(3))
             walk(p["children"])
     walk(parts)
 
@@ -192,13 +221,14 @@ def main():
     if anim_name:
         anims = load_anims(name)
         an = anims[anim_name]
-        n = 8
+        times = [float(x) for x in sys.argv[3].split(",")] if len(sys.argv) > 3 else None
+        n = len(times) if times else 8
         for i in range(n):
-            t = an["length"] * i / n
+            t = times[i] if times else an["length"] * i / n
             parts = build_parts(geo)
             apply_anim(parts, an, t)
             sp.PARTS = parts
-            frames.append((sp.render(tex, None, 0.6, scale=scale, size=size), "t=%.2f" % t))
+            frames.append((sp.render(tex, None, YAW, scale=scale, size=size), "t=%.2f" % t))
     else:
         for yaw in (0.0, math.pi / 2, math.pi):
             sp.PARTS = build_parts(geo)

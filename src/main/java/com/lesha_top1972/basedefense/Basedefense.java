@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense;
 
 import com.lesha_top1972.basedefense.block.ModBlocks;
+import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.entity.SettlerThreats;
 import com.lesha_top1972.basedefense.item.ModItems;
@@ -17,6 +18,7 @@ public class Basedefense implements ModInitializer {
     @Override
     public void onInitialize() {
         // Порядок важен: мобы раньше предметов (яйцо призыва ссылается на моба)
+        ModEffects.init();
         ModEntities.init();
         ModBlocks.init();
         ModItems.init();

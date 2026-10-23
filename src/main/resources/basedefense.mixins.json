@@ -4,7 +4,9 @@
   "package": "com.lesha_top1972.basedefense.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "MobEntityAccessor"
+    "MobEntityAccessor",
+    "LivingEntityMixin",
+    "MobEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

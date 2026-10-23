@@ -78,6 +78,24 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.8f, 2.3f))
                     .build());
 
+    /** Морозная лучница (враг). Хитбокс от земли до макушки (модель парит на 0.45 блока). */
+    public static final EntityType<FrostArcherEntity> FROST_ARCHER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "frost_archer"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, FrostArcherEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 2.4f))
+                    .build());
+
+    /** Ледяная стрела лучницы. */
+    public static final EntityType<FrostArrowEntity> FROST_ARROW = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "frost_arrow"),
+            FabricEntityTypeBuilder.<FrostArrowEntity>create(SpawnGroup.MISC, FrostArrowEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.3f, 0.3f))
+                    .trackRangeBlocks(64)
+                    .trackedUpdateRate(2)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -91,5 +109,6 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());
     }
 }

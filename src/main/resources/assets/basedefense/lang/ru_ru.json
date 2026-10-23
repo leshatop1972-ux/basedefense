@@ -145,5 +145,9 @@
   "entity.basedefense.iron_zombie": "Железный зомби",
   "item.basedefense.iron_zombie_spawn_egg": "Яйцо призыва железного зомби",
   "entity.basedefense.iron_knight": "Железный рыцарь",
-  "item.basedefense.iron_knight_spawn_egg": "Яйцо призыва железного рыцаря"
+  "item.basedefense.iron_knight_spawn_egg": "Яйцо призыва железного рыцаря",
+  "entity.basedefense.frost_archer": "Морозная лучница",
+  "item.basedefense.frost_archer_spawn_egg": "Яйцо призыва морозной лучницы",
+  "entity.basedefense.frost_arrow": "Ледяная стрела",
+  "effect.basedefense.freeze": "Заморозка"
 }

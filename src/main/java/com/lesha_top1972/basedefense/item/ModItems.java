@@ -55,6 +55,9 @@ public final class ModItems {
     public static final Item IRON_KNIGHT_SPAWN_EGG = register("iron_knight_spawn_egg",
             new SpawnEggItem(ModEntities.IRON_KNIGHT, 0xA4AAB2, 0xB01E23, new Item.Settings()));
 
+    public static final Item FROST_ARCHER_SPAWN_EGG = register("frost_archer_spawn_egg",
+            new SpawnEggItem(ModEntities.FROST_ARCHER, 0xEAF4FB, 0x3A92D6, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -75,6 +78,7 @@ public final class ModItems {
             entries.add(LUMBERJACK_SPAWN_EGG);
             entries.add(IRON_ZOMBIE_SPAWN_EGG);
             entries.add(IRON_KNIGHT_SPAWN_EGG);
+            entries.add(FROST_ARCHER_SPAWN_EGG);
         });
     }
 }

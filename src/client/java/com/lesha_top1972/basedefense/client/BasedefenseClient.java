@@ -1,10 +1,13 @@
 package com.lesha_top1972.basedefense.client;
 
+import com.lesha_top1972.basedefense.client.entity.FrostArcherRenderer;
+import com.lesha_top1972.basedefense.client.entity.FrostArrowRenderer;
 import com.lesha_top1972.basedefense.client.entity.IronKnightRenderer;
 import com.lesha_top1972.basedefense.client.entity.IronZombieRenderer;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityModel;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
+import com.lesha_top1972.basedefense.client.render.FreezeOverlay;
 import com.lesha_top1972.basedefense.client.render.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
@@ -45,5 +48,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(IronKnightRenderer.LAYER, () -> BedrockModelLoader.load("iron_knight"));
         EntityRendererRegistry.register(ModEntities.IRON_ZOMBIE, IronZombieRenderer::new);
         EntityRendererRegistry.register(ModEntities.IRON_KNIGHT, IronKnightRenderer::new);
+        EntityModelLayerRegistry.registerModelLayer(FrostArcherRenderer.LAYER, () -> BedrockModelLoader.load("frost_archer"));
+        EntityRendererRegistry.register(ModEntities.FROST_ARCHER, FrostArcherRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FROST_ARROW, FrostArrowRenderer::new);
+
+        // Эффект «Заморозка»: бело‑голубой экран
+        FreezeOverlay.init();
     }
 }

@@ -4,6 +4,7 @@
   "package": "com.lesha_top1972.basedefense.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "AbstractClientPlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
