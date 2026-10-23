@@ -37,7 +37,7 @@ public class IronZombieEntity extends HostileEntity {
     /** Перезарядка удара: 1 секунда. */
     static final int ATTACK_COOLDOWN = 20;
     /** Дальность удара от края хитбокса (блоки). */
-    static final double REACH = 1.6;
+    static final double REACH = 1.8;
 
     /** Только на клиенте: анимация удара. */
     public final AnimationState attackState = new AnimationState();
@@ -110,7 +110,7 @@ public class IronZombieEntity extends HostileEntity {
             super(mob, 1.0, false);
         }
 
-        /** Дальность удара: ~1.6 блока от края хитбокса (у обычного зомби меньше). */
+        /** Дальность удара: ~1.8 блока от края хитбокса (у обычного зомби меньше). */
         @Override
         protected double getSquaredMaxAttackDistance(LivingEntity entity) {
             double r = this.mob.getWidth() / 2.0 + REACH + entity.getWidth() / 2.0;
