@@ -907,6 +907,72 @@ def dive_land(t):
     return layered(DIVE_LAND_KEYS, t)
 
 
+# --- «Я не сдамся» (6 с): картридж в грудь → вращение с реактивной волной (1.5 с) → прыжок и удар пяткой
+#     сверху (2.7 с) → шквал ударов (3.0–4.05 с) → кулаки над головой и двойной удар в землю (5.0 с) → выпрямляется ---
+LOAD = dict(body=(10, 0, 0), torso=(16, 6, 0), head=(18, -4, 0), body_pos=(0, 2.0, 0),
+            rh=(-1.4, -8.4, -5.6), r_pole=(-1, 0.4, 0.3), lh=(5.6, -6.0, -4.0), rhand=(0, 0, 0))
+LOAD_HIT = dict(LOAD, rh=(-1.0, -9.0, -4.2), torso=(22, 4, 0), head=(26, 0, 0), body_pos=(0, 2.6, 0))
+ROAR = dict(body=(-8, 0, 0), torso=(-16, 0, 0), head=(-26, 0, 0), body_pos=(0, 0.6, 0),
+            rh=(-13.0, -6.0, 1.0), lh=(13.0, -6.0, 1.0), r_pole=(0, 1, 0.4), l_pole=(0, 1, 0.4),
+            rf=(-3.2, 22.5, 0.8), lf=(3.2, 22.5, -0.8), coat=-6.0, cape=-8.0)
+WAVE_ARMS = dict(SPIN_POSE, rf=(-3.0, 22.5, 0.6), lf=(3.0, 22.5, -0.6), toe_r=0.0, body=(4, 0, 0), torso=(4, 0, 0),
+                 body_pos=(0, 2.4, 0), head=(-4, 0, 0))
+AXE_CROUCH = dict(STANCE, body_pos=(0, 4.6, 0), torso=(14, 0, 0), body=(10, 0, 0), rf=(-2.8, 22.5, 1.8), lf=(2.6, 22.5, -1.6))
+AXE_UP = dict(body=(-16, 0, 0), torso=(-6, 0, 0), head=(8, 0, 0), body_pos=(0, 0.0, 0),
+              rf=(-2.0, 1.5, -8.6), toe_r=-30.0, lf=(1.6, 22.0, 1.4), toe_l=30.0,
+              rh=(-11.0, -6.0, 2.0), lh=(11.0, -6.0, 2.0), r_pole=(0, 1, 0.5), l_pole=(0, 1, 0.5), coat=-20.0, cape=-26.0)
+AXE_DOWN = dict(body=(18, 0, 0), torso=(14, 0, 0), head=(-16, 0, 0), body_pos=(0, 4.4, 0),
+                rf=(-2.4, 22.5, -6.0), toe_r=0.0, lf=(2.4, 22.5, 3.6), toe_l=-30.0,
+                rh=(-9.0, -3.0, -3.0), lh=(9.0, -3.0, -3.0), coat=20.0, cape=26.0)
+F_STANCE = dict(STANCE, body=(8, 0, 0), torso=(10, 0, 0), head=(-10, 0, 0), body_pos=(0, 2.6, 0),
+                rf=(-3.0, 22.5, 2.4), lf=(3.0, 22.5, -2.4), rh=(-4.0, -8.4, -5.0), lh=(4.0, -8.4, -5.0),
+                r_pole=(-0.4, 1, 0.3), l_pole=(0.4, 1, 0.3))
+F_R = dict(F_STANCE, torso=(10, -18, 0), rh=(-1.6, -10.4, -11.0), r_pole=(-1, 0.4, 0.3), lh=(4.0, -8.0, -3.6))
+F_L = dict(F_STANCE, torso=(10, 18, 0), lh=(1.6, -10.4, -11.0), l_pole=(1, 0.4, 0.3), rh=(-4.0, -8.0, -3.6))
+HAMMER_UP = dict(body=(-10, 0, 0), torso=(-16, 0, 0), head=(-20, 0, 0), body_pos=(0, -0.4, 0),
+                 rh=(-2.6, -21.8, 1.0), lh=(2.6, -21.8, 1.0), r_pole=(-1, 0, 0.3), l_pole=(1, 0, 0.3),
+                 rf=(-3.2, 22.5, 1.0), lf=(3.2, 22.5, -1.0), coat=-10.0, cape=-14.0)
+HAMMER_DOWN = dict(body=(22, 0, 0), torso=(36, 0, 0), head=(-34, 0, 0), body_pos=(0, 7.0, 0),
+                   rh=(-1.8, 4.8, -9.6), lh=(1.8, 4.8, -9.6), r_pole=(-1, 0, 0.4), l_pole=(1, 0, 0.4),
+                   rf=(-3.4, 22.5, 3.6), lf=(3.4, 22.5, -2.2), coat=26.0, cape=32.0)
+STAND_TALL = dict(body=(-4, 0, 0), torso=(-10, 0, 0), head=(-16, 0, 0), body_pos=(0, 0.0, 0),
+                  rh=(-7.4, -2.0, -1.0), lh=(7.4, -2.0, -1.0), r_pole=(0, 0, 1), l_pole=(0, 0, 1),
+                  rf=(-2.6, 22.5, 0.4), lf=(2.6, 22.5, -0.4))
+YIELD = [
+    (0.00, {}, "lin"),
+    (0.35, LOAD, "out"),
+    (0.55, LOAD_HIT, "in3"),
+    (0.75, ROAR, "out"),
+    (0.95, WAVE_ARMS, "ease"),
+    (1.50, dict(WAVE_ARMS, body_pos=(0, 3.0, 0)), "lin"),
+    (1.75, AXE_CROUCH, "ease"),
+    (1.95, dict(AXE_CROUCH, body_pos=(0, 5.2, 0)), "lin"),
+    (2.30, AXE_UP, "out"),
+    (2.55, dict(AXE_UP, rf=(-2.0, 0.8, -8.4)), "lin"),
+    (2.70, AXE_DOWN, "in3"),
+    (2.95, F_STANCE, "ease"),
+]
+t0 = 3.0
+for k in range(8):                                          # шквал: удары каждые 0.15 с
+    YIELD.append((t0 + k * 0.15, F_R if k % 2 == 0 else F_L, "in3"))
+    YIELD.append((t0 + k * 0.15 + 0.07, F_STANCE, "out"))
+YIELD += [
+    (4.55, HAMMER_UP, "out"),
+    (4.85, dict(HAMMER_UP, rh=(-2.4, -22.2, 1.6), lh=(2.4, -22.2, 1.6), body_pos=(0, -0.7, 0)), "lin"),
+    (5.00, HAMMER_DOWN, "in3"),
+    (5.20, dict(HAMMER_DOWN, body_pos=(0, 7.4, 0)), "out"),
+    (5.60, STAND_TALL, "ease"),
+    (6.00, dict(STANCE), "ease"),
+]
+
+
+def yield_(t):
+    pr = layered(YIELD, t)
+    x = max(0.0, min(1.0, (t - 0.95) / 0.55))
+    pr["root_y"] = -360.0 * (x * x * (3 - 2 * x))           # оборот с реактивной волной
+    return pr
+
+
 CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("idle", idle, 2.4, 20, True),
     ("walk", walk, 1.0, 24, True),
@@ -923,6 +989,7 @@ CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("guard", guard, GUARD[-1][0] + TAIL, 60, False),
     ("dive", dive, DIVE[-1][0], 60, False),
     ("dive_land", dive_land, DIVE_LAND_KEYS[-1][0] + TAIL, 60, False),
+    ("yield", yield_, YIELD[-1][0] + TAIL, 60, False),
 ]
 MINION_CLIPS = ["idle", "walk", "run", "combo", "jet", "dodge_back", "dodge_left", "dodge_right"]
 

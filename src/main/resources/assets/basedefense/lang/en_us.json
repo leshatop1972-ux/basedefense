@@ -174,5 +174,6 @@
   "effect.basedefense.spikes": "Spikes",
   "death.attack.basedefense.spikes": "%1$s was impaled on spikes",
   "death.attack.basedefense.spikes.player": "%1$s was impaled on %2$s's spikes",
-  "entity.basedefense.curb_pillar": "Curb's Pillar"
+  "entity.basedefense.curb_pillar": "Curb's Pillar",
+  "effect.basedefense.cartridge": "Cartridge"
 }

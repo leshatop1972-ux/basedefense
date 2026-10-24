@@ -223,6 +223,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     protected void mobTick() {
         super.mobTick();
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+        com.lesha_top1972.basedefense.effect.BossEffectsSync.tick(this, this.bossBar);
         if (this.getTarget() != null && this.getTarget().isAlive() && --this.poolTimer <= 0) {
             this.poolTimer = POOL_EVERY;
             this.spawnBossPool();

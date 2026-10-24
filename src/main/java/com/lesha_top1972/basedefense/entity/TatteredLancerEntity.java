@@ -184,6 +184,7 @@ public class TatteredLancerEntity extends HostileEntity {
     protected void mobTick() {
         super.mobTick();
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+        com.lesha_top1972.basedefense.effect.BossEffectsSync.tick(this, this.bossBar);
         if (--this.retargetTimer <= 0) {
             this.retargetTimer = RETARGET_TICKS;
             this.switchTarget();

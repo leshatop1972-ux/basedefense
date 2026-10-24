@@ -59,6 +59,8 @@ import java.util.List;
  *       30% урона), DIVE «Пике» (взлёт на струях из ног на 8 блоков и удар кулаком вниз: 12 в радиусе 5 +
  *       оглушение I на 3 с);</li>
  *   <li>после атак иногда отскакивает назад или вбок;</li>
+ *   <li>«Картридж»: убил моба — +1, игрока — +3; сразу после получения и потом раз в 1.5 мин тратит один на
+ *       YIELD «Я не сдамся» (6 с серия необычных ударов по большому радиусу, всего 30 урона, в конце +20% HP);</li>
  *   <li>после потери 25% здоровья: SPIN «Вихрь» (нога вперёд, обороты, 5 всем вокруг, 2 с) и
  *       SUMMON «Подмога» (раз в 2 минуты — двое прислужников из‑под земли); старые атаки — реже.</li>
  * </ul>
@@ -111,6 +113,29 @@ public class CurbEntity extends AbstractCurbEntity {
     static final int DIVE_STUN_TICKS = 60;
     static final int DIVE_COOLDOWN = 360;
 
+    /** «Я не сдамся»: 120 т (6 с). Тики ударов совпадают с анимацией yield (tools/curb_gen.py). */
+    public static final int YIELD_TICKS = 120;
+    static final int YIELD_LOAD = 11;
+    static final int YIELD_WAVE = 30;
+    static final int YIELD_JUMP = 38;
+    static final int YIELD_AXE = 54;
+    static final int YIELD_FLURRY = 60;
+    static final int YIELD_FLURRY_HITS = 8;
+    static final int YIELD_HAMMER = 100;
+    static final int YIELD_HEAL = 112;
+    static final int YIELD_COOLDOWN = 1800;
+    static final double YIELD_WAVE_R = 7.0;
+    static final double YIELD_AXE_R = 6.0;
+    static final double YIELD_FLURRY_REACH = 6.0;
+    static final double YIELD_HAMMER_R = 9.0;
+    /** Урон по частям: 6 + 7 + 8×0.5 + 13 = 30. */
+    static final float YIELD_WAVE_DMG = 6f;
+    static final float YIELD_AXE_DMG = 7f;
+    static final float YIELD_FLURRY_DMG = 0.5f;
+    static final float YIELD_HAMMER_DMG = 13f;
+    static final float YIELD_HEAL_PART = 0.2f;
+    static final int MAX_CARTRIDGES = 99;
+
     static final float COMBO_DAMAGE = 3f;
     static final float JET_DAMAGE = 11f;
     static final float SLAM_DAMAGE = 5f;
@@ -125,6 +150,10 @@ public class CurbEntity extends AbstractCurbEntity {
             DataTracker.registerData(CurbEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final DustParticleEffect SPIKE_DUST = new DustParticleEffect(new Vector3f(0.72f, 0.88f, 1.0f), 0.8f);
     private boolean phase2;
+    /** Число картриджей (видно эффектом «Картридж»), флаг «только что получил» и перезарядка атаки. */
+    private int cartridges;
+    private boolean yieldNow;
+    private int yieldCooldown;
     private int retargetTimer = RETARGET_TICKS;
 
     public CurbEntity(EntityType<? extends HostileEntity> type, World world) {
@@ -228,6 +257,11 @@ public class CurbEntity extends AbstractCurbEntity {
     protected void mobTick() {
         super.mobTick();
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+        com.lesha_top1972.basedefense.effect.BossEffectsSync.tick(this, this.bossBar);
+        if (this.yieldCooldown > 0) {
+            this.yieldCooldown--;
+        }
+        this.syncCartridgeEffect();
         boolean spiked = this.hasStatusEffect(ModEffects.SPIKES);
         if (spiked != this.dataTracker.get(SPIKED)) {
             this.dataTracker.set(SPIKED, spiked);
@@ -273,12 +307,16 @@ public class CurbEntity extends AbstractCurbEntity {
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         nbt.putBoolean("Phase2", this.phase2);
+        nbt.putInt("Cartridges", this.cartridges);
+        nbt.putInt("YieldCooldown", this.yieldCooldown);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.phase2 = nbt.getBoolean("Phase2");
+        this.cartridges = nbt.getInt("Cartridges");
+        this.yieldCooldown = nbt.getInt("YieldCooldown");
         if (this.hasCustomName()) {
             this.bossBar.setName(this.getDisplayName());
         }
@@ -311,6 +349,134 @@ public class CurbEntity extends AbstractCurbEntity {
 
     boolean isPhase2() {
         return this.phase2;
+    }
+
+    // --- «Картридж» ---
+
+    /** Убил кого‑то: моб — +1 картридж, игрок — +3. Сразу после получения — «Я не сдамся». */
+    @Override
+    public boolean onKilledOther(ServerWorld world, LivingEntity other) {
+        boolean r = super.onKilledOther(world, other);
+        if (other != this) {
+            int add = other instanceof PlayerEntity ? 3 : 1;
+            this.cartridges = Math.min(MAX_CARTRIDGES, this.cartridges + add);
+            this.yieldNow = true;
+            this.syncCartridgeEffect();
+            world.spawnParticles(ParticleTypes.WAX_ON, this.getX(), this.getBodyY(0.6), this.getZ(), 10 * add, 0.4, 0.5, 0.4, 0.1);
+            this.sound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.4f, 0.7f);
+        }
+        return r;
+    }
+
+    int cartridges() {
+        return this.cartridges;
+    }
+
+    /** Эффект «Картридж» с уровнем = числу картриджей (бесконечный, без частиц). */
+    private void syncCartridgeEffect() {
+        StatusEffectInstance cur = this.getStatusEffect(ModEffects.CARTRIDGE);
+        if (this.cartridges <= 0) {
+            if (cur != null) {
+                this.removeStatusEffect(ModEffects.CARTRIDGE);
+            }
+            return;
+        }
+        if (cur == null || cur.getAmplifier() != this.cartridges - 1 || !cur.isInfinite()) {
+            if (cur != null) {
+                this.removeStatusEffect(ModEffects.CARTRIDGE);
+            }
+            this.addStatusEffect(new StatusEffectInstance(ModEffects.CARTRIDGE, StatusEffectInstance.INFINITE,
+                    this.cartridges - 1, false, false, true));
+        }
+    }
+
+    /** Готов ли «Я не сдамся»: есть картридж и только что получил его или прошли 1.5 минуты. */
+    boolean yieldReady() {
+        return this.cartridges > 0 && (this.yieldNow || this.yieldCooldown <= 0);
+    }
+
+    void spendCartridge() {
+        this.cartridges = Math.max(0, this.cartridges - 1);
+        this.yieldNow = false;
+        this.yieldCooldown = YIELD_COOLDOWN;
+        this.syncCartridgeEffect();
+    }
+
+    // --- «Я не сдамся»: эффекты ---
+    private static final DustParticleEffect CORE_DUST = new DustParticleEffect(new Vector3f(1.0f, 0.62f, 0.95f), 1.2f);
+
+    /** Расходящееся кольцо волны: пыль, искры и бело‑синие огни на радиусе r. */
+    void waveRing(double r, int points) {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        for (int i = 0; i < points; i++) {
+            double a = i / (double) points * Math.PI * 2;
+            double x = this.getX() + Math.cos(a) * r;
+            double z = this.getZ() + Math.sin(a) * r;
+            s.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, x, this.getY() + 0.3, z, 1, 0, 0.05, 0, 0.01);
+            if (i % 3 == 0) {
+                s.spawnParticles(ParticleTypes.CLOUD, x, this.getY() + 0.2, z, 1, 0, 0.02, 0, 0.02);
+            }
+        }
+    }
+
+    /** Трещины по земле лучами во все стороны. */
+    void crackStar(double length, int rays) {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        BlockState g = this.getWorld().getBlockState(this.getBlockPos().down());
+        if (g.isAir()) {
+            return;
+        }
+        for (int k = 0; k < rays; k++) {
+            double a = k * Math.PI * 2 / rays + this.random.nextDouble() * 0.3;
+            for (double d = 0.8; d <= length; d += 0.6) {
+                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, g), this.getX() + Math.cos(a) * d,
+                        this.getY() + 0.1, this.getZ() + Math.sin(a) * d, 3, 0.1, 0.05, 0.1, 0.1);
+            }
+        }
+    }
+
+    void yieldLoadFx() {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        Vec3d core = this.getPos().add(this.forward().multiply(0.25)).add(0, 1.7 * MODEL_SCALE * 0.95, 0);
+        s.spawnParticles(CORE_DUST, core.x, core.y, core.z, 16, 0.15, 0.15, 0.15, 0);
+        s.spawnParticles(ParticleTypes.END_ROD, core.x, core.y, core.z, 12, 0.1, 0.1, 0.1, 0.12);
+        s.spawnParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getBodyY(0.7), this.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+        this.sound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.6f, 0.5f);
+        this.sound(SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 1.4f, 0.6f);
+    }
+
+    void flurryFx() {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        Vec3d f = this.forward();
+        Vec3d side = new Vec3d(-f.z, 0, f.x);
+        double d = 1.6 + this.random.nextDouble() * (YIELD_FLURRY_REACH - 2.0);
+        double o = (this.random.nextDouble() - 0.5) * 2.4;
+        Vec3d p = this.getPos().add(f.multiply(d)).add(side.multiply(o)).add(0, 1.0 + this.random.nextDouble() * 0.8, 0);
+        s.spawnParticles(ParticleTypes.SWEEP_ATTACK, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+        s.spawnParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 6, 0.2, 0.2, 0.2, 0.3);
+    }
+
+    void yieldHealFx() {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        s.spawnParticles(ParticleTypes.END_ROD, this.getX(), this.getBodyY(0.5), this.getZ(), 30, 0.4, 1.0, 0.4, 0.05);
+        s.spawnParticles(CORE_DUST, this.getX(), this.getBodyY(0.6), this.getZ(), 24, 0.5, 0.7, 0.5, 0);
+        s.spawnParticles(ParticleTypes.HEART, this.getX(), this.getBodyY(1.0) + 0.3, this.getZ(), 4, 0.4, 0.2, 0.4, 0);
+        this.sound(SoundEvents.BLOCK_BEACON_POWER_SELECT, 1.4f, 0.8f);
     }
 
     // --- атаки (сервер) ---
@@ -611,6 +777,12 @@ public class CurbEntity extends AbstractCurbEntity {
                             0.6, 0.8, 0.6, 0.05);
                 }
             }
+            // «Я не сдамся» — сразу после получения картриджа и потом раз в 1.5 минуты
+            if (m.yieldReady() && dist < 16 && m.getVisibilityCache().canSee(target)) {
+                m.faceTarget(target);
+                this.begin(YIELD);
+                return true;
+            }
             // «Двойной таран» — как только готов (раз в 30 с) и цель близко
             if (this.cooldown <= 0 && this.slamCooldown <= 0 && dist < 8.0 && m.getVisibilityCache().canSee(target)) {
                 m.faceTarget(target);
@@ -730,6 +902,7 @@ public class CurbEntity extends AbstractCurbEntity {
                     }
                 }
                 case DIVE -> this.runDive(target);
+                case YIELD -> this.runYield(target);
                 case DIVE_LAND -> {
                     if (t >= DIVE_LAND_TICKS) {
                         this.finish();
@@ -753,6 +926,87 @@ public class CurbEntity extends AbstractCurbEntity {
                 }
             }
             return true;
+        }
+
+        /**
+         * «Я не сдамся» (6 с): картридж в грудь → оборот с реактивной волной (6, r 7) → прыжок и удар пяткой
+         * (7, r 6, трещины) → шквал из 8 ударов (по 0.5, конус 6 бл) → двойной удар кулаками в землю (13, r 9)
+         * → восстанавливает 20% здоровья. Удар каждой частью — один раз на цель.
+         */
+        private void runYield(LivingEntity target) {
+            CurbEntity m = this.mob;
+            int t = this.tick;
+            if (target != null && (t < 18 || (t > 32 && t < YIELD_JUMP) || (t >= YIELD_FLURRY - 4 && t < 84))) {
+                m.turnToward(target, 25f);
+            }
+            if (t == YIELD_LOAD) {
+                m.spendCartridge();
+                m.yieldLoadFx();
+            }
+            if (t == 15) {
+                m.sound(SoundEvents.ENTITY_IRON_GOLEM_DEATH, 1.2f, 0.5f);
+                m.sound(ModSounds.CURB_JET_CHARGE, 1.4f, 0.9f);
+            }
+            if (t == YIELD_WAVE) {
+                this.hitIds.clear();
+                m.radiusHit(YIELD_WAVE_R, 1.5, YIELD_WAVE_DMG, 1.2, 0.3, this.hitIds);
+                m.sound(ModSounds.CURB_JET_BURST, 1.8f, 0.8f);
+                m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.5f);
+            }
+            if (t >= YIELD_WAVE && t < YIELD_WAVE + 6) {
+                m.waveRing(1.5 + (t - YIELD_WAVE) * (YIELD_WAVE_R - 1.5) / 5.0, 20 + (t - YIELD_WAVE) * 6);
+            }
+            if (t == YIELD_JUMP) {
+                Vec3d f = m.forward().multiply(0.3);
+                m.setVelocity(f.x, 0.62, f.z);
+                m.velocityModified = true;
+                m.sound(ModSounds.CURB_JET_BURST, 1.2f, 1.2f);
+            }
+            if (t == YIELD_AXE) {
+                this.hitIds.clear();
+                m.radiusHit(YIELD_AXE_R, 1.5, YIELD_AXE_DMG, 0.6, 0.55, this.hitIds);
+                m.crackStar(YIELD_AXE_R, 8);
+                m.groundRing(m.getPos(), 2.0, 16);
+                m.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f, 0.9f);
+                m.sound(SoundEvents.BLOCK_ANVIL_LAND, 0.9f, 0.5f);
+            }
+            for (int k = 0; k < YIELD_FLURRY_HITS; k++) {
+                if (t == YIELD_FLURRY + k * 3) {
+                    this.hitIds.clear();
+                    m.coneHit(YIELD_FLURRY_REACH, 40, YIELD_FLURRY_DMG, 0.12, 0, this.hitIds);
+                    m.flurryFx();
+                    m.flurryFx();
+                    m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 1.2f + k * 0.05f);
+                }
+            }
+            if (t == 92) {
+                m.sound(ModSounds.CURB_JET_CHARGE, 1.6f, 1.2f);
+            }
+            if (t == YIELD_HAMMER) {
+                this.hitIds.clear();
+                m.radiusHit(YIELD_HAMMER_R, 2.0, YIELD_HAMMER_DMG, 1.6, 0.7, this.hitIds);
+                ServerWorld s = m.sw();
+                if (s != null) {
+                    s.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, m.getX(), m.getY() + 0.3, m.getZ(), 1, 0, 0, 0, 0);
+                }
+                m.crackStar(YIELD_HAMMER_R, 12);
+                m.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 1.6f, 0.6f);
+                m.sound(SoundEvents.ENTITY_IRON_GOLEM_DAMAGE, 1.6f, 0.5f);
+            }
+            if (t >= YIELD_HAMMER && t < YIELD_HAMMER + 8) {
+                int i = t - YIELD_HAMMER;
+                m.waveRing(2.0 + i * (YIELD_HAMMER_R - 2.0) / 7.0, 24 + i * 6);
+                if (i % 2 == 0) {
+                    m.groundRing(m.getPos(), 2.0 + i * (YIELD_HAMMER_R - 2.0) / 7.0, 18 + i * 4);
+                }
+            }
+            if (t == YIELD_HEAL) {
+                m.heal(m.getMaxHealth() * YIELD_HEAL_PART);
+                m.yieldHealFx();
+            }
+            if (t >= YIELD_TICKS) {
+                this.finish();
+            }
         }
 
         /** «Пике»: присед, взлёт на струях, зависание над целью, удар вниз до земли. */

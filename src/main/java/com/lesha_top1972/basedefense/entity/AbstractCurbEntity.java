@@ -54,6 +54,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     public static final int GUARD = 10;
     public static final int DIVE = 11;
     public static final int DIVE_LAND = 12;
+    public static final int YIELD = 13;
     public static final byte STATUS_BASE = 70;
 
     /** «Серия»: удары рукой / ногой / рукой на 13, 23, 33 тике, всего 46 тиков (2.3 с). */
@@ -118,7 +119,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     @Override
     public void handleStatus(byte status) {
         int a = status - STATUS_BASE;
-        if (a >= COMBO && a <= DIVE_LAND) {
+        if (a >= COMBO && a <= YIELD) {
             this.clientAction = a;
             this.clientActionAge = this.age;
         } else {
@@ -144,6 +145,16 @@ public abstract class AbstractCurbEntity extends HostileEntity {
      */
     public float jetPower(int side, float tickDelta) {
         float t = this.age + tickDelta - this.clientActionAge;
+        if (this.clientAction == YIELD) {
+            // «Я не сдамся»: оба локтя на развороте и перед двойным ударом, ноги — в прыжке
+            if (side < 2 && ((t >= 18 && t < 30) || (t >= 88 && t < 101))) {
+                return t < 30 ? 0.8f : 1f;
+            }
+            if (side >= 2 && t >= 38 && t < 48) {
+                return 0.9f;
+            }
+            return 0f;
+        }
         if (side >= 2) {
             if (this.clientAction != DIVE) {
                 return 0f;
@@ -488,7 +499,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
         /** После каких действий можно отскочить. */
         protected boolean canDodgeAfter(int a) {
-            return a == COMBO || a == JET || a == SLAM || a == SPIN || a == DIVE_LAND;
+            return a == COMBO || a == JET || a == SLAM || a == SPIN || a == DIVE_LAND || a == YIELD;
         }
 
         protected void tickCooldowns() {

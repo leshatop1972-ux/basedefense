@@ -48,6 +48,22 @@ def spikes_icon():
     img.save(os.path.join(ROOT, "mob_effect", "spikes.png"))
 
 
+def cartridge_icon():
+    """Латунная гильза с розовым светящимся капсюлем (как ядро на груди Бордюра)."""
+    img = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.polygon([(6, 5), (9, 1), (12, 5)], fill=(150, 150, 160, 255))           # пуля
+    d.line([(9, 1), (11, 4)], fill=(210, 210, 220, 255))
+    d.rectangle((6, 5, 12, 15), fill=(196, 160, 72, 255))                  # гильза
+    d.rectangle((6, 5, 7, 15), fill=(232, 198, 110, 255))                  # блик
+    d.rectangle((11, 5, 12, 15), fill=(140, 110, 44, 255))
+    d.line([(6, 8), (12, 8)], fill=(120, 94, 36, 255))
+    d.rectangle((5, 15, 13, 16), fill=(150, 120, 50, 255))                 # донце
+    d.rectangle((8, 11, 10, 13), fill=(255, 150, 240, 255))                # светящаяся метка
+    d.point((9, 12), fill=(255, 235, 252, 255))
+    img.save(os.path.join(ROOT, "mob_effect", "cartridge.png"))
+
+
 def stun_vignette():
     W = H = 256
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -109,6 +125,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(ROOT, "misc"), exist_ok=True)
     stun_icon()
     spikes_icon()
+    cartridge_icon()
     stun_vignette()
     spikes_flash()
     print("готово")

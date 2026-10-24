@@ -38,7 +38,7 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
         this.emerge = c.get("emerge");
         this.actions = new BedrockAnimations.Clip[]{c.get("combo"), c.get("jet"), c.get("slam"), c.get("spin"),
                 c.get("summon"), null, c.get("dodge_back"), c.get("dodge_left"), c.get("dodge_right"), c.get("pillar"),
-                c.get("guard"), null, c.get("dive_land")};
+                c.get("guard"), null, c.get("dive_land"), c.get("yield")};
         this.dive = c.get("dive");
         this.head = this.bone("head");
         this.jets = new ModelPart[]{this.bone("jet_r"), this.bone("jet_l"), this.bone("jet_rf"), this.bone("jet_lf")};

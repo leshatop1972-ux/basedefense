@@ -55,6 +55,10 @@ public final class ModEffects {
     public static final StatusEffect SPIKES = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "spikes"), new SpikesEffect());
 
+    /** Картридж (только у Бордюра): уровень = число картриджей для атаки «Я не сдамся». */
+    public static final StatusEffect CARTRIDGE = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "cartridge"), new CartridgeEffect());
+
     public static final float SPIKES_FACTOR = 0.3f;
     /** Тип урона «шипы» (data/basedefense/damage_type/spikes.json, чистый урон). */
     public static final RegistryKey<DamageType> SPIKES_DAMAGE_TYPE =
