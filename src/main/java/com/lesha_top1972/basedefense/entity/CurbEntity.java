@@ -110,7 +110,7 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double DIVE_HEIGHT = 8.0;
     static final double DIVE_FALL_SPEED = 1.6;
     static final double DIVE_RADIUS = 5.0;
-    static final float DIVE_DAMAGE = 14f;
+    static final float DIVE_DAMAGE = 13f;
     static final int DIVE_STUN_TICKS = 60;
     static final int DIVE_COOLDOWN = 360;
 
@@ -129,19 +129,19 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double YIELD_AXE_R = 6.0;
     static final double YIELD_FLURRY_REACH = 6.0;
     static final double YIELD_HAMMER_R = 9.0;
-    /** Урон по частям (+2 к каждой части, шквал — +2 на все 8 ударов): 8 + 9 + 8×0.75 + 15 = 38. */
-    static final float YIELD_WAVE_DMG = 8f;
-    static final float YIELD_AXE_DMG = 9f;
-    static final float YIELD_FLURRY_DMG = 0.75f;
-    static final float YIELD_HAMMER_DMG = 15f;
+    /** Урон по частям (+1 к исходным: каждой части, шквал — +1 на все 8 ударов): 7 + 8 + 8×0.625 + 14 = 34. */
+    static final float YIELD_WAVE_DMG = 7f;
+    static final float YIELD_AXE_DMG = 8f;
+    static final float YIELD_FLURRY_DMG = 0.625f;
+    static final float YIELD_HAMMER_DMG = 14f;
     static final float YIELD_HEAL_PART = 0.2f;
     static final int MAX_CARTRIDGES = 99;
 
-    static final float COMBO_DAMAGE = 5f;
-    static final float JET_DAMAGE = 13f;
-    static final float SLAM_DAMAGE = 7f;
-    static final float STOMP_DAMAGE = 5f;
-    static final float SPIN_DAMAGE = 7f;
+    static final float COMBO_DAMAGE = 4f;
+    static final float JET_DAMAGE = 12f;
+    static final float SLAM_DAMAGE = 6f;
+    static final float STOMP_DAMAGE = 4f;
+    static final float SPIN_DAMAGE = 6f;
     static final float ARROW_FACTOR = 0.45f;
     static final int RETARGET_TICKS = 500;
 
