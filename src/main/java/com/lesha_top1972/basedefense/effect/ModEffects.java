@@ -41,7 +41,7 @@ public final class ModEffects {
     public static final StatusEffect BLEED = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "bleed"), new BleedEffect());
 
-    public static final int BLEED_TICKS = 140;
+    public static final int BLEED_TICKS = 200;
     public static final int BLEED_MAX = 3;
     private static final float[] BLEED_DAMAGE = {0.5f, 1f, 2f, 4f};
     /** Тип урона «кровотёк» (data/basedefense/damage_type/bleed.json, теги bypasses_* — чистый урон). */
@@ -51,7 +51,7 @@ public final class ModEffects {
     private ModEffects() {
     }
 
-    /** Повесить кровотёк или поднять его уровень на 1 (максимум IV); длительность — снова 7 с. */
+    /** Повесить кровотёк или поднять его уровень на 1 (максимум IV); длительность — снова 10 с. */
     public static void addBleed(LivingEntity target, LivingEntity source) {
         StatusEffectInstance cur = target.getStatusEffect(BLEED);
         int amp = cur == null ? 0 : Math.min(BLEED_MAX, cur.getAmplifier() + 1);

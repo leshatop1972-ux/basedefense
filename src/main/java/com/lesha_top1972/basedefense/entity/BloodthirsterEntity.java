@@ -118,12 +118,12 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     static final float DMG_EXEC = 21f;
     static final float DMG_EXEC_RIP = 11f;
     /** Шанс наложить/усилить «Кровотёк» за попадание. */
-    static final float BLEED_CHANCE = 0.25f;
+    static final float BLEED_CHANCE = 0.35f;
     /** Масштаб модели в рендере (и всех расстояний ударов). */
     public static final float MODEL_SCALE = 1.3f;
 
     /** Скорость: 0.23 × 1.4 ≈ 0.32 → бег игрока − 15% (как у рыцаря 0.23 × 1.49 = 90%). */
-    static final double BASE_SPEED = 0.23;
+    static final double BASE_SPEED = 0.265;
     static final double CHASE = 1.4;
     public static final float PHASE2_HEALTH = 300f;
     /** Во 2‑й фазе скорость +7%. */
@@ -375,7 +375,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     s.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, this.getX(), this.getBodyY(0.7), this.getZ(),
                             Math.max(1, (int) dealt), 0.5, 0.6, 0.5, 0.05);
                 }
-                // кровотёк: 25% за попадание, повторное — +1 уровень (до IV) и снова 7 с
+                // кровотёк: 35% за попадание, повторное — +1 уровень (до IV) и снова 10 с
                 if (this.random.nextFloat() < BLEED_CHANCE) {
                     ModEffects.addBleed(e, this);
                 }
@@ -754,20 +754,23 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             List<int[]> options = new ArrayList<>();
             BloodthirsterEntity b = this.boss;
             if (!b.isPhase2()) {
-                if (dist < 6.2) {
+                if (dist < 7.2) {
                     options.add(new int[]{SWING, 50});
                 }
-                if (this.riftCd <= 0 && dist < 11) {
-                    options.add(new int[]{RIFT, dist < 6.2 ? 30 : 45});
+                if (this.riftCd <= 0 && dist < 12) {
+                    options.add(new int[]{RIFT, dist < 7.2 ? 30 : 45});
                 }
                 if (this.pounceCd <= 0 && dist > 3.5 && dist < 18) {
-                    options.add(new int[]{POUNCE, dist < 6.2 ? 12 : 50});
+                    options.add(new int[]{POUNCE, dist < 7.2 ? 12 : 50});
+                }
+                if (this.eggsCd <= 0 && dist < 22 && b.countNearby(BloodEggEntity.class, 32) < 6) {
+                    options.add(new int[]{EGGS, 20});
                 }
             } else {
-                if (dist < 6.2) {
+                if (dist < 7.2) {
                     options.add(new int[]{SLASH, 50});
                     options.add(new int[]{THRUST, 15});
-                } else if (dist < 12) {
+                } else if (dist < 13) {
                     options.add(new int[]{THRUST, 45});
                 }
                 if (this.execCd <= 0 && dist > 3.0 && dist < 18) {
@@ -858,7 +861,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
 
         private void chase(LivingEntity target, double dist) {
             BloodthirsterEntity b = this.boss;
-            if (dist > 4.6 || !b.getVisibilityCache().canSee(target)) {
+            if (dist > 5.2 || !b.getVisibilityCache().canSee(target)) {
                 if (--this.pathDelay <= 0) {
                     this.pathDelay = 8;
                     b.getNavigation().startMovingTo(target, CHASE);
@@ -912,7 +915,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             BloodthirsterEntity b = this.boss;
             float yaw = (b.getYaw() + (float) -angleDeg) * MathHelper.RADIANS_PER_DEGREE;
             Vec3d dir = new Vec3d(-MathHelper.sin(yaw), 0, MathHelper.cos(yaw));
-            this.waves.add(new Wave(b.getPos().add(dir.multiply(2.6)), dir, 13));
+            this.waves.add(new Wave(b.getPos().add(dir.multiply(2.6)), dir, 15));
         }
 
         private void dash(double speed) {
@@ -975,7 +978,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.75f);
                     }
                     if (t == 29) {
-                        b.coneHit(6.0, 55, DMG_SWING, 1.4, 0.45, false);
+                        b.coneHit(7.0, 55, DMG_SWING, 1.4, 0.45, false);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5f, 0.6f);
                         b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.3f, 0.6f);
                         b.groundDust(3.8, 1.0, 30);
@@ -983,7 +986,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.bloodAhead(3.8, 0.6, 22, 0.9);
                     }
                     if (t >= SWING_TICKS) {
-                        this.finish(60);
+                        this.finish(36);
                     }
                 }
                 case RIFT -> {
@@ -999,7 +1002,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.groundDust(2.8, 1.4, 36);
                         b.geyserRing(2.6);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.6f, 0.55f);
-                        b.radiusHit(3.0, DMG_RIFT, 1.0, 0.5, true);
+                        b.radiusHit(4.0, DMG_RIFT, 1.0, 0.5, true);
                     }
                     if (t == 28) {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 0.9f);
@@ -1012,11 +1015,11 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.geyserRing(3.2);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f, 0.5f);
                         b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.4f, 0.5f);
-                        b.radiusHit(3.0, DMG_RIFT, 1.0, 0.5, true);
+                        b.radiusHit(4.0, DMG_RIFT, 1.0, 0.5, true);
                     }
                     if (t >= RIFT_TICKS) {
                         this.riftCd = 160;
-                        this.finish(60);
+                        this.finish(36);
                     }
                 }
                 case POUNCE -> {
@@ -1039,7 +1042,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         this.action = LAND;
                         this.tick = 0;
                         b.sendAction(LAND);
-                        b.radiusHit(3.6, DMG_POUNCE, 1.2, 0.5, false);
+                        b.radiusHit(4.6, DMG_POUNCE, 1.2, 0.5, false);
                         b.groundDust(0, 1.8, 50);
                         b.geyserRing(3.4);
                         b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f, 0.6f);
@@ -1052,7 +1055,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                     if (t >= LAND_TICKS) {
                         this.pounceCd = 220;
-                        this.finish(50);
+                        this.finish(30);
                     }
                 }
                 case TRANSFORM -> {
@@ -1096,11 +1099,11 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     if (t == 33) {
                         b.bloodArc(-100, 70, 4.4, 1.8, 18);
                     }
-                    this.sweep(t, 29, 38, -118, 72, 6.2, DMG_REAP, 1.0, 0.15);
+                    this.sweep(t, 29, 38, -118, 72, 7.2, DMG_REAP, 1.0, 0.15);
                     if (t == 44) {
                         this.hitIds.clear();
                     }
-                    this.sweep(t, 48, 57, 130, -70, 5.8, DMG_REAP, 0.8, 0.5);
+                    this.sweep(t, 48, 57, 130, -70, 6.8, DMG_REAP, 0.8, 0.5);
                     if (t == 52) {
                         b.bloodArc(120, -60, 4.0, 2.6, 16);
                     }
@@ -1111,7 +1114,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.35f);
                     }
                     if (t == 77) {
-                        b.coneHit(6.6, 32, DMG_REAP_SLAM, 1.3, 0.65, true);
+                        b.coneHit(7.6, 32, DMG_REAP_SLAM, 1.3, 0.65, true);
                         b.crackLine(2.5, 6.0);
                         b.groundDust(4.2, 1.4, 40);
                         b.geyserRing(2.6);
@@ -1120,7 +1123,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.4f, 0.55f);
                     }
                     if (t >= SLASH_TICKS) {
-                        this.finish(55);
+                        this.finish(33);
                     }
                 }
                 case THRUST -> {
@@ -1138,9 +1141,9 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                     if (t >= 29 && t < 40) {
                         this.dash(t < 36 ? 0.75 : 0.45);
-                        for (LivingEntity e : b.victims(5.0)) {
+                        for (LivingEntity e : b.victims(6.0)) {
                             double[] r = b.rel(e);
-                            if (r[1] <= 5.4 && Math.abs(r[0]) <= 16 + r[2] && b.heightOk(e, 5.0)
+                            if (r[1] <= 6.4 && Math.abs(r[0]) <= 16 + r[2] && b.heightOk(e, 5.0)
                                     && this.hitIds.add(e.getId())) {
                                 b.strike(e, DMG_THRUST, 0.6, 0.15, false);
                                 b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.55f);
@@ -1157,12 +1160,12 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         this.brake();
                     }
                     if (t == 47) {
-                        b.coneHit(5.8, 40, DMG_RIP, 0.5, 0.85, true);
+                        b.coneHit(6.8, 40, DMG_RIP, 0.5, 0.85, true);
                         b.bloodArc(-30, 30, 3.0, 3.4, 12);
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, 0.7f);
                     }
                     if (t >= THRUST_TICKS) {
-                        this.finish(55);
+                        this.finish(33);
                     }
                 }
                 case SUMMON -> {
@@ -1190,7 +1193,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                     if (t >= SUMMON_TICKS) {
                         this.summonCd = SUMMON_CD;
-                        this.finish(40);
+                        this.finish(24);
                     }
                 }
                 case EGGS -> {
@@ -1219,7 +1222,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                     if (t >= EGGS_TICKS) {
                         this.eggsCd = EGGS_CD;
-                        this.finish(45);
+                        this.finish(27);
                     }
                 }
                 case EXEC -> {
@@ -1246,7 +1249,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         this.action = EXEC_LAND;
                         this.tick = 0;
                         b.sendAction(EXEC_LAND);
-                        b.radiusHit(4.8, DMG_EXEC, 1.0, 0.8, false);
+                        b.radiusHit(5.8, DMG_EXEC, 1.0, 0.8, false);
                         b.groundDust(0, 2.2, 60);
                         b.geyserRing(5.0);
                         b.placePool(b.getBlockPos(), 2);
@@ -1263,7 +1266,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.2f, 0.7f);
                     }
                     if (t == 30) {
-                        b.radiusHit(6.0, DMG_EXEC_RIP, 1.8, 0.4, true);
+                        b.radiusHit(7.0, DMG_EXEC_RIP, 1.8, 0.4, true);
                         b.bloodArc(-100, 100, 4.4, 1.4, 20);
                         b.bloodArc(80, 280, 4.4, 1.4, 20);
                         b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 0.5f);
@@ -1271,7 +1274,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                     if (t >= EXEC_LAND_TICKS) {
                         this.execCd = 540;
-                        this.finish(60);
+                        this.finish(36);
                     }
                 }
                 default -> this.finish(20);
