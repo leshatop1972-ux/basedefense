@@ -169,5 +169,10 @@
   "entity.basedefense.curb_minion": "Curb's Henchman",
   "item.basedefense.curb_minion_spawn_egg": "Curb's Henchman Spawn Egg",
   "subtitles.basedefense.curb.jet_charge": "Jet nozzle roars",
-  "subtitles.basedefense.curb.jet_burst": "Jet dash"
+  "subtitles.basedefense.curb.jet_burst": "Jet dash",
+  "effect.basedefense.stun": "Stun",
+  "effect.basedefense.spikes": "Spikes",
+  "death.attack.basedefense.spikes": "%1$s was impaled on spikes",
+  "death.attack.basedefense.spikes.player": "%1$s was impaled on %2$s's spikes",
+  "entity.basedefense.curb_pillar": "Curb's Pillar"
 }

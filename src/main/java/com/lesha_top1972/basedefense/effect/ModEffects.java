@@ -21,6 +21,12 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.RangedWeaponItem;
+import net.minecraft.item.TridentItem;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 /** Эффекты мода. */
 public final class ModEffects {
@@ -40,6 +46,21 @@ public final class ModEffects {
     /** Кровотёк (кровожад и его выводок): 4 уровня, бьёшь кого‑то — сам теряешь 0.5/1/2/4 чистого урона. */
     public static final StatusEffect BLEED = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "bleed"), new BleedEffect());
+
+    /** Оглушение (Бордюр, «Пике»): I — замедление 60%, II — 80%, нельзя атаковать никаким оружием. */
+    public static final StatusEffect STUN = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "stun"), new StunEffect());
+
+    /** Шипы (Бордюр, защитная стойка): ударивший получает 30% нанесённого урона чистым уроном. */
+    public static final StatusEffect SPIKES = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "spikes"), new SpikesEffect());
+
+    public static final float SPIKES_FACTOR = 0.3f;
+    /** Тип урона «шипы» (data/basedefense/damage_type/spikes.json, чистый урон). */
+    public static final RegistryKey<DamageType> SPIKES_DAMAGE_TYPE =
+            RegistryKey.of(RegistryKeys.DAMAGE_TYPE, new Identifier(Basedefense.MOD_ID, "spikes"));
+    /** Пакет клиенту: вспышка «Шипов» на экране игрока, которого ранили шипы. */
+    public static final Identifier SPIKES_FLASH = new Identifier(Basedefense.MOD_ID, "spikes_flash");
 
     public static final int BLEED_TICKS = 200;
     public static final int BLEED_MAX = 3;
@@ -78,6 +99,34 @@ public final class ModEffects {
         }
     }
 
+    /**
+     * Носитель «Шипов» получил урон dealt: тот, кто бил (в т.ч. стрелой), получает 30% чистым уроном.
+     * Вызывается из damage() носителя (сейчас — Бордюр и прислужники, AbstractCurbEntity).
+     */
+    public static void reflectSpikes(LivingEntity victim, DamageSource source, float dealt) {
+        if (dealt <= 0 || !victim.hasStatusEffect(SPIKES) || source.isOf(SPIKES_DAMAGE_TYPE)
+                || !(source.getAttacker() instanceof LivingEntity attacker) || attacker == victim || !attacker.isAlive()) {
+            return;
+        }
+        DamageSource src = new DamageSource(victim.getWorld().getRegistryManager()
+                .get(RegistryKeys.DAMAGE_TYPE).entryOf(SPIKES_DAMAGE_TYPE), victim);
+        attacker.timeUntilRegen = 0;
+        attacker.damage(src, dealt * SPIKES_FACTOR);
+        if (victim.getWorld() instanceof ServerWorld s) {
+            s.spawnParticles(ParticleTypes.END_ROD, attacker.getX(), attacker.getBodyY(0.6), attacker.getZ(),
+                    6, 0.3, 0.4, 0.3, 0.06);
+            s.spawnParticles(ParticleTypes.ENCHANTED_HIT, attacker.getX(), attacker.getBodyY(0.6), attacker.getZ(),
+                    8, 0.3, 0.4, 0.3, 0.2);
+        }
+        if (attacker instanceof ServerPlayerEntity sp) {
+            ServerPlayNetworking.send(sp, SPIKES_FLASH, PacketByteBufs.empty());
+        }
+    }
+
+    public static boolean isStunned(LivingEntity entity) {
+        return entity != null && entity.hasStatusEffect(STUN);
+    }
+
     public static boolean isFrozen(LivingEntity entity) {
         return entity != null && entity.hasStatusEffect(FREEZE);
     }
@@ -85,7 +134,15 @@ public final class ModEffects {
     public static void init() {
         // Замороженный игрок не может бить, ломать блоки и пользоваться предметами (лук, еда и т.п.)
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) ->
-                isFrozen(player) ? ActionResult.FAIL : ActionResult.PASS);
+                isFrozen(player) || isStunned(player) ? ActionResult.FAIL : ActionResult.PASS);
+        // Оглушённый не стреляет из лука/арбалета и не бросает трезубец
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            ItemStack stack = player.getStackInHand(hand);
+            if (isStunned(player) && (stack.getItem() instanceof RangedWeaponItem || stack.getItem() instanceof TridentItem)) {
+                return TypedActionResult.fail(stack);
+            }
+            return TypedActionResult.pass(stack);
+        });
         // Кровотёк срабатывает, когда носитель бьёт кого‑либо (только на сервере)
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!world.isClient && !player.isSpectator() && entity instanceof LivingEntity && player.hasStatusEffect(BLEED)) {

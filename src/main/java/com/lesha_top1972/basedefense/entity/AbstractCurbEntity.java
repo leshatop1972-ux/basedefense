@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.entity;
 
 import com.lesha_top1972.basedefense.combat.ShieldBlocker;
+import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
@@ -32,8 +33,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Общее для «Бордюра» и его прислужников: серия ударов (COMBO), реактивный удар (JET), помощники боя,
- * синхронизация действий с клиентом и эффекты струи из локтя.
+ * Общее для «Бордюра» и его прислужников: серия ударов (COMBO), реактивный удар (JET), отскоки после атак,
+ * точная регистрация ударов (по краю хитбокса и по высоте, окна в несколько тиков), синхронизация действий
+ * с клиентом, реактивные струи (локти и ноги), отражение урона эффектом «Шипы».
  * Тайминги совпадают с анимациями tools/curb_gen.py.
  */
 public abstract class AbstractCurbEntity extends HostileEntity {
@@ -45,11 +47,21 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     public static final int SPIN = 3;
     public static final int SUMMON = 4;
     public static final int EMERGE = 5;
+    public static final int DODGE_BACK = 6;
+    public static final int DODGE_LEFT = 7;
+    public static final int DODGE_RIGHT = 8;
+    public static final int PILLAR = 9;
+    public static final int GUARD = 10;
+    public static final int DIVE = 11;
+    public static final int DIVE_LAND = 12;
     public static final byte STATUS_BASE = 70;
 
     /** «Серия»: удары рукой / ногой / рукой на 13, 23, 33 тике, всего 46 тиков (2.3 с). */
     public static final int COMBO_TICKS = 46;
     static final int[] COMBO_HITS = {13, 23, 33};
+    /** Дальность ударов серии (от центра до края цели): рука / нога. */
+    static final double PUNCH_REACH = 3.4;
+    static final double KICK_REACH = 3.6;
     /** «Реактивный удар»: замах 30 т (струя), рывок 30–37 т (≈7 блоков), всего 51 т. */
     public static final int JET_WINDUP = 30;
     public static final int JET_DASH_END = 37;
@@ -57,6 +69,11 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     /** До этого тика удар доворачивает на цель (с небольшим упреждением), потом направление фиксировано. */
     static final int JET_AIM_LOCK = 27;
     static final double JET_SPEED = 1.0;
+    /** Насколько впереди корпуса достаёт кулак в рывке и ширина полосы удара (с запасом +1 блок). */
+    static final double JET_TIP = 2.4;
+    static final double JET_HALF_WIDTH = 1.0;
+    /** Отскок после атаки: 13 тиков, толчок на 2 тике. */
+    public static final int DODGE_TICKS = 13;
 
     // --- сопло в позе замаха (модель без масштаба, блоки: вправо / вверх / вперёд) — из curb_gen.py ---
     public static final double NOZZLE_RIGHT = 0.49;
@@ -76,6 +93,9 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
     abstract float jetDamage();
 
+    /** Шанс отскочить после атаки. */
+    abstract float dodgeChance();
+
     /** Масштаб модели (для точки сопла). */
     public abstract float modelScale();
 
@@ -84,10 +104,21 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         return false;
     }
 
+    /** «Шипы»: ударивший получает 30% нанесённого урона чистым уроном. */
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        float before = this.getHealth() + this.getAbsorptionAmount();
+        boolean hurt = super.damage(source, amount);
+        if (hurt && !this.getWorld().isClient) {
+            ModEffects.reflectSpikes(this, source, before - (this.getHealth() + this.getAbsorptionAmount()));
+        }
+        return hurt;
+    }
+
     @Override
     public void handleStatus(byte status) {
         int a = status - STATUS_BASE;
-        if (a >= COMBO && a <= EMERGE) {
+        if (a >= COMBO && a <= DIVE_LAND) {
             this.clientAction = a;
             this.clientActionAge = this.age;
         } else {
@@ -104,13 +135,33 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     }
 
     // =====================================================================
-    // Клиент: струя из локтя, пыль рывков
+    // Клиент: струи из локтей и ног, пыль рывков
     // =====================================================================
     private static final DustParticleEffect JET_DUST = new DustParticleEffect(new Vector3f(0.35f, 0.62f, 1.0f), 0.9f);
 
-    /** Насколько сильно бьёт струя из правого (0) / левого (1) локтя сейчас, 0..1 (клиент, и для модели). */
+    /**
+     * Сила струи 0..1 (клиент, и для модели): 0 — правый локоть, 1 — левый локоть, 2 — правая нога, 3 — левая нога.
+     */
     public float jetPower(int side, float tickDelta) {
         float t = this.age + tickDelta - this.clientActionAge;
+        if (side >= 2) {
+            if (this.clientAction != DIVE) {
+                return 0f;
+            }
+            if (t < CurbEntity.DIVE_LIFT - 2) {
+                return 0f;
+            }
+            if (t < CurbEntity.DIVE_LIFT) {
+                return 0.4f;
+            }
+            if (t < CurbEntity.DIVE_APEX) {
+                return 1f;
+            }
+            if (t < CurbEntity.DIVE_FALL) {
+                return 0.55f;
+            }
+            return 0.3f;
+        }
         if (this.clientAction == JET && side == 0) {
             if (t < 8) {
                 return 0f;
@@ -128,15 +179,26 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                 return Math.min(1f, (t - 12) / 6f) * (t < 22 ? 0.6f : 1f);
             }
         }
+        if (this.clientAction == DIVE && t >= CurbEntity.DIVE_APEX && t < CurbEntity.DIVE_FALL && side == 0) {
+            return 0.6f;                                    // замах в воздухе — правый локоть подталкивает удар
+        }
         return 0f;
     }
 
-    /** Точка сопла в мире (приблизительно, по позе замаха). */
-    public Vec3d nozzlePos(int side) {
+    Vec3d bodyForward() {
         float yaw = this.bodyYaw * 0.017453292f;
-        Vec3d fwd = new Vec3d(-MathHelper.sin(yaw), 0, MathHelper.cos(yaw));
+        return new Vec3d(-MathHelper.sin(yaw), 0, MathHelper.cos(yaw));
+    }
+
+    /** Точка сопла в мире (приблизительно, по позе замаха; ноги — под подошвой). */
+    public Vec3d nozzlePos(int side) {
+        Vec3d fwd = this.bodyForward();
         Vec3d right = new Vec3d(-fwd.z, 0, fwd.x);                // правая сторона моба
         double k = this.modelScale();
+        if (side >= 2) {
+            double r = side == 2 ? 0.13 : -0.13;
+            return this.getPos().add(right.multiply(r * k)).add(0, -0.05, 0);
+        }
         double r = side == 0 ? NOZZLE_RIGHT : -NOZZLE_RIGHT;
         return this.getPos().add(right.multiply(r * k)).add(fwd.multiply(NOZZLE_FWD * k)).add(0, NOZZLE_UP * k, 0);
     }
@@ -144,14 +206,21 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     protected void clientEffects() {
         World w = this.getWorld();
         int t = this.age - this.clientActionAge;
-        float yaw = this.bodyYaw * 0.017453292f;
-        Vec3d back = new Vec3d(MathHelper.sin(yaw), 0, -MathHelper.cos(yaw));
-        for (int side = 0; side < 2; side++) {
+        Vec3d back = this.bodyForward().multiply(-1);
+        for (int side = 0; side < 4; side++) {
             float p = this.jetPower(side, 0f);
             if (p <= 0.05f) {
                 continue;
             }
             Vec3d n = this.nozzlePos(side);
+            if (side >= 2) {
+                w.addParticle(ParticleTypes.SOUL_FIRE_FLAME, n.x, n.y, n.z,
+                        (this.random.nextDouble() - 0.5) * 0.05, -0.25 - 0.3 * p, (this.random.nextDouble() - 0.5) * 0.05);
+                if (this.random.nextFloat() < p * 0.5f) {
+                    w.addParticle(JET_DUST, n.x, n.y - 0.4, n.z, 0, -0.05, 0);
+                }
+                continue;
+            }
             double sp = 0.18 + 0.25 * p;
             w.addParticle(ParticleTypes.SOUL_FIRE_FLAME, n.x, n.y, n.z,
                     back.x * sp + (this.random.nextDouble() - 0.5) * 0.03, 0.02,
@@ -161,7 +230,8 @@ public abstract class AbstractCurbEntity extends HostileEntity {
             }
         }
         boolean dash = (this.clientAction == JET && t >= JET_WINDUP && t < JET_DASH_END)
-                || (this.clientAction == SLAM && t >= CurbEntity.SLAM_DASH && t < CurbEntity.SLAM_HIT);
+                || (this.clientAction == SLAM && t >= CurbEntity.SLAM_DASH && t < CurbEntity.SLAM_HIT)
+                || (this.clientAction >= DODGE_BACK && this.clientAction <= DODGE_RIGHT && t >= 2 && t < 7);
         if (dash) {
             w.addParticle(ParticleTypes.CLOUD, this.getX(), this.getY() + 0.1, this.getZ(),
                     back.x * 0.1, 0.03, back.z * 0.1);
@@ -187,12 +257,16 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         this.faceTo(target.getX(), target.getZ());
     }
 
-    /** Повернуться к цели не быстрее maxDeg за тик (доворот между ударами). */
-    void turnToward(LivingEntity target, float maxDeg) {
+    /** Угол (градусы, со знаком) от взгляда до цели. */
+    float angleTo(LivingEntity target) {
         float want = (float) (MathHelper.atan2(target.getZ() - this.getZ(), target.getX() - this.getX())
                 * 57.29577951308232) - 90.0f;
-        float d = MathHelper.wrapDegrees(want - this.getYaw());
-        float yaw = this.getYaw() + MathHelper.clamp(d, -maxDeg, maxDeg);
+        return MathHelper.wrapDegrees(want - this.getYaw());
+    }
+
+    /** Повернуться к цели не быстрее maxDeg за тик (доворот между ударами). */
+    void turnToward(LivingEntity target, float maxDeg) {
+        float yaw = this.getYaw() + MathHelper.clamp(this.angleTo(target), -maxDeg, maxDeg);
         this.setYaw(yaw);
         this.setBodyYaw(yaw);
         this.setHeadYaw(yaw);
@@ -202,12 +276,26 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         this.getWorld().sendEntityStatus(this, (byte) (STATUS_BASE + action));
     }
 
-    /** Свои не задеваются: только не‑монстры (игроки, жители, големы). */
+    /** Свои не задеваются: только не‑монстры (игроки, жители, големы). Поиск с запасом по высоте. */
     List<LivingEntity> victims(double radius) {
-        Box box = this.getBoundingBox().expand(radius, 1.5, radius);
+        Box box = this.getBoundingBox().expand(radius + 1.0, 3.0, radius + 1.0);
         return this.getWorld().getEntitiesByClass(LivingEntity.class, box,
                 e -> e != this && e.isAlive() && !(e instanceof Monster) && !(e instanceof ArmorStandEntity)
                         && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator())));
+    }
+
+    /** Горизонтальное расстояние от центра моба до ближайшей точки хитбокса цели. */
+    double edgeDist(LivingEntity e) {
+        Box b = e.getBoundingBox();
+        double dx = Math.max(Math.max(b.minX - this.getX(), 0), this.getX() - b.maxX);
+        double dz = Math.max(Math.max(b.minZ - this.getZ(), 0), this.getZ() - b.maxZ);
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /** Цель по высоте в досягаемости: хитбоксы перекрываются с запасом extra сверху и снизу. */
+    boolean inHeight(LivingEntity e, double extra) {
+        Box b = e.getBoundingBox();
+        return b.maxY >= this.getY() - extra && b.minY <= this.getY() + this.getHeight() + extra;
     }
 
     boolean strike(LivingEntity e, float damage, double knock, double up) {
@@ -228,24 +316,50 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         return true;
     }
 
-    /** Удар конусом вперёд: reach — от центра до края цели, halfAngle — половина угла. */
-    int coneHit(double reach, double halfAngle, float damage, double knock, double up) {
+    /**
+     * Удар конусом вперёд: reach — от центра до края цели, halfAngle — половина угла (вплотную угол не важен),
+     * hit — кого уже ударили этим ударом (окно в несколько тиков бьёт каждого один раз; может быть null).
+     */
+    int coneHit(double reach, double halfAngle, float damage, double knock, double up, Set<Integer> hit) {
         Vec3d f = this.forward();
         double cos = Math.cos(Math.toRadians(halfAngle));
         int n = 0;
         for (LivingEntity e : this.victims(reach)) {
+            if (hit != null && hit.contains(e.getId())) {
+                continue;
+            }
+            double d = this.edgeDist(e);
+            if (d > reach || !this.inHeight(e, 1.2)) {
+                continue;
+            }
             Vec3d to = new Vec3d(e.getX() - this.getX(), 0, e.getZ() - this.getZ());
-            if (to.length() - e.getWidth() / 2 > reach) {
+            if (d > 1.0 && to.lengthSquared() > 0.01 && to.normalize().dotProduct(f) < cos) {
                 continue;
             }
-            if (to.lengthSquared() > 0.25 && to.normalize().dotProduct(f) < cos) {
-                continue;
-            }
-            if (Math.abs(e.getY() - this.getY()) > 2.5) {
-                continue;
+            if (hit != null) {
+                hit.add(e.getId());
             }
             if (this.strike(e, damage, knock, up)) {
                 n++;
+            }
+        }
+        return n;
+    }
+
+    /** Удар вокруг себя: radius — до края цели. */
+    int radiusHit(double radius, double heightExtra, float damage, double knock, double up, Set<Integer> hit) {
+        int n = 0;
+        for (LivingEntity e : this.victims(radius)) {
+            if (hit != null && hit.contains(e.getId())) {
+                continue;
+            }
+            if (this.edgeDist(e) <= radius && this.inHeight(e, heightExtra)) {
+                if (hit != null) {
+                    hit.add(e.getId());
+                }
+                if (this.strike(e, damage, knock, up)) {
+                    n++;
+                }
             }
         }
         return n;
@@ -273,7 +387,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         }
     }
 
-    /** Кольцо пыли из земли (топот, призыв). */
+    /** Кольцо пыли из земли (топот, призыв, приземление). */
     void groundRing(Vec3d c, double radius, int points) {
         ServerWorld s = this.sw();
         if (s == null) {
@@ -292,8 +406,30 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         }
     }
 
+    /** Безопасно ли отскочить на dist блоков в направлении dir (есть опора, нет стены, лавы и воды). */
+    boolean safeLanding(Vec3d dir, double dist) {
+        World w = this.getWorld();
+        Vec3d p = this.getPos().add(dir.multiply(dist));
+        BlockPos feet = BlockPos.ofFloored(p.x, this.getY() + 0.2, p.z);
+        if (!w.getBlockState(feet).getCollisionShape(w, feet).isEmpty()
+                || !w.getBlockState(feet.up()).getCollisionShape(w, feet.up()).isEmpty()) {
+            return false;
+        }
+        for (int d = 1; d <= 3; d++) {
+            BlockPos b = feet.down(d);
+            BlockState st = w.getBlockState(b);
+            if (!st.getFluidState().isEmpty()) {
+                return false;
+            }
+            if (!st.getCollisionShape(w, b).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // =====================================================================
-    // Бой: серия и реактивный удар (общая часть ИИ)
+    // Бой: серия, реактивный удар, отскоки (общая часть ИИ)
     // =====================================================================
     abstract static class BrawlGoal<E extends AbstractCurbEntity> extends Goal {
         protected final E mob;
@@ -306,6 +442,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         protected boolean circleLeft;
         protected int jetCooldown = 60;
         protected Vec3d dashDir = Vec3d.ZERO;
+        protected Vec3d dashPrev = Vec3d.ZERO;
         protected boolean dashHit;
         protected final Set<Integer> hitIds = new HashSet<>();
 
@@ -329,12 +466,12 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
         /** Выбор атаки: [действие, вес]. Основа — серия вблизи и реактивный удар с дистанции. */
         protected void options(List<int[]> out, double dist) {
-            if (dist < 3.4) {
+            if (dist < 4.3) {
                 out.add(new int[]{COMBO, 60});
                 if (this.jetCooldown <= 0) {
                     out.add(new int[]{JET, 18});
                 }
-            } else if (dist < 8.5 && this.jetCooldown <= 0) {
+            } else if (dist < 9.5 && this.jetCooldown <= 0) {
                 out.add(new int[]{JET, 55});
             }
         }
@@ -347,6 +484,11 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         /** Перед выбором атаки (смена фазы и т.п.); true — начато особое действие. */
         protected boolean preAction(LivingEntity target, double dist) {
             return false;
+        }
+
+        /** После каких действий можно отскочить. */
+        protected boolean canDodgeAfter(int a) {
+            return a == COMBO || a == JET || a == SLAM || a == SPIN || a == DIVE_LAND;
         }
 
         protected void tickCooldowns() {
@@ -379,6 +521,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         public void stop() {
             this.mob.setAttacking(false);
             this.mob.getNavigation().stop();
+            this.mob.setNoGravity(false);
             this.action = NONE;
         }
 
@@ -395,9 +538,35 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         }
 
         protected void finish() {
-            this.lastAction = this.action;
-            this.cooldown = this.restTicks(this.action);
+            int done = this.action;
+            this.lastAction = done;
+            this.cooldown = this.restTicks(done);
             this.action = NONE;
+            if (this.canDodgeAfter(done) && this.mob.random.nextFloat() < this.mob.dodgeChance()) {
+                this.tryDodge();
+            }
+        }
+
+        /** Отскок рывком назад или вбок на несколько блоков (если там есть куда приземлиться). */
+        private void tryDodge() {
+            E m = this.mob;
+            LivingEntity target = m.getTarget();
+            if (target != null) {
+                m.faceTarget(target);
+            }
+            Vec3d f = m.forward();
+            Vec3d left = new Vec3d(f.z, 0, -f.x);
+            int[] order = m.random.nextFloat() < 0.5f
+                    ? new int[]{DODGE_BACK, m.random.nextBoolean() ? DODGE_LEFT : DODGE_RIGHT}
+                    : new int[]{m.random.nextBoolean() ? DODGE_LEFT : DODGE_RIGHT, DODGE_BACK};
+            for (int a : order) {
+                Vec3d dir = a == DODGE_BACK ? f.multiply(-1) : (a == DODGE_LEFT ? left : left.multiply(-1));
+                if (m.safeLanding(dir, 3.5)) {
+                    this.dashDir = dir;
+                    this.begin(a);
+                    return;
+                }
+            }
         }
 
         private int pick(double dist) {
@@ -496,18 +665,28 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                     if (target != null && (t < 11 || (t > 15 && t < 21) || (t > 25 && t < 31))) {
                         m.turnToward(target, 40f);
                     }
-                    if (t == 11 || t == 21 || t == 31) {
-                        this.lunge(t == 21 ? 0.28 : 0.34);
-                        m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.6f, 1.5f);
-                    }
                     for (int k = 0; k < COMBO_HITS.length; k++) {
-                        if (t == COMBO_HITS[k]) {
+                        int h = COMBO_HITS[k];
+                        // за 2 тика до удара — довести взгляд точно на цель, если она в передней полусфере
+                        if (t == h - 2 && target != null && Math.abs(m.angleTo(target)) < 80f) {
+                            m.faceTarget(target);
+                        }
+                        if (t == h - 2) {
+                            this.lunge(k == 1 ? 0.28 : 0.34);
+                            m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.6f, 1.5f);
+                            this.hitIds.clear();
+                        }
+                        // окно попадания: тик до удара, удар и тик после (каждого — один раз)
+                        if (t >= h - 1 && t <= h + 1) {
                             boolean kick = k == 1;
-                            if (m.coneHit(kick ? 2.6 : 2.4, 50, m.comboDamage(), kick ? 0.6 : 0.35, 0) > 0) {
+                            if (m.coneHit(kick ? KICK_REACH : PUNCH_REACH, 55, m.comboDamage(), kick ? 0.6 : 0.35, 0,
+                                    this.hitIds) > 0) {
                                 m.sound(kick ? SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK
                                         : SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 0.8f);
                             }
-                            m.impactFx(1.6, kick ? 0.9 : 1.5, false);
+                            if (t == h) {
+                                m.impactFx(1.8, kick ? 0.9 : 1.5, false);
+                            }
                         }
                     }
                     if (t >= COMBO_TICKS) {
@@ -529,11 +708,15 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                     }
                     if (t == JET_WINDUP) {
                         m.sound(ModSounds.CURB_JET_BURST, 1.6f, 1.0f);
+                        this.dashPrev = m.getPos();
+                    }
+                    if (t > JET_WINDUP && t <= JET_DASH_END && !this.dashHit) {
+                        this.jetHits();                 // проверка по отрезку, пройденному за прошлый тик
                     }
                     if (t >= JET_WINDUP && t < JET_DASH_END) {
                         if (!this.dashHit) {
+                            this.dashPrev = m.getPos();
                             this.dash(JET_SPEED);
-                            this.jetHits();
                         } else {
                             m.setVelocity(0, m.getVelocity().y, 0);
                             m.velocityModified = true;
@@ -547,6 +730,17 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                         this.finish();
                     }
                 }
+                case DODGE_BACK, DODGE_LEFT, DODGE_RIGHT -> {
+                    if (t == 2) {
+                        m.setVelocity(this.dashDir.x * 0.68, 0.3, this.dashDir.z * 0.68);
+                        m.velocityModified = true;
+                        m.sound(ModSounds.CURB_JET_BURST, 0.6f, 1.5f);
+                    }
+                    if (t >= DODGE_TICKS) {
+                        this.action = NONE;
+                        this.lastAction = DODGE_BACK;
+                    }
+                }
                 default -> {
                     if (!this.runExtra(target)) {
                         this.finish();
@@ -555,13 +749,26 @@ public abstract class AbstractCurbEntity extends HostileEntity {
             }
         }
 
-        /** Попадание рывка: кто впереди на 1.5 блока. Удар один — после него рывок гасится. */
+        /**
+         * Попадание рывка: цель в полосе от прошлой позиции до кулака (позиция + JET_TIP вперёд) шириной
+         * ±JET_HALF_WIDTH — так быстрый рывок не «проскакивает» цель между тиками. Удар один, потом рывок гаснет.
+         */
         private void jetHits() {
             E m = this.mob;
-            for (LivingEntity e : m.victims(1.6)) {
-                Vec3d to = new Vec3d(e.getX() - m.getX(), 0, e.getZ() - m.getZ());
-                if (to.lengthSquared() < 0.01 || to.normalize().dotProduct(this.dashDir) > 0.35) {
-                    if (this.hitIds.add(e.getId()) && m.strike(e, m.jetDamage(), 1.4, 0.35)) {
+            Vec3d a = this.dashPrev;
+            Vec3d b = m.getPos().add(this.dashDir.multiply(JET_TIP));
+            double len = Math.sqrt((b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z));
+            for (LivingEntity e : m.victims(len + 1.0)) {
+                if (!m.inHeight(e, 1.0) || this.hitIds.contains(e.getId())) {
+                    continue;
+                }
+                double ex = e.getX() - a.x;
+                double ez = e.getZ() - a.z;
+                double along = (ex * this.dashDir.x + ez * this.dashDir.z);
+                double side = Math.abs(ex * this.dashDir.z - ez * this.dashDir.x);
+                if (along > -0.6 && along < len + e.getWidth() / 2 && side < JET_HALF_WIDTH + e.getWidth() / 2) {
+                    this.hitIds.add(e.getId());
+                    if (m.strike(e, m.jetDamage(), 1.4, 0.35)) {
                         this.dashHit = true;
                         m.impactFx(1.0, 1.4, true);
                         m.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f, 1.5f);

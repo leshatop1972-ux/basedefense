@@ -16,6 +16,9 @@ import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
 import com.lesha_top1972.basedefense.client.fx.LancerFx;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.BloodPoolOverlay;
+import com.lesha_top1972.basedefense.client.render.SpikesOverlay;
+import com.lesha_top1972.basedefense.client.render.StunOverlay;
+import net.minecraft.client.render.entity.EmptyEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.DuelistOverlay;
 import com.lesha_top1972.basedefense.client.render.FreezeOverlay;
 import com.lesha_top1972.basedefense.client.render.LancerZoneRenderer;
@@ -79,6 +82,9 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(CurbMinionRenderer.LAYER, () -> BedrockModelLoader.load("curb_minion"));
         EntityRendererRegistry.register(ModEntities.CURB, CurbRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURB_MINION, CurbMinionRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURB_PILLAR, EmptyEntityRenderer::new);
+        StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)
+        SpikesOverlay.init();          // «Шипы»: вспышка осколков, когда шипы ранили игрока
         BloodPoolOverlay.init();       // кровавая лужа ранит — экран чуть краснеет
         DuelistOverlay.init();
         RatOverlay.init();

@@ -90,9 +90,15 @@ def skeleton(M, minion):
     bone("right_foot", "right_shin", (-2.1, 1.5, 0))
     cube("right_foot", (-4.1, 0, -3.3), (4, 1.8, 5.3), "boot", face="foot")
     cube("right_foot", (-4.2, 0, -3.6), (4.2, 1.1, 1.2), "armor" if not minion else "boot", face="toecap")
+    # реактивная струя из подошвы (взлёт «Пике»): вниз от стопы, только светящаяся маска
+    bone("jet_rf", "right_foot", (-2.1, 0, -0.6))
+    cube("jet_rf", (-2.5, -7.0, -1.0), (0.8, 7.0, 0.8), "jet", face="fjet_core")
+    cube("jet_rf", (-2.95, -4.6, -1.45), (1.7, 4.6, 1.7), "jet", face="fjet_mid")
+    cube("jet_rf", (-3.45, -2.2, -1.95), (2.7, 2.2, 2.7), "jet", face="fjet_out")
     M.mirror_x("right_leg", "left_leg")
     M.mirror_x("right_shin", "left_shin", parent="left_leg")
     M.mirror_x("right_foot", "left_foot", parent="left_shin")
+    M.mirror_x("jet_rf", "jet_lf", parent="left_foot")
 
     # корпус
     bone("torso", "body", (0, 16.5, 0))
@@ -342,11 +348,14 @@ def paint(M, minion, seed):
                     x, y = x0 + ii, y0 + jj
                     if v == "jet":
                         # струя — только в светящейся маске (база прозрачна), к концу тускнеет
+                        # струи рук смотрят вверх (дальний конец — верх развёртки), струи ног — вниз
                         t = jj / max(1, h - 1) if fname not in ("top", "bottom") else 0.0
-                        core = face == "jet_core"
+                        if not face.startswith("fjet"):
+                            t = 1.0 - t
+                        core = face in ("jet_core", "fjet_core")
                         col = mix(BLUE_HI if core else BLUE, BLUE_D, t * (0.5 if core else 0.85))
                         PT.clear(x, y)
-                        if not (face == "jet_out" and (ii + jj) % 2 == 1):
+                        if not (face in ("jet_out", "fjet_out") and (ii + jj) % 2 == 1):
                             PT.gl[x, y] = (col[0], col[1], col[2], 255)
                     elif v is None:
                         PT.clear(x, y)
@@ -788,6 +797,116 @@ def emerge(t):
     return pr
 
 
+# --- отскок после атаки: назад / влево / вправо (0.6 с, толчок на 0.1 с) ---
+def dodge_keys(side):
+    # side: 0 — назад, +1 — влево (к +x модели), −1 — вправо
+    lean_z = -14.0 * side
+    push = dict(STANCE, body_pos=(0, 3.4, 0), torso=(14 if side == 0 else 8, -6, lean_z * 0.5), body=(6, -12, lean_z * 0.4),
+                rf=(-2.8 + 1.2 * side, 22.5, 1.6 if side else 0.6), lf=(2.4 + 1.2 * side, 22.5, -1.6 if side else -0.8))
+    air = dict(STANCE, body_pos=(0, 0.6, 0), torso=(-6 if side == 0 else 2, -6, lean_z), body=(-4 if side == 0 else 0, -12, lean_z),
+               rf=(-2.6 - 1.6 * side, 19.6, 2.4), lf=(2.6 - 1.6 * side, 20.4, -1.4), toe_r=30.0, toe_l=24.0,
+               rh=(-6.4, -7.0, -4.0), lh=(6.0, -7.6, -5.0), coat=-14.0, cape=-18.0)
+    land = dict(STANCE, body_pos=(0, 3.0, 0), torso=(12, -6, 0), body=(6, -12, 0), coat=8.0, cape=12.0)
+    return [(0.00, {}, "lin"), (0.10, push, "out"), (0.26, air, "out3"), (0.42, land, "in"), (0.70, STANCE, "ease")]
+
+
+def dodge_back(t):
+    return layered(dodge_keys(0), t)
+
+
+def dodge_left(t):
+    return layered(dodge_keys(1), t)
+
+
+def dodge_right(t):
+    return layered(dodge_keys(-1), t)
+
+
+# --- «Столб»: присел, ладони у земли (собирает силу), рывком встаёт и вскидывает руки (столб на 1.5 с) ---
+GATHER = dict(body=(16, 0, 0), torso=(30, 0, 0), head=(-22, 0, 0), body_pos=(0, 6.0, 0),
+              rf=(-3.0, 22.5, 2.2), lf=(3.0, 22.5, -2.2), rh=(-5.6, 3.2, -7.4), lh=(5.6, 3.2, -7.4),
+              r_pole=(-0.6, -0.4, 1), l_pole=(0.6, -0.4, 1), rhand=(-30, 0, 0), lhand=(-30, 0, 0), coat=10.0, cape=14.0)
+RAISE = dict(body=(-8, 0, 0), torso=(-14, 0, 0), head=(-22, 0, 0), body_pos=(0, -0.4, 0),
+             rf=(-3.0, 22.5, 1.2), lf=(3.0, 22.5, -1.2), rh=(-7.0, -21.0, -2.6), lh=(7.0, -21.0, -2.6),
+             r_pole=(-1, 0.2, 0.3), l_pole=(1, 0.2, 0.3), rhand=(20, 0, 0), lhand=(20, 0, 0), coat=-8.0, cape=-10.0)
+PILLAR = [
+    (0.00, {}, "lin"),
+    (0.40, GATHER, "out"),
+    (1.30, dict(GATHER, body_pos=(0, 6.6, 0), rh=(-5.8, 3.6, -7.0), lh=(5.8, 3.6, -7.0)), "lin"),
+    (1.50, RAISE, "in3"),
+    (1.65, dict(RAISE, rh=(-7.2, -21.4, -2.2), lh=(7.2, -21.4, -2.2), body_pos=(0, -0.7, 0)), "out"),
+    (2.15, dict(RAISE, torso=(-10, 0, 0)), "ease"),
+    (2.80, dict(STANCE), "ease"),
+]
+
+
+def pillar(t):
+    pr = layered(PILLAR, t)
+    if 0.4 < t < 1.45:                                      # дрожь — сила копится
+        k = min(1.0, (t - 0.4) / 0.4)
+        pr["body_pos"] = add(list(pr["body_pos"]), [0.1 * math.sin(t * 90) * k, 0.08 * math.sin(t * 67) * k, 0])
+    return pr
+
+
+# --- «Шипы»: руки крест‑накрест перед лицом (эффект на 0.6 с) ---
+GUARD_X = dict(body=(6, 0, 0), torso=(10, 0, 0), head=(4, 0, 0), body_pos=(0, 2.4, 0),
+               rf=(-3.0, 22.5, 1.8), lf=(2.8, 22.5, -2.4),
+               rh=(2.2, -9.4, -7.6), lh=(-2.2, -8.2, -8.2), r_pole=(-0.2, 1, 0.4), l_pole=(0.2, 1, 0.4),
+               rhand=(0, 0, 20), lhand=(0, 0, -20), coat=4.0, cape=4.0)
+GUARD = [
+    (0.00, {}, "lin"),
+    (0.30, GUARD_X, "out"),
+    (0.60, dict(GUARD_X, body_pos=(0, 3.0, 0), torso=(14, 0, 0)), "in"),
+    (0.75, dict(GUARD_X, body_pos=(0, 2.6, 0)), "out"),
+    (1.10, dict(GUARD_X), "ease"),
+    (1.45, dict(STANCE), "ease"),
+]
+
+
+def guard(t):
+    return layered(GUARD, t)
+
+
+# --- «Пике»: присел → взлёт на струях из ног → в воздухе замах → удар кулаком вниз (держит до земли) ---
+CROUCH_UP = dict(body=(14, 0, 0), torso=(18, 0, 0), head=(-18, 0, 0), body_pos=(0, 5.0, 0),
+                 rf=(-2.6, 22.5, 1.0), lf=(2.6, 22.5, -1.0), rh=(-7.0, 1.0, 3.6), lh=(7.0, 1.0, 3.6),
+                 r_pole=(-0.3, 0, -1), l_pole=(0.3, 0, -1), coat=8.0, cape=10.0)
+LIFT = dict(body=(-4, 0, 0), torso=(-6, 0, 0), head=(-6, 0, 0), body_pos=(0, 0.0, 0),
+            rf=(-1.6, 22.8, 1.2), lf=(1.6, 22.8, 0.6), toe_r=36.0, toe_l=36.0,
+            rh=(-7.6, 0.4, 2.0), lh=(7.6, 0.4, 2.0), r_pole=(-0.2, 0, -1), l_pole=(0.2, 0, -1), coat=-24.0, cape=-30.0)
+APEX = dict(COCK_R, body=(18, 10, 0), torso=(10, 18, 0), head=(14, -18, 0), body_pos=(0, 0.0, 0),
+            rf=(-2.2, 18.0, -3.0), lf=(2.2, 21.4, 2.0), toe_r=20.0, toe_l=30.0, coat=-8.0, cape=-12.0)
+DIVE_P = dict(PUNCH_R, body=(72, -6, 0), torso=(22, -18, 0), head=(22, 14, 0), body_pos=(0, 0.0, 0), root_pos=(0, 0, 0),
+              rh=(-3.0, -10.8, -11.0), lh=(6.8, -6.4, 2.0), l_pole=(0.3, 0.6, -1),
+              rf=(-2.2, 9.6, 10.6), lf=(2.2, 11.4, 9.6), toe_r=40.0, toe_l=40.0, coat=-30.0, cape=-40.0)
+DIVE = [
+    (0.00, {}, "lin"),
+    (0.45, CROUCH_UP, "out"),
+    (0.60, LIFT, "out3"),
+    (1.35, dict(LIFT, torso=(-4, 0, 0), rh=(-7.8, 0.0, 2.6), lh=(7.8, 0.0, 2.6)), "ease"),
+    (1.70, APEX, "out"),
+    (1.80, dict(APEX, torso=(10, 22, 0)), "lin"),
+    (1.95, DIVE_P, "in3"),
+    (3.40, dict(DIVE_P, rh=(-2.8, -10.9, -11.1)), "lin"),
+]
+
+
+def dive(t):
+    return layered(DIVE, t)
+
+
+DIVE_LAND_KEYS = [
+    (0.00, dict(KNEEL, rh=(-4.2, 5.0, -10.4), body_pos=(0, 7.8, 0), coat=24.0, cape=30.0), "lin"),
+    (0.20, dict(KNEEL, rh=(-4.0, 4.8, -10.0), body_pos=(0, 7.4, 0), coat=6.0, cape=8.0), "out"),
+    (0.70, dict(KNEEL, torso=(22, 0, 0), head=(-16, 0, 0), rh=(-5.6, 1.0, -6.0)), "ease"),
+    (1.20, dict(STANCE), "ease"),
+]
+
+
+def dive_land(t):
+    return layered(DIVE_LAND_KEYS, t)
+
+
 CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("idle", idle, 2.4, 20, True),
     ("walk", walk, 1.0, 24, True),
@@ -797,12 +916,19 @@ CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("slam", slam, SLAM[-1][0] + TAIL, 60, False),
     ("spin", spin, 2.0 + TAIL, 60, False),
     ("summon", summon, SUMMON[-1][0] + TAIL, 60, False),
+    ("dodge_back", dodge_back, 0.70, 60, False),
+    ("dodge_left", dodge_left, 0.70, 60, False),
+    ("dodge_right", dodge_right, 0.70, 60, False),
+    ("pillar", pillar, PILLAR[-1][0] + TAIL, 60, False),
+    ("guard", guard, GUARD[-1][0] + TAIL, 60, False),
+    ("dive", dive, DIVE[-1][0], 60, False),
+    ("dive_land", dive_land, DIVE_LAND_KEYS[-1][0] + TAIL, 60, False),
 ]
-MINION_CLIPS = ["idle", "walk", "run", "combo", "jet"]
+MINION_CLIPS = ["idle", "walk", "run", "combo", "jet", "dodge_back", "dodge_left", "dodge_right"]
 
 
 def bake_all(model, names, extra=()):
-    bones = [b["name"] for b in model.bones if b["name"] not in ("jet_r", "jet_l")]
+    bones = [b["name"] for b in model.bones if not b["name"].startswith("jet_")]
     out = {}
     for name, fn, ln, fps, loop in list(CLIPS) + list(extra):
         if name not in names:

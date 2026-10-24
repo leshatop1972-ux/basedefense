@@ -169,5 +169,10 @@
   "entity.basedefense.curb_minion": "Прислужник Бордюра",
   "item.basedefense.curb_minion_spawn_egg": "Яйцо призыва прислужника Бордюра",
   "subtitles.basedefense.curb.jet_charge": "Ревёт реактивное сопло",
-  "subtitles.basedefense.curb.jet_burst": "Реактивный рывок"
+  "subtitles.basedefense.curb.jet_burst": "Реактивный рывок",
+  "effect.basedefense.stun": "Оглушение",
+  "effect.basedefense.spikes": "Шипы",
+  "death.attack.basedefense.spikes": "%1$s напоролся на шипы",
+  "death.attack.basedefense.spikes.player": "%1$s напоролся на шипы %2$s",
+  "entity.basedefense.curb_pillar": "Столб Бордюра"
 }

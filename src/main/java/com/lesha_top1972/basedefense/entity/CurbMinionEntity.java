@@ -77,6 +77,11 @@ public class CurbMinionEntity extends AbstractCurbEntity {
     }
 
     @Override
+    float dodgeChance() {
+        return 0.2f;
+    }
+
+    @Override
     public float modelScale() {
         return 1.0f;
     }

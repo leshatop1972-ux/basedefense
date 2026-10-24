@@ -23,6 +23,8 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
     private final BedrockAnimations.Clip run;
     private final BedrockAnimations.Clip emerge;
     private final BedrockAnimations.Clip[] actions;
+    /** «Пике»: присед → взлёт → замах → удар вниз; последняя поза держится до сигнала приземления. */
+    private final BedrockAnimations.Clip dive;
 
     private final ModelPart head;
     private final ModelPart[] jets;
@@ -35,9 +37,11 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
         this.run = c.get("run");
         this.emerge = c.get("emerge");
         this.actions = new BedrockAnimations.Clip[]{c.get("combo"), c.get("jet"), c.get("slam"), c.get("spin"),
-                c.get("summon")};
+                c.get("summon"), null, c.get("dodge_back"), c.get("dodge_left"), c.get("dodge_right"), c.get("pillar"),
+                c.get("guard"), null, c.get("dive_land")};
+        this.dive = c.get("dive");
         this.head = this.bone("head");
-        this.jets = new ModelPart[]{this.bone("jet_r"), this.bone("jet_l")};
+        this.jets = new ModelPart[]{this.bone("jet_r"), this.bone("jet_l"), this.bone("jet_rf"), this.bone("jet_lf")};
     }
 
     @Override
@@ -53,6 +57,16 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
             clip = this.emerge;
             ct = animationProgress / 20f;
             w = 1f;
+        } else if (a == AbstractCurbEntity.DIVE && this.dive != null) {
+            if (t >= 0 && t < 5f) {
+                clip = this.dive;
+                ct = Math.min(t, this.dive.length() - 0.01f);
+                w = clamp01(t / 0.08f);
+            }
+        } else if (a == AbstractCurbEntity.DIVE_LAND && this.actions[a] != null && t >= 0 && t < this.actions[a].length()) {
+            clip = this.actions[a];
+            ct = t;
+            w = clamp01((clip.length() - t) / 0.2f);
         } else if (a >= 0 && a < this.actions.length && this.actions[a] != null && t >= 0
                 && t < this.actions[a].length()) {
             clip = this.actions[a];
@@ -72,7 +86,7 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
 
         // реактивные струи: длина по силе тяги + мерцание
         float tickDelta = MinecraftClient.getInstance().getTickDelta();
-        for (int s = 0; s < 2; s++) {
+        for (int s = 0; s < this.jets.length; s++) {
             float p = entity.jetPower(s, tickDelta);
             ModelPart jet = this.jets[s];
             jet.visible = p > 0.02f;

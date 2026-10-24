@@ -158,6 +158,15 @@ public final class ModEntities {
                     .trackRangeBlocks(64)
                     .build());
 
+    /** Каменный столб Бордюра (невидимый, управляет блоками столба). */
+    public static final EntityType<CurbPillarEntity> CURB_PILLAR = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "curb_pillar"),
+            FabricEntityTypeBuilder.<CurbPillarEntity>create(SpawnGroup.MISC, CurbPillarEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
+                    .trackRangeBlocks(32)
+                    .build());
+
     private ModEntities() {
     }
 
