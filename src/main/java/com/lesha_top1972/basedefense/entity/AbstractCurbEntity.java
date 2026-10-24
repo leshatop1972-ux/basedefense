@@ -87,6 +87,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
     protected AbstractCurbEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
+        this.setStepHeight(1.0f);               // ступеньку в блок проходит не прыгая (и в рывках)
     }
 
     // --- параметры бойца (босс / прислужник) ---
@@ -541,6 +542,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
             this.tick = 0;
             this.hitIds.clear();
             this.dashHit = false;
+            this.climbTicks = 0;
             this.mob.getNavigation().stop();
             this.mob.sendAction(a);
             if (a == JET) {
@@ -656,9 +658,39 @@ public abstract class AbstractCurbEntity extends HostileEntity {
             }
         }
 
+        /** Сколько тиков рывка уже ушло на подъём по препятствию (не больше CLIMB_MAX за действие). */
+        protected int climbTicks;
+        static final int CLIMB_MAX = 9;
+
+        /**
+         * Рывок в сторону dashDir. Упёрся в блок — не останавливается, а поднимается вверх
+         * (≈0.5 блока за тик, до ~4 блоков за рывок) и продолжает рывок поверх препятствия.
+         */
         protected void dash(double speed) {
-            this.mob.setVelocity(this.dashDir.x * speed, this.mob.getVelocity().y, this.dashDir.z * speed);
-            this.mob.velocityModified = true;
+            E m = this.mob;
+            double vy = m.getVelocity().y;
+            if (m.horizontalCollision && this.climbTicks < CLIMB_MAX) {
+                this.climbTicks++;
+                vy = Math.max(vy, 0.5);
+                m.fallDistance = 0;
+            }
+            m.setVelocity(this.dashDir.x * speed, vy, this.dashDir.z * speed);
+            m.velocityModified = true;
+        }
+
+        /** Рывок к точке (горизонтально, не быстрее maxSpeed за тик) с подъёмом по препятствиям. */
+        protected void dashTo(double x, double z, double maxSpeed, double stopAt) {
+            E m = this.mob;
+            double dx = x - m.getX();
+            double dz = z - m.getZ();
+            double d = Math.sqrt(dx * dx + dz * dz);
+            if (d <= stopAt) {
+                m.setVelocity(0, m.getVelocity().y, 0);
+                m.velocityModified = true;
+                return;
+            }
+            this.dashDir = new Vec3d(dx / d, 0, dz / d);
+            this.dash(Math.min(maxSpeed, d - stopAt));
         }
 
         protected void lunge(double speed) {
@@ -746,6 +778,9 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                         m.setVelocity(this.dashDir.x * 0.68, 0.3, this.dashDir.z * 0.68);
                         m.velocityModified = true;
                         m.sound(ModSounds.CURB_JET_BURST, 0.6f, 1.5f);
+                    }
+                    if (t > 2 && t < 8 && m.horizontalCollision && this.climbTicks < CLIMB_MAX) {
+                        this.dash(0.5);                 // упёрся при отскоке — перескакивает
                     }
                     if (t >= DODGE_TICKS) {
                         this.action = NONE;

@@ -34,7 +34,7 @@ import java.util.List;
 public class CurbPillarEntity extends Entity {
 
     public static final int HEIGHT = 10;
-    static final int HOLD = 80;
+    static final int HOLD = 160;            // столб стоит 8 секунд
     static final int SINK_EVERY = 3;
 
     private BlockPos base = BlockPos.ORIGIN;
@@ -43,6 +43,8 @@ public class CurbPillarEntity extends Entity {
     private int phase;          // 0 — растёт, 1 — стоит, 2 — опускается
     private int timer;
     private final List<Integer> placed = new ArrayList<>();
+    /** Кого столб поднимает обязательно (цель Бордюра при попадании) — даже если он прыгнул или сдвинулся. */
+    private LivingEntity forced;
 
     public CurbPillarEntity(EntityType<?> type, World world) {
         super(type, world);
@@ -51,6 +53,11 @@ public class CurbPillarEntity extends Entity {
     }
 
     /** Столб на блоке земли ground (растёт над ним). */
+    void setup(BlockPos ground, LivingEntity forcedRider) {
+        this.forced = forcedRider;
+        this.setup(ground);
+    }
+
     void setup(BlockPos ground) {
         this.base = ground;
         this.refreshPositionAndAngles(ground.getX() + 0.5, ground.getY() + 1, ground.getZ() + 0.5, 0f, 0f);
@@ -85,7 +92,12 @@ public class CurbPillarEntity extends Entity {
                 }
                 // сначала поднять стоящих, потом поставить блок под ними
                 double top = p.getY() + 1.0;
-                for (LivingEntity e : this.riders(p.getY() - 0.6, p.getY() + 1.6)) {
+                List<LivingEntity> lift = new ArrayList<>(this.riders(p.getY() - 0.6, p.getY() + 1.6));
+                if (this.forced != null && this.forced.isAlive() && !lift.contains(this.forced)
+                        && this.forced.squaredDistanceTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5) < 36) {
+                    lift.add(this.forced);
+                }
+                for (LivingEntity e : lift) {
                     e.requestTeleport(this.base.getX() + 0.5, top + 0.01, this.base.getZ() + 0.5);   // на середину столба
                     e.setVelocity(0, 0, 0);
                     e.velocityModified = true;

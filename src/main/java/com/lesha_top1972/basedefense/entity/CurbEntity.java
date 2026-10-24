@@ -94,6 +94,7 @@ public class CurbEntity extends AbstractCurbEntity {
     static final int PILLAR_HIT = 30;
     static final int PILLAR_COOLDOWN = 900;
     static final double PILLAR_RANGE = 8.0;
+    static final float PILLAR_HIT_CHANCE = 0.8f;
     /** «Шипы»: эффект на 12 т, 29 т (1.45 с); эффект 15 с. */
     public static final int GUARD_TICKS = 29;
     static final int GUARD_APPLY = 12;
@@ -109,7 +110,7 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double DIVE_HEIGHT = 8.0;
     static final double DIVE_FALL_SPEED = 1.6;
     static final double DIVE_RADIUS = 5.0;
-    static final float DIVE_DAMAGE = 12f;
+    static final float DIVE_DAMAGE = 14f;
     static final int DIVE_STUN_TICKS = 60;
     static final int DIVE_COOLDOWN = 360;
 
@@ -128,19 +129,19 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double YIELD_AXE_R = 6.0;
     static final double YIELD_FLURRY_REACH = 6.0;
     static final double YIELD_HAMMER_R = 9.0;
-    /** Урон по частям: 6 + 7 + 8×0.5 + 13 = 30. */
-    static final float YIELD_WAVE_DMG = 6f;
-    static final float YIELD_AXE_DMG = 7f;
-    static final float YIELD_FLURRY_DMG = 0.5f;
-    static final float YIELD_HAMMER_DMG = 13f;
+    /** Урон по частям (+2 к каждой части, шквал — +2 на все 8 ударов): 8 + 9 + 8×0.75 + 15 = 38. */
+    static final float YIELD_WAVE_DMG = 8f;
+    static final float YIELD_AXE_DMG = 9f;
+    static final float YIELD_FLURRY_DMG = 0.75f;
+    static final float YIELD_HAMMER_DMG = 15f;
     static final float YIELD_HEAL_PART = 0.2f;
     static final int MAX_CARTRIDGES = 99;
 
-    static final float COMBO_DAMAGE = 3f;
-    static final float JET_DAMAGE = 11f;
-    static final float SLAM_DAMAGE = 5f;
-    static final float STOMP_DAMAGE = 3f;
-    static final float SPIN_DAMAGE = 5f;
+    static final float COMBO_DAMAGE = 5f;
+    static final float JET_DAMAGE = 13f;
+    static final float SLAM_DAMAGE = 7f;
+    static final float STOMP_DAMAGE = 5f;
+    static final float SPIN_DAMAGE = 7f;
     static final float ARROW_FACTOR = 0.45f;
     static final int RETARGET_TICKS = 500;
 
@@ -631,7 +632,7 @@ public class CurbEntity extends AbstractCurbEntity {
     }
 
     /** Вырастить столб в точке ground; true — подняли того, в кого целились. */
-    boolean pillarErupt(BlockPos ground, LivingEntity target) {
+    boolean pillarErupt(BlockPos ground, LivingEntity target, boolean force) {
         if (!(this.getWorld() instanceof ServerWorld s) || ground == null) {
             return false;
         }
@@ -641,9 +642,12 @@ public class CurbEntity extends AbstractCurbEntity {
                 hitTarget = true;
             }
         }
+        if (force && target != null) {
+            hitTarget = true;
+        }
         CurbPillarEntity pillar = ModEntities.CURB_PILLAR.create(s);
         if (pillar != null) {
-            pillar.setup(ground);
+            pillar.setup(ground, force ? target : null);
             s.spawnEntity(pillar);
         }
         s.spawnParticles(ParticleTypes.EXPLOSION, ground.getX() + 0.5, ground.getY() + 1.2, ground.getZ() + 0.5, 1, 0, 0, 0, 0);
@@ -882,7 +886,19 @@ public class CurbEntity extends AbstractCurbEntity {
                         m.pillarMark(this.pillarAt, true);
                     }
                     if (t == PILLAR_HIT && this.pillarAt != null) {
-                        if (m.pillarErupt(this.pillarAt, target)) {
+                        // 80% — столб вырастает прямо под целью, где бы она ни была, и поднимает её;
+                        // 20% — промах: столб в отмеченном месте (поднимет, только если там стоять)
+                        BlockPos at = this.pillarAt;
+                        boolean force = false;
+                        if (target != null && m.random.nextFloat() < PILLAR_HIT_CHANCE
+                                && m.distanceTo(target) < PILLAR_RANGE + 4) {
+                            BlockPos under = m.groundUnder(target);
+                            if (under != null) {
+                                at = under;
+                                force = true;
+                            }
+                        }
+                        if (m.pillarErupt(at, target, force)) {
                             m.switchTarget(target);           // поднял цель столбом — за другим игроком
                         }
                     }
@@ -936,8 +952,26 @@ public class CurbEntity extends AbstractCurbEntity {
         private void runYield(LivingEntity target) {
             CurbEntity m = this.mob;
             int t = this.tick;
-            if (target != null && (t < 18 || (t > 32 && t < YIELD_JUMP) || (t >= YIELD_FLURRY - 4 && t < 84))) {
-                m.turnToward(target, 25f);
+            if (target != null && t < 100) {
+                m.turnToward(target, 30f);
+            }
+            // «Я не сдамся» не стоит на месте: скользит на струях во время оборота, прыгает на цель,
+            // наступает во время шквала и рывком влетает к цели перед двойным ударом
+            if (target != null) {
+                if (t >= 16 && t < YIELD_WAVE) {
+                    this.dashTo(target.getX(), target.getZ(), 0.45, 1.5);
+                } else if (t > YIELD_JUMP && t < YIELD_AXE && !m.isOnGround()) {
+                    double dx = target.getX() - m.getX();
+                    double dz = target.getZ() - m.getZ();
+                    double d = Math.sqrt(dx * dx + dz * dz);
+                    double sp = d > 1.0 ? Math.min(0.9, (d - 1.0) / Math.max(1, YIELD_AXE - t)) : 0.0;
+                    m.setVelocity(d > 0.01 ? dx / d * sp : 0, m.getVelocity().y, d > 0.01 ? dz / d * sp : 0);
+                    m.velocityModified = true;
+                } else if (t >= YIELD_FLURRY - 4 && t < 84) {
+                    this.dashTo(target.getX(), target.getZ(), 0.3, 2.2);
+                } else if (t >= 92 && t < YIELD_HAMMER) {
+                    this.dashTo(target.getX(), target.getZ(), 0.8, 1.2);
+                }
             }
             if (t == YIELD_LOAD) {
                 m.spendCartridge();
@@ -957,7 +991,8 @@ public class CurbEntity extends AbstractCurbEntity {
                 m.waveRing(1.5 + (t - YIELD_WAVE) * (YIELD_WAVE_R - 1.5) / 5.0, 20 + (t - YIELD_WAVE) * 6);
             }
             if (t == YIELD_JUMP) {
-                Vec3d f = m.forward().multiply(0.3);
+                double d = target != null ? Math.max(0, m.distanceTo(target) - 1.0) : 0;
+                Vec3d f = m.forward().multiply(Math.min(0.9, d / 15.0));
                 m.setVelocity(f.x, 0.62, f.z);
                 m.velocityModified = true;
                 m.sound(ModSounds.CURB_JET_BURST, 1.2f, 1.2f);
@@ -979,8 +1014,11 @@ public class CurbEntity extends AbstractCurbEntity {
                     m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 1.2f + k * 0.05f);
                 }
             }
-            if (t == 92) {
+            if (t == 88) {
                 m.sound(ModSounds.CURB_JET_CHARGE, 1.6f, 1.2f);
+            }
+            if (t == 92) {
+                m.sound(ModSounds.CURB_JET_BURST, 1.6f, 0.9f);
             }
             if (t == YIELD_HAMMER) {
                 this.hitIds.clear();
