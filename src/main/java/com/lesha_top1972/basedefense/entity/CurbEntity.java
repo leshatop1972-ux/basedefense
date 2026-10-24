@@ -212,7 +212,7 @@ public class CurbEntity extends AbstractCurbEntity {
     }
 
     @Override
-    protected float getSoundPitch() {
+    public float getSoundPitch() {
         return 0.8f + this.random.nextFloat() * 0.1f;
     }
 

@@ -146,7 +146,7 @@ public class CurbMinionEntity extends AbstractCurbEntity {
     }
 
     @Override
-    protected float getSoundPitch() {
+    public float getSoundPitch() {
         return 1.25f + this.random.nextFloat() * 0.1f;
     }
 
