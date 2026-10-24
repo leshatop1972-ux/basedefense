@@ -140,6 +140,24 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(1.0f, 1.4f))
                     .build());
 
+    /** Босс «Бордюр» (модель ×1.12). */
+    public static final EntityType<CurbEntity> CURB = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "curb"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, CurbEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.8f, 2.4f))
+                    .trackRangeBlocks(80)
+                    .build());
+
+    /** Прислужник Бордюра. */
+    public static final EntityType<CurbMinionEntity> CURB_MINION = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "curb_minion"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, CurbMinionEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 2.15f))
+                    .trackRangeBlocks(64)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -158,5 +176,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(BLOODTHIRSTER, BloodthirsterEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BLOODLING, BloodlingEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BLOOD_EGG, BloodEggEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(CURB, CurbEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(CURB_MINION, CurbMinionEntity.createAttributes());
     }
 }

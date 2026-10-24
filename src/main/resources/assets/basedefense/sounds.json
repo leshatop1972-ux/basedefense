@@ -1,0 +1,10 @@
+{
+  "entity.curb.jet_charge": {
+    "subtitle": "subtitles.basedefense.curb.jet_charge",
+    "sounds": [{"name": "basedefense:curb/jet_charge", "attenuation_distance": 24}]
+  },
+  "entity.curb.jet_burst": {
+    "subtitle": "subtitles.basedefense.curb.jet_burst",
+    "sounds": [{"name": "basedefense:curb/jet_burst", "attenuation_distance": 24}]
+  }
+}

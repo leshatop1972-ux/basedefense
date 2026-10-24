@@ -163,5 +163,11 @@
   "item.basedefense.blood_egg_spawn_egg": "Bloodthirster Egg Spawn Egg",
   "block.basedefense.blood_pool": "Blood Pool",
   "effect.basedefense.bleed": "Bleeding",
-  "death.attack.basedefense.bleed": "%1$s bled out"
+  "death.attack.basedefense.bleed": "%1$s bled out",
+  "entity.basedefense.curb": "Curb",
+  "item.basedefense.curb_spawn_egg": "Curb Spawn Egg",
+  "entity.basedefense.curb_minion": "Curb's Henchman",
+  "item.basedefense.curb_minion_spawn_egg": "Curb's Henchman Spawn Egg",
+  "subtitles.basedefense.curb.jet_charge": "Jet nozzle roars",
+  "subtitles.basedefense.curb.jet_burst": "Jet dash"
 }

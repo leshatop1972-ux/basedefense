@@ -70,6 +70,12 @@ public final class ModItems {
     public static final Item BLOOD_EGG_SPAWN_EGG = register("blood_egg_spawn_egg",
             new SpawnEggItem(ModEntities.BLOOD_EGG, 0x4C0614, 0xFF4838, new Item.Settings()));
 
+    public static final Item CURB_SPAWN_EGG = register("curb_spawn_egg",
+            new SpawnEggItem(ModEntities.CURB, 0x222228, 0xE88CDE, new Item.Settings()));
+
+    public static final Item CURB_MINION_SPAWN_EGG = register("curb_minion_spawn_egg",
+            new SpawnEggItem(ModEntities.CURB_MINION, 0x606466, 0x408CFF, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -95,6 +101,8 @@ public final class ModItems {
             entries.add(BLOODTHIRSTER_SPAWN_EGG);
             entries.add(BLOODLING_SPAWN_EGG);
             entries.add(BLOOD_EGG_SPAWN_EGG);
+            entries.add(CURB_SPAWN_EGG);
+            entries.add(CURB_MINION_SPAWN_EGG);
         });
     }
 }

@@ -106,7 +106,9 @@ public class TatteredLancerEntity extends HostileEntity {
     public static final int RAIN_STOP = 134;
     /** После ливня улан ещё 3 с висит в воздухе. */
     public static final int RAIN_HOVER_END = RAIN_STOP + 60;
-    public static final double RAIN_RADIUS = 13.0;
+    public static final double RAIN_RADIUS = 19.0;
+    /** Шанс наложить/настакать «Кровотёк» любым попаданием. */
+    public static final float BLEED_CHANCE = 0.04f;
     public static final double RAIN_HEIGHT = 6.0;
 
     public static final int DUELIST_TICKS = 600;
@@ -379,6 +381,9 @@ public class TatteredLancerEntity extends HostileEntity {
                 e.addVelocity(0, up, 0);
             }
             e.velocityModified = true;
+            if (this.random.nextFloat() < BLEED_CHANCE) {
+                ModEffects.addBleed(e, this);
+            }
             if (e.hasStatusEffect(ModEffects.DUELIST)) {
                 this.heal(1.0f);
             } else if (e instanceof PlayerEntity p && !this.duelistActive()) {

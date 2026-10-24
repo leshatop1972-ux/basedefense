@@ -3,6 +3,8 @@ package com.lesha_top1972.basedefense.client;
 import com.lesha_top1972.basedefense.client.entity.BloodEggRenderer;
 import com.lesha_top1972.basedefense.client.entity.BloodlingRenderer;
 import com.lesha_top1972.basedefense.client.entity.BloodthirsterRenderer;
+import com.lesha_top1972.basedefense.client.entity.CurbMinionRenderer;
+import com.lesha_top1972.basedefense.client.entity.CurbRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArcherRenderer;
 import com.lesha_top1972.basedefense.client.entity.FallingLanceRenderer;
 import com.lesha_top1972.basedefense.client.entity.FrostArrowRenderer;
@@ -73,6 +75,10 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.BLOODTHIRSTER, BloodthirsterRenderer::new);
         EntityRendererRegistry.register(ModEntities.BLOODLING, BloodlingRenderer::new);
         EntityRendererRegistry.register(ModEntities.BLOOD_EGG, BloodEggRenderer::new);
+        EntityModelLayerRegistry.registerModelLayer(CurbRenderer.LAYER, () -> BedrockModelLoader.load("curb"));
+        EntityModelLayerRegistry.registerModelLayer(CurbMinionRenderer.LAYER, () -> BedrockModelLoader.load("curb_minion"));
+        EntityRendererRegistry.register(ModEntities.CURB, CurbRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURB_MINION, CurbMinionRenderer::new);
         BloodPoolOverlay.init();       // кровавая лужа ранит — экран чуть краснеет
         DuelistOverlay.init();
         RatOverlay.init();

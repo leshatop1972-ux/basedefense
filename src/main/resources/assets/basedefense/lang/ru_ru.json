@@ -163,5 +163,11 @@
   "item.basedefense.blood_egg_spawn_egg": "Яйцо призыва яйца кровожада",
   "block.basedefense.blood_pool": "Кровавая лужа",
   "effect.basedefense.bleed": "Кровотёк",
-  "death.attack.basedefense.bleed": "%1$s истёк кровью"
+  "death.attack.basedefense.bleed": "%1$s истёк кровью",
+  "entity.basedefense.curb": "Бордюр",
+  "item.basedefense.curb_spawn_egg": "Яйцо призыва Бордюра",
+  "entity.basedefense.curb_minion": "Прислужник Бордюра",
+  "item.basedefense.curb_minion_spawn_egg": "Яйцо призыва прислужника Бордюра",
+  "subtitles.basedefense.curb.jet_charge": "Ревёт реактивное сопло",
+  "subtitles.basedefense.curb.jet_burst": "Реактивный рывок"
 }
