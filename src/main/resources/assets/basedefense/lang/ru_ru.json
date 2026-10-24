@@ -161,5 +161,7 @@
   "item.basedefense.bloodling_spawn_egg": "Яйцо призыва мелкого кровожада",
   "entity.basedefense.blood_egg": "Яйцо кровожада",
   "item.basedefense.blood_egg_spawn_egg": "Яйцо призыва яйца кровожада",
-  "block.basedefense.blood_pool": "Кровавая лужа"
+  "block.basedefense.blood_pool": "Кровавая лужа",
+  "effect.basedefense.bleed": "Кровотёк",
+  "death.attack.basedefense.bleed": "%1$s истёк кровью"
 }

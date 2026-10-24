@@ -161,5 +161,7 @@
   "item.basedefense.bloodling_spawn_egg": "Bloodling Spawn Egg",
   "entity.basedefense.blood_egg": "Bloodthirster Egg",
   "item.basedefense.blood_egg_spawn_egg": "Bloodthirster Egg Spawn Egg",
-  "block.basedefense.blood_pool": "Blood Pool"
+  "block.basedefense.blood_pool": "Blood Pool",
+  "effect.basedefense.bleed": "Bleeding",
+  "death.attack.basedefense.bleed": "%1$s bled out"
 }

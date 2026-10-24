@@ -596,6 +596,16 @@ SW = 1.45          # мечи в 1.45 раза крупнее модели (≈4
 SLOW = 1.2
 
 
+def warp(keys, segs):
+    """Замедлить отдельные участки (t0, t1, во сколько раз) — например, замахи: всё после участка сдвигается."""
+    def f(t):
+        out = t
+        for t0, t1, k in segs:
+            out += (k - 1) * max(0.0, min(t, t1) - t0)
+        return out
+    return [(f(t), d, e) for t, d, e in keys]
+
+
 def stretch(keys, k=SLOW):
     return [(t * k, d, e) for t, d, e in keys]
 
@@ -637,7 +647,7 @@ def lerp_key(name, a, b, t):
 # и «доводку» после удара — движения тяжелее и мягче, без деревянных одновременных поз.
 LAG = {"head": -0.04, "neck": -0.02,
        "rh": 0.06, "lh": 0.06, "r_pole": 0.06, "l_pole": 0.06, "rhand": 0.07, "lhand": 0.07,
-       "rcurl": 0.08, "lcurl": 0.08, "rdir": 0.10, "ldir": 0.10, "rroll": 0.10, "lroll": 0.10,
+       "rcurl": 0.08, "lcurl": 0.08, "rdir": 0.06, "ldir": 0.06, "rroll": 0.06, "lroll": 0.06,
        "ribbon": 0.18, "hair": 0.16, "jaw": 0.03}
 TAIL = 0.2          # анимации атак длиннее на столько, чтобы «догоняющие» части успели доехать
 
@@ -1192,8 +1202,13 @@ REAP = [
 ]
 
 
+# «Жатва» тяжелее: замахи ×1.6–1.7, сами удары ×1.3, удар сверху ×1.9 (не «щелчок», а обрушение)
+REAP_W = warp(REAP, [(0.0, 0.78, 1.7), (0.78, 1.20, 1.3), (1.20, 1.45, 1.6), (1.45, 1.85, 1.3),
+                     (1.85, 2.25, 1.6), (2.25, 2.45, 1.9), (2.45, 2.75, 1.3)])
+
+
 def slash(t):
-    return resolve(layered(REAP, t))
+    return resolve(layered(REAP_W, t))
 
 
 # «Пронзатель»: медленно сжимается, мечи у бёдер остриями вперёд, вес назад (0–0.85 с) —
@@ -1219,8 +1234,11 @@ THRUST = [
 ]
 
 
+THRUST_W = warp(THRUST, [(0.0, 0.88, 1.6), (0.88, 1.30, 1.3), (1.30, 1.55, 1.4)])
+
+
 def thrust(t):
-    return resolve(layered(THRUST, t))
+    return resolve(layered(THRUST_W, t))
 
 
 # «Зов выводка»: скрещённые мечи над головой, вопль, дрожь (из земли бьют фонтаны крови) —
@@ -1311,8 +1329,11 @@ EXEC_LAND = [
 ]
 
 
+EXEC_START_W = stretch(warp(EXEC_START, [(0.0, 0.6, 1.5)]))
+
+
 def exec_start(t):
-    return resolve(layered(stretch(EXEC_START), t))
+    return resolve(layered(EXEC_START_W, t))
 
 
 def exec_air(t):
@@ -1336,11 +1357,11 @@ animations = {
     "idle2": bake_clip(idle2, 3.0, 20, True, A_BONES),
     "walk2": bake_clip(walk2, 1.2, 20, True, A_BONES),
     "run2": bake_clip(run2, 0.7, 30, True, A_BONES),
-    "slash": bake_clip(slash, 3.4 + TAIL, 60, False, A_BONES),
-    "thrust": bake_clip(thrust, 2.5 + TAIL, 60, False, A_BONES),
+    "slash": bake_clip(slash, REAP_W[-1][0] + TAIL, 60, False, A_BONES),
+    "thrust": bake_clip(thrust, THRUST_W[-1][0] + TAIL, 60, False, A_BONES),
     "summon": bake_clip(summon, 2.6 * SLOW + TAIL, 60, False, A_BONES),
     "eggs": bake_clip(eggs, 2.8 * SLOW + TAIL, 60, False, A_BONES),
-    "exec_start": bake_clip(exec_start, 1.1, 60, False, A_BONES),
+    "exec_start": bake_clip(exec_start, EXEC_START_W[-1][0], 60, False, A_BONES),
     "exec_air": bake_clip(exec_air, 1.3, 60, False, A_BONES),
     "exec_land": bake_clip(exec_land, 2.2 * SLOW + TAIL, 60, False, A_BONES),
 }
@@ -1507,7 +1528,29 @@ def pool_texture():
     PT.img.save(os.path.join(ROOT, "textures", "block", "blood_pool.png"))
 
 
+def bleed_icon():
+    """Иконка эффекта «Кровотёк» 18×18: алая капля с бликом и брызгами."""
+    a = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
+    p = a.load()
+    for y in range(18):
+        for x in range(18):
+            dx = (x + 0.5 - 9) / 6.0
+            dy = (y + 0.5 - 11) / 6.0
+            top = y + 0.5 < 11 and abs(x + 0.5 - 9) < (y + 0.5 - 2) * 0.62
+            if dx * dx + dy * dy <= 1.0 or top:
+                edge = dx * dx + dy * dy > 0.7 and not top
+                col = BORDEAUX if edge else (SCARLET if (dx < -0.2 and dy < 0.2) else RED)
+                p[x, y] = col + (255,)
+    for x, y in ((7, 9), (6, 10), (6, 11), (7, 12)):
+        p[x, y] = SCARLET_L + (255,)
+    for x, y in ((2, 15), (15, 4), (16, 14), (3, 5)):
+        p[x, y] = RED + (255,)
+    os.makedirs(os.path.join(ROOT, "textures", "mob_effect"), exist_ok=True)
+    a.save(os.path.join(ROOT, "textures", "mob_effect", "bleed.png"))
+
+
 if __name__ == "__main__":
+    bleed_icon()
     M.write_geo(ROOT)
     write_anims(ROOT, NAME, animations)
     P1.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))

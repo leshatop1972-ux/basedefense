@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.entity;
 import com.lesha_top1972.basedefense.block.BloodPoolBlock;
 import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.combat.ShieldBlocker;
+import com.lesha_top1972.basedefense.effect.ModEffects;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -99,11 +100,11 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     public static final int TRANSFORM_TICKS = 60;
     /** На этом тике смены фазы появляются мечи и венец (и меняется облик). */
     public static final int TRANSFORM_SWITCH = 44;
-    public static final int SLASH_TICKS = 72;
-    public static final int THRUST_TICKS = 54;
+    public static final int SLASH_TICKS = 101;
+    public static final int THRUST_TICKS = 69;
     public static final int SUMMON_TICKS = 66;
     public static final int EGGS_TICKS = 71;
-    public static final int EXEC_WINDUP = 22;
+    public static final int EXEC_WINDUP = 29;
     public static final int EXEC_LAND_TICKS = 57;
 
     /** Урон (×1.25 к первой версии и ещё +1 каждой атаке). */
@@ -116,6 +117,8 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     static final float DMG_RIP = 8.5f;
     static final float DMG_EXEC = 21f;
     static final float DMG_EXEC_RIP = 11f;
+    /** Шанс наложить/усилить «Кровотёк» за попадание. */
+    static final float BLEED_CHANCE = 0.25f;
     /** Масштаб модели в рендере (и всех расстояний ударов). */
     public static final float MODEL_SCALE = 1.3f;
 
@@ -362,7 +365,21 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         if (multiHit) {
             e.timeUntilRegen = 0;
         }
+        float before = e.getHealth() + e.getAbsorptionAmount();
         if (e.damage(this.getDamageSources().mobAttack(this), damage)) {
+            // вампиризм: лечится ровно на столько, сколько здоровья потеряла цель (после брони и щита)
+            float dealt = before - (e.getHealth() + e.getAbsorptionAmount());
+            if (dealt > 0) {
+                this.heal(dealt);
+                if (this.getWorld() instanceof ServerWorld s) {
+                    s.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, this.getX(), this.getBodyY(0.7), this.getZ(),
+                            Math.max(1, (int) dealt), 0.5, 0.6, 0.5, 0.05);
+                }
+                // кровотёк: 25% за попадание, повторное — +1 уровень (до IV) и снова 7 с
+                if (this.random.nextFloat() < BLEED_CHANCE) {
+                    ModEffects.addBleed(e, this);
+                }
+            }
             boolean shielded = e instanceof ShieldBlocker sb && sb.basedefense$blockedThisTick();
             if (!shielded) {
                 if (knock > 0) {
@@ -1064,61 +1081,66 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case SLASH -> {
-                    // «Жатва»: правый меч справа налево (19–26), левый снизу вверх слева направо (32–39),
-                    // оба меча сверху в землю (50)
-                    if (target != null && (t < 16 || (t > 27 && t < 31) || (t > 40 && t < 47))) {
+                    // «Жатва»: долгий замах правым мечом (0–28), разрез справа налево (29–38);
+                    // левый меч заводится назад‑вниз (39–47) и рассекает снизу вверх (48–57);
+                    // оба меча медленно поднимаются над головой (58–70) и обрушиваются в землю (77)
+                    if (target != null && (t < 26 || (t > 38 && t < 46) || (t > 58 && t < 70))) {
                         b.faceTarget(target);
                     }
-                    if (t == 8) {
-                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 0.8f, 1.2f);
+                    if (t == 12) {
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 0.9f, 1.1f);
                     }
-                    if (t == 19 || t == 32) {
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, t == 19 ? 0.5f : 0.6f);
+                    if (t == 29 || t == 48) {
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, t == 29 ? 0.45f : 0.55f);
                     }
-                    if (t == 22) {
-                        b.bloodArc(-90, 70, 4.2, 1.8, 16);
-                        this.hitIds.clear();
+                    if (t == 33) {
+                        b.bloodArc(-100, 70, 4.4, 1.8, 18);
                     }
-                    this.sweep(t, 19, 26, -105, 80, 6.0, DMG_REAP, 0.9, 0.15);
-                    if (t == 30) {
-                        this.hitIds.clear();
-                    }
-                    this.sweep(t, 32, 39, 130, -70, 5.6, DMG_REAP, 0.8, 0.45);
-                    if (t == 35) {
-                        b.bloodArc(110, -60, 3.8, 2.6, 14);
-                    }
+                    this.sweep(t, 29, 38, -118, 72, 6.2, DMG_REAP, 1.0, 0.15);
                     if (t == 44) {
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, 0.4f);
+                        this.hitIds.clear();
                     }
-                    if (t == 50) {
-                        b.coneHit(6.4, 32, DMG_REAP_SLAM, 1.2, 0.6, true);
-                        b.crackLine(2.5, 5.5);
-                        b.groundDust(4.0, 1.2, 34);
-                        b.bloodAhead(4.2, 0.5, 26, 1.0);
-                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f, 0.55f);
-                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.3f, 0.6f);
+                    this.sweep(t, 48, 57, 130, -70, 5.8, DMG_REAP, 0.8, 0.5);
+                    if (t == 52) {
+                        b.bloodArc(120, -60, 4.0, 2.6, 16);
+                    }
+                    if (t == 62) {
+                        b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 0.8f, 1.4f);
+                    }
+                    if (t == 72) {
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.35f);
+                    }
+                    if (t == 77) {
+                        b.coneHit(6.6, 32, DMG_REAP_SLAM, 1.3, 0.65, true);
+                        b.crackLine(2.5, 6.0);
+                        b.groundDust(4.2, 1.4, 40);
+                        b.geyserRing(2.6);
+                        b.bloodAhead(4.4, 0.5, 30, 1.1);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f, 0.5f);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ATTACK, 1.4f, 0.55f);
                     }
                     if (t >= SLASH_TICKS) {
-                        this.finish(60);
+                        this.finish(55);
                     }
                 }
                 case THRUST -> {
-                    // «Пронзатель»: сжимается 0–17, длинный выпад‑рывок 18–26 (укол), вспарывающий взмах вверх на 33
-                    if (target != null && t < 18) {
+                    // «Пронзатель»: долго сжимается 0–28, выпад‑рывок 29–39 (укол), вспарывающий взмах вверх на 47
+                    if (target != null && t < 28) {
                         b.faceTarget(target);
                     }
-                    if (t == 9) {
-                        b.sound(SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 1.0f, 0.45f);
+                    if (t == 14) {
+                        b.sound(SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 1.0f, 0.4f);
                     }
-                    if (t == 18) {
+                    if (t == 29) {
                         this.dashDir = b.forward();
                         b.groundDust(-0.5, 0.8, 24);
+                        b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 0.9f, 1.2f);
                     }
-                    if (t >= 18 && t < 27) {
-                        this.dash(t < 24 ? 0.85 : 0.5);
+                    if (t >= 29 && t < 40) {
+                        this.dash(t < 36 ? 0.75 : 0.45);
                         for (LivingEntity e : b.victims(5.0)) {
                             double[] r = b.rel(e);
-                            if (r[1] <= 5.2 && Math.abs(r[0]) <= 16 + r[2] && b.heightOk(e, 5.0)
+                            if (r[1] <= 5.4 && Math.abs(r[0]) <= 16 + r[2] && b.heightOk(e, 5.0)
                                     && this.hitIds.add(e.getId())) {
                                 b.strike(e, DMG_THRUST, 0.6, 0.15, false);
                                 b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.55f);
@@ -1127,20 +1149,20 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         if (t % 2 == 0) {
                             b.bloodAhead(4.5, 1.6, 4, 0.3);
                         }
-                        if (b.horizontalCollision && t > 19) {
-                            this.tick = 27;
+                        if (b.horizontalCollision && t > 30) {
+                            this.tick = 40;
                         }
                     }
-                    if (t >= 27 && t < 33) {
+                    if (t >= 40 && t < 47) {
                         this.brake();
                     }
-                    if (t == 33) {
-                        b.coneHit(5.6, 40, DMG_RIP, 0.5, 0.8, true);
-                        b.bloodArc(-30, 30, 3.0, 3.2, 10);
-                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.8f);
+                    if (t == 47) {
+                        b.coneHit(5.8, 40, DMG_RIP, 0.5, 0.85, true);
+                        b.bloodArc(-30, 30, 3.0, 3.4, 12);
+                        b.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.3f, 0.7f);
                     }
                     if (t >= THRUST_TICKS) {
-                        this.finish(60);
+                        this.finish(55);
                     }
                 }
                 case SUMMON -> {
@@ -1201,14 +1223,14 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                     }
                 }
                 case EXEC -> {
-                    // присед с мечами‑крыльями (следит до 17), взмывает на 22, обрушивается в точку цели
-                    if (t < 17 && target != null) {
+                    // долгий присед с мечами‑крыльями (следит до 23), взмывает на 29, обрушивается в точку цели
+                    if (t < 23 && target != null) {
                         b.faceTarget(target);
                     }
                     if (t == 5) {
                         b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.0f, 1.5f);
                     }
-                    if (t == 17) {
+                    if (t == 23) {
                         this.aim = target != null ? target.getPos() : b.getPos().add(b.forward().multiply(6));
                     }
                     if (t == EXEC_WINDUP) {

@@ -1,6 +1,8 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.effect.ModEffects;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
@@ -54,6 +56,10 @@ public class BloodlingEntity extends HostileEntity implements BloodKin {
         boolean hit = super.tryAttack(target);
         if (hit) {
             BloodFx.splash(this.getWorld(), target.getX(), target.getBodyY(0.6), target.getZ(), 6, 0.25);
+            // кровотёк: 15% за попадание (повторное поднимает уровень, как у босса)
+            if (target instanceof LivingEntity living && this.random.nextFloat() < 0.15f) {
+                ModEffects.addBleed(living, this);
+            }
         }
         return hit;
     }
