@@ -105,6 +105,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.NABAT_FALLING_BELL, NabatFallingBellRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_SOUL, NabatSoulRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_QUAKE, EmptyEntityRenderer::new);
+        com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)
         SpikesOverlay.init();          // «Шипы»: вспышка осколков, когда шипы ранили игрока

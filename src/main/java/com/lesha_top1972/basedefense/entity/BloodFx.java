@@ -25,8 +25,7 @@ public final class BloodFx {
         if (!(world instanceof ServerWorld s) || count <= 0) {
             return;
         }
-        s.spawnParticles(DROPS, x, y, z, count, spread, spread * 0.6, spread, 0.2);
-        s.spawnParticles(CLOTS, x, y, z, Math.max(1, count / 3), spread, spread * 0.5, spread, 0.15);
-        s.spawnParticles(MIST, x, y, z, Math.max(1, count / 2), spread, spread * 0.6, spread, 0.0);
+        // одним пакетом: капли, сгустки и взвесь рисует клиент (FxClient.blood)
+        com.lesha_top1972.basedefense.fx.Fx.blood(s, new net.minecraft.util.math.Vec3d(x, y, z), count, spread);
     }
 }

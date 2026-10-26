@@ -613,18 +613,8 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
-        float yaw = this.getYaw() * MathHelper.RADIANS_PER_DEGREE;
-        for (int i = 0; i <= steps; i++) {
-            double a = Math.toRadians(a0 + (a1 - a0) * i / steps);
-            double fx = -Math.sin(yaw - a);
-            double fz = Math.cos(yaw - a);
-            double x = this.getX() + fx * r;
-            double z = this.getZ() + fz * r;
-            BloodFx.splash(s, x, this.getY() + y, z, 4, 0.2);
-            if (i % 2 == 0) {
-                s.spawnParticles(ParticleTypes.SWEEP_ATTACK, x, this.getY() + y, z, 1, 0, 0, 0, 0);
-            }
-        }
+        com.lesha_top1972.basedefense.fx.Fx.arc(s, this.getPos(), this.getYaw(), a0, a1, r, y, steps,
+                com.lesha_top1972.basedefense.fx.Fx.F_BLOOD | com.lesha_top1972.basedefense.fx.Fx.F_SWEEP);
     }
 
     /** Трещина по земле вперёд от точки d на длину len (пыль блоков + кровь). */
@@ -633,15 +623,11 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             return;
         }
         Vec3d f = this.forward();
-        for (double k = d; k <= d + len; k += 0.6) {
-            Vec3d p = this.getPos().add(f.multiply(k));
-            BlockState ground = this.getWorld().getBlockState(BlockPos.ofFloored(p.x, this.getY() - 0.5, p.z));
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), p.x, this.getY() + 0.1, p.z,
-                        8, 0.3, 0.1, 0.3, 0.25);
-            }
-            BloodFx.splash(s, p.x, this.getY() + 0.2, p.z, 3, 0.25);
-        }
+        Vec3d a = this.getPos().add(f.multiply(d)).add(0, 0.2, 0);
+        Vec3d b = this.getPos().add(f.multiply(d + len)).add(0, 0.2, 0);
+        com.lesha_top1972.basedefense.fx.Fx.line(s, a, b, (int) (len / 0.6) + 1, 0,
+                com.lesha_top1972.basedefense.fx.Fx.groundId(s, this.getPos()),
+                com.lesha_top1972.basedefense.fx.Fx.F_BLOCK | com.lesha_top1972.basedefense.fx.Fx.F_BLOOD);
     }
 
     /** Кольцо кровавых гейзеров вокруг себя (радиусы 1.5..r). */
@@ -649,15 +635,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
-        for (double rr = 1.5; rr <= r; rr += 1.5) {
-            int n = (int) (rr * 4);
-            for (int i = 0; i < n; i++) {
-                double a = i * Math.PI * 2 / n + rr;
-                double x = this.getX() + Math.cos(a) * rr;
-                double z = this.getZ() + Math.sin(a) * rr;
-                BloodFx.splash(s, x, this.getY() + 0.4 + rr * 0.15, z, 6, 0.2);
-            }
-        }
+        com.lesha_top1972.basedefense.fx.Fx.geyserRing(s, this.getPos(), r);
         s.spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY() + 0.5, this.getZ(), 2, 0.6, 0.1, 0.6, 0);
     }
 

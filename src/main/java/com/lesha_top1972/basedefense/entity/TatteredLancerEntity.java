@@ -503,16 +503,8 @@ public class TatteredLancerEntity extends HostileEntity {
         }
         BlockState ground = this.getWorld().getBlockState(this.getBlockPos().down());
         s.spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY() + 0.2, this.getZ(), 1, 0, 0, 0, 0);
-        for (int i = 0; i < 24; i++) {
-            double a = i / 24.0 * Math.PI * 2;
-            double x = this.getX() + Math.cos(a) * radius;
-            double z = this.getZ() + Math.sin(a) * radius;
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, this.getY() + 0.1, z, 4,
-                        0.2, 0.1, 0.2, 0.15);
-            }
-            s.spawnParticles(ParticleTypes.CLOUD, x, this.getY() + 0.2, z, 1, 0, 0.05, 0, 0.02);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos(), radius, 24, 0,
+                com.lesha_top1972.basedefense.fx.Fx.F_BLOCK | com.lesha_top1972.basedefense.fx.Fx.F_CLOUD);
     }
 
     void sweepParticles() {
@@ -520,11 +512,8 @@ public class TatteredLancerEntity extends HostileEntity {
         if (s == null) {
             return;
         }
-        for (int i = 0; i < 10; i++) {
-            double a = i / 10.0 * Math.PI * 2;
-            s.spawnParticles(ParticleTypes.SWEEP_ATTACK, this.getX() + Math.cos(a) * 2.6, this.getY() + 1.1,
-                    this.getZ() + Math.sin(a) * 2.6, 1, 0, 0, 0, 0);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos().add(0, 1.1, 0), 2.6, 10, 0,
+                com.lesha_top1972.basedefense.fx.Fx.F_SWEEP);
     }
 
     void shockwaveParticles(double length) {
@@ -534,16 +523,10 @@ public class TatteredLancerEntity extends HostileEntity {
         }
         Vec3d f = this.forward();
         BlockState ground = this.getWorld().getBlockState(this.getBlockPos().down());
-        for (double d = 1.0; d <= length; d += 0.75) {
-            double x = this.getX() + f.x * d;
-            double z = this.getZ() + f.z * d;
-            s.spawnParticles(ParticleTypes.SWEEP_ATTACK, x, this.getY() + 1.0, z, 1, 0, 0, 0, 0);
-            s.spawnParticles(ParticleTypes.CRIT, x, this.getY() + 1.0, z, 4, 0.3, 0.3, 0.3, 0.2);
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, this.getY() + 0.1, z, 6,
-                        0.4, 0.1, 0.4, 0.2);
-            }
-        }
+        com.lesha_top1972.basedefense.fx.Fx.line(s, this.getPos().add(f.multiply(1.0)).add(0, 1.0, 0),
+                this.getPos().add(f.multiply(length)).add(0, 1.0, 0), (int) ((length - 1.0) / 0.75) + 1, 0,
+                com.lesha_top1972.basedefense.fx.Fx.blockId(ground), com.lesha_top1972.basedefense.fx.Fx.F_SWEEP
+                        | com.lesha_top1972.basedefense.fx.Fx.F_CRIT | com.lesha_top1972.basedefense.fx.Fx.F_BLOCK);
         s.spawnParticles(ParticleTypes.EXPLOSION, this.getX() + f.x * 1.5, this.getY() + 1.0, this.getZ() + f.z * 1.5,
                 1, 0, 0, 0, 0);
     }

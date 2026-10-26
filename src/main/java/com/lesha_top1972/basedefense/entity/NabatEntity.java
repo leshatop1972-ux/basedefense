@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.entity;
 
 import com.lesha_top1972.basedefense.effect.BossEffectsSync;
 import com.lesha_top1972.basedefense.effect.ModEffects;
+import com.lesha_top1972.basedefense.fx.Fx;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -205,6 +206,9 @@ public class NabatEntity extends HostileEntity {
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.72f, 0.3f), 1.2f);
     private static final DustParticleEffect AMBER_S = new DustParticleEffect(new Vector3f(1.0f, 0.8f, 0.45f), 0.7f);
     private static final DustParticleEffect TEAL = new DustParticleEffect(new Vector3f(0.3f, 0.95f, 0.9f), 1.2f);
+    static final int AMBER_C = Fx.dust(0xFFB84C, 1.2f);
+    static final int AMBER_S_C = Fx.dust(0xFFCC73, 0.7f);
+    static final int TEAL_C = Fx.dust(0x4DF2E6, 1.2f);
     private static final DustParticleEffect TRAIL = new DustParticleEffect(new Vector3f(1.0f, 0.78f, 0.42f), 0.8f);
 
     private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.WHITE,
@@ -467,24 +471,8 @@ public class NabatEntity extends HostileEntity {
     /** Кольцо пыли и янтарных искр на земле. */
     void groundRing(Vec3d c, double r, int pts, boolean amber) {
         ServerWorld s = this.sw();
-        if (s == null) {
-            return;
-        }
-        BlockState ground = s.getBlockState(BlockPos.ofFloored(c.x, c.y - 0.5, c.z));
-        for (int i = 0; i < pts; i++) {
-            double a = i / (double) pts * Math.PI * 2;
-            double x = c.x + Math.cos(a) * r;
-            double z = c.z + Math.sin(a) * r;
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, c.y + 0.1, z, 2, 0.15, 0.05,
-                        0.15, 0.12);
-            }
-            if (i % 2 == 0) {
-                s.spawnParticles(ParticleTypes.CLOUD, x, c.y + 0.15, z, 1, 0, 0.03, 0, 0.03);
-            }
-            if (amber && i % 3 == 0) {
-                s.spawnParticles(AMBER_S, x, c.y + 0.3, z, 1, 0, 0.05, 0, 0.0);
-            }
+        if (s != null) {
+            Fx.ring(s, c, r, pts, AMBER_S_C, Fx.F_BLOCK | Fx.F_CLOUD | (amber ? Fx.F_DUST : 0));
         }
     }
 
@@ -1287,10 +1275,7 @@ public class NabatEntity extends HostileEntity {
 
     /** Янтарное кольцо‑метка на земле (куда придётся удар). */
     private void markRing(ServerWorld s, Vec3d c, double r, int pts) {
-        for (int i = 0; i < pts; i++) {
-            double a = i / (double) pts * Math.PI * 2 + this.age * 0.05;
-            s.spawnParticles(AMBER_S, c.x + Math.cos(a) * r, c.y + 0.15, c.z + Math.sin(a) * r, 1, 0, 0.02, 0, 0);
-        }
+        Fx.ring(s, c, r, pts, AMBER_S_C, Fx.F_DUST);
     }
 
     /** Ударная волна по земле: кольцо от r0 до r1, задевает стоящих на земле (прыжок спасает). */
@@ -1306,31 +1291,13 @@ public class NabatEntity extends HostileEntity {
                 }
             }
         }
-        BlockState ground = s.getBlockState(BlockPos.ofFloored(c.x, c.y - 0.5, c.z));
-        int pts = (int) Math.max(12, r1 * 5);
-        for (int i = 0; i < pts; i++) {
-            double a = i / (double) pts * Math.PI * 2;
-            double x = c.x + Math.cos(a) * r1;
-            double z = c.z + Math.sin(a) * r1;
-            if (!ground.isAir() && i % 2 == 0) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, c.y + 0.1, z, 1, 0.1, 0.05, 0.1, 0.1);
-            }
-            if (i % 3 == 0) {
-                s.spawnParticles(AMBER_S, x, c.y + 0.25, z, 1, 0, 0.04, 0, 0);
-            }
-        }
+        Fx.ring(s, c, r1, (int) Math.max(12, r1 * 5), AMBER_S_C, Fx.F_BLOCK | Fx.F_DUST);
     }
 
     /** Выброс из земли (луч «Обвала»): камни, янтарный жар, подбрасывает. */
     private void eruption(ServerWorld s, Vec3d p, boolean loud) {
-        BlockState ground = s.getBlockState(BlockPos.ofFloored(p.x, p.y - 0.5, p.z));
-        if (!ground.isAir()) {
-            s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), p.x, p.y + 0.2, p.z, 7, 0.3, 0.2, 0.3, 0.25);
-        }
-        s.spawnParticles(AMBER, p.x, p.y + 0.4, p.z, 3, 0.2, 0.5, 0.2, 0.06);
-        s.spawnParticles(ParticleTypes.FLAME, p.x, p.y + 0.3, p.z, 2, 0.15, 0.3, 0.15, 0.04);
+        Fx.eruption(s, p, AMBER_C, loud);
         if (loud) {
-            s.spawnParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y + 0.5, p.z, 2, 0.2, 0.3, 0.2, 0.02);
             s.playSound(null, p.x, p.y, p.z, net.minecraft.sound.SoundEvents.BLOCK_BASALT_BREAK, SoundCategory.HOSTILE, 1.2f,
                     0.6f + this.random.nextFloat() * 0.2f);
         }
@@ -1869,14 +1836,7 @@ public class NabatEntity extends HostileEntity {
 
     /** Столб дыма из кадила: от неба к точке призыва. */
     private void smokeColumn(ServerWorld s, Vec3d p) {
-        for (int i = 0; i < 10; i++) {
-            double y = p.y + i * 0.7;
-            s.spawnParticles(ParticleTypes.LARGE_SMOKE, p.x, y, p.z, 1, 0.12, 0.2, 0.12, 0.005);
-            if (i % 2 == 0) {
-                s.spawnParticles(AMBER_S, p.x, y, p.z, 1, 0.2, 0.2, 0.2, 0.0);
-            }
-        }
-        s.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, p.x, p.y + 0.2, p.z, 3, 0.3, 0.05, 0.3, 0.01);
+        Fx.column(s, p, 7.0, AMBER_S_C);
     }
 
     private <T extends LivingEntity> T tagged(T e) {
@@ -2139,12 +2099,7 @@ public class NabatEntity extends HostileEntity {
             this.syncEffects();
         } else if (this.age % 10 == 0) {
             // бирюзовая нить от улана к куполу — видно, кто его держит
-            Vec3d a = lancer.getPos().add(0, 1.6, 0);
-            Vec3d b = this.getPos().add(0, 3.0, 0);
-            for (int i = 1; i < 8; i++) {
-                Vec3d p = a.lerp(b, i / 8.0);
-                s.spawnParticles(TEAL, p.x, p.y, p.z, 1, 0.05, 0.05, 0.05, 0);
-            }
+            Fx.line(s, lancer.getPos().add(0, 1.6, 0), this.getPos().add(0, 3.0, 0), 8, TEAL_C, 0, Fx.F_DUST);
         }
     }
 

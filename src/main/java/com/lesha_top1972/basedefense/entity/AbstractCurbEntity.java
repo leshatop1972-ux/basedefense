@@ -405,17 +405,8 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         if (s == null) {
             return;
         }
-        BlockState ground = this.getWorld().getBlockState(BlockPos.ofFloored(c.x, c.y - 0.5, c.z));
-        for (int i = 0; i < points; i++) {
-            double a = i / (double) points * Math.PI * 2;
-            double x = c.x + Math.cos(a) * radius;
-            double z = c.z + Math.sin(a) * radius;
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, c.y + 0.1, z, 3,
-                        0.15, 0.05, 0.15, 0.12);
-            }
-            s.spawnParticles(ParticleTypes.CLOUD, x, c.y + 0.15, z, 1, 0, 0.03, 0, 0.02);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, c, radius, points, 0,
+                com.lesha_top1972.basedefense.fx.Fx.F_BLOCK | com.lesha_top1972.basedefense.fx.Fx.F_CLOUD);
     }
 
     /** Безопасно ли отскочить на dist блоков в направлении dir (есть опора, нет стены, лавы и воды). */

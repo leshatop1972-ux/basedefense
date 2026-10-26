@@ -412,15 +412,8 @@ public class CurbEntity extends AbstractCurbEntity {
         if (s == null) {
             return;
         }
-        for (int i = 0; i < points; i++) {
-            double a = i / (double) points * Math.PI * 2;
-            double x = this.getX() + Math.cos(a) * r;
-            double z = this.getZ() + Math.sin(a) * r;
-            s.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, x, this.getY() + 0.3, z, 1, 0, 0.05, 0, 0.01);
-            if (i % 3 == 0) {
-                s.spawnParticles(ParticleTypes.CLOUD, x, this.getY() + 0.2, z, 1, 0, 0.02, 0, 0.02);
-            }
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos(), r, points, 0,
+                com.lesha_top1972.basedefense.fx.Fx.F_SOUL | com.lesha_top1972.basedefense.fx.Fx.F_CLOUD);
     }
 
     /** Трещины по земле лучами во все стороны. */
@@ -433,13 +426,7 @@ public class CurbEntity extends AbstractCurbEntity {
         if (g.isAir()) {
             return;
         }
-        for (int k = 0; k < rays; k++) {
-            double a = k * Math.PI * 2 / rays + this.random.nextDouble() * 0.3;
-            for (double d = 0.8; d <= length; d += 0.6) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, g), this.getX() + Math.cos(a) * d,
-                        this.getY() + 0.1, this.getZ() + Math.sin(a) * d, 3, 0.1, 0.05, 0.1, 0.1);
-            }
-        }
+        com.lesha_top1972.basedefense.fx.Fx.rays(s, this.getPos(), length, rays, this.random.nextDouble() * 0.3, 0.6);
     }
 
     void yieldLoadFx() {
@@ -620,10 +607,9 @@ public class CurbEntity extends AbstractCurbEntity {
         double cz = ground.getZ() + 0.5;
         int n = locked ? 14 : 8;
         double off = this.age * 0.2;
-        for (int i = 0; i < n; i++) {
-            double a = off + i * Math.PI * 2 / n;
-            s.spawnParticles(MARK_DUST, cx + Math.cos(a) * 0.9, cy, cz + Math.sin(a) * 0.9, 1, 0, 0, 0, 0);
-        }
+        // кольцо метки (вращение — смещением первой точки не передаём: кольцо мелкое, глазу незаметно)
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, new Vec3d(cx, cy - 0.25, cz), 0.9, n,
+                com.lesha_top1972.basedefense.fx.Fx.dust(0xCCEBFF, 1.0f), com.lesha_top1972.basedefense.fx.Fx.F_DUST);
         BlockState g = this.getWorld().getBlockState(ground);
         if (!g.isAir()) {
             s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, g), cx, cy, cz, locked ? 6 : 2,

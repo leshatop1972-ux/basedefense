@@ -169,12 +169,8 @@ public class NabatSpearEntity extends Entity {
         }
         s.spawnParticles(ParticleTypes.END_ROD, this.getX(), this.getY() + 0.3, this.getZ(), this.isBig() ? 18 : 8,
                 0.2, 0.2, 0.2, this.isBig() ? 0.2 : 0.12);
-        int pts = this.isBig() ? 20 : 10;
-        for (int i = 0; i < pts; i++) {
-            double a = i / (double) pts * Math.PI * 2;
-            s.spawnParticles(AMBER, this.getX() + Math.cos(a) * r, this.getY() + 0.15, this.getZ() + Math.sin(a) * r,
-                    1, 0, 0.03, 0, 0);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos().add(0, -0.1, 0), r, this.isBig() ? 20 : 10,
+                com.lesha_top1972.basedefense.fx.Fx.dust(0xFFC759, 1.1f), com.lesha_top1972.basedefense.fx.Fx.F_DUST);
         if (this.isBig() || this.random.nextInt(3) == 0) {
             s.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ITEM_TRIDENT_HIT_GROUND,
                     SoundCategory.HOSTILE, this.isBig() ? 1.6f : 0.9f, this.isBig() ? 0.6f : 0.9f + this.random.nextFloat() * 0.3f);

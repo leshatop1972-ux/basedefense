@@ -100,17 +100,8 @@ public class NabatBellEntity extends MobEntity {
             return;
         }
         s.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.NABAT_BELL_LAND, SoundCategory.HOSTILE, 2.2f, 1.0f);
-        BlockState ground = s.getBlockState(BlockPos.ofFloored(this.getX(), this.getY() - 0.5, this.getZ()));
-        for (int i = 0; i < 18; i++) {
-            double a = i / 18.0 * Math.PI * 2;
-            double x = this.getX() + Math.cos(a) * 1.3;
-            double z = this.getZ() + Math.sin(a) * 1.3;
-            if (!ground.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, ground), x, this.getY() + 0.1, z, 2,
-                        0.1, 0.05, 0.1, 0.1);
-            }
-            s.spawnParticles(ParticleTypes.CLOUD, x, this.getY() + 0.15, z, 1, 0, 0.02, 0, 0.03);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos(), 1.3, 18, 0,
+                com.lesha_top1972.basedefense.fx.Fx.F_BLOCK | com.lesha_top1972.basedefense.fx.Fx.F_CLOUD);
         s.spawnParticles(AMBER, this.getX(), this.getY() + 1.0, this.getZ(), 16, 0.5, 0.6, 0.5, 0.02);
         LivingEntity src = this.owner != null ? this.owner : this;
         for (LivingEntity e : s.getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(LAND_RADIUS + 0.5, 1.5,
@@ -132,11 +123,8 @@ public class NabatBellEntity extends MobEntity {
             s.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.NABAT_BELL_HUM, SoundCategory.HOSTILE, 0.8f,
                     0.9f + this.random.nextFloat() * 0.15f);
         }
-        for (int i = 0; i < 24; i++) {
-            double a = i / 24.0 * Math.PI * 2;
-            s.spawnParticles(AMBER, this.getX() + Math.cos(a) * 1.6, this.getY() + 0.2, this.getZ() + Math.sin(a) * 1.6, 1,
-                    0, 0, 0, 0);
-        }
+        com.lesha_top1972.basedefense.fx.Fx.ring(s, this.getPos().add(0, -0.05, 0), 1.6, 24,
+                com.lesha_top1972.basedefense.fx.Fx.dust(0xFFB34D, 1.0f), com.lesha_top1972.basedefense.fx.Fx.F_DUST);
         Box box = this.getBoundingBox().expand(HUM_RADIUS);
         for (LivingEntity e : s.getEntitiesByClass(LivingEntity.class, box, e -> e.isAlive() && NabatHooks.isKin(e)
                 && !(e instanceof NabatEntity) && !(e instanceof NabatBellEntity))) {

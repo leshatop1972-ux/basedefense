@@ -133,6 +133,7 @@ public class NabatQuakeEntity extends Entity {
         // пыль и выбитые блоки по фронту волны
         int pts = (int) Math.max(12, r1 * 6);
         boolean grief = this.griefing(s);
+        com.lesha_top1972.basedefense.fx.Fx.quakeFront(s, this.getPos(), r1);      // пыль фронта — на клиенте
         for (int i = 0; i < pts; i++) {
             double a = (i + this.random.nextDouble() * 0.5) / pts * Math.PI * 2;
             int x = (int) Math.floor(cx + Math.cos(a) * r1);
@@ -143,13 +144,6 @@ public class NabatQuakeEntity extends Entity {
             }
             BlockPos p = new BlockPos(x, top, z);
             BlockState st = s.getBlockState(p);
-            if (!st.isAir()) {
-                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, st), x + 0.5, top + 1.1, z + 0.5, 3,
-                        0.3, 0.1, 0.3, 0.15);
-            }
-            if (i % 3 == 0) {
-                s.spawnParticles(ParticleTypes.CLOUD, x + 0.5, top + 1.2, z + 0.5, 1, 0.1, 0.05, 0.1, 0.03);
-            }
             if (grief && this.random.nextFloat() < 0.10f && natural(s, p, st) && !this.broken.containsKey(p.asLong())) {
                 this.broken.put(p.asLong(), st);
                 s.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
