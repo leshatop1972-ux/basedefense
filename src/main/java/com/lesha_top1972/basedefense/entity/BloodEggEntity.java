@@ -31,6 +31,11 @@ public class BloodEggEntity extends MobEntity implements BloodKin {
     /** Сколько тиков живёт яйцо (сохраняется в NBT). */
     private int life;
 
+    /** Ускорить вылупление (Набат: «Звон» −10 с, яйца «Кладки» вылупляются за 40 с). */
+    public void addLife(int ticks) {
+        this.life = Math.min(HATCH_TICKS - 1, this.life + ticks);
+    }
+
     public BloodEggEntity(EntityType<? extends MobEntity> type, World world) {
         super(type, world);
         this.setPersistent();

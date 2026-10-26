@@ -9,6 +9,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.BlockStateParticleEffect;
@@ -58,6 +59,26 @@ public final class ModEffects {
     /** Картридж (только у Бордюра): уровень = число картриджей для атаки «Я не сдамся». */
     public static final StatusEffect CARTRIDGE = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "cartridge"), new CartridgeEffect());
+
+    // --- Набат ---
+    /** Шум (игрок): уровень I–V — сколько урона он недавно нанёс Набату и его слугам; Набат бьёт самого шумного. */
+    public static final StatusEffect NOISE = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "noise"), new MarkerEffect(StatusEffectCategory.NEUTRAL, 0xE8A23C));
+    /** Купол (Набат): уровень = число живых колоколов‑опор; пока есть — урон по нему ×0.2. */
+    public static final StatusEffect DOME = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "dome"), new MarkerEffect(StatusEffectCategory.BENEFICIAL, 0xF2C46A));
+    /** Реквием (Набат): уровень = стаки душ; после падения он звонит и лечится на 1% за стак. */
+    public static final StatusEffect REQUIEM = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "requiem"), new MarkerEffect(StatusEffectCategory.BENEFICIAL, 0xFFD58A));
+    /** Трещина (Набат): уровень = сколько раз падал; урон по нему +10% и атаки чаще за каждую. */
+    public static final StatusEffect CRACK = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "crack"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xB0702C));
+    /** Метка набата (игрок): над ним висит колокол, через 4 с падает. */
+    public static final StatusEffect BELL_MARK = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "bell_mark"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xD49A3A));
+    /** Узник (улан, призванный Набатом): прикован цепью к якорю. */
+    public static final StatusEffect PRISONER = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "prisoner"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0x46E0D4));
 
     public static final float SPIKES_FACTOR = 0.3f;
     /** Тип урона «шипы» (data/basedefense/damage_type/spikes.json, чистый урон). */

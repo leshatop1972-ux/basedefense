@@ -10,7 +10,9 @@ import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import com.lesha_top1972.basedefense.structure.BuildManager;
+import com.lesha_top1972.basedefense.entity.NabatNoise;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 public class Basedefense implements ModInitializer {
 
@@ -29,5 +31,7 @@ public class Basedefense implements ModInitializer {
         ResearchManager.init();
         SettlementManager.init();
         SettlerThreats.init();
+        // «Шум» игроков в бою с Набатом
+        ServerTickEvents.END_SERVER_TICK.register(NabatNoise::tick);
     }
 }

@@ -51,6 +51,11 @@ public final class ModBlocks {
             .mapColor(MapColor.DARK_RED).strength(0.5f).sounds(BlockSoundGroup.SLIME).luminance(s -> 3)
             .nonOpaque().dropsNothing()));
 
+    /** Гудящий камень (холмы «Землетрясения» Набата): на нём растёт «Шум», ничего не выпадает. */
+    public static final Block RESONANT_STONE = register("resonant_stone", new ResonantStoneBlock(FabricBlockSettings
+            .copyOf(Blocks.STONE).mapColor(MapColor.TERRACOTTA_ORANGE).strength(1.5f, 6.0f)
+            .sounds(BlockSoundGroup.AMETHYST_BLOCK).luminance(s -> 4).dropsNothing()));
+
     private ModBlocks() {
     }
 

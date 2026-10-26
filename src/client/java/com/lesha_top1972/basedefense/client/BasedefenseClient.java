@@ -16,6 +16,14 @@ import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockModelLoader;
 import com.lesha_top1972.basedefense.client.fx.LancerFx;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.BloodPoolOverlay;
+import com.lesha_top1972.basedefense.client.render.CaptiveOverlay;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatAnchorRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatBellRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatBladeRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatCaptiveRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatFallingBellRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatRenderer;
+import com.lesha_top1972.basedefense.client.entity.nabat.NabatSoulRenderer;
 import com.lesha_top1972.basedefense.client.render.SpikesOverlay;
 import com.lesha_top1972.basedefense.client.render.BossEffectsHud;
 import com.lesha_top1972.basedefense.client.render.StunOverlay;
@@ -84,6 +92,22 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.CURB, CurbRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURB_MINION, CurbMinionRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURB_PILLAR, EmptyEntityRenderer::new);
+        // Босс «Набат», его мечники, колокола, якорь улана, души (оружие — отдельные модели)
+        EntityModelLayerRegistry.registerModelLayer(NabatRenderer.LAYER, () -> BedrockModelLoader.load("nabat"));
+        EntityModelLayerRegistry.registerModelLayer(NabatRenderer.MAUL, () -> BedrockModelLoader.load("nabat_maul"));
+        EntityModelLayerRegistry.registerModelLayer(NabatBladeRenderer.LAYER, () -> BedrockModelLoader.load("nabat_blade"));
+        EntityModelLayerRegistry.registerModelLayer(NabatBladeRenderer.SWORD, () -> BedrockModelLoader.load("nabat_sword"));
+        EntityModelLayerRegistry.registerModelLayer(NabatBellRenderer.LAYER, () -> BedrockModelLoader.load("nabat_bell"));
+        EntityModelLayerRegistry.registerModelLayer(NabatAnchorRenderer.LAYER, () -> BedrockModelLoader.load("nabat_anchor"));
+        EntityRendererRegistry.register(ModEntities.NABAT, NabatRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_BLADE, NabatBladeRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_BELL, NabatBellRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_CAPTIVE, NabatCaptiveRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_FALLING_BELL, NabatFallingBellRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_ANCHOR, NabatAnchorRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_SOUL, NabatSoulRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NABAT_QUAKE, EmptyEntityRenderer::new);
+        CaptiveOverlay.init();         // изнутри «Колокольного плена» — темно
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)
         SpikesOverlay.init();          // «Шипы»: вспышка осколков, когда шипы ранили игрока

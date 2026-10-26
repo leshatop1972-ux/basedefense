@@ -167,6 +167,85 @@ public final class ModEntities {
                     .trackRangeBlocks(32)
                     .build());
 
+    /** Босс «Набат» (модель ×1.6, хитбокс без крыльев). */
+    public static final EntityType<NabatEntity> NABAT = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, NabatEntity::new)
+                    .dimensions(EntityDimensions.fixed(2.6f, 7.0f))
+                    .trackRangeBlocks(128)
+                    .fireImmune()
+                    .build());
+
+    /** Мечник Набата «Отзвук». */
+    public static final EntityType<NabatBladeEntity> NABAT_BLADE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_blade"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, NabatBladeEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 2.5f))
+                    .trackRangeBlocks(64)
+                    .build());
+
+    /** Колокол‑опора Набата (держит «Купол»). */
+    public static final EntityType<NabatBellEntity> NABAT_BELL = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_bell"),
+            FabricEntityTypeBuilder.<NabatBellEntity>create(SpawnGroup.MISC, NabatBellEntity::new)
+                    .dimensions(EntityDimensions.fixed(1.3f, 1.7f))
+                    .trackRangeBlocks(96)
+                    .fireImmune()
+                    .build());
+
+    /** «Колокольный плен». */
+    public static final EntityType<NabatCaptiveEntity> NABAT_CAPTIVE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_captive"),
+            FabricEntityTypeBuilder.<NabatCaptiveEntity>create(SpawnGroup.MISC, NabatCaptiveEntity::new)
+                    .dimensions(EntityDimensions.fixed(2.0f, 2.8f))
+                    .trackRangeBlocks(96)
+                    .trackedUpdateRate(2)
+                    .fireImmune()
+                    .build());
+
+    /** Падающий колокол («Метка набата», «Колокольный дождь»). */
+    public static final EntityType<NabatFallingBellEntity> NABAT_FALLING_BELL = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_falling_bell"),
+            FabricEntityTypeBuilder.<NabatFallingBellEntity>create(SpawnGroup.MISC, NabatFallingBellEntity::new)
+                    .dimensions(EntityDimensions.fixed(1.0f, 1.2f))
+                    .trackRangeBlocks(96)
+                    .trackedUpdateRate(2)
+                    .build());
+
+    /** Якорь узника (к нему прикован улан). */
+    public static final EntityType<NabatAnchorEntity> NABAT_ANCHOR = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_anchor"),
+            FabricEntityTypeBuilder.<NabatAnchorEntity>create(SpawnGroup.MISC, NabatAnchorEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.9f, 2.0f))
+                    .trackRangeBlocks(96)
+                    .fireImmune()
+                    .build());
+
+    /** Душа «Реквиема». */
+    public static final EntityType<NabatSoulEntity> NABAT_SOUL = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_soul"),
+            FabricEntityTypeBuilder.<NabatSoulEntity>create(SpawnGroup.MISC, NabatSoulEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 0.6f))
+                    .trackRangeBlocks(96)
+                    .trackedUpdateRate(2)
+                    .build());
+
+    /** «Землетрясение» (невидимое, управляет блоками). */
+    public static final EntityType<NabatQuakeEntity> NABAT_QUAKE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "nabat_quake"),
+            FabricEntityTypeBuilder.<NabatQuakeEntity>create(SpawnGroup.MISC, NabatQuakeEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
+                    .trackRangeBlocks(32)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -187,5 +266,10 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(BLOOD_EGG, BloodEggEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(CURB, CurbEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(CURB_MINION, CurbMinionEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(NABAT, NabatEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(NABAT_CAPTIVE, NabatCaptiveEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(NABAT_ANCHOR, NabatAnchorEntity.createAttributes());
     }
 }

@@ -76,6 +76,12 @@ public final class ModItems {
     public static final Item CURB_MINION_SPAWN_EGG = register("curb_minion_spawn_egg",
             new SpawnEggItem(ModEntities.CURB_MINION, 0x606466, 0x408CFF, new Item.Settings()));
 
+    public static final Item NABAT_SPAWN_EGG = register("nabat_spawn_egg",
+            new SpawnEggItem(ModEntities.NABAT, 0x624628, 0xFFB848, new Item.Settings()));
+
+    public static final Item NABAT_BLADE_SPAWN_EGG = register("nabat_blade_spawn_egg",
+            new SpawnEggItem(ModEntities.NABAT_BLADE, 0x7A5834, 0xE8C25A, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -103,6 +109,8 @@ public final class ModItems {
             entries.add(BLOOD_EGG_SPAWN_EGG);
             entries.add(CURB_SPAWN_EGG);
             entries.add(CURB_MINION_SPAWN_EGG);
+            entries.add(NABAT_SPAWN_EGG);
+            entries.add(NABAT_BLADE_SPAWN_EGG);
         });
     }
 }
