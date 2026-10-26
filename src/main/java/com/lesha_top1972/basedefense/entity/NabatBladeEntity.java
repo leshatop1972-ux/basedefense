@@ -64,11 +64,14 @@ public class NabatBladeEntity extends HostileEntity {
     static final int DASH_COOLDOWN = 320;
     public static final int ASSEMBLE_TICKS = 32;
     static final double DASH_SPEED = 0.6;
+    /** Мечник наносит урон не чаще раза в 2.3 с (в серии проходит один удар из трёх). */
+    static final int HIT_PAUSE = 46;
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.72f, 0.3f), 0.9f);
 
     public int clientAction = NONE;
     public int clientActionAge;
     private int assemble;
+    private long lastHit = -1000;
 
     public NabatBladeEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -168,6 +171,10 @@ public class NabatBladeEntity extends HostileEntity {
     }
 
     int coneHit(double reach, double halfAngle, float damage, double knock, Set<Integer> hit) {
+        long now = this.getWorld().getTime();
+        if (now != this.lastHit && now - this.lastHit < HIT_PAUSE) {
+            return 0;
+        }
         Vec3d f = this.forward();
         double cos = Math.cos(Math.toRadians(halfAngle));
         int n = 0;
@@ -187,6 +194,7 @@ public class NabatBladeEntity extends HostileEntity {
             e.timeUntilRegen = 0;
             if (e.damage(this.getDamageSources().mobAttack(this), damage)) {
                 n++;
+                this.lastHit = now;
                 boolean shielded = e instanceof ShieldBlocker sb && sb.basedefense$blockedThisTick();
                 if (!shielded && knock > 0) {
                     e.takeKnockback(knock, this.getX() - e.getX(), this.getZ() - e.getZ());

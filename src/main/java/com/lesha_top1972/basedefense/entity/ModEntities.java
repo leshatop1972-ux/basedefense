@@ -174,6 +174,7 @@ public final class ModEntities {
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, NabatEntity::new)
                     .dimensions(EntityDimensions.fixed(2.6f, 7.0f))
                     .trackRangeBlocks(128)
+                    .trackedUpdateRate(1)
                     .fireImmune()
                     .build());
 

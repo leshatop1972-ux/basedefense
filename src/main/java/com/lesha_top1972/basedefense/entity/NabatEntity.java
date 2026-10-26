@@ -216,6 +216,8 @@ public class NabatEntity extends HostileEntity {
     public int clientDomeHitAge = -1000;
     public Vec3d clientDomeHit = Vec3d.ZERO;
     public int clientSoulAge = -1000;
+    /** Только клиент: сглаженная горизонтальная скорость (для смешивания парение/полёт/скольжение). */
+    public float clientSpeed;
 
     // --- состояние боя (сервер) ---
     private boolean started;
@@ -395,6 +397,23 @@ public class NabatEntity extends HostileEntity {
         return this.getWorld().getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MathHelper.floor(x), MathHelper.floor(z));
     }
 
+    /** Корпус всегда смотрит туда же, куда Набат (иначе клиент сам доворачивает его по ходу полёта — дёргается). */
+    @Override
+    protected float turnHead(float bodyRotation, float headRotation) {
+        this.bodyYaw = this.getYaw();
+        return headRotation;
+    }
+
+    /** Плавный поворот: скорость пропорциональна углу (без рывков на старте и остановке), не больше maxDeg/тик. */
+    void turnSmooth(float wantYaw, float maxDeg) {
+        float d = MathHelper.wrapDegrees(wantYaw - this.getYaw());
+        float step = MathHelper.clamp(d * 0.12f, -maxDeg, maxDeg);
+        float yaw = this.getYaw() + step;
+        this.setYaw(yaw);
+        this.setBodyYaw(yaw);
+        this.setHeadYaw(yaw);
+    }
+
     void faceTo(double x, double z, float maxDeg) {
         float want = (float) (MathHelper.atan2(z - this.getZ(), x - this.getX()) * 57.29577951308232) - 90.0f;
         float yaw = this.getYaw() + MathHelper.clamp(MathHelper.wrapDegrees(want - this.getYaw()), -maxDeg, maxDeg);
@@ -480,6 +499,10 @@ public class NabatEntity extends HostileEntity {
     public void tick() {
         super.tick();
         if (this.getWorld().isClient) {
+            double dx = this.getX() - this.prevX;
+            double dz = this.getZ() - this.prevZ;
+            float raw = (float) Math.sqrt(dx * dx + dz * dz);
+            this.clientSpeed += (raw - this.clientSpeed) * 0.1f;
             this.clientFx();
         }
     }
@@ -771,12 +794,19 @@ public class NabatEntity extends HostileEntity {
         }
         this.setVelocity(nv);
         this.velocityDirty = true;
+        // поворот плавный: на скорости смотрит по ходу, медленно — на цель, между ними — смешивание
         double hs = Math.sqrt(nv.x * nv.x + nv.z * nv.z);
-        if (!busy && hs > 0.17) {
-            this.faceTo(this.getX() + nv.x, this.getZ() + nv.z, 6f);       // быстрый полёт — смотрит по ходу
-        } else if (focus != null) {
-            this.faceTo(focus.getX(), focus.getZ(), 4f);
+        float yawNow = this.getYaw();
+        float want = yawNow;
+        if (focus != null) {
+            want = (float) (MathHelper.atan2(focus.getZ() - this.getZ(), focus.getX() - this.getX()) * 57.29577951308232) - 90.0f;
         }
+        if (!busy && hs > 0.05) {
+            float moveYaw = (float) (MathHelper.atan2(nv.z, nv.x) * 57.29577951308232) - 90.0f;
+            float w = (float) MathHelper.clamp((hs - 0.12) / 0.14, 0.0, 1.0);
+            want = want + MathHelper.wrapDegrees(moveYaw - want) * w;
+        }
+        this.turnSmooth(want, 3.5f);
         if (focus != null) {
             this.setTarget(focus);
         }
@@ -1000,7 +1030,7 @@ public class NabatEntity extends HostileEntity {
             }
             case PHANTOMS -> {
                 if (t == PHANTOMS_AT) {
-                    this.summonPhantoms(s, 1 + (this.players - 1));
+                    this.summonPhantoms(s, 2 + (this.players - 1));
                 }
             }
             case RELIQ -> this.runReliquary(s, t);
@@ -1490,9 +1520,9 @@ public class NabatEntity extends HostileEntity {
             for (double r = 1.0; r <= 4.0; r += 1.0) {
                 this.groundRing(this.getPos(), r, (int) (r * 6), r < 3);
             }
-            // где встанут рыцари (2): по бокам перед Набатом
-            for (int i = 0; i < 2; i++) {
-                double a = Math.toRadians(this.bodyYaw + 90) + (i - 0.5) * 1.1;
+            // где встанут рыцари (3): дугой перед Набатом
+            for (int i = 0; i < 3; i++) {
+                double a = Math.toRadians(this.bodyYaw + 90) + (i - 1) * 0.9;
                 double x = this.getX() + Math.cos(a) * 4.5;
                 double z = this.getZ() + Math.sin(a) * 4.5;
                 this.knightSpots.add(this.groundAt(x, z));
@@ -1538,7 +1568,6 @@ public class NabatEntity extends HostileEntity {
         k.refreshPositionAndAngles(p.x, p.y, p.z, this.getYaw(), 0f);
         k.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(p)), SpawnReason.MOB_SUMMONED, null, null);
         this.tagged(k);
-        bonusHp(k);
         k.setPersistent();
         s.spawnEntity(k);
         BlockState st = s.getBlockState(BlockPos.ofFloored(p.x, p.y - 0.5, p.z));
@@ -1877,7 +1906,6 @@ public class NabatEntity extends HostileEntity {
         b.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(p)), SpawnReason.MOB_SUMMONED, null, null);
         this.tagged(b);
         empower(b, 1.6, 1.3);
-        bonusHp(b);
         s.spawnEntity(b);
         this.smokeColumn(s, p);
         BloodFx.splash(s, p.x, p.y + 0.5, p.z, 16, 0.4);
@@ -1900,7 +1928,6 @@ public class NabatEntity extends HostileEntity {
                     false, false, false));
             this.tagged(ph);
             empower(ph, 1.8, 1.4);
-            bonusHp(ph);
             s.spawnEntity(ph);
             s.spawnParticles(AMBER_S, p.x, p.y, p.z, 8, 0.4, 0.4, 0.4, 0.02);
         }
@@ -1912,7 +1939,7 @@ public class NabatEntity extends HostileEntity {
 
     private void summonCenser(ServerWorld s) {
         int blades = 1 + (this.players - 1);
-        int lings = 2 + (this.players - 1);
+        int lings = 3 + (this.players - 1);
         int room = this.room();
         for (int i = 0; i < blades && room > 0; i++, room--) {
             this.spawnBlade(s, this.spot(s));
@@ -1926,7 +1953,7 @@ public class NabatEntity extends HostileEntity {
     private void summonGather(ServerWorld s) {
         double k = 1.0 + 0.5 * (this.players - 1);
         int blades = (int) Math.round(3 * k);
-        int lings = (int) Math.round(3 * k);
+        int lings = (int) Math.round(4 * k);
         int room = this.room();
         for (int i = 0; i < blades && room > 0; i++, room--) {
             this.spawnBlade(s, this.spot(s));
@@ -1934,12 +1961,12 @@ public class NabatEntity extends HostileEntity {
         for (int i = 0; i < lings && room > 0; i++, room--) {
             this.spawnBloodling(s, this.spot(s));
         }
-        this.summonPhantoms(s, (int) Math.round(2 * k));
+        this.summonPhantoms(s, (int) Math.round(3 * k));
         this.balanceTargets(s);
     }
 
     private void dropEggs(ServerWorld s) {
-        int n = Math.min(1 + (this.players - 1), this.room());
+        int n = Math.min(2 + (this.players - 1), this.room());
         for (int i = 0; i < n; i++) {
             Vec3d p = this.spot(s);
             BloodEggEntity egg = ModEntities.BLOOD_EGG.create(s);
@@ -2122,10 +2149,10 @@ public class NabatEntity extends HostileEntity {
     }
 
     static final UUID BUFF_HP_FLAT = UUID.fromString("6b1c2a0e-4f3d-4e21-9c55-1d9a7e3b5a03");
-    /** Всем слугам Набата +15 к здоровью. */
+    /** Мечникам Набата +15 к здоровью. */
     static final double SERVANT_BONUS_HP = 15.0;
 
-    /** +15 HP слуге (после множителей) и полное здоровье. */
+    /** +15 HP мечнику и полное здоровье. */
     static void bonusHp(LivingEntity e) {
         EntityAttributeInstance hp = e.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
         if (hp != null && hp.getModifier(BUFF_HP_FLAT) == null) {

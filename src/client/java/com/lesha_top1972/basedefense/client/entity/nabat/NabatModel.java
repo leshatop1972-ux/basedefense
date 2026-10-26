@@ -122,9 +122,7 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
         if (grounded) {
             this.play2("ground_idle", sec, free);
         } else {
-            double dx = entity.getX() - entity.prevX;
-            double dz = entity.getZ() - entity.prevZ;
-            float speed = (float) Math.sqrt(dx * dx + dz * dz);
+            float speed = entity.clientSpeed;                       // сглажено — без дрожания смеси циклов
             float flyK = clamp01((speed - 0.08f) / 0.14f);
             float glideK = clamp01((speed - 0.28f) / 0.12f);       // быстрый пролёт — крылья распахнуты
             this.play2("hover", sec, free * (1f - flyK));
