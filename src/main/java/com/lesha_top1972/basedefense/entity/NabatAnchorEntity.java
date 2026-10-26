@@ -89,7 +89,8 @@ public class NabatAnchorEntity extends MobEntity {
     public void tick() {
         super.tick();
         this.setVelocity(0, Math.min(0, this.getVelocity().y), 0);
-        if (this.getWorld() instanceof ServerWorld s && this.lancerId != null && s.getEntity(this.lancerId) instanceof Entity l) {
+        Entity l = this.getWorld() instanceof ServerWorld s && this.lancerId != null ? s.getEntity(this.lancerId) : null;
+        if (l != null) {
             if (this.dataTracker.get(LANCER) != l.getId()) {
                 this.dataTracker.set(LANCER, l.getId());       // после перезагрузки мира номер другой
             }
