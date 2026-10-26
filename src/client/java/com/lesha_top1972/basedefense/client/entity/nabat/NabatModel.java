@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * Модель «Набата» (geo/nabat.geo.json, создаёт tools/nabat_gen.py).
- * Циклы: парение / полёт (по скорости) в небе, «на земле» — после падения. Действия — по статусу с сервера.
+ * Циклы: парение / полёт / скольжение (по скорости) в небе, «на земле» — после падения. Действия — по статусу с сервера.
  * Воздушные действия не трогают крылья: поверх них крылья продолжают махать циклом парения (слой «wings»).
  * Молот — отдельная модель (WeaponFeature) с поворотом из дорожки оружия.
  */
@@ -35,6 +35,7 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
     private final Map<String, BedrockAnimations.Clip> clips;
     private final BedrockAnimations.Clip hoverWings;
     private final BedrockAnimations.Clip flyWings;
+    private final BedrockAnimations.Clip glideWings;
     private final WeaponTrack weapon = new WeaponTrack("nabat");
     private final Quaternionf weaponRot = new Quaternionf();
     private final ModelPart[] chain;
@@ -49,6 +50,7 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
                 bone -> bone.contains("_wing") || (bone.matches(".*_p\\d+")));
         this.hoverWings = w.get("hover");
         this.flyWings = w.get("fly");
+        this.glideWings = w.get("glide");
         this.chain = new ModelPart[]{root, this.bone("bone_root"), this.bone("body"), this.bone("torso"),
                 this.bone("right_arm"), this.bone("right_fore"), this.bone("right_hand")};
         this.halo = this.bone("halo");
@@ -122,12 +124,17 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
             double dz = entity.getZ() - entity.prevZ;
             float speed = (float) Math.sqrt(dx * dx + dz * dz);
             float flyK = clamp01((speed - 0.08f) / 0.14f);
+            float glideK = clamp01((speed - 0.28f) / 0.12f);       // быстрый пролёт — крылья распахнуты
             this.play2("hover", sec, free * (1f - flyK));
-            this.play2("fly", sec, free * flyK);
+            this.play2("fly", sec, free * flyK * (1f - glideK));
+            this.play2("glide", sec, free * flyK * glideK);
             if (clip != null && AIR[a]) {
                 // крылья в воздушных действиях — из цикла полёта
                 this.play(this.hoverWings, sec, w * (1f - flyK));
-                this.play(this.flyWings, sec, w * flyK);
+                this.play(this.flyWings, sec, w * flyK * (1f - glideK));
+                if (this.glideWings != null) {
+                    this.play(this.glideWings, sec, w * flyK * glideK);
+                }
             }
         }
         if (clip != null) {

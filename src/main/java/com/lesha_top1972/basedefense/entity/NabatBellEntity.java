@@ -128,8 +128,10 @@ public class NabatBellEntity extends MobEntity {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
-        s.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.NABAT_BELL_HUM, SoundCategory.HOSTILE, 1.0f,
-                0.9f + this.random.nextFloat() * 0.15f);
+        if ((this.age / HUM_EVERY) % 2 == 0) {
+            s.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.NABAT_BELL_HUM, SoundCategory.HOSTILE, 0.8f,
+                    0.9f + this.random.nextFloat() * 0.15f);
+        }
         for (int i = 0; i < 24; i++) {
             double a = i / 24.0 * Math.PI * 2;
             s.spawnParticles(AMBER, this.getX() + Math.cos(a) * 1.6, this.getY() + 0.2, this.getZ() + Math.sin(a) * 1.6, 1,

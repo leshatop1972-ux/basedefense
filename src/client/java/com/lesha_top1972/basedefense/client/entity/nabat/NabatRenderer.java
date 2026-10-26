@@ -67,7 +67,7 @@ public class NabatRenderer extends MobEntityRenderer<NabatEntity, NabatModel> {
         if (b[2] != animationProgress) {
             float turn = MathHelper.wrapDegrees(bodyYaw - b[1]);
             b[1] = bodyYaw;
-            float want = entity.isGrounded() || entity.deathTime > 0 ? 0f : MathHelper.clamp(turn * 4f, -14f, 14f);
+            float want = entity.isGrounded() || entity.deathTime > 0 ? 0f : MathHelper.clamp(turn * 5f, -22f, 22f);
             b[0] = MathHelper.lerp(0.08f, b[0], want);
             b[2] = animationProgress;
         }

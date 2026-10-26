@@ -76,9 +76,6 @@ public final class ModEffects {
     /** Метка набата (игрок): над ним висит колокол, через 4 с падает. */
     public static final StatusEffect BELL_MARK = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "bell_mark"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xD49A3A));
-    /** Узник (улан, призванный Набатом): прикован цепью к якорю. */
-    public static final StatusEffect PRISONER = Registry.register(Registries.STATUS_EFFECT,
-            new Identifier(Basedefense.MOD_ID, "prisoner"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0x46E0D4));
 
     public static final float SPIKES_FACTOR = 0.3f;
     /** Тип урона «шипы» (data/basedefense/damage_type/spikes.json, чистый урон). */

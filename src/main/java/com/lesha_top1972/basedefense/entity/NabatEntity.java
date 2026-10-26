@@ -10,6 +10,8 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
@@ -22,6 +24,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.PhantomEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -44,8 +47,10 @@ import net.minecraft.world.World;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,7 +59,8 @@ import java.util.UUID;
  * колокола‑опоры; бьёт редко — основную работу делают его слуги (мечники, мелкие кровожады, яйца, фантомы).
  * Сломали все колокола — падает на 14 с: сначала звонит «Реквием» (лечится душами слуг — сбей звон ударами
  * по языку‑сердцу), потом «Колокольный плен» и удары молотом, затем взлетает с новой «Трещиной».
- * При 60% HP выпускает из реликвария улана на цепи, при 30% — «Треснувший колокол» (3‑я фаза).
+ * При 60% HP выпускает из реликвария улана (пока улан жив — купол держится), при 30% — «Треснувший колокол».
+ * Летает по арене разными манёврами (круг, пролёт, восьмёрка, зависание над игроком); слуг раскидывает по разным игрокам.
  * Тайминги совпадают с анимациями tools/nabat_gen.py (там же печатаются точки ударов).
  */
 public class NabatEntity extends HostileEntity {
@@ -118,7 +124,6 @@ public class NabatEntity extends HostileEntity {
 
     public static final int DEATH_TICKS = 72;
     static final int GROUND_TICKS = 280;
-    static final int FREED_GROUND_TICKS = 240;
     static final int STAGGER_BONUS = 80;
 
     // --- цифры (пока слабые; поднимать по просьбе) ---
@@ -139,8 +144,16 @@ public class NabatEntity extends HostileEntity {
     static final float RISE_DMG = 5f;
     static final double HOVER_H = 12.0;
     static final double HOVER_H3 = 8.0;
-    static final double HOVER_CHAINED = 16.0;
+    static final double HOVER_LANCER = 14.0;
     static final double ARENA_R = 30.0;
+    // манёвры полёта
+    static final int FLY_ORBIT = 0;
+    static final int FLY_SWEEP = 1;
+    static final int FLY_EIGHT = 2;
+    static final int FLY_STALK = 3;
+    // усиление слуг (множители к базовым атрибутам)
+    static final UUID BUFF_HP = UUID.fromString("6b1c2a0e-4f3d-4e21-9c55-1d9a7e3b5a01");
+    static final UUID BUFF_DMG = UUID.fromString("6b1c2a0e-4f3d-4e21-9c55-1d9a7e3b5a02");
 
     // точка языка‑сердца на земле (блоки: вправо, вверх, вперёд; печатает nabat_gen.py)
     static final double HEART_UP = 0.34;
@@ -157,6 +170,7 @@ public class NabatEntity extends HostileEntity {
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.72f, 0.3f), 1.2f);
     private static final DustParticleEffect AMBER_S = new DustParticleEffect(new Vector3f(1.0f, 0.8f, 0.45f), 0.7f);
     private static final DustParticleEffect TEAL = new DustParticleEffect(new Vector3f(0.3f, 0.95f, 0.9f), 1.2f);
+    private static final DustParticleEffect TRAIL = new DustParticleEffect(new Vector3f(1.0f, 0.78f, 0.42f), 0.8f);
 
     private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.WHITE,
             BossBar.Style.NOTCHED_10);
@@ -184,24 +198,32 @@ public class NabatEntity extends HostileEntity {
     private boolean gatherDone;
     private int groundTimer;
     private boolean captiveDone;
-    private boolean noRequiem;
     private int requiemStacks;
     private float requiemHit;
     private int crack;
     private boolean reliqDone;
-    private boolean chained;
+    /** Улан выпущен и жив — он держит купол. */
+    private boolean lancerGuard;
     private UUID lancerId;
-    private UUID anchorId;
-    private int freedTicks;
+    private int bellsCd;
+    // полёт
+    private int flyMode = FLY_ORBIT;
+    private int flyModeT;
+    private double orbitR = 11.0;
+    private double orbitDir = 1.0;
+    private double f8Rot;
+    private Vec3d flyGoal = Vec3d.ZERO;
+    private UUID focusId;
+    private int focusT;
     private int maulCd;
-    private int censerCd = 160;
-    private int approachCd = 500;
-    private int quakeCd = 1200;
-    private int phantomsCd = 360;
-    private int eggsCd = 600;
-    private int tollCd = 200;
-    private int rainCd = 300;
-    private int markCd = 420;
+    private int censerCd = 300;
+    private int approachCd = 260;
+    private int quakeCd = 900;
+    private int phantomsCd = 600;
+    private int eggsCd = 900;
+    private int tollCd = 120;
+    private int rainCd = 220;
+    private int markCd = 360;
     private int domeHitCd;
     private boolean forceCrash;
     // действия: запомненные точки
@@ -355,7 +377,7 @@ public class NabatEntity extends HostileEntity {
     List<LivingEntity> victimsNear(Vec3d c, double r, double h) {
         return this.getWorld().getEntitiesByClass(LivingEntity.class, new Box(c.x - r - 1, c.y - h, c.z - r - 1,
                 c.x + r + 1, c.y + h, c.z + r + 1), e -> e.isAlive() && e != this && !(e instanceof Monster)
-                && !(e instanceof ArmorStandEntity) && !NabatHooks.isKin(e) && !(e instanceof NabatAnchorEntity)
+                && !(e instanceof ArmorStandEntity) && !NabatHooks.isKin(e)
                 && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator())));
     }
 
@@ -423,6 +445,26 @@ public class NabatEntity extends HostileEntity {
 
     private void clientFx() {
         World w = this.getWorld();
+        if (!this.isGrounded() && this.deathTime == 0) {
+            double vx = this.getX() - this.prevX;
+            double vz = this.getZ() - this.prevZ;
+            double sp = Math.sqrt(vx * vx + vz * vz);
+            // быстрый полёт: тонкий янтарный след с кончиков крыльев
+            if (sp > 0.24 && this.age % 2 == 0) {
+                double nx = vx / sp;
+                double nz = vz / sp;
+                for (int side = -1; side <= 1; side += 2) {
+                    double x = this.getX() - nz * 5.2 * side - nx * 1.5;
+                    double z = this.getZ() + nx * 5.2 * side - nz * 1.5;
+                    w.addParticle(TRAIL, x, this.getY() + 4.6, z, 0, 0, 0);
+                }
+            }
+            // из кадил сыплются редкие искры
+            if (this.age % 7 == 0) {
+                w.addParticle(AMBER_S, this.getX() + (this.random.nextDouble() - 0.5) * 3.0, this.getY() + 1.2,
+                        this.getZ() + (this.random.nextDouble() - 0.5) * 3.0, 0, -0.04, 0);
+            }
+        }
         // язык‑сердце тлеет; у треснувшего колокола сыплются искры
         if (this.isPhase3() && this.random.nextInt(4) == 0) {
             w.addParticle(AMBER_S, this.getX() + (this.random.nextDouble() - 0.5) * 2.4, this.getY() + 2.6 + this.random.nextDouble() * 1.4,
@@ -449,7 +491,10 @@ public class NabatEntity extends HostileEntity {
         if (this.age % 10 == 0) {
             this.syncEffects();
         }
-        this.tickChain(s);
+        this.tickLancer(s);
+        if ((this.age + 7) % 40 == 0) {
+            this.balanceTargets(s);
+        }
         if (this.isGrounded() && this.action != CRASH && this.groundTimer > 0) {
             this.groundTimer--;
         }
@@ -467,8 +512,8 @@ public class NabatEntity extends HostileEntity {
         if (!this.isGrounded() && this.isSkyMoving()) {
             this.flyTick();
         }
-        if (!this.isGrounded() && this.age % 52 == 0) {
-            this.sound(ModSounds.NABAT_WING, 1.6f, 0.9f + this.random.nextFloat() * 0.15f);
+        if (!this.isGrounded() && this.action == NONE && this.age % 90 == 0) {
+            this.sound(ModSounds.NABAT_WING, 1.1f, 0.9f + this.random.nextFloat() * 0.15f);
         }
     }
 
@@ -497,6 +542,7 @@ public class NabatEntity extends HostileEntity {
             this.tollCd--;
             this.rainCd--;
             this.markCd--;
+            this.bellsCd--;
             this.cycleTicks++;
         }
         this.quakeCd--;
@@ -509,7 +555,7 @@ public class NabatEntity extends HostileEntity {
     }
 
     double hoverH() {
-        return this.chained ? HOVER_CHAINED : (this.isPhase3() ? HOVER_H3 : HOVER_H);
+        return this.lancerGuard ? HOVER_LANCER : (this.isPhase3() ? HOVER_H3 : HOVER_H);
     }
 
     /** В полёте сейчас его ведёт обычное парение (а не действие, которое само задаёт движение). */
@@ -519,35 +565,162 @@ public class NabatEntity extends HostileEntity {
                 || this.action == PHANTOMS || this.action == RELIQ || this.action == CRACK;
     }
 
-    /** Парение: медленно кружит над самым шумным, держится над ареной. */
-    private void flyTick() {
-        PlayerEntity focus = this.loudest();
-        Vec3d want = focus != null ? focus.getPos() : this.arena;
-        this.center = this.center.lerp(want, 0.015);
-        Vec3d off = this.center.subtract(this.arena);
+    /** Игрок, за которым сейчас следит Набат (меняется раз в 8–13 с: то самый шумный, то другой). */
+    PlayerEntity focusPlayer() {
+        PlayerEntity cur = this.focusId != null ? this.getWorld().getPlayerByUuid(this.focusId) : null;
+        boolean ok = cur != null && cur.isAlive() && !cur.isCreative() && !cur.isSpectator() && cur.squaredDistanceTo(this) < 56 * 56;
+        if (ok && this.focusT > 0) {
+            return cur;
+        }
+        List<PlayerEntity> ps = this.fighters();
+        if (ps.isEmpty()) {
+            this.focusId = null;
+            return null;
+        }
+        PlayerEntity next = this.loudest();
+        if (ps.size() > 1 && (next == null || next == cur || this.random.nextFloat() < 0.5f)) {
+            ps.remove(cur);
+            next = ps.get(this.random.nextInt(ps.size()));
+        }
+        if (next == null) {
+            next = ps.get(0);
+        }
+        this.focusId = next.getUuid();
+        this.focusT = 160 + this.random.nextInt(100);
+        return next;
+    }
+
+    /** Центр игроков боя (для манёвров), внутри арены. */
+    private Vec3d playersCenter() {
+        List<PlayerEntity> ps = this.fighters();
+        if (ps.isEmpty()) {
+            return this.arena;
+        }
+        double x = 0;
+        double z = 0;
+        for (PlayerEntity p : ps) {
+            x += p.getX();
+            z += p.getZ();
+        }
+        return new Vec3d(x / ps.size(), this.arena.y, z / ps.size());
+    }
+
+    private Vec3d clampArena(Vec3d p) {
+        Vec3d off = p.subtract(this.arena);
         double ol = Math.sqrt(off.x * off.x + off.z * off.z);
-        if (ol > ARENA_R) {
-            this.center = this.arena.add(off.x / ol * ARENA_R, 0, off.z / ol * ARENA_R);
+        return ol > ARENA_R ? new Vec3d(this.arena.x + off.x / ol * ARENA_R, p.y, this.arena.z + off.z / ol * ARENA_R) : p;
+    }
+
+    /** Новый манёвр: круг (35%), пролёт сквозь бой (30%), восьмёрка (20%), зависание над игроком (15%). */
+    private void pickFlyMode(PlayerEntity focus) {
+        int prev = this.flyMode;
+        float r = this.random.nextFloat();
+        int m = r < 0.35f ? FLY_ORBIT : r < 0.65f ? FLY_SWEEP : r < 0.85f ? FLY_EIGHT : FLY_STALK;
+        if (m == prev && m != FLY_ORBIT) {
+            m = FLY_ORBIT;
         }
-        this.orbit += 0.0045;
-        double r = this.chained ? 9.0 : 7.0;
-        double tx = this.center.x + Math.cos(this.orbit) * r;
-        double tz = this.center.z + Math.sin(this.orbit) * r;
-        double ty = Math.max(this.groundY(tx, tz), this.groundY(this.center.x, this.center.z)) + this.hoverH();
-        Vec3d to = new Vec3d(tx - this.getX(), ty - this.getY(), tz - this.getZ());
-        Vec3d v = to.multiply(0.05);
-        double max = 0.26;
-        if (v.length() > max) {
-            v = v.normalize().multiply(max);
+        if (focus == null && (m == FLY_SWEEP || m == FLY_STALK)) {
+            m = FLY_EIGHT;
         }
-        Vec3d nv = this.getVelocity().lerp(v, 0.08);
+        this.flyMode = m;
+        switch (m) {
+            case FLY_SWEEP -> {
+                Vec3d d = new Vec3d(focus.getX() - this.getX(), 0, focus.getZ() - this.getZ());
+                d = d.lengthSquared() > 1 ? d.normalize() : this.forward();
+                this.flyGoal = this.clampArena(focus.getPos().add(d.multiply(9 + this.random.nextDouble() * 5)));
+                this.flyModeT = 140;
+                this.sound(ModSounds.NABAT_WING, 1.5f, 0.8f);
+            }
+            case FLY_STALK -> this.flyModeT = 70 + this.random.nextInt(50);
+            case FLY_EIGHT -> {
+                this.f8Rot = this.random.nextDouble() * Math.PI;
+                this.orbitDir = this.random.nextBoolean() ? 1 : -1;
+                this.flyModeT = 200 + this.random.nextInt(100);
+            }
+            default -> {
+                this.orbitR = 9.0 + this.random.nextDouble() * 7.0;
+                this.orbitDir = this.random.nextBoolean() ? 1 : -1;
+                this.orbit = Math.atan2(this.getZ() - this.center.z, this.getX() - this.center.x);
+                this.flyModeT = 140 + this.random.nextInt(100);
+            }
+        }
+    }
+
+    /** Полёт по арене: манёвры сменяют друг друга; во время заклинаний он летит медленнее. */
+    private void flyTick() {
+        if (this.focusT > 0) {
+            this.focusT--;
+        }
+        PlayerEntity focus = this.focusPlayer();
+        this.center = this.clampArena(this.center.lerp(this.playersCenter(), 0.02));
+        if (--this.flyModeT <= 0) {
+            this.pickFlyMode(focus);
+        }
+        boolean busy = this.action != NONE;
+        Vec3d goal;
+        double max;
+        double lower = 0;
+        switch (this.flyMode) {
+            case FLY_SWEEP -> {
+                goal = this.flyGoal;
+                max = 0.46;
+                double dx = goal.x - this.getX();
+                double dz = goal.z - this.getZ();
+                if (dx * dx + dz * dz < 9) {
+                    this.flyModeT = 0;
+                }
+                lower = 2.0;
+            }
+            case FLY_STALK -> {
+                Vec3d f = focus != null ? focus.getPos() : this.center;
+                Vec3d away = new Vec3d(this.getX() - f.x, 0, this.getZ() - f.z);
+                away = away.lengthSquared() > 0.01 ? away.normalize() : this.forward().multiply(-1);
+                goal = f.add(away.multiply(4.0));
+                max = 0.22;
+                lower = 3.0;
+            }
+            case FLY_EIGHT -> {
+                this.orbit += this.orbitDir * (busy ? 0.005 : 0.010);
+                double a = Math.sin(this.orbit) * 13.0;
+                double b = Math.sin(2 * this.orbit) * 6.0;
+                double c = Math.cos(this.f8Rot);
+                double sn = Math.sin(this.f8Rot);
+                goal = this.center.add(a * c - b * sn, 0, a * sn + b * c);
+                max = 0.34;
+            }
+            default -> {
+                this.orbit += this.orbitDir * (busy ? 0.006 : 0.012);
+                goal = this.center.add(Math.cos(this.orbit) * this.orbitR, 0, Math.sin(this.orbit) * this.orbitR);
+                max = 0.3;
+            }
+        }
+        if (busy) {
+            max *= 0.45;
+            lower = 0;
+        }
+        goal = this.clampArena(goal);
+        double ty = Math.max(this.groundY(goal.x, goal.z), this.groundY(this.getX(), this.getZ())) + this.hoverH() - lower
+                + 1.5 * Math.sin(this.age * 0.025);
+        Vec3d to = new Vec3d(goal.x - this.getX(), ty - this.getY(), goal.z - this.getZ());
+        Vec3d v = to.multiply(0.06);
+        double h = Math.sqrt(v.x * v.x + v.z * v.z);
+        if (h > max) {
+            v = new Vec3d(v.x / h * max, v.y, v.z / h * max);
+        }
+        v = new Vec3d(v.x, MathHelper.clamp(v.y, -0.25, 0.3), v.z);
+        Vec3d nv = this.getVelocity().lerp(v, 0.06);
         if (this.horizontalCollision) {
             nv = nv.add(0, 0.12, 0);
         }
         this.setVelocity(nv);
         this.velocityDirty = true;
-        if (focus != null) {
+        double hs = Math.sqrt(nv.x * nv.x + nv.z * nv.z);
+        if (!busy && hs > 0.17) {
+            this.faceTo(this.getX() + nv.x, this.getZ() + nv.z, 6f);       // быстрый полёт — смотрит по ходу
+        } else if (focus != null) {
             this.faceTo(focus.getX(), focus.getZ(), 4f);
+        }
+        if (focus != null) {
             this.setTarget(focus);
         }
     }
@@ -557,7 +730,7 @@ public class NabatEntity extends HostileEntity {
     // =====================================================================
     private void skyLogic() {
         // все колокола сломаны (или улана не стало) → падение, не дожидаясь паузы
-        if (this.forceCrash || (this.bellsPlaced && !this.chained && this.aliveBells() == 0)) {
+        if (this.forceCrash || (this.bellsPlaced && !this.lancerGuard && this.aliveBells() == 0)) {
             this.forceCrash = false;
             this.bellsPlaced = false;
             this.begin(CRASH);
@@ -571,54 +744,48 @@ public class NabatEntity extends HostileEntity {
             this.begin(RELIQ);
             return;
         }
-        if (!this.isPhase3() && hp <= 0.3f && !this.chained) {
+        if (!this.isPhase3() && hp <= 0.3f && !this.lancerGuard) {
             this.begin(CRACK);
             return;
         }
-        if (this.chained) {
-            if (this.tollCd <= 0) {
-                this.begin(TOLL);
-            } else if (this.rainCd <= 0) {
-                this.begin(RAIN);
-            } else if (this.markCd <= 0) {
-                this.begin(MARK);
-            }
-            return;
-        }
-        if (this.needBells) {
-            this.begin(BELLS);
-            return;
-        }
-        if ((this.cycleTicks >= 900 && !this.gatherDone) || this.cycleTicks >= 2000) {
-            this.gatherDone = true;
-            if (this.cycleTicks >= 2000) {
-                this.cycleTicks = 1000;
-            }
-            this.begin(GATHER);
-            return;
-        }
-        if (this.censerCd <= 0) {
-            this.begin(CENSER);
-            return;
-        }
-        if (this.approachCd <= 0 && this.loudest() != null) {
-            if (this.quakeCd <= 0 && this.age > 1200) {
+        // свои атаки — в первую очередь
+        PlayerEntity focus = this.focusPlayer();
+        if (this.approachCd <= 0 && focus != null) {
+            if (this.quakeCd <= 0 && this.age > 900) {
                 this.begin(QUAKE);
             } else {
                 this.begin(this.random.nextBoolean() ? DIVE : REAP);
             }
             return;
         }
-        if (this.phantomsCd <= 0) {
-            this.begin(PHANTOMS);
-        } else if (this.eggsCd <= 0) {
-            this.begin(EGGS);
-        } else if (this.tollCd <= 0) {
+        if (!this.lancerGuard) {
+            if (this.needBells && this.bellsCd <= 0) {
+                this.begin(BELLS);
+                return;
+            }
+            if ((this.cycleTicks >= 1100 && !this.gatherDone) || this.cycleTicks >= 2600) {
+                this.gatherDone = true;
+                if (this.cycleTicks >= 2600) {
+                    this.cycleTicks = 1200;
+                }
+                this.begin(GATHER);
+                return;
+            }
+        }
+        if (this.tollCd <= 0) {
             this.begin(TOLL);
         } else if (this.rainCd <= 0) {
             this.begin(RAIN);
         } else if (this.markCd <= 0) {
             this.begin(MARK);
+        } else if (this.lancerGuard) {
+            return;
+        } else if (this.censerCd <= 0) {
+            this.begin(CENSER);
+        } else if (this.phantomsCd <= 0) {
+            this.begin(PHANTOMS);
+        } else if (this.eggsCd <= 0) {
+            this.begin(EGGS);
         }
     }
 
@@ -628,7 +795,7 @@ public class NabatEntity extends HostileEntity {
     }
 
     private int cd(int base) {
-        return (int) (base * this.cdK() * (this.chained ? 1.5 : 1.0));
+        return (int) (base * this.cdK() * (this.lancerGuard ? 1.2 : 1.0));
     }
 
     void begin(int a) {
@@ -637,16 +804,16 @@ public class NabatEntity extends HostileEntity {
         this.hitIds.clear();
         this.sendAction(a);
         switch (a) {
-            case TOLL -> this.tollCd = this.cd(360);
-            case CENSER -> this.censerCd = this.cd(this.isPhase3() ? 400 : 500);
-            case RAIN -> this.rainCd = this.cd(500);
-            case MARK -> this.markCd = this.cd(700);
-            case EGGS -> this.eggsCd = this.cd(1200);
-            case PHANTOMS -> this.phantomsCd = this.cd(800);
-            case DIVE, REAP -> this.approachCd = this.cd(this.isPhase3() ? 600 : 800);
+            case TOLL -> this.tollCd = this.cd(220);
+            case CENSER -> this.censerCd = this.cd(this.isPhase3() ? 560 : 680);
+            case RAIN -> this.rainCd = this.cd(340);
+            case MARK -> this.markCd = this.cd(520);
+            case EGGS -> this.eggsCd = this.cd(1500);
+            case PHANTOMS -> this.phantomsCd = this.cd(1100);
+            case DIVE, REAP -> this.approachCd = this.cd(this.isPhase3() ? 340 : 440);
             case QUAKE -> {
-                this.approachCd = this.cd(this.isPhase3() ? 600 : 800);
-                this.quakeCd = this.cd(this.isPhase3() ? 1200 : 1800);
+                this.approachCd = this.cd(this.isPhase3() ? 340 : 440);
+                this.quakeCd = this.cd(this.isPhase3() ? 900 : 1300);
             }
             default -> {
             }
@@ -656,10 +823,14 @@ public class NabatEntity extends HostileEntity {
     private void finishAction() {
         int done = this.action;
         this.action = NONE;
-        this.rest = (int) ((30 + this.random.nextInt(25)) * this.cdK());
+        this.rest = (int) ((24 + this.random.nextInt(20)) * this.cdK());
+        if (done == DIVE || done == REAP || done == QUAKE) {
+            this.focusT = 0;                 // после своей атаки — следующий игрок
+        }
         switch (done) {
             case INTRO -> {
                 this.needBells = true;
+                this.bellsCd = 160;
                 this.rest = 20;
                 this.begin(GATHER);
                 this.gatherDone = false;
@@ -691,9 +862,6 @@ public class NabatEntity extends HostileEntity {
                         this.groundRing(this.groundBelow(), 4 + k * 2, 30, true);
                     }
                 }
-                if (t == 4) {
-                    this.sound(ModSounds.NABAT_CHIME, 2.5f, 0.6f);
-                }
                 if (t == GATHER_HITS[2]) {
                     this.summonGather(s);
                 }
@@ -712,9 +880,6 @@ public class NabatEntity extends HostileEntity {
                 }
             }
             case RAIN -> {
-                if (t == 6) {
-                    this.sound(ModSounds.NABAT_CHIME, 2.5f, 1.2f);
-                }
                 if (t == RAIN_AT) {
                     this.bellRain(s);
                 }
@@ -731,7 +896,7 @@ public class NabatEntity extends HostileEntity {
             }
             case PHANTOMS -> {
                 if (t == PHANTOMS_AT) {
-                    this.summonPhantoms(s, 3 + 2 * (this.players - 1));
+                    this.summonPhantoms(s, 2 + (this.players - 1));
                 }
             }
             case RELIQ -> this.runReliquary(s, t);
@@ -744,7 +909,8 @@ public class NabatEntity extends HostileEntity {
                     this.needBells = true;
                     this.bellsPlaced = false;
                     this.gatherDone = false;
-                    this.cycleTicks = 850;
+                    this.cycleTicks = 1000;
+                    this.bellsCd = 300;
                 }
             }
             case DIVE -> this.runDive(s, t);
@@ -781,7 +947,7 @@ public class NabatEntity extends HostileEntity {
                 s.spawnParticles(AMBER, this.getX(), this.getY() + 4, this.getZ(), 80, 3.0, 1.5, 3.0, 0.08);
             }
         }
-        PlayerEntity p = this.loudest();
+        PlayerEntity p = this.focusPlayer();
         if (p != null) {
             this.faceTo(p.getX(), p.getZ(), 3f);
         }
@@ -791,7 +957,10 @@ public class NabatEntity extends HostileEntity {
     private void toll(float k) {
         Vec3d c = this.groundBelow();
         this.sound(ModSounds.NABAT_TOLL, 4.5f, 1.0f);
-        this.soundAt(c, ModSounds.NABAT_TOLL, 2.0f, 0.8f);
+        ServerWorld s = this.sw();
+        if (s != null) {
+            s.spawnParticles(ParticleTypes.SONIC_BOOM, c.x, c.y + 0.6, c.z, 1, 0, 0, 0, 0);
+        }
         this.hitIds.clear();
         this.radiusHit(c.add(0, 1, 0), TOLL_R, 3.0, TOLL_DMG * k, 1.0, 0.25);
         for (double r = 1.5; r <= TOLL_R; r += 1.8) {
@@ -808,7 +977,7 @@ public class NabatEntity extends HostileEntity {
         if (t < DIVE_FALL) {
             this.setVelocity(this.getVelocity().multiply(0.8).add(0, 0.03, 0));
             this.velocityDirty = true;
-            PlayerEntity p = this.loudest();
+            PlayerEntity p = this.focusPlayer();
             if (p != null) {
                 this.faceTo(p.getX(), p.getZ(), 8f);
                 this.actPoint = new Vec3d(p.getX() + p.getVelocity().x * 6, 0, p.getZ() + p.getVelocity().z * 6);
@@ -817,6 +986,14 @@ public class NabatEntity extends HostileEntity {
             }
             if (t == 4) {
                 this.sound(ModSounds.NABAT_WING, 2.5f, 0.75f);
+            }
+            // метка удара на земле — видно, куда он рухнет
+            if (t % 5 == 2) {
+                Vec3d g = new Vec3d(this.actPoint.x, this.groundY(this.actPoint.x, this.actPoint.z), this.actPoint.z);
+                for (int i = 0; i < 18; i++) {
+                    double a = i / 18.0 * Math.PI * 2;
+                    s.spawnParticles(AMBER_S, g.x + Math.cos(a) * DIVE_R, g.y + 0.15, g.z + Math.sin(a) * DIVE_R, 1, 0, 0, 0, 0);
+                }
             }
             return;
         }
@@ -838,7 +1015,6 @@ public class NabatEntity extends HostileEntity {
             this.hitIds.clear();
             this.radiusHit(c.add(0, 1, 0), DIVE_R, 3.0, DIVE_DMG, 1.4, 0.5);
             this.sound(ModSounds.NABAT_CRASH, 4.0f, 1.1f);
-            this.sound(ModSounds.NABAT_TOLL, 3.0f, 0.7f);
             s.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, c.x, c.y + 0.5, c.z, 1, 0, 0, 0, 0);
             for (double r = 1.0; r <= DIVE_R + 1; r += 1.2) {
                 this.groundRing(c, r, (int) (r * 6), true);
@@ -859,7 +1035,7 @@ public class NabatEntity extends HostileEntity {
     }
 
     private void runReap(ServerWorld s, int t) {
-        PlayerEntity p = this.loudest();
+        PlayerEntity p = this.focusPlayer();
         if (t == 0) {
             Vec3d tp = p != null ? p.getPos() : this.groundBelow();
             Vec3d d = new Vec3d(tp.x - this.getX(), 0, tp.z - this.getZ());
@@ -936,7 +1112,6 @@ public class NabatEntity extends HostileEntity {
             for (int k = 0; k < QUAKE_HITS.length; k++) {
                 if (t == QUAKE_HITS[k]) {
                     this.sound(ModSounds.NABAT_SLAM, 4.0f, 0.9f - k * 0.08f);
-                    this.sound(ModSounds.NABAT_TOLL, 2.5f, 0.6f);
                     s.spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY() + 0.3, this.getZ(), 2, 1.0, 0.1, 1.0, 0);
                     if (this.quake != null && this.quake.isAlive()) {
                         this.quake.slam(k);
@@ -988,11 +1163,11 @@ public class NabatEntity extends HostileEntity {
     private void enterGround() {
         this.dataTracker.set(GROUNDED, true);
         this.setNoGravity(false);
-        this.groundTimer = this.noRequiem ? FREED_GROUND_TICKS : GROUND_TICKS;
+        this.groundTimer = GROUND_TICKS;
         this.captiveDone = false;
         this.maulCd = 100;
         this.rest = 0;
-        if (!this.noRequiem && this.requiemStacks > 0) {
+        if (this.requiemStacks > 0) {
             this.requiemHit = 0;
             this.begin(REQUIEM);
         }
@@ -1000,7 +1175,10 @@ public class NabatEntity extends HostileEntity {
 
     private void groundLogic() {
         this.setVelocity(0, this.getVelocity().y, 0);
-        PlayerEntity p = this.loudest();
+        if (this.focusT > 0) {
+            this.focusT--;
+        }
+        PlayerEntity p = this.focusPlayer();
         if (p != null) {
             this.faceTo(p.getX(), p.getZ(), 3f);
             this.setTarget(p);
@@ -1012,7 +1190,7 @@ public class NabatEntity extends HostileEntity {
         if (this.rest > 0) {
             return;
         }
-        int elapsed = (this.noRequiem ? FREED_GROUND_TICKS : GROUND_TICKS) - this.groundTimer;
+        int elapsed = GROUND_TICKS - this.groundTimer;
         if (!this.captiveDone && elapsed > 70 && p != null && p.squaredDistanceTo(this) < 14 * 14) {
             this.captiveDone = true;
             this.begin(CAPTIVE);
@@ -1023,7 +1201,7 @@ public class NabatEntity extends HostileEntity {
             if (!near.isEmpty()) {
                 LivingEntity e = near.get(0);
                 this.faceTo(e.getX(), e.getZ(), 60f);
-                this.maulCd = (int) (80 * this.cdK());
+                this.maulCd = (int) (60 * this.cdK());
                 this.begin(MAUL);
             }
         }
@@ -1122,19 +1300,18 @@ public class NabatEntity extends HostileEntity {
         this.bellsPlaced = false;
         this.gatherDone = false;
         this.cycleTicks = 0;
-        this.censerCd = 0;
-        this.noRequiem = false;
+        this.censerCd = 200;
+        this.bellsCd = 600;                  // колокола — не сразу: ~30 с купола нет
         this.rest = 30;
         this.syncEffects();
-        this.endFreedLancer();
     }
 
     // =====================================================================
     // Призыв
     // =====================================================================
-    /** Сколько ещё слуг можно позвать (лимит живых: 14 + 8 за игрока, не больше 40). */
+    /** Сколько ещё слуг можно позвать (лимит живых: 10 + 6 за игрока, не больше 30). */
     private int room() {
-        int cap = Math.min(40, 14 + 8 * (this.players - 1));
+        int cap = Math.min(30, 10 + 6 * (this.players - 1));
         int alive = this.getWorld().getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(64.0),
                 e -> e.isAlive() && e.getCommandTags().contains(NabatHooks.TAG)
                         && !e.getCommandTags().contains(NabatHooks.NO_SOUL)).size();
@@ -1183,10 +1360,6 @@ public class NabatEntity extends HostileEntity {
         b.refreshPositionAndAngles(p.x, p.y, p.z, this.random.nextFloat() * 360f, 0f);
         b.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(p)), SpawnReason.MOB_SUMMONED, null, null);
         b.setAssembling();
-        PlayerEntity t = this.loudest();
-        if (t != null) {
-            b.setTarget(t);
-        }
         s.spawnEntity(b);
         this.smokeColumn(s, p);
     }
@@ -1199,10 +1372,7 @@ public class NabatEntity extends HostileEntity {
         b.refreshPositionAndAngles(p.x, p.y, p.z, this.random.nextFloat() * 360f, 0f);
         b.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(p)), SpawnReason.MOB_SUMMONED, null, null);
         this.tagged(b);
-        PlayerEntity t = this.loudest();
-        if (t != null) {
-            b.setTarget(t);
-        }
+        empower(b, 1.6, 1.3);
         s.spawnEntity(b);
         this.smokeColumn(s, p);
         BloodFx.splash(s, p.x, p.y + 0.5, p.z, 16, 0.4);
@@ -1224,22 +1394,19 @@ public class NabatEntity extends HostileEntity {
             ph.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, StatusEffectInstance.INFINITE, 0,
                     false, false, false));
             this.tagged(ph);
-            PlayerEntity t = this.loudest();
-            if (t != null) {
-                ph.setTarget(t);
-            }
+            empower(ph, 1.8, 1.4);
             s.spawnEntity(ph);
             s.spawnParticles(AMBER_S, p.x, p.y, p.z, 8, 0.4, 0.4, 0.4, 0.02);
         }
         if (n > 0) {
             this.sound(ModSounds.NABAT_SUMMON, 3.0f, 1.3f);
-            this.sound(net.minecraft.sound.SoundEvents.ENTITY_PHANTOM_AMBIENT, 2.0f, 0.7f);
+            this.balanceTargets(s);
         }
     }
 
     private void summonCenser(ServerWorld s) {
-        int blades = 3 + 2 * (this.players - 1);
-        int lings = 4 + 2 * (this.players - 1);
+        int blades = 2 + (this.players - 1);
+        int lings = 3 + (this.players - 1);
         int room = this.room();
         for (int i = 0; i < blades && room > 0; i++, room--) {
             this.spawnBlade(s, this.spot(s));
@@ -1247,13 +1414,13 @@ public class NabatEntity extends HostileEntity {
         for (int i = 0; i < lings && room > 0; i++, room--) {
             this.spawnBloodling(s, this.spot(s));
         }
-        this.sound(ModSounds.NABAT_TOLL, 3.0f, 1.3f);
+        this.balanceTargets(s);
     }
 
     private void summonGather(ServerWorld s) {
         double k = 1.0 + 0.5 * (this.players - 1);
-        int blades = (int) Math.round(6 * k);
-        int lings = (int) Math.round(6 * k);
+        int blades = (int) Math.round(4 * k);
+        int lings = (int) Math.round(4 * k);
         int room = this.room();
         for (int i = 0; i < blades && room > 0; i++, room--) {
             this.spawnBlade(s, this.spot(s));
@@ -1261,11 +1428,12 @@ public class NabatEntity extends HostileEntity {
         for (int i = 0; i < lings && room > 0; i++, room--) {
             this.spawnBloodling(s, this.spot(s));
         }
-        this.summonPhantoms(s, (int) Math.round(4 * k));
+        this.summonPhantoms(s, (int) Math.round(3 * k));
+        this.balanceTargets(s);
     }
 
     private void dropEggs(ServerWorld s) {
-        int n = Math.min(3 + (this.players - 1), this.room());
+        int n = Math.min(2 + (this.players - 1), this.room());
         for (int i = 0; i < n; i++) {
             Vec3d p = this.spot(s);
             BloodEggEntity egg = ModEntities.BLOOD_EGG.create(s);
@@ -1301,7 +1469,7 @@ public class NabatEntity extends HostileEntity {
         this.needBells = false;
         this.bellsPlaced = true;
         this.bells.clear();
-        int count = Math.min(5, 3 + (this.players - 1) / 2);
+        int count = this.players >= 3 ? 4 : 3;
         double a0 = this.random.nextDouble() * Math.PI * 2;
         float hp = this.isPhase3() ? 40f : 60f;
         for (int i = 0; i < count; i++) {
@@ -1318,7 +1486,7 @@ public class NabatEntity extends HostileEntity {
             b.setOwner(this, hp);
             s.spawnEntity(b);
             this.bells.add(b.getUuid());
-            if (this.room() > 0) {
+            if (i % 2 == 0 && this.room() > 0) {
                 Vec3d g = new Vec3d(x + Math.cos(a) * 1.8, this.groundY(x + Math.cos(a) * 1.8, z + Math.sin(a) * 1.8),
                         z + Math.sin(a) * 1.8);
                 this.spawnBlade(s, g);                      // «Колокольная стража»
@@ -1326,6 +1494,7 @@ public class NabatEntity extends HostileEntity {
         }
         this.sound(ModSounds.NABAT_CHIME, 3.5f, 0.8f);
         this.syncEffects();
+        this.balanceTargets(s);
     }
 
     private void bellRain(ServerWorld s) {
@@ -1348,7 +1517,7 @@ public class NabatEntity extends HostileEntity {
 
     private void marks(ServerWorld s) {
         List<PlayerEntity> ps = this.fighters();
-        PlayerEntity first = this.loudest();
+        PlayerEntity first = this.focusPlayer();
         List<PlayerEntity> chosen = new ArrayList<>();
         if (first != null) {
             chosen.add(first);
@@ -1371,7 +1540,7 @@ public class NabatEntity extends HostileEntity {
     }
 
     private void captive(ServerWorld s) {
-        PlayerEntity p = this.loudest();
+        PlayerEntity p = this.focusPlayer();
         if (p == null || p.squaredDistanceTo(this) > 16 * 16) {
             return;
         }
@@ -1401,7 +1570,7 @@ public class NabatEntity extends HostileEntity {
         }
         this.reliqDone = true;
         this.dataTracker.set(RELIQ_GONE, true);
-        // старые колокола рассыпаются — купол теперь держит цепь улана
+        // старые колокола рассыпаются — купол теперь держит улан
         for (UUID id : this.bells) {
             if (s.getEntity(id) instanceof NabatBellEntity b && b.isAlive()) {
                 s.spawnParticles(AMBER, b.getX(), b.getY() + 0.8, b.getZ(), 16, 0.5, 0.6, 0.5, 0.05);
@@ -1413,113 +1582,126 @@ public class NabatEntity extends HostileEntity {
         this.needBells = false;
         Vec3d g = this.groundBelow().add(this.forward().multiply(3.0));
         g = new Vec3d(g.x, this.groundY(g.x, g.z), g.z);
-        NabatAnchorEntity anchor = ModEntities.NABAT_ANCHOR.create(s);
         TatteredLancerEntity lancer = ModEntities.TATTERED_LANCER.create(s);
-        if (anchor == null || lancer == null) {
+        if (lancer == null) {
             return;
         }
-        anchor.refreshPositionAndAngles(g.x, g.y, g.z, this.getYaw(), 0f);
-        s.spawnEntity(anchor);
-        Vec3d lp = g.add(this.forward().multiply(1.8));
-        lancer.refreshPositionAndAngles(lp.x, this.groundY(lp.x, lp.z), lp.z, this.getYaw(), 0f);
-        lancer.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(lp)), SpawnReason.MOB_SUMMONED, null, null);
+        lancer.refreshPositionAndAngles(g.x, g.y, g.z, this.getYaw(), 0f);
+        lancer.initialize(s, s.getLocalDifficulty(BlockPos.ofFloored(g)), SpawnReason.MOB_SUMMONED, null, null);
         lancer.addCommandTag(NabatHooks.TAG);
-        lancer.addStatusEffect(new StatusEffectInstance(ModEffects.PRISONER, StatusEffectInstance.INFINITE, 0, false, false, true));
-        PlayerEntity p = this.loudest();
-        if (p != null) {
-            lancer.setTarget(p);
-        }
+        // улан Набата крепче обычного: HP ×1.75 (×1.5 за каждого игрока сверх первого, до ×3.5), «Сопротивление I»
+        empower(lancer, Math.min(3.5, 1.75 * (1.0 + 0.5 * (this.players - 1))), 1.0);
+        lancer.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, StatusEffectInstance.INFINITE, 0, false, false, true));
         s.spawnEntity(lancer);
-        anchor.setup(this, lancer);
         this.lancerId = lancer.getUuid();
-        this.anchorId = anchor.getUuid();
-        this.chained = true;
-        this.sound(ModSounds.NABAT_CHAIN_BREAK, 2.0f, 0.6f);
+        this.lancerGuard = true;
+        this.balanceTargets(s);
         this.soundAt(g, ModSounds.NABAT_BELL_LAND, 3.0f, 0.7f);
-        s.spawnParticles(TEAL, g.x, g.y + 1, g.z, 60, 0.8, 1.2, 0.8, 0.1);
-        s.spawnParticles(ParticleTypes.SOUL, lp.x, lp.y + 1, lp.z, 30, 0.5, 1.0, 0.5, 0.05);
+        s.spawnParticles(TEAL, g.x, g.y + 1, g.z, 50, 0.8, 1.2, 0.8, 0.1);
+        s.spawnParticles(ParticleTypes.SOUL, g.x, g.y + 1, g.z, 24, 0.5, 1.0, 0.5, 0.05);
         this.groundRing(g, 2.0, 24, false);
         this.syncEffects();
     }
 
-    private void tickChain(ServerWorld s) {
-        if (this.chained) {
-            Entity l = this.lancerId != null ? s.getEntity(this.lancerId) : null;
-            Entity a = this.anchorId != null ? s.getEntity(this.anchorId) : null;
-            if (!(l instanceof TatteredLancerEntity lancer) || !lancer.isAlive()) {
-                // улана убили: душа на 8 стаков уже летит, купол падает
-                this.chained = false;
-                if (a instanceof NabatAnchorEntity an) {
-                    an.breakApart();
-                }
-                this.needBells = false;
-                this.bellsPlaced = false;
-                this.noRequiem = false;
-                this.forceCrash = true;
-                this.syncEffects();
-                return;
-            }
-            if (a instanceof NabatAnchorEntity an) {
-                double d = lancer.distanceTo(an);
-                if (d > 14.0) {
-                    // цепь натянулась — дёргает к якорю
-                    Vec3d pull = an.getPos().subtract(lancer.getPos()).normalize().multiply(0.35 + (d - 14) * 0.1);
-                    lancer.setVelocity(lancer.getVelocity().multiply(0.3).add(pull.x, 0.05, pull.z));
-                    lancer.velocityModified = true;
-                    if (this.age % 10 == 0) {
-                        s.playSound(null, lancer.getX(), lancer.getY(), lancer.getZ(),
-                                net.minecraft.sound.SoundEvents.BLOCK_CHAIN_HIT, SoundCategory.HOSTILE, 1.2f, 0.7f);
-                    }
-                }
-            }
-        }
-        if (this.freedTicks > 0) {
-            this.freedTicks--;
-            if (this.freedTicks == 0) {
-                this.endFreedLancer();
-            }
-        }
-    }
-
-    /** Улан ударами порвал цепь: он «Освобождён» и бьётся с Набатом, Набат падает без Реквиема. */
-    void onChainBroken(NabatAnchorEntity anchor) {
-        ServerWorld s = this.sw();
-        if (s == null || !this.chained) {
+    /** Улан держит купол, пока жив; убили — душа на 8 стаков летит к Набату, а сам он падает. */
+    private void tickLancer(ServerWorld s) {
+        if (!this.lancerGuard) {
             return;
         }
-        this.chained = false;
         Entity l = this.lancerId != null ? s.getEntity(this.lancerId) : null;
-        if (l instanceof TatteredLancerEntity lancer) {
-            lancer.removeStatusEffect(ModEffects.PRISONER);
-            lancer.removeScoreboardTag(NabatHooks.TAG);          // свободный улан — не слуга: души не будет
-            lancer.setFoe(this);
-            this.freedTicks = FREED_GROUND_TICKS + 60;
-            s.spawnParticles(TEAL, lancer.getX(), lancer.getY() + 1.2, lancer.getZ(), 40, 0.5, 1.0, 0.5, 0.1);
+        if (l == null && this.age % 20 != 0) {
+            return;                          // чанк ещё грузится — проверим позже
         }
-        this.needBells = false;
-        this.bellsPlaced = false;
-        this.noRequiem = true;
-        this.action = NONE;
-        this.begin(CRASH);
-        this.syncEffects();
+        if (!(l instanceof TatteredLancerEntity lancer) || !lancer.isAlive()) {
+            this.lancerGuard = false;
+            this.lancerId = null;
+            this.needBells = false;
+            this.bellsPlaced = false;
+            this.forceCrash = true;
+            this.syncEffects();
+        } else if (this.age % 10 == 0) {
+            // бирюзовая нить от улана к куполу — видно, кто его держит
+            Vec3d a = lancer.getPos().add(0, 1.6, 0);
+            Vec3d b = this.getPos().add(0, 3.0, 0);
+            for (int i = 1; i < 8; i++) {
+                Vec3d p = a.lerp(b, i / 8.0);
+                s.spawnParticles(TEAL, p.x, p.y, p.z, 1, 0.05, 0.05, 0.05, 0);
+            }
+        }
     }
 
-    /** Освобождённый улан уходит: душа растворяется. */
-    private void endFreedLancer() {
-        ServerWorld s = this.sw();
-        if (s == null || this.lancerId == null || this.chained) {
+    /** Слуга Набата крепче обычного: множители к здоровью и урону. */
+    static void empower(LivingEntity e, double hpMul, double dmgMul) {
+        EntityAttributeInstance hp = e.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        if (hp != null && hpMul != 1.0 && hp.getModifier(BUFF_HP) == null) {
+            hp.addPersistentModifier(new EntityAttributeModifier(BUFF_HP, "Nabat servant health", hpMul - 1.0,
+                    EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+        }
+        EntityAttributeInstance dmg = e.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        if (dmg != null && dmgMul != 1.0 && dmg.getModifier(BUFF_DMG) == null) {
+            dmg.addPersistentModifier(new EntityAttributeModifier(BUFF_DMG, "Nabat servant damage", dmgMul - 1.0,
+                    EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+        }
+        e.setHealth(e.getMaxHealth());
+    }
+
+    /**
+     * Раскидать слуг по игрокам: у каждого игрока примерно поровну преследователей.
+     * Слуги без цели (или с целью вне боя) получают самого «незанятого» игрока, перегруженные — переходят.
+     */
+    void balanceTargets(ServerWorld s) {
+        List<PlayerEntity> ps = this.fighters();
+        if (ps.isEmpty()) {
             return;
         }
-        Entity l = s.getEntity(this.lancerId);
-        if (l instanceof TatteredLancerEntity lancer && lancer.isAlive()) {
-            s.spawnParticles(TEAL, lancer.getX(), lancer.getY() + 1.2, lancer.getZ(), 60, 0.5, 1.2, 0.5, 0.08);
-            s.spawnParticles(ParticleTypes.SOUL, lancer.getX(), lancer.getY() + 1.2, lancer.getZ(), 30, 0.4, 1.0, 0.4, 0.05);
-            s.playSound(null, lancer.getX(), lancer.getY(), lancer.getZ(), ModSounds.NABAT_SOUL_DASH, SoundCategory.HOSTILE,
-                    2.0f, 0.6f);
-            lancer.discard();
+        List<MobEntity> mobs = s.getEntitiesByClass(MobEntity.class, this.getBoundingBox().expand(64.0, 40.0, 64.0),
+                e -> e != this && e.isAlive() && e.getCommandTags().contains(NabatHooks.TAG)
+                        && !e.getCommandTags().contains(NabatHooks.NO_SOUL));
+        if (mobs.isEmpty()) {
+            return;
         }
-        this.lancerId = null;
-        this.freedTicks = 0;
+        Map<PlayerEntity, Integer> cnt = new HashMap<>();
+        for (PlayerEntity p : ps) {
+            cnt.put(p, 0);
+        }
+        List<MobEntity> free = new ArrayList<>();
+        for (MobEntity m : mobs) {
+            LivingEntity t = m.getTarget();
+            if (t instanceof PlayerEntity p && cnt.containsKey(p)) {
+                cnt.merge(p, 1, Integer::sum);
+            } else if (t == null || !t.isAlive() || t instanceof PlayerEntity) {
+                free.add(m);
+            }
+        }
+        int fair = (int) Math.ceil(mobs.size() / (double) ps.size());
+        for (MobEntity m : mobs) {
+            if (m.getTarget() instanceof PlayerEntity p && cnt.containsKey(p) && cnt.get(p) > fair) {
+                PlayerEntity q = leastTargeted(cnt, m);
+                if (q != p && cnt.get(q) + 1 < cnt.get(p)) {
+                    m.setTarget(q);
+                    cnt.merge(p, -1, Integer::sum);
+                    cnt.merge(q, 1, Integer::sum);
+                }
+            }
+        }
+        for (MobEntity m : free) {
+            PlayerEntity q = leastTargeted(cnt, m);
+            m.setTarget(q);
+            cnt.merge(q, 1, Integer::sum);
+        }
+    }
+
+    private static PlayerEntity leastTargeted(Map<PlayerEntity, Integer> cnt, Entity from) {
+        PlayerEntity best = null;
+        double bs = Double.MAX_VALUE;
+        for (Map.Entry<PlayerEntity, Integer> e : cnt.entrySet()) {
+            double score = e.getValue() * 10000.0 + e.getKey().squaredDistanceTo(from);
+            if (score < bs) {
+                bs = score;
+                best = e.getKey();
+            }
+        }
+        return best;
     }
 
     // =====================================================================
@@ -1534,7 +1716,9 @@ public class NabatEntity extends HostileEntity {
         this.requiemStacks = Math.min(MAX_REQUIEM, this.requiemStacks + stacks);
         this.syncEffects();
         this.sendAction(SOUL_IN);
-        this.sound(ModSounds.NABAT_CHIME, 2.0f, 1.4f + this.random.nextFloat() * 0.2f);
+        if (this.random.nextInt(3) == 0) {
+            this.sound(ModSounds.NABAT_CHIME, 1.4f, 1.4f + this.random.nextFloat() * 0.2f);
+        }
         ServerWorld s = this.sw();
         if (s != null) {
             s.spawnParticles(AMBER, from.x, from.y, from.z, 12, 0.3, 0.3, 0.3, 0.05);
@@ -1546,7 +1730,7 @@ public class NabatEntity extends HostileEntity {
     // =====================================================================
     private void syncEffects() {
         boolean sky = !this.isGrounded() && this.action != CRASH;
-        int dome = this.chained ? 1 : (sky && this.bellsPlaced ? this.aliveBells() : 0);
+        int dome = this.lancerGuard ? 1 : (sky && this.bellsPlaced ? this.aliveBells() : 0);
         this.setMarker(ModEffects.DOME, dome);
         this.setMarker(ModEffects.REQUIEM, this.requiemStacks);
         this.setMarker(ModEffects.CRACK, this.crack);
@@ -1606,15 +1790,8 @@ public class NabatEntity extends HostileEntity {
             return false;
         }
         Entity att = source.getAttacker();
-        if (this.action == INTRO || (att != null && NabatHooks.isKin(att) && !(att instanceof TatteredLancerEntity))) {
+        if (this.action == INTRO || (att != null && NabatHooks.isKin(att))) {
             return false;
-        }
-        if (att instanceof TatteredLancerEntity) {
-            if (this.chained) {
-                return false;
-            }
-            amount *= 2f;                                    // освобождённый улан мстит
-            return super.damage(source, amount);
         }
         if (source.getSource() instanceof ProjectileEntity) {
             amount *= PROJECTILE_FACTOR;
@@ -1622,9 +1799,9 @@ public class NabatEntity extends HostileEntity {
         if (this.domeUp()) {
             amount *= DOME_FACTOR;
             if (this.domeHitCd <= 0) {
-                this.domeHitCd = 5;
+                this.domeHitCd = 12;
                 this.sendAction(DOME_HIT);
-                this.sound(ModSounds.NABAT_DOME_HIT, 1.6f, 0.9f + this.random.nextFloat() * 0.25f);
+                this.sound(ModSounds.NABAT_DOME_HIT, 1.2f, 0.9f + this.random.nextFloat() * 0.25f);
             }
         } else if (this.heartHit(source)) {
             amount *= HEART_FACTOR;
@@ -1678,10 +1855,9 @@ public class NabatEntity extends HostileEntity {
         }
         this.setNoGravity(false);
         this.sound(ModSounds.NABAT_DEATH, 6.0f, 1.0f);
-        this.endFreedLancer();
         // все слуги и колокола рассыпаются (душ нет)
         for (LivingEntity e : s.getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(80.0),
-                e -> e != this && e.isAlive() && (e.getCommandTags().contains(NabatHooks.TAG) || e instanceof NabatAnchorEntity))) {
+                e -> e != this && e.isAlive() && e.getCommandTags().contains(NabatHooks.TAG))) {
             s.spawnParticles(AMBER, e.getX(), e.getBodyY(0.5), e.getZ(), 12, 0.3, 0.5, 0.3, 0.05);
             s.spawnParticles(ParticleTypes.LARGE_SMOKE, e.getX(), e.getBodyY(0.5), e.getZ(), 6, 0.3, 0.5, 0.3, 0.02);
             e.discard();
@@ -1726,7 +1902,7 @@ public class NabatEntity extends HostileEntity {
 
     @Override
     public int getMinAmbientSoundDelay() {
-        return 260;
+        return 480;
     }
 
     @Override
@@ -1758,13 +1934,11 @@ public class NabatEntity extends HostileEntity {
         }
         nbt.putBoolean("Phase3", this.isPhase3());
         nbt.putBoolean("ReliqDone", this.reliqDone);
-        nbt.putBoolean("Chained", this.chained);
+        nbt.putBoolean("LancerGuard", this.lancerGuard);
         if (this.lancerId != null) {
             nbt.putUuid("Lancer", this.lancerId);
         }
-        if (this.anchorId != null) {
-            nbt.putUuid("Anchor", this.anchorId);
-        }
+        nbt.putInt("BellsCd", this.bellsCd);
         nbt.putInt("Requiem", this.requiemStacks);
         nbt.putInt("Crack", this.crack);
         nbt.putBoolean("Grounded", this.isGrounded());
@@ -1794,9 +1968,9 @@ public class NabatEntity extends HostileEntity {
         this.dataTracker.set(PHASE3, nbt.getBoolean("Phase3"));
         this.reliqDone = nbt.getBoolean("ReliqDone");
         this.dataTracker.set(RELIQ_GONE, this.reliqDone);
-        this.chained = nbt.getBoolean("Chained");
+        this.lancerGuard = nbt.getBoolean("LancerGuard");
         this.lancerId = nbt.containsUuid("Lancer") ? nbt.getUuid("Lancer") : null;
-        this.anchorId = nbt.containsUuid("Anchor") ? nbt.getUuid("Anchor") : null;
+        this.bellsCd = nbt.getInt("BellsCd");
         this.requiemStacks = nbt.getInt("Requiem");
         this.crack = nbt.getInt("Crack");
         this.dataTracker.set(GROUNDED, nbt.getBoolean("Grounded"));

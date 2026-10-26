@@ -40,9 +40,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Мечник Набата «Отзвук»: пустые бронзовые латы, внутри тлеет свет. Спереди (±60°) парирует щитом‑колоколом
- * удары и стрелы (звон, ударившему +10 очков «Шума»), сзади и сбоку — уязвим: вдвоём один держит его спереди,
- * второй бьёт в спину. Атаки: серия из трёх ударов (4/4/6) и рывок‑укол к самому шумному (6).
+ * Мечник Набата «Отзвук»: пустые бронзовые латы, внутри тлеет свет. Бьётся как обычный моб (без парирования).
+ * Атаки: серия из трёх ударов (5/5/7) и рывок‑укол (8). Цель раздаёт сам Набат — слуги расходятся по разным игрокам.
  * Тайминги совпадают с анимациями tools/nabat_gen.py.
  */
 public class NabatBladeEntity extends HostileEntity {
@@ -56,15 +55,15 @@ public class NabatBladeEntity extends HostileEntity {
 
     public static final int COMBO_TICKS = 44;
     static final int[] COMBO_HITS = {11, 20, 31};
-    static final float[] COMBO_DMG = {4f, 4f, 6f};
+    static final float[] COMBO_DMG = {5f, 5f, 7f};
     static final double COMBO_REACH = 2.7;
     public static final int DASH_TICKS = 32;
     static final int DASH_GO = 10;
     static final int DASH_HIT = 16;
-    static final float DASH_DMG = 6f;
+    static final float DASH_DMG = 8f;
     static final int DASH_COOLDOWN = 160;
     public static final int ASSEMBLE_TICKS = 32;
-    static final double PARRY_COS = Math.cos(Math.toRadians(60));
+    static final double DASH_SPEED = 0.6;
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.72f, 0.3f), 0.9f);
 
     public int clientAction = NONE;
@@ -79,15 +78,15 @@ public class NabatBladeEntity extends HostileEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 40.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.24)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 55.0)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.204)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 40.0)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 4.0)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 5.0)
                 .add(EntityAttributes.GENERIC_ARMOR, 6.0)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.4);
     }
 
-    /** Призван Набатом: первые 1.6 с собирается из дыма (неуязвим, стоит). */
+    /** Призван Набатом: первые 1.6 с собирается из дыма (стоит на месте, но его уже можно бить). */
     void setAssembling() {
         this.assemble = ASSEMBLE_TICKS;
     }
@@ -115,24 +114,12 @@ public class NabatBladeEntity extends HostileEntity {
             this.assemble--;
             if (this.assemble == ASSEMBLE_TICKS - 1) {
                 this.sendAction(ASSEMBLE);
-                this.playSound(ModSounds.BLADE_ASSEMBLE, 1.2f, 1.0f);
+                this.playSound(ModSounds.BLADE_ASSEMBLE, 0.8f, 1.0f);
             }
             this.setVelocity(0, this.getVelocity().y, 0);
             if (this.getWorld() instanceof ServerWorld s && this.assemble % 3 == 0) {
                 s.spawnParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 0.8, this.getZ(), 2, 0.25, 0.6, 0.25, 0.01);
                 s.spawnParticles(AMBER, this.getX(), this.getY() + 1.0, this.getZ(), 2, 0.3, 0.6, 0.3, 0.01);
-            }
-        }
-    }
-
-    @Override
-    protected void mobTick() {
-        super.mobTick();
-        // цель — самый шумный игрок поблизости (раз в 2 с)
-        if ((this.age + this.getId()) % 40 == 0 && this.getWorld() instanceof ServerWorld s) {
-            PlayerEntity loud = NabatNoise.loudest(s, this.getPos(), 24.0);
-            if (loud != null && NabatNoise.level(loud) >= 2 && loud != this.getTarget()) {
-                this.setTarget(loud);
             }
         }
     }
@@ -157,42 +144,13 @@ public class NabatBladeEntity extends HostileEntity {
         return new Vec3d(-MathHelper.sin(yaw), 0, MathHelper.cos(yaw));
     }
 
-    /** Парирование спереди: удар и стрела «звенят» о щит‑колокол. */
     @Override
     public boolean damage(DamageSource source, float amount) {
-        if (this.assemble > 0) {
-            return false;
-        }
         Entity att = source.getAttacker();
         if (att != null && NabatHooks.isKin(att)) {
             return false;
         }
-        Entity from = source.getSource() != null ? source.getSource() : att;
-        if (from != null && !source.isOf(net.minecraft.entity.damage.DamageTypes.OUT_OF_WORLD) && !this.getWorld().isClient) {
-            Vec3d to = new Vec3d(from.getX() - this.getX(), 0, from.getZ() - this.getZ());
-            if (to.lengthSquared() > 1e-4 && to.normalize().dotProduct(this.forward()) > PARRY_COS) {
-                this.parry(att, from);
-                return false;
-            }
-        }
         return super.damage(source, amount);
-    }
-
-    private void parry(Entity attacker, Entity from) {
-        this.sendAction(PARRY);
-        this.playSound(ModSounds.BLADE_PARRY, 1.3f, 0.9f + this.random.nextFloat() * 0.2f);
-        if (this.getWorld() instanceof ServerWorld s) {
-            Vec3d p = this.getPos().add(this.forward().multiply(0.6)).add(0, 1.3, 0);
-            s.spawnParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 10, 0.15, 0.15, 0.15, 0.3);
-            s.spawnParticles(AMBER, p.x, p.y, p.z, 6, 0.2, 0.2, 0.2, 0.05);
-        }
-        if (attacker instanceof PlayerEntity pl) {
-            NabatNoise.add(pl, 10f);
-            if (from == attacker) {
-                pl.takeKnockback(0.35, this.getX() - pl.getX(), this.getZ() - pl.getZ());
-                pl.velocityModified = true;
-            }
-        }
     }
 
     List<LivingEntity> victims(double radius) {
@@ -262,7 +220,7 @@ public class NabatBladeEntity extends HostileEntity {
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        this.playSound(ModSounds.BLADE_STEP, 0.4f, 0.9f + this.random.nextFloat() * 0.2f);
+        this.playSound(ModSounds.BLADE_STEP, 0.25f, 0.9f + this.random.nextFloat() * 0.2f);
     }
 
     @Override
@@ -418,7 +376,7 @@ public class NabatBladeEntity extends HostileEntity {
                     m.playSound(ModSounds.BLADE_SWING, 1.2f, 0.8f);
                 }
                 if (t >= DASH_GO && t < DASH_HIT + 2) {
-                    m.setVelocity(this.dashDir.x * 0.7, m.getVelocity().y, this.dashDir.z * 0.7);
+                    m.setVelocity(this.dashDir.x * DASH_SPEED, m.getVelocity().y, this.dashDir.z * DASH_SPEED);
                     m.velocityModified = true;
                     if (t >= DASH_HIT - 2) {
                         m.coneHit(2.4, 45, DASH_DMG, 0.8, this.hitIds);

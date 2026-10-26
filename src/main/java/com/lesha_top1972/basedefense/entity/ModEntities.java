@@ -217,16 +217,6 @@ public final class ModEntities {
                     .trackedUpdateRate(2)
                     .build());
 
-    /** Якорь узника (к нему прикован улан). */
-    public static final EntityType<NabatAnchorEntity> NABAT_ANCHOR = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "nabat_anchor"),
-            FabricEntityTypeBuilder.<NabatAnchorEntity>create(SpawnGroup.MISC, NabatAnchorEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.9f, 2.0f))
-                    .trackRangeBlocks(96)
-                    .fireImmune()
-                    .build());
-
     /** Душа «Реквиема». */
     public static final EntityType<NabatSoulEntity> NABAT_SOUL = Registry.register(
             Registries.ENTITY_TYPE,
@@ -270,6 +260,5 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_CAPTIVE, NabatCaptiveEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(NABAT_ANCHOR, NabatAnchorEntity.createAttributes());
     }
 }

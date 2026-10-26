@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity.nabat;
 
 import com.lesha_top1972.basedefense.client.entity.GlowLayer;
 import com.lesha_top1972.basedefense.entity.NabatCaptiveEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.MobEntityRenderer;
@@ -21,6 +22,12 @@ public class NabatCaptiveRenderer extends MobEntityRenderer<NabatCaptiveEntity, 
     @Override
     public void render(NabatCaptiveEntity entity, float yaw, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider vcp, int light) {
+        // пленнику (вид из глаз) колокол не рисуем: изнутри он закрыл бы весь экран
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.player != null && mc.options.getPerspective().isFirstPerson() && entity.age > 8
+                && entity.squaredDistanceTo(mc.player.getX(), entity.getY(), mc.player.getZ()) < 1.2) {
+            return;
+        }
         this.getModel().shake = 0.6f + (entity.hurtTime > 0 ? entity.hurtTime / 6f : 0f);
         super.render(entity, yaw, tickDelta, matrices, vcp, light);
     }

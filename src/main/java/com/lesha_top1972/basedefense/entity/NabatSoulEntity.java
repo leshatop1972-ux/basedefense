@@ -107,7 +107,7 @@ public class NabatSoulEntity extends Entity {
             int top = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MathHelper.floor(nx), MathHelper.floor(nz));
             double ny = MathHelper.lerp(0.25, this.getY(), top + 0.25 + 0.08 * Math.sin(this.life * 0.25));
             this.setPosition(nx, ny, nz);
-            if (this.life % 30 == 0) {
+            if (this.life % 60 == 0 && this.random.nextBoolean()) {
                 w.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.NABAT_SOUL, SoundCategory.HOSTILE, 0.5f,
                         0.9f + this.random.nextFloat() * 0.2f);
             }

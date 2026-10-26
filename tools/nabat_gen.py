@@ -10,7 +10,7 @@
     python tools/nabat_gen.py --check                       — пересечения молота с телом и крыльями
 
 Что создаёт (assets/basedefense):
-  geo/nabat, nabat_maul, nabat_blade, nabat_sword, nabat_bell, nabat_anchor
+  geo/nabat, nabat_maul, nabat_blade, nabat_sword, nabat_bell
   textures/entity/<то же>.png + _glowmask.png (+ nabat_p3 — треснувший колокол 3‑й фазы)
   animations/nabat, nabat_blade (.animation.json) и nabat.weapon.json, nabat_blade.weapon.json
 
@@ -408,36 +408,6 @@ def build_bell():
     return M
 
 
-def build_anchor():
-    """Якорь узника: бронзовый кол с открытым реликварием — к нему прикован улан."""
-    M = Model("nabat_anchor", 128, 256)
-    b, c = M.bone, M.cube
-    b("root", None, (0, 0, 0))
-    b("anchor", "root", (0, 0, 0))
-    c("anchor", (-1.6, -4, -1.6), (3.2, 20, 3.2), "bronze", face="shaft")
-    for y in (2, 9):
-        octo(M, "anchor", 0, 0, y, 1.6, 4.6, "gold")
-    # «лапы» кола, вбитые в землю
-    for k in range(4):
-        c("anchor", (-0.8, -1, -5.5), (1.6, 3.2, 4.4), "bronze", face="claw", rot=(-30, 45 + 90 * k, 0), pivot=(0, 1, 0))
-    octo(M, "anchor", 0, 0, 16, 1.6, 8, "gold")
-    octo(M, "anchor", 0, 0, 17.6, 8, 6.6, "cage", face="cage")
-    octo(M, "anchor", 0, 0, 18.4, 6.4, 3.8, "soul", face="soul")
-    octo(M, "anchor", 0, 0, 25.6, 1.6, 8, "gold")
-    c("anchor", (-0.6, 27.2, -0.6), (1.2, 3.2, 1.2), "gold")
-    for k in range(4):
-        c("anchor", (-0.4, 20.5, -5.8), (0.8, 0.8, 2.6), "gold", rot=(0, 45 + 90 * k, 0), pivot=(0, 21, 0))
-    # кольцо для цепи
-    for k in range(6):
-        a = k * 60
-        c("anchor", (-1.6, 12.4, -3.6), (3.2, 1.0, 1.0), "chain", rot=(0, a, 0), pivot=(0, 12.9, 0))
-    M.pack()
-    return M
-
-
-# =====================================================================
-# 2. Текстуры
-# =====================================================================
 def paint(M, seed, phase3=False):
     PT = Painter(M.tex_w, M.tex_h, seed=seed)
 
@@ -995,6 +965,32 @@ def fly(t):
     pr["robe_drag"] = 28.0
     pr["tabard"] = -40.0
     pr["halo"] = 20.0 * t / FLY_T
+    return pr
+
+
+GLIDE_T = 3.2
+
+
+def glide(t):
+    """Скольжение на быстром пролёте: крылья распахнуты и почти не машут, корпус лёг вперёд,
+    раз за цикл — один мягкий взмах (волна идёт по крылу к кончику)."""
+    phi = 2 * math.pi * t / GLIDE_T
+    beat = math.sin(phi) * (0.5 + 0.5 * math.cos(phi - 1.2))      # несимметричный: один взмах за цикл
+    pr = P(HOVER, **flap(phi, wr0=10.0, wra=7.0, ws0=26.0, wsa=4.0, wb0=6.0, wba=5.0, r20=4.0, r2a=6.0,
+                         r30=-4.0, r3a=7.0, fba=3.0, fsa=0.5, flex=4.0, wta=2.5))
+    pr["wr"] = 10.0 + 9.0 * beat
+    pr["root_pos"] = (0, -1.4 * math.sin(phi - 0.6), 0)
+    pr["root"] = (32 + 2.0 * math.sin(phi - 0.9), 0, 2.5 * math.sin(phi * 0.5 * 2))
+    pr["body"] = (3, 0, 0)
+    pr["torso"] = (1, 0, 0)
+    pr["head"] = (-31, 3.0 * math.sin(phi), 0)
+    pr["rh"] = (-15.5, 3.4, 2.6)
+    pr["r_pole"] = (-0.4, -0.6, 1.0)
+    pr["wdir"] = (-0.22, -0.5, 1.0)
+    pr["lh"] = (12.0, 6.5, -3.0)
+    pr["robe_drag"] = 40.0
+    pr["tabard"] = -55.0
+    pr["halo"] = 20.0 * t / GLIDE_T
     return pr
 
 
@@ -1915,7 +1911,7 @@ def preview(mob, weapon, clip, times, yaw=0.5, scale=4.2, out_name="tools/mob_pr
 # 7. Сборка
 # =====================================================================
 def build_all():
-    global NABAT, MAUL, BLADE, SWORD, BELL, ANCHOR
+    global NABAT, MAUL, BLADE, SWORD, BELL
     NABAT = build_nabat()
     NABAT.finalize()
     MAUL = build_maul()
@@ -1923,12 +1919,11 @@ def build_all():
     BLADE.finalize()
     SWORD = build_sword()
     BELL = build_bell()
-    ANCHOR = build_anchor()
-    for M_ in (NABAT, MAUL, BLADE, SWORD, BELL, ANCHOR):
+    for M_ in (NABAT, MAUL, BLADE, SWORD, BELL):
         M_.write_geo(ROOT)
     save_textures(NABAT, paint(NABAT, 91))
     save_textures(NABAT, paint(NABAT, 91, phase3=True), "nabat_p3")
-    for M_, seed in ((MAUL, 5), (BLADE, 17), (SWORD, 23), (BELL, 29), (ANCHOR, 31)):
+    for M_, seed in ((MAUL, 5), (BLADE, 17), (SWORD, 23), (BELL, 29)):
         save_textures(M_, paint(M_, seed))
 
 
@@ -2035,6 +2030,7 @@ def main():
 NABAT_CLIPS = [
     ("hover", hover, HOVER_T, 30, True),
     ("fly", fly, FLY_T, 30, True),
+    ("glide", glide, GLIDE_T, 30, True),
     ("ground_idle", ground_idle, GROUND_T, 20, True),
     ("toll", toll, TOLL[-1][0], 60, False),
     ("censer", censer, CENSER[-1][0], 60, False),

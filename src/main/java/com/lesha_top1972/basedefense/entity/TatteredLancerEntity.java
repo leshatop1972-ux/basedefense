@@ -185,13 +185,6 @@ public class TatteredLancerEntity extends HostileEntity {
         super.mobTick();
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
         com.lesha_top1972.basedefense.effect.BossEffectsSync.tick(this, this.bossBar);
-        if (this.foe != null) {
-            if (this.foe.isAlive()) {
-                this.setTarget(this.foe);
-                return;
-            }
-            this.foe = null;
-        }
         if (--this.retargetTimer <= 0) {
             this.retargetTimer = RETARGET_TICKS;
             this.switchTarget();
@@ -359,24 +352,10 @@ public class TatteredLancerEntity extends HostileEntity {
         this.getWorld().sendEntityStatus(this, (byte) (STATUS_BASE + action));
     }
 
-    /** Враг‑монстр, которого улан всё же бьёт (освобождённый улан против Набата); null — нет. */
-    private LivingEntity foe;
-
-    /** Освобождённый улан сражается с foe (его удары по нему проходят, цель — он). */
-    public void setFoe(LivingEntity foe) {
-        this.foe = foe;
-        if (foe != null) {
-            this.setTarget(foe);
-        }
-    }
-
     List<LivingEntity> victims(double radius) {
         Box box = this.getBoundingBox().expand(radius, 1.5, radius);
-        if (this.foe != null && this.foe.isAlive()) {
-            box = box.expand(1.5, 2.5, 1.5);            // у Набата огромный хитбокс
-        }
         return this.getWorld().getEntitiesByClass(LivingEntity.class, box,
-                e -> e != this && e.isAlive() && (e == this.foe || !(e instanceof Monster)) && !(e instanceof ArmorStandEntity)
+                e -> e != this && e.isAlive() && !(e instanceof Monster) && !(e instanceof ArmorStandEntity)
                         && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator())));
     }
 

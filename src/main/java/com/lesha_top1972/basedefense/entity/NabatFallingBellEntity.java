@@ -128,7 +128,7 @@ public class NabatFallingBellEntity extends Entity {
                 double tz = MathHelper.lerp(0.25, this.getZ(), le.getZ());
                 double ty = MathHelper.lerp(0.25, this.getY(), le.getY() + le.getHeight() + 3.2);
                 this.setPosition(tx, ty, tz);
-                if (life % 20 == 0) {
+                if (life % 24 == 0) {
                     w.playSound(null, tx, ty, tz, ModSounds.NABAT_MARK, SoundCategory.HOSTILE, 1.1f, 0.9f + life / 200f);
                 }
                 if (!le.hasStatusEffect(ModEffects.BELL_MARK)) {

@@ -17,7 +17,6 @@ import com.lesha_top1972.basedefense.client.fx.LancerFx;
 import com.lesha_top1972.basedefense.client.entity.SettlerEntityRenderer;
 import com.lesha_top1972.basedefense.client.render.BloodPoolOverlay;
 import com.lesha_top1972.basedefense.client.render.CaptiveOverlay;
-import com.lesha_top1972.basedefense.client.entity.nabat.NabatAnchorRenderer;
 import com.lesha_top1972.basedefense.client.entity.nabat.NabatBellRenderer;
 import com.lesha_top1972.basedefense.client.entity.nabat.NabatBladeRenderer;
 import com.lesha_top1972.basedefense.client.entity.nabat.NabatCaptiveRenderer;
@@ -98,13 +97,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(NabatBladeRenderer.LAYER, () -> BedrockModelLoader.load("nabat_blade"));
         EntityModelLayerRegistry.registerModelLayer(NabatBladeRenderer.SWORD, () -> BedrockModelLoader.load("nabat_sword"));
         EntityModelLayerRegistry.registerModelLayer(NabatBellRenderer.LAYER, () -> BedrockModelLoader.load("nabat_bell"));
-        EntityModelLayerRegistry.registerModelLayer(NabatAnchorRenderer.LAYER, () -> BedrockModelLoader.load("nabat_anchor"));
         EntityRendererRegistry.register(ModEntities.NABAT, NabatRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_BLADE, NabatBladeRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_BELL, NabatBellRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_CAPTIVE, NabatCaptiveRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_FALLING_BELL, NabatFallingBellRenderer::new);
-        EntityRendererRegistry.register(ModEntities.NABAT_ANCHOR, NabatAnchorRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_SOUL, NabatSoulRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_QUAKE, EmptyEntityRenderer::new);
         CaptiveOverlay.init();         // изнутри «Колокольного плена» — темно

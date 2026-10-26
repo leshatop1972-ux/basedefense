@@ -42,7 +42,7 @@ import java.util.Set;
  * «Землетрясение» Набата (невидимый управляющий объект): три удара колоколом в землю — от точки удара
  * расходятся волны до 6, 11 и 16 блоков. Кто стоит на земле в волне — 5 урона и подброс (прыжок спасает).
  * Волна выбивает природные блоки (земля, трава, камень, песок, гравий; только при mobGriefing),
- * после третьего удара вспучиваются 5–8 холмов из «Гудящего камня». Через 45 с всё возвращается как было.
+ * после третьего удара 3–5 пятен земли (вровень с поверхностью) становятся «Гудящим камнем». Через 45 с всё возвращается.
  */
 public class NabatQuakeEntity extends Entity {
 
@@ -150,7 +150,7 @@ public class NabatQuakeEntity extends Entity {
             if (i % 3 == 0) {
                 s.spawnParticles(ParticleTypes.CLOUD, x + 0.5, top + 1.2, z + 0.5, 1, 0.1, 0.05, 0.1, 0.03);
             }
-            if (grief && this.random.nextFloat() < 0.22f && natural(s, p, st) && !this.broken.containsKey(p.asLong())) {
+            if (grief && this.random.nextFloat() < 0.10f && natural(s, p, st) && !this.broken.containsKey(p.asLong())) {
                 this.broken.put(p.asLong(), st);
                 s.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
             }
@@ -175,44 +175,42 @@ public class NabatQuakeEntity extends Entity {
                 || st.isOf(Blocks.SNOW_BLOCK) || st.isOf(Blocks.CLAY);
     }
 
-    /** Холмы гудящего камня (только в воздух; ставятся и при выключенном mobGriefing — они временные). */
+    /**
+     * Пятна гудящего камня вровень с землёй: верхний природный блок заменяется камнем (не горкой).
+     * 3–5 пятен по 3–5 блоков; оригинал запоминается и возвращается вместе с выбитыми блоками.
+     * Ставятся и при выключенном mobGriefing — они временные.
+     */
     private void raiseHills() {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
         }
         BlockState stone = ModBlocks.RESONANT_STONE.getDefaultState();
-        int hills = 5 + this.random.nextInt(4);
-        for (int k = 0; k < hills; k++) {
+        int patches = 3 + this.random.nextInt(3);
+        for (int k = 0; k < patches; k++) {
             double a = this.random.nextDouble() * Math.PI * 2;
-            double r = 4.0 + this.random.nextDouble() * 11.0;
+            double r = 4.0 + this.random.nextDouble() * 10.0;
             int hx = (int) Math.floor(this.getX() + Math.cos(a) * r);
             int hz = (int) Math.floor(this.getZ() + Math.sin(a) * r);
-            int rad = 1 + this.random.nextInt(2);
-            int height = 2 + this.random.nextInt(3);
-            for (int dx = -rad; dx <= rad; dx++) {
-                for (int dz = -rad; dz <= rad; dz++) {
-                    double dist = Math.sqrt(dx * dx + dz * dz);
-                    if (dist > rad + 0.4) {
-                        continue;
-                    }
-                    int h = (int) Math.round(height * (1.0 - dist / (rad + 1.0)));
-                    int top = s.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, hx + dx, hz + dz);
-                    if (Math.abs(top - this.getY()) > 4) {
-                        continue;
-                    }
-                    for (int y = 0; y < h; y++) {
-                        BlockPos p = new BlockPos(hx + dx, top + y, hz + dz);
-                        if (!s.getBlockState(p).isAir() || !s.getEntitiesByClass(LivingEntity.class, new Box(p), e -> true).isEmpty()) {
-                            break;
-                        }
-                        s.setBlockState(p, stone, Block.NOTIFY_ALL);
-                        this.placed.add(p.asLong());
-                        s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, stone), p.getX() + 0.5,
-                                p.getY() + 0.5, p.getZ() + 0.5, 4, 0.4, 0.3, 0.4, 0.1);
-                    }
+            int[][] cells = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            int count = 3 + this.random.nextInt(3);
+            for (int c = 0; c < count; c++) {
+                int x = hx + cells[c][0];
+                int z = hz + cells[c][1];
+                int top = s.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                if (Math.abs(top - this.getY()) > 3) {
+                    continue;
                 }
+                BlockPos p = new BlockPos(x, top, z);
+                BlockState st = s.getBlockState(p);
+                if (!natural(s, p, st) || this.broken.containsKey(p.asLong())) {
+                    continue;
+                }
+                this.broken.put(p.asLong(), st);
+                s.setBlockState(p, stone, Block.NOTIFY_ALL);
+                s.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, stone), x + 0.5, top + 1.05, z + 0.5,
+                        4, 0.35, 0.05, 0.35, 0.08);
             }
-            s.spawnParticles(AMBER, hx + 0.5, this.getY() + 1.5, hz + 0.5, 10, 0.8, 0.6, 0.8, 0.02);
+            s.spawnParticles(AMBER, hx + 0.5, this.getY() + 0.6, hz + 0.5, 6, 0.8, 0.2, 0.8, 0.01);
         }
     }
 

@@ -1,6 +1,6 @@
 """
 Текстуры эффектов «Набата» (запуск: python tools/nabat_fx_textures.py):
-  textures/mob_effect/noise.png, dome.png, requiem.png, crack.png, bell_mark.png, prisoner.png  — значки 18×18
+  textures/mob_effect/noise.png, dome.png, requiem.png, crack.png, bell_mark.png  — значки 18×18
   textures/misc/nabat_ring.png     — кольцо‑тень под падающим колоколом (в игре окрашивается кодом)
   textures/misc/nabat_ripple.png   — рябь «Купола» в месте попадания
   textures/misc/nabat_captive.png  — темнота изнутри «Колокольного плена» (янтарный отсвет по краям)
@@ -101,19 +101,6 @@ def icon_mark():
     save(img, "mob_effect", "bell_mark.png")
 
 
-def icon_prisoner():
-    """Узник: бирюзовый реликварий и звено цепи."""
-    img = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rectangle((5, 5, 12, 15), outline=OUT, fill=(30, 60, 60, 255))
-    d.rectangle((7, 7, 10, 13), fill=TEAL)
-    d.point((8, 9), fill=(220, 255, 250, 255))
-    d.line([(5, 4), (12, 4)], fill=(212, 166, 78, 255), width=2)
-    d.line([(5, 16), (12, 16)], fill=(212, 166, 78, 255), width=1)
-    d.ellipse((7, 0, 11, 4), outline=(160, 160, 170, 255))
-    save(img, "mob_effect", "prisoner.png")
-
-
 def ring():
     """Кольцо‑тень: яркий тонкий обод + размытый внутренний свет (белое — цвет задаёт код)."""
     S = 128
@@ -208,7 +195,6 @@ if __name__ == "__main__":
     icon_requiem()
     icon_crack()
     icon_mark()
-    icon_prisoner()
     ring()
     ripple()
     captive()

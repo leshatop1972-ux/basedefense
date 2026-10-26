@@ -12,8 +12,8 @@ import net.minecraft.util.math.MathHelper;
 import java.util.List;
 
 /**
- * Изнутри «Колокольного плена»: темнота с тусклым янтарным отсветом по краям; с каждым ударом колокола
- * отсвет вздрагивает. Снаружи ничего не видно.
+ * Изнутри «Колокольного плена»: лёгкий янтарный отсвет по краям экрана, вздрагивает с каждым ударом колокола.
+ * Центр экрана не затемняется — пленник видит всё вокруг и может бить колокол.
  */
 public final class CaptiveOverlay {
 
@@ -44,10 +44,9 @@ public final class CaptiveOverlay {
         float pulse = beat < 6 ? 1f - beat / 6f : 0f;
         int w = context.getScaledWindowWidth();
         int h = context.getScaledWindowHeight();
-        context.fill(0, 0, w, h, ((int) (150 * fade) << 24) | 0x0A0604);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1f, 1f, 1f, fade * (0.55f + 0.45f * pulse));
+        RenderSystem.setShaderColor(1f, 1f, 1f, fade * (0.25f + 0.3f * pulse));
         context.drawTexture(VIGNETTE, 0, 0, -90, 0f, 0f, w, h, w, h);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.disableBlend();

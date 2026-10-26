@@ -1,6 +1,5 @@
 package com.lesha_top1972.basedefense.entity;
 
-import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -9,6 +8,7 @@ import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -17,6 +17,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Vector3f;
@@ -24,14 +25,14 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 /**
- * «Колокольный плен»: Набат накрывает самого шумного огромным колоколом. Внутри темно и громко:
- * урон 1.5 в секунду и +0.5 каждую следующую секунду. Колокол (120 HP) бьют снаружи друзья,
- * а пленник изнутри (его удары ×3). Не вскрыли за 6 с — «Оглушение II» на 3 с, колокол рассыпается.
+ * «Колокольный плен»: Набат накрывает игрока огромным колоколом (пленнику колокол не загораживает обзор).
+ * Урон 1.5 в секунду и +0.5 каждую следующую секунду. Колокол (90 HP) бьют снаружи друзья,
+ * а пленник изнутри (его удары ×3, прицел сам наводится на колокол). Не вскрыли за 5 с — «Замедление II» на 3 с.
  */
 public class NabatCaptiveEntity extends MobEntity {
 
     static final int DROP_TICKS = 10;
-    static final int TRAP_TICKS = 120;
+    static final int TRAP_TICKS = 100;
     static final float INSIDE_FACTOR = 3f;
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.7f, 0.3f), 1.2f);
 
@@ -50,7 +51,7 @@ public class NabatCaptiveEntity extends MobEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return MobEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 120.0)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 90.0)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.0);
     }
@@ -88,6 +89,9 @@ public class NabatCaptiveEntity extends MobEntity {
             this.setPosition(this.getX(), y, this.getZ());
             if (this.life == DROP_TICKS) {
                 this.sound(ModSounds.NABAT_CAPTIVE, 2.5f, 0.8f);
+                if (v != null) {
+                    v.sendMessage(Text.translatable("message.basedefense.nabat_captive"), true);
+                }
                 if (this.getWorld() instanceof ServerWorld s) {
                     s.spawnParticles(ParticleTypes.CLOUD, this.getX(), this.groundY + 0.2, this.getZ(), 16, 1.0, 0.1, 1.0, 0.06);
                 }
@@ -111,10 +115,12 @@ public class NabatCaptiveEntity extends MobEntity {
             Entity o = this.ownerId != null && this.getWorld() instanceof ServerWorld s ? s.getEntity(this.ownerId) : null;
             v.timeUntilRegen = 0;
             v.damage(o instanceof LivingEntity le ? this.getDamageSources().mobAttack(le) : this.getDamageSources().magic(), dmg);
-            this.sound(ModSounds.NABAT_CHIME, 1.6f, 0.6f + sec * 0.06f);
+            if (sec % 2 == 1) {
+                this.sound(ModSounds.NABAT_CHIME, 1.2f, 0.6f + sec * 0.06f);
+            }
         }
         if (inside >= TRAP_TICKS) {
-            v.addStatusEffect(new StatusEffectInstance(ModEffects.STUN, 60, 1, false, true, true), this);
+            v.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 1, false, true, true), this);
             this.shatter(true);
         }
     }
@@ -142,8 +148,9 @@ public class NabatCaptiveEntity extends MobEntity {
             amount *= INSIDE_FACTOR;            // изнутри — по языку колокола
         }
         boolean r = super.damage(source, amount);
-        if (r) {
-            this.sound(ModSounds.NABAT_CHIME, 1.2f, 0.7f + this.random.nextFloat() * 0.3f);
+        if (r && this.getWorld() instanceof ServerWorld s) {
+            this.sound(ModSounds.NABAT_DOME_HIT, 1.0f, 0.7f + this.random.nextFloat() * 0.3f);
+            s.spawnParticles(AMBER, this.getX(), this.getY() + 1.4, this.getZ(), 5, 0.9, 0.8, 0.9, 0.02);
         }
         return r;
     }
