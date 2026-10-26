@@ -382,6 +382,40 @@ def build_sword():
     return M
 
 
+def build_spear():
+    """Золотое копьё «Копий небес»: острие в начале координат вниз (−y), древко вверх. Длина ≈ 3.3 блока."""
+    M = Model("nabat_spear", 64, 128)
+    b, c = M.bone, M.cube
+    b("root", None, (0, 0, 0))
+    b("spear", "root", (0, 0, 0))
+    # острие: листовидное, из трёх ступеней + светящийся дол
+    c("spear", (-0.4, 0.0, -0.4), (0.8, 2.0, 0.8), "gold", face="tip")
+    c("spear", (-1.2, 2.0, -0.35), (2.4, 4.0, 0.7), "gold", face="blade")
+    c("spear", (-1.7, 6.0, -0.35), (3.4, 4.5, 0.7), "gold", face="blade")
+    c("spear", (-1.1, 10.5, -0.35), (2.2, 2.0, 0.7), "gold", face="blade")
+    c("spear", (-0.3, 2.5, -0.45), (0.6, 9.5, 0.9), "glow", face="ember")
+    # колокольчик‑гарда и кольца
+    octo(M, "spear", 0, 0, 12.5, 1.0, 3.6, "gold")
+    octo(M, "spear", 0, 0, 13.5, 2.6, 3.0, "bell", face="tinybell")
+    octo(M, "spear", 0, 0, 16.1, 0.8, 2.2, "gold")
+    # крылышки у гарды
+    for k in (-1, 1):
+        c("spear", (k * 1.5 - 0.3 + (0.6 if k > 0 else -0.6), 13.4, -0.3), (0.6, 3.6, 0.6), "gold", face="guard",
+          rot=(0, 0, -k * 35), pivot=(k * 1.5, 13.4, 0))
+    # древко с золотыми кольцами
+    c("spear", (-0.5, 16.9, -0.5), (1.0, 34.0, 1.0), "bronze", face="shaft")
+    for y in (22.0, 30.0, 38.0, 46.0):
+        octo(M, "spear", 0, 0, y, 0.8, 1.6, "gold")
+    # навершие‑светильник
+    octo(M, "spear", 0, 0, 50.9, 1.2, 2.2, "gold")
+    octo(M, "spear", 0, 0, 52.1, 1.6, 1.6, "glow", face="heart")
+    c("spear", (-0.3, 53.7, -0.3), (0.6, 1.4, 0.6), "gold")
+    # лента под гардой
+    c("spear", (0.4, 9.0, -0.1), (0.2, 7.0, 1.6), "cloth", face="ribbon", rot=(0, 0, 8), pivot=(0.5, 16.0, 0))
+    M.pack()
+    return M
+
+
 def build_bell():
     """Колокол‑опора (и он же — малый падающий колокол и «колокольный плен» в другом масштабе)."""
     M = Model("nabat_bell", 128, 256)
@@ -1016,6 +1050,21 @@ def ground_idle(t):
 
 
 
+# Поза «выдохся»: колокол краем на земле, корпус навис над молотом, молот вбит в землю перед ним
+SPENT = dict(GROUND, body=(-16, 0, 0), torso=(32, 6, 0), head=(26, -6, 0),
+             rh=(-5.0, 2.0, -20.0), r_pole=(-1.0, 0.4, 0.2), wdir=(0.12, 0.8, -1.0),
+             lh=(10.0, 5.0, -12.0), l_pole=(0.8, -0.3, 0.3), lhand=(-24, 0, 0),
+             wr=-36.0, ws=-52.0, wb=16.0, r2=-18.0, r3=-12.0, fs=2.6, halo_k=0.75, robe_flare=170.0)
+# удар молотом в землю с размаху (общий для мощных атак)
+SMASH = dict(GROUND, root_pos=(0, 13.0, 0), body=(-12, 0, 0), torso=(38, 0, 0), head=(24, 0, 0),
+             rh=(-4.0, 4.0, -21.0), r_pole=(-1.0, 0.4, 0.2), wdir=(0.1, 0.9, -1.0),
+             lh=(14.0, 4.0, -6.0), l_pole=(0.9, -0.2, 0.3),
+             wr=22.0, ws=34.0, wb=-12.0, wb3=-10.0, r2=-8.0, r3=-10.0, fb=-2.0, fs=7.0, flex=0.0,
+             halo_k=1.25, robe_flare=195.0)
+OVERHEAD = dict(GROUND, torso=(-16, 0, 0), head=(-28, 0, 0), rh=(-8.0, -35.0, 4.0), r_pole=(-1.0, 0.1, 0.5),
+                wdir=(0.05, -1.0, 0.75), lh=(14.0, -6.0, -6.0), wr=30.0, ws=-6.0, robe_flare=150.0)
+
+
 def mixp(a, b, k):
     """Смешать две позы (k: 0 — a, 1 — b) с теми же правилами интерполяции, что и ключи."""
     return {n: lerp_key(n, a[n], b[n], k) for n in a}
@@ -1311,7 +1360,7 @@ def reap(t):
     return fade_to(pr, t, REAP_OUT + 0.4, REAP_T, hover)
 
 
-QUAKE_LAND, QUAKE_HITS, QUAKE_RISE, QUAKE_T = 1.0, (1.5, 2.7, 3.9), 4.4, 5.3
+QUAKE_LAND, QUAKE_HITS, QUAKE_T = 1.0, (1.5, 2.7, 3.9), 4.6
 SET = dict(GROUND, torso=(4, 0, 0), head=(4, 0, 0), body=(-6, 0, 0), wr=10.0, ws=-20.0, wb=10.0, r2=6.0, r3=0.0,
            fb=-4.0, fs=4.0, rh=(-14.0, -4.0, -12.0), wdir=(0.0, -1.0, -0.4))
 HOP = dict(SET, root_pos=(0, 4.0, 0), torso=(-8, 0, 0), head=(-14, 0, 0), wr=48.0, ws=-14.0, fs=6.0,
@@ -1329,7 +1378,7 @@ def _quake_keys():
         ks.append((h - 0.32, dict(HOP, root_pos=(0, up, 0), wr=60.0 if big else 48.0), "out"))
         ks.append((h, SLAM, "in3"))
         ks.append((h + 0.25, dict(SLAM, torso=(18, 0, 0)), "out"))
-    ks.append((QUAKE_RISE, dict(SET, root_pos=(0, 10.0, 0), wr=40.0), "soft"))
+    ks.append((QUAKE_T, SPENT, "soft"))
     return ks
 
 
@@ -1337,11 +1386,7 @@ QUAKE = _quake_keys()
 
 
 def quake(t):
-    pr = layered(QUAKE, t, P(HOVER))
-    if t > QUAKE_RISE:
-        phi = 2 * math.pi * (t - QUAKE_RISE) / 0.9 - math.pi * 0.4
-        pr = mixp(pr, dict(pr, **flap(phi, wr0=30, wra=30, flex=10)), _soft((t - QUAKE_RISE) / 0.35))
-    return fade_to(pr, t, QUAKE_RISE + 0.2, QUAKE_T, hover)
+    return layered(QUAKE, t, P(HOVER))
 
 
 CRASH_FALL, CRASH_HIT, CRASH_T = 0.5, 1.1, 2.0
@@ -1407,22 +1452,6 @@ def req_break(t):
     return pr
 
 
-CAPTIVE_AT, CAPTIVE_T = 1.1, 2.2
-CAPTIVE = [
-    (0.00, GROUND, "lin"),
-    (0.75, dict(GROUND, torso=(-8, 0, 0), head=(-26, 0, 0), lh=(8.0, -32.0, -10.0), l_pole=(0.9, 0.2, 0.3),
-                lhand=(0, 0, -20)), "soft"),
-    (CAPTIVE_AT, dict(GROUND, torso=(28, 0, 0), head=(20, 0, 0), lh=(10.0, 6.0, -21.0), l_pole=(0.9, -0.3, 0.2),
-                      lhand=(-60, 0, 0)), "in"),
-    (1.40, dict(GROUND, torso=(24, 0, 0), lh=(10.0, 6.0, -18.0)), "out"),
-    (CAPTIVE_T, GROUND, "soft"),
-]
-
-
-def captive(t):
-    return layered(CAPTIVE, t, P(GROUND))
-
-
 MAUL_HIT, MAUL_T = 0.9, 1.8
 MAUL_K = [
     (0.00, GROUND, "lin"),
@@ -1476,6 +1505,162 @@ def death(t):
     pr = layered(DEATH, t, P(HOVER))
     return pr
 
+
+
+# --- мощные атаки: после каждой Набат 4.5 с «выдохся» на земле (молот вбит в землю) ---
+EXHAUST_T = 4.5
+
+
+def exhaust(t):
+    """Выдохся: тяжело дышит над вбитым молотом (3 вдоха), в конце выдёргивает молот и выпрямляется."""
+    phi = 2 * math.pi * t / 1.5
+    pr = P(SPENT)
+    pr["torso"] = (32 + 3.5 * math.sin(phi), 6, 0)
+    pr["head"] = (26 + 4.0 * math.sin(phi - 0.7), -6 + 3.0 * math.sin(phi * 0.5), 0)
+    pr["body"] = (-16 + 1.2 * math.sin(phi - 0.3), 0, 0)
+    pr["wr"] = -36.0 + 4.0 * math.sin(phi - 0.4)
+    pr["r2"] = -18.0 + 3.0 * math.sin(phi - 0.9)
+    pr["lh"] = (10.0, 5.0 + 0.8 * math.sin(phi - 0.5), -12.0)
+    pr["halo_k"] = 0.75 + 0.04 * math.sin(phi * 2.0)
+    pr["halo"] = 8.0 * t
+    # выдернуть молот: рывок вверх‑назад и выпрямиться в позу «на земле»
+    if t > 3.5:
+        pull = dict(SPENT, torso=(-4, 0, 0), head=(-10, 0, 0), rh=(-14.0, -14.0, -8.0), wdir=(-0.1, -1.0, -0.2),
+                    wr=-20.0, ws=-40.0)
+        k1 = _soft((t - 3.5) / 0.45)
+        pr = mixp(pr, P(pull), k1)
+        if t > 3.95:
+            pr = mixp(pr, P(GROUND), _soft((t - 3.95) / 0.55))
+    return pr
+
+
+# «Обвал набата»: взмывает над целью, замирает в вышине и рушится молотом в землю — от удара по земле
+# расходятся шесть лучей янтарных выбросов.
+SKY_UP, SKY_APEX, SKY_DROP, SKY_HIT, SKY_T = 0.55, 1.25, 1.5, 1.8, 3.4
+CLIMB = dict(REAR, root=(-10, 0, 0), torso=(-16, 0, 0), head=(-32, 0, 0), rh=(-13.0, -31.0, -6.0),
+             wdir=(-0.35, -1.0, -0.25), wr=74.0, ws=-14.0, robe_drag=-20.0, halo_k=1.15)
+APEX = dict(CLIMB, root=(-4, 0, 0), torso=(-24, 0, 0), head=(-38, 0, 0), rh=(-7.0, -36.0, 6.0),
+            wdir=(0.02, -1.0, 0.95), wr=82.0, ws=-30.0, wb=-6.0, fs=8.0, halo_k=1.35, robe_drag=0.0)
+SKYFALL = [
+    (0.00, HOVER, "lin"),
+    (SKY_UP, CLIMB, "soft"),
+    (SKY_APEX, APEX, "out"),
+    (SKY_DROP, dict(APEX, torso=(-28, 0, 0), wdir=(0.0, -0.9, 1.0)), "ease"),
+    (SKY_HIT - 0.1, dict(PLUNGE, root=(34, 0, 0), wdir=(0.0, -0.2, -1.0), rh=(-9.0, -24.0, -14.0)), "in"),
+    (SKY_HIT, SMASH, "out3"),
+    (2.15, dict(SMASH, torso=(30, 0, 0), wr=0.0, ws=-14.0, halo_k=1.0), "soft"),
+    (SKY_T, SPENT, "soft"),
+]
+
+
+def skyfall(t):
+    pr = layered(SKYFALL, t, P(HOVER))
+    if t < SKY_APEX:                        # мощные взмахи на подъёме
+        phi = 2 * math.pi * t / 0.62 + math.pi
+        k = _soft(t / 0.25) * (1.0 - _soft((t - SKY_APEX + 0.25) / 0.25))
+        pr = mixp(pr, dict(pr, **flap(phi, wr0=40.0, wra=36.0, ws0=-10.0, wsa=10.0, flex=12.0)), 0.8 * k)
+    if SKY_DROP < t < SKY_HIT:
+        pr["flexp"] = t * 40.0
+        pr["flex"] = 4.0
+    return pr
+
+
+# «Колокольный вихрь»: садится, раскручивается с молотом на вытянутой руке (2 оборота), в конце — удар сверху.
+WH_LAND, WH_SPIN0, WH_SPIN1, WH_HIT, WH_T = 0.5, 0.9, 2.9, 3.2, 3.8
+WH_SET = dict(GROUND, root_pos=(0, 12.0, 0), torso=(10, 26, 0), head=(-2, -22, 0), body=(-10, 8, 0),
+              rh=(-21.0, -6.0, 8.0), r_pole=(-0.6, -0.2, 1.0), wdir=(-0.7, -0.35, 0.8),
+              lh=(16.0, -2.0, -8.0), wr=24.0, ws=6.0, fs=6.0, robe_flare=150.0)
+SPIN = dict(GROUND, root_pos=(0, 11.0, 0), body=(-8, 0, -6), torso=(2, -8, -6), head=(-6, 8, 0),
+            rh=(-27.0, -5.0, -2.0), r_pole=(-0.2, -1.0, 0.3), wdir=(-1.0, -0.08, -0.12),
+            lh=(24.0, -2.0, -4.0), l_pole=(0.2, -1.0, 0.3), lhand=(0, 0, 30),
+            wr=34.0, ws=-46.0, wb=14.0, wb3=8.0, r2=10.0, r3=4.0, fb=-10.0, fs=5.0, flex=0.0,
+            robe_flare=200.0, halo_k=1.15)
+WHIRL = [
+    (0.00, HOVER, "lin"),
+    (0.30, dict(HOVER, root_pos=(0, 4.0, 0), wr=50.0, ws=-12.0), "soft"),
+    (WH_LAND, dict(WH_SET, torso=(18, 20, 0)), "out"),
+    (WH_SPIN0 - 0.05, WH_SET, "soft"),
+    (WH_SPIN0 + 0.3, SPIN, "soft"),
+    (WH_SPIN1 - 0.15, SPIN, "lin"),
+    (WH_SPIN1 + 0.05, dict(OVERHEAD, root_pos=(0, 10.0, 0)), "soft"),
+    (WH_HIT, SMASH, "in3"),
+    (3.45, dict(SMASH, torso=(30, 0, 0), wr=0.0, ws=-14.0), "out"),
+    (WH_T, SPENT, "soft"),
+]
+
+
+def whirl_angle(t):
+    """Угол раскрутки (°): 2 оборота, разгон и торможение без рывков."""
+    x = max(0.0, min(1.0, (t - WH_SPIN0) / (WH_SPIN1 - WH_SPIN0)))
+    return 720.0 * (x - math.sin(2 * math.pi * x) / (2 * math.pi))
+
+
+def whirl(t):
+    pr = layered(WHIRL, t, P(HOVER))
+    a = whirl_angle(t)
+    r = pr["root"]
+    pr["root"] = (r[0], r[1] + a, r[2])
+    if WH_SPIN0 < t < WH_SPIN1:
+        pr["flexp"] = t * 20.0
+        pr["flex"] = 3.0
+    return pr
+
+
+# «Стража набата»: садится с ударом, звонит молотом над головой и вбивает его в землю — встают три рыцаря.
+KN_LAND, KN_TOLL, KN_HIT, KN_T = 0.8, (1.55, 1.75), 2.25, 3.4
+KNIGHTS = [
+    (0.00, HOVER, "lin"),
+    (0.55, dict(HOP, root_pos=(0, 0.0, 0), wr=56.0), "soft"),
+    (KN_LAND, dict(SET, root_pos=(0, 12.0, 0), torso=(22, 0, 0), robe_flare=180.0), "in3"),
+    (1.05, dict(SET, torso=(10, 0, 0)), "out"),
+    (1.40, dict(OVERHEAD, wdir=(0.0, -1.0, 0.05), rh=(-7.0, -36.0, -2.0), lh=(9.0, -30.0, -8.0),
+                l_pole=(0.9, 0.0, 0.4), lhand=(0, 0, -20), halo_k=1.3), "soft"),
+    (KN_TOLL[0], dict(OVERHEAD, wdir=(-0.4, -1.0, 0.0), rh=(-8.0, -35.0, -2.0), lh=(9.0, -30.0, -8.0), halo_k=1.35), "in"),
+    (KN_TOLL[1], dict(OVERHEAD, wdir=(0.35, -1.0, 0.0), rh=(-6.5, -35.0, -2.0), lh=(9.0, -30.0, -8.0), halo_k=1.4), "in"),
+    (2.00, dict(OVERHEAD, wdir=(0.0, -1.0, 0.5), rh=(-7.5, -35.5, 2.0), torso=(-20, 0, 0), halo_k=1.4), "out"),
+    (KN_HIT, dict(SMASH, torso=(42, 0, 0)), "in3"),
+    (2.55, dict(SMASH, torso=(34, 0, 0), wr=4.0, ws=-10.0), "out"),
+    (KN_T, SPENT, "soft"),
+]
+
+
+def knights(t):
+    pr = layered(KNIGHTS, t, P(HOVER))
+    pr["halo"] = 30.0 * t + 120.0 * smooth01(1.3, 2.3, t)
+    return pr
+
+
+# «Копья небес»: садится, поднимает молот к небу и 5 с призывает золотые копья; в конце вбивает молот в землю.
+LN_LAND, LN_CALL, LN_END, LN_HIT, LN_T = 0.6, 1.1, 5.6, 5.85, 6.4
+CALL = dict(GROUND, body=(-24, 0, 0), torso=(-16, 0, 0), head=(-38, 0, 0),
+            rh=(-7.0, -36.0, -1.0), r_pole=(-1.0, 0.1, 0.4), wdir=(0.0, -1.0, 0.02),
+            lh=(13.0, -30.0, -6.0), l_pole=(0.9, 0.1, 0.4), lhand=(0, 0, -30),
+            wr=58.0, ws=12.0, wb=-8.0, wb3=-6.0, r2=6.0, r3=4.0, fb=-14.0, fs=7.5, robe_flare=165.0, halo_k=1.45)
+LANCES = [
+    (0.00, HOVER, "lin"),
+    (0.35, dict(HOVER, root_pos=(0, 3.0, 0), wr=50.0, ws=-12.0), "soft"),
+    (LN_LAND, dict(SET, root_pos=(0, 12.0, 0), torso=(16, 0, 0)), "out"),
+    (LN_CALL, CALL, "soft"),
+    (LN_END, CALL, "lin"),
+    (LN_END + 0.12, dict(CALL, torso=(-22, 0, 0), wdir=(0.0, -1.0, 0.4), rh=(-7.5, -35.5, 2.0)), "out"),
+    (LN_HIT, dict(SMASH, torso=(40, 0, 0)), "in3"),
+    (6.05, dict(SMASH, torso=(32, 0, 0), wr=4.0, ws=-10.0), "out"),
+    (LN_T, SPENT, "soft"),
+]
+
+
+def lances(t):
+    pr = layered(LANCES, t, P(HOVER))
+    k = smooth01(LN_CALL - 0.2, LN_CALL + 0.3, t) * (1.0 - smooth01(LN_END - 0.2, LN_END, t))
+    if k > 0:
+        phi = 2 * math.pi * (t - LN_CALL) / 1.8
+        pr["torso"] = add(list(pr["torso"]), [2.5 * k * math.sin(phi), 3.0 * k * math.sin(phi * 0.5), 0])
+        pr["head"] = add(list(pr["head"]), [3.0 * k * math.sin(phi - 0.6), 0, 0])
+        pr["wr"] = pr["wr"] + 6.0 * k * math.sin(phi - 0.4)
+        pr["r2"] = pr["r2"] + 5.0 * k * math.sin(phi - 0.9)
+        pr["wdir"] = tuple(add(list(pr["wdir"]), [0.08 * k * math.sin(phi * 0.5), 0, 0.06 * k * math.cos(phi)]))
+    pr["halo"] = 30.0 * t + 300.0 * smooth01(LN_CALL, LN_END, t)
+    return pr
 
 
 # =====================================================================
@@ -1919,11 +2104,12 @@ def build_all():
     BLADE.finalize()
     SWORD = build_sword()
     BELL = build_bell()
-    for M_ in (NABAT, MAUL, BLADE, SWORD, BELL):
+    SPEAR = build_spear()
+    for M_ in (NABAT, MAUL, BLADE, SWORD, BELL, SPEAR):
         M_.write_geo(ROOT)
     save_textures(NABAT, paint(NABAT, 91))
     save_textures(NABAT, paint(NABAT, 91, phase3=True), "nabat_p3")
-    for M_, seed in ((MAUL, 5), (BLADE, 17), (SWORD, 23), (BELL, 29)):
+    for M_, seed in ((MAUL, 5), (BLADE, 17), (SWORD, 23), (BELL, 29), (SPEAR, 37)):
         save_textures(M_, paint(M_, seed))
 
 
@@ -2049,10 +2235,14 @@ NABAT_CLIPS = [
     ("crash", crash, CRASH_T, 60, False),
     ("requiem", requiem, REQ_T, 60, False),
     ("requiem_break", req_break, BREAK_T, 60, False),
-    ("captive", captive, CAPTIVE_T, 60, False),
     ("maul", maul, MAUL_T, 60, False),
     ("rise", rise, RISE_T, 60, False),
     ("death", death, DEATH_T, 60, False),
+    ("skyfall", skyfall, SKY_T, 60, False),
+    ("whirl", whirl, WH_T, 60, False),
+    ("knights", knights, KN_T, 60, False),
+    ("lances", lances, LN_T, 60, False),
+    ("exhaust", exhaust, EXHAUST_T, 30, False),
 ]
 AIR_CLIPS = {"toll", "censer", "gather", "bells", "rain", "mark", "eggs", "phantoms", "reliquary", "crack"}
 BLADE_CLIPS = [

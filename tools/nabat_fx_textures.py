@@ -3,7 +3,6 @@
   textures/mob_effect/noise.png, dome.png, requiem.png, crack.png, bell_mark.png  — значки 18×18
   textures/misc/nabat_ring.png     — кольцо‑тень под падающим колоколом (в игре окрашивается кодом)
   textures/misc/nabat_ripple.png   — рябь «Купола» в месте попадания
-  textures/misc/nabat_captive.png  — темнота изнутри «Колокольного плена» (янтарный отсвет по краям)
   textures/entity/nabat_soul.png   — огонёк души (мягкое ядро)
   textures/block/resonant_stone.png — «Гудящий камень» (тёмный камень с янтарными прожилками)
 """
@@ -133,22 +132,6 @@ def ripple():
     save(img.filter(ImageFilter.GaussianBlur(0.8)), "misc", "nabat_ripple.png")
 
 
-def captive():
-    W, H = 256, 144
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    p = img.load()
-    for y in range(H):
-        for x in range(W):
-            dx = (x - W / 2) / (W / 2)
-            dy = (y - H / 2) / (H / 2)
-            r = math.sqrt(dx * dx + dy * dy)
-            k = max(0.0, min(1.0, (r - 0.35) / 0.75))
-            a = int(255 * (k ** 1.5))
-            glow = max(0.0, 1.0 - abs(r - 1.05) / 0.35)
-            p[x, y] = (int(40 + 160 * glow), int(20 + 90 * glow), int(6 + 20 * glow), a)
-    save(img.filter(ImageFilter.GaussianBlur(2)), "misc", "nabat_captive.png")
-
-
 def soul():
     S = 32
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
@@ -197,7 +180,6 @@ if __name__ == "__main__":
     icon_mark()
     ring()
     ripple()
-    captive()
     soul()
     resonant_stone()
     print("готово")

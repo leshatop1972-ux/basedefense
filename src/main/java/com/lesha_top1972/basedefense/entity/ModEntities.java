@@ -196,15 +196,14 @@ public final class ModEntities {
                     .fireImmune()
                     .build());
 
-    /** «Колокольный плен». */
-    public static final EntityType<NabatCaptiveEntity> NABAT_CAPTIVE = Registry.register(
+    /** Золотое копьё «Копий небес» Набата. */
+    public static final EntityType<NabatSpearEntity> NABAT_SPEAR = Registry.register(
             Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "nabat_captive"),
-            FabricEntityTypeBuilder.<NabatCaptiveEntity>create(SpawnGroup.MISC, NabatCaptiveEntity::new)
-                    .dimensions(EntityDimensions.fixed(2.0f, 2.8f))
+            new Identifier(Basedefense.MOD_ID, "nabat_spear"),
+            FabricEntityTypeBuilder.<NabatSpearEntity>create(SpawnGroup.MISC, NabatSpearEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
                     .trackRangeBlocks(96)
-                    .trackedUpdateRate(2)
-                    .fireImmune()
+                    .trackedUpdateRate(1)
                     .build());
 
     /** Падающий колокол («Метка набата», «Колокольный дождь»). */
@@ -259,6 +258,5 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(NABAT, NabatEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(NABAT_CAPTIVE, NabatCaptiveEntity.createAttributes());
     }
 }

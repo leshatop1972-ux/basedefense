@@ -821,6 +821,7 @@ def resolve(pr, model=M, swords=True):
         Rr = model.chain_R("root", pose)
         for b, hand, key, roll in (("sword_r", "right_hand", "rdir", "rroll"), ("sword_l", "left_hand", "ldir", "lroll")):
             d = norm(mv(Rr, list(norm(pr[key]))))
+            d = sword_fix(model, pose, b, d, SWORD_TIP * pr["sw"])
             Rh = model.chain_R(hand, pose)
             hx = mv(Rh, [1, 0, 0])                         # ось сгиба кисти — плоскость клинка
             hy = mv(Rh, [0, 1, 0])
@@ -835,6 +836,39 @@ def resolve(pr, model=M, swords=True):
             pose.setdefault("_sword", {})[b] = (d, Rw, model.chain_R(model.parent[b], pose))
             pose[b]["scale"] = (pr["sw"],) * 3
     return pose
+
+
+# Поправки клинка (чтобы не было «кривых» кадров): клинок обходит голову и не уходит под землю —
+# остриё упирается в землю (на 1 px «воткнуто»). В прыжке (pounce_air / exec_air) земля не учитывается.
+FIX_GROUND = [True]
+HEAD_R = 6.5
+
+
+def sword_fix(model, pose, b, d, L):
+    p = model.world(b, [0.0, 0.0, 0.0], pose)
+    hc = model.world("head", [0.0, -5.1, -0.4], pose)
+    for _ in range(6):
+        ap = sub(hc, p)
+        s_ = max(0.0, min(L, dot(ap, d)))
+        if s_ <= 2.0:
+            break
+        dv = sub(hc, add(p, scl(d, s_)))
+        dist = length(dv)
+        if dist >= HEAD_R:
+            break
+        away = scl(dv, -1.0 / dist) if dist > 1e-6 else norm(cross(d, [0.0, 1.0, 0.0]))
+        d = norm(add(d, scl(away, (HEAD_R - dist) / s_ * 1.1)))
+    if FIX_GROUND[0]:
+        tip_y = p[1] + d[1] * L
+        floor = 25.0                                    # земля — y 24 (Java, вниз +), остриё на 1 px в земле
+        if tip_y > floor:
+            ny = max(-1.0, min(1.0, (floor - p[1]) / L))
+            h = [d[0], 0.0, d[2]]
+            hl = length(h)
+            h = scl(h, 1.0 / hl) if hl > 1e-6 else [0.0, 0.0, -1.0]
+            hr = math.sqrt(max(0.0, 1.0 - ny * ny))
+            d = [h[0] * hr, ny, h[2] * hr]
+    return d
 
 
 def twist_about(d, Ra, Rb):
@@ -1246,11 +1280,12 @@ REAP = [
     (1.85, dict(torso=(-8, -40, 0), body=(-2, -14, 0), head=(-14, 26, 0), lh=(-9, -14, -6), l_pole=(-1, 0.4, 0.6),
                 ldir=(-0.75, -0.55, -0.35), lroll=80.0, rh=(-9, 5, 4), rdir=(-0.6, 0.25, 0.75), rroll=0.0,
                 ribbon=14.0, hair=12.0, body_pos=(0, 2.4, 0)), "out"),
-    (2.05, dict(torso=(-18, 0, 0), body=(-4, 0, 0), head=(-26, 0, 0), body_pos=(0, -0.6, 0), rh=(-5, -22, 0),
-                lh=(5, -22, 0), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(0.15, -0.75, 0.6),
-                ldir=(-0.15, -0.75, 0.6), rroll=0.0, lroll=0.0, jaw=44.0, ribbon=-8.0, hair=-6.0,
+    (2.05, dict(torso=(-18, 0, 0), body=(-4, 0, 0), head=(-26, 0, 0), body_pos=(0, -0.6, 0), rh=(-8, -23, 3),
+                lh=(8, -23, 3), r_pole=(1, 0.3, 0.6), l_pole=(-1, 0.3, 0.6), rdir=(-0.35, -0.7, 0.62),
+                ldir=(0.35, -0.7, 0.62), rroll=0.0, lroll=0.0, jaw=44.0, ribbon=-8.0, hair=-6.0,
                 rf=(-3.4, 22, 1.0), lf=(3.4, 22, -1.0)), "ease"),
-    (2.25, dict(rh=(-5, -23, 1), lh=(5, -23, 1), body_pos=(0, -1.0, 0), jaw=50.0), "lin"),
+    (2.25, dict(rh=(-8, -24, 4), lh=(8, -24, 4), rdir=(-0.3, -0.62, 0.72), ldir=(0.3, -0.62, 0.72),
+                body_pos=(0, -1.0, 0), jaw=50.0), "lin"),
     (2.45, dict(torso=(34, 0, 0), body=(20, 0, 0), head=(-34, 0, 0), body_pos=(0, 8.0, 0), rh=(-5, 12, -14),
                 lh=(5, 12, -14), r_pole=(0.6, 0, 1), l_pole=(-0.6, 0, 1), rdir=(-0.1, 0.42, -0.9),
                 ldir=(0.1, 0.42, -0.9), rf=(-3.6, 22, 2.8), lf=(3.6, 22, -4.0), jaw=24.0, ribbon=26.0,
@@ -1275,12 +1310,12 @@ def slash(t):
 # длинный выпад‑рывок с двойным уколом (0.9–1.3 с) — мечи вспарывают вверх и в стороны (1.55 с) — выпрямляется.
 THRUST = [
     (0.00, UPRIGHT, "lin"),
-    (0.75, dict(body=(-6, 0, 0), body_pos=(0, 4.5, 0), torso=(-6, 0, 0), head=(-6, 0, 0), rh=(-9, 6, 9),
-                lh=(9, 6, 9), rdir=(-0.05, 0.08, -1), ldir=(0.05, 0.08, -1), rf=(-3.4, 22, -5.0), lf=(3.4, 22, 6.0),
+    (0.75, dict(body=(-6, 0, 0), body_pos=(0, 4.5, 0), torso=(-6, 0, 0), head=(-6, 0, 0), rh=(-12, 4, 9),
+                lh=(12, 4, 9), rdir=(-0.12, 0.05, -1), ldir=(0.12, 0.05, -1), rf=(-3.4, 22, -5.0), lf=(3.4, 22, 6.0),
                 jaw=24.0, ribbon=-10.0), "out"),
-    (0.88, dict(body_pos=(0, 5.0, 0), rh=(-9, 6, 10), lh=(9, 6, 10)), "lin"),
-    (1.10, dict(body=(26, 0, 0), body_pos=(0, 3.2, 0), torso=(14, 0, 0), head=(-30, 0, 0), rh=(-3, -1, -19),
-                lh=(3, -1, -19), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.04, 0.05, -1),
+    (0.88, dict(body_pos=(0, 5.0, 0), rh=(-12, 4, 10), lh=(12, 4, 10)), "lin"),
+    (1.10, dict(body=(26, 0, 0), body_pos=(0, 3.2, 0), torso=(14, 0, 0), head=(-30, 0, 0), rh=(-4, -4, -19),
+                lh=(4, -4, -19), r_pole=(1, 0, 0.2), l_pole=(-1, 0, 0.2), rdir=(0.04, 0.05, -1),
                 ldir=(-0.04, 0.05, -1), rf=(-3.2, 22, 7.0), lf=(3.2, 22, -9.0), ribbon=34.0, hair=26.0,
                 jaw=40.0), "in"),
     (1.30, dict(body_pos=(0, 3.4, 0), ribbon=28.0), "lin"),
@@ -1305,8 +1340,8 @@ def thrust(t):
 # мечи вонзаются в землю (1.5 с), из фонтанов вылезают мелкие.
 SUMMON = [
     (0.00, UPRIGHT, "lin"),
-    (0.70, dict(torso=(-14, 0, 0), neck=(-10, 0, 0), head=(-30, 0, 0), rh=(-3, -23, -3), lh=(3, -23, -3),
-                r_pole=(1, 0.3, 0.3), l_pole=(-1, 0.3, 0.3), rdir=(0.55, -0.83, 0.1), ldir=(-0.55, -0.83, 0.1),
+    (0.70, dict(torso=(-14, 0, 0), neck=(-10, 0, 0), head=(-30, 0, 0), rh=(-6, -24, -1), lh=(6, -24, -1),
+                r_pole=(1, 0.3, 0.3), l_pole=(-1, 0.3, 0.3), rdir=(0.5, -0.8, 0.32), ldir=(-0.5, -0.8, 0.32),
                 jaw=44.0, body_pos=(0, -0.5, 0), ribbon=-8.0), "out"),
     (1.30, dict(jaw=50.0, head=(-34, 0, 0)), "lin"),
     (1.50, dict(body=(18, 0, 0), torso=(24, 0, 0), neck=(-4, 0, 0), head=(-24, 0, 0), body_pos=(0, 7.0, 0),
@@ -1380,9 +1415,9 @@ EXEC_LAND = [
     (0.25, dict(body_pos=(0, 9.8, 0), ribbon=8.0, hair=6.0), "out"),
     (0.80, dict(head=(-40, 0, 0), jaw=50.0), "lin"),
     (0.95, dict(torso=(34, 0, 0), body_pos=(0, 10.2, 0)), "lin"),
-    (1.15, dict(body=(4, 0, 0), body_pos=(0, 3.0, 0), torso=(-6, 0, 0), head=(-10, 0, 0), rh=(-21, -4, -4),
-                lh=(21, -4, -4), r_pole=(0, 0.5, 1), l_pole=(0, 0.5, 1), rdir=(-1, -0.1, 0.15),
-                ldir=(1, -0.1, 0.15), rroll=-80.0, lroll=80.0, rf=(-4.2, 22, 0.5), lf=(4.2, 22, -0.5), toe_l=0.0,
+    (1.15, dict(body=(4, 0, 0), body_pos=(0, 3.0, 0), torso=(-6, 0, 0), head=(-10, 0, 0), rh=(-18, -2, -8),
+                lh=(18, -2, -8), r_pole=(0, 0.5, 1), l_pole=(0, 0.5, 1), rdir=(-0.9, 0.12, -0.4),
+                ldir=(0.9, 0.12, -0.4), rroll=-80.0, lroll=80.0, rf=(-4.2, 22, 0.5), lf=(4.2, 22, -0.5), toe_l=0.0,
                 ribbon=20.0, hair=16.0, jaw=30.0), "in"),
     (1.50, dict(body_pos=(0, 2.6, 0), ribbon=10.0), "lin"),
     (2.20, UPRIGHT, "ease"),
@@ -1397,7 +1432,11 @@ def exec_start(t):
 
 
 def exec_air(t):
-    return resolve(layered(EXEC_AIR, t))
+    FIX_GROUND[0] = False
+    try:
+        return resolve(layered(EXEC_AIR, t))
+    finally:
+        FIX_GROUND[0] = True
 
 
 def exec_land(t):

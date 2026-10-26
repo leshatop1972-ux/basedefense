@@ -41,7 +41,7 @@ import java.util.Set;
 
 /**
  * Мечник Набата «Отзвук»: пустые бронзовые латы, внутри тлеет свет. Бьётся как обычный моб (без парирования).
- * Атаки: серия из трёх ударов (5/5/7) и рывок‑укол (8). Цель раздаёт сам Набат — слуги расходятся по разным игрокам.
+ * Атаки (вдвое реже обычного, но тяжелее): серия из трёх ударов (9/9/11) и рывок‑укол (12). Цель раздаёт сам Набат — слуги расходятся по разным игрокам.
  * Тайминги совпадают с анимациями tools/nabat_gen.py.
  */
 public class NabatBladeEntity extends HostileEntity {
@@ -55,13 +55,13 @@ public class NabatBladeEntity extends HostileEntity {
 
     public static final int COMBO_TICKS = 44;
     static final int[] COMBO_HITS = {11, 20, 31};
-    static final float[] COMBO_DMG = {5f, 5f, 7f};
+    static final float[] COMBO_DMG = {9f, 9f, 11f};
     static final double COMBO_REACH = 2.7;
     public static final int DASH_TICKS = 32;
     static final int DASH_GO = 10;
     static final int DASH_HIT = 16;
-    static final float DASH_DMG = 8f;
-    static final int DASH_COOLDOWN = 160;
+    static final float DASH_DMG = 12f;
+    static final int DASH_COOLDOWN = 320;
     public static final int ASSEMBLE_TICKS = 32;
     static final double DASH_SPEED = 0.6;
     private static final DustParticleEffect AMBER = new DustParticleEffect(new Vector3f(1.0f, 0.72f, 0.3f), 0.9f);
@@ -81,7 +81,7 @@ public class NabatBladeEntity extends HostileEntity {
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 55.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.204)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 40.0)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 5.0)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 9.0)
                 .add(EntityAttributes.GENERIC_ARMOR, 6.0)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.4);
     }
@@ -240,8 +240,8 @@ public class NabatBladeEntity extends HostileEntity {
         private final NabatBladeEntity mob;
         private int action = NONE;
         private int tick;
-        private int cooldown = 20;
-        private int dashCooldown = 60;
+        private int cooldown = 40;
+        private int dashCooldown = 120;
         private int pathDelay;
         private int circleTimer;
         private boolean circleLeft;
@@ -365,7 +365,7 @@ public class NabatBladeEntity extends HostileEntity {
                     }
                 }
                 if (t >= COMBO_TICKS) {
-                    this.finish(16 + m.random.nextInt(14));
+                    this.finish(32 + m.random.nextInt(28));
                 }
             } else if (this.action == DASH) {
                 if (target != null && t < DASH_GO) {
@@ -387,7 +387,7 @@ public class NabatBladeEntity extends HostileEntity {
                     m.velocityModified = true;
                 }
                 if (t >= DASH_TICKS) {
-                    this.finish(20 + m.random.nextInt(16));
+                    this.finish(40 + m.random.nextInt(32));
                 }
             } else {
                 this.action = NONE;

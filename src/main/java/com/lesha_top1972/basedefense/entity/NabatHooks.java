@@ -51,7 +51,8 @@ public final class NabatHooks {
         if (nabat == null || !nabat.isAlive()) {
             return;
         }
-        int stacks = victim instanceof NabatBladeEntity ? 2 : (victim instanceof TatteredLancerEntity ? 8 : 1);
+        int stacks = victim instanceof NabatBladeEntity || victim instanceof IronKnightEntity ? 2
+                : (victim instanceof TatteredLancerEntity ? 8 : 1);
         NabatSoulEntity soul = ModEntities.NABAT_SOUL.create(sw);
         if (soul == null) {
             return;

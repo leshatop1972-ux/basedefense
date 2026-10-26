@@ -108,17 +108,19 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
     public static final int EXEC_LAND_TICKS = 57;
 
     /** Урон (×1.25 к первой версии и ещё +1 каждой атаке). */
-    static final float DMG_SWING = 11f;
-    static final float DMG_RIFT = 10f;
-    static final float DMG_POUNCE = 20f;
-    static final float DMG_REAP = 9.75f;
-    static final float DMG_REAP_SLAM = 12f;
-    static final float DMG_THRUST = 13.5f;
-    static final float DMG_RIP = 8.5f;
-    static final float DMG_EXEC = 21f;
-    static final float DMG_EXEC_RIP = 11f;
+    static final float DMG_SWING = 14f;
+    static final float DMG_RIFT = 13f;
+    static final float DMG_POUNCE = 23f;
+    static final float DMG_REAP = 12.75f;
+    static final float DMG_REAP_SLAM = 15f;
+    static final float DMG_THRUST = 16.5f;
+    static final float DMG_RIP = 11.5f;
+    static final float DMG_EXEC = 24f;
+    static final float DMG_EXEC_RIP = 14f;
     /** Шанс наложить/усилить «Кровотёк» за попадание. */
     static final float BLEED_CHANCE = 0.35f;
+    /** Дополнительное лечение за каждое попадание (отдельно от вампиризма и регенерации). */
+    static final float HIT_HEAL = 5f;
     /** Масштаб модели в рендере (и всех расстояний ударов). */
     public static final float MODEL_SCALE = 1.3f;
 
@@ -371,7 +373,7 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
             // вампиризм: лечится ровно на столько, сколько здоровья потеряла цель (после брони и щита)
             float dealt = before - (e.getHealth() + e.getAbsorptionAmount());
             if (dealt > 0) {
-                this.heal(dealt);
+                this.heal(dealt + HIT_HEAL);                // вампиризм + 5 HP за каждое попадание
                 if (this.getWorld() instanceof ServerWorld s) {
                     s.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, this.getX(), this.getBodyY(0.7), this.getZ(),
                             Math.max(1, (int) dealt), 0.5, 0.6, 0.5, 0.05);
@@ -510,10 +512,12 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         Vec3d f = this.forward();
         Vec3d side = new Vec3d(-f.z, 0, f.x);
         int k = this.random.nextBoolean() ? 1 : -1;
-        Vec3d p = this.getPos().add(f.multiply(2.4)).add(side.multiply(2.8 * k));
-        BlockPos spot = this.groundSpot(p.x, p.z);
         List<BlockPos> out = new ArrayList<>();
-        out.add(spot != null ? spot : this.getBlockPos());
+        for (int side2 : new int[]{k, -k}) {                // два мелких — по обе стороны
+            Vec3d p = this.getPos().add(f.multiply(2.4)).add(side.multiply(2.8 * side2));
+            BlockPos spot = this.groundSpot(p.x, p.z);
+            out.add(spot != null ? spot : this.getBlockPos());
+        }
         return out;
     }
 

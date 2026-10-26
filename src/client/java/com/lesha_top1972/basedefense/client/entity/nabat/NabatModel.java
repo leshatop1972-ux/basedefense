@@ -21,7 +21,7 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
 
     private static final String[] ACTIONS = {"intro", "toll", "censer", "gather", "bells", "rain", "mark", "eggs",
             "phantoms", "reliquary", "crack", "dive", "reap", "quake", "crash", "requiem", "requiem_break", "captive",
-            "maul", "rise"};
+            "maul", "rise", "skyfall", "whirl", "knights", "lances", "exhaust"};
     /** Действия в воздухе, у которых крылья берутся из цикла парения. */
     private static final boolean[] AIR = new boolean[ACTIONS.length];
 
@@ -106,9 +106,11 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
         if (c != null && t >= 0 && t < c.length()) {
             clip = ACTIONS[a];
             ct = t;
-            boolean toGround = a == NabatEntity.CRASH;                 // падение заканчивается позой «на земле»
+            // падение и мощные атаки заканчиваются на земле; следом сразу идёт «выдохся»/«на земле»
+            boolean toGround = a == NabatEntity.CRASH || a == NabatEntity.QUAKE || a == NabatEntity.SKYFALL
+                    || a == NabatEntity.WHIRL || a == NabatEntity.KNIGHTS || a == NabatEntity.LANCES;
             boolean fromGround = a == NabatEntity.RISE || a == NabatEntity.REQUIEM || a == NabatEntity.REQ_BREAK
-                    || a == NabatEntity.CAPTIVE || a == NabatEntity.MAUL;
+                    || a == NabatEntity.MAUL || a == NabatEntity.EXHAUST;
             float in = fromGround ? 1f : clamp01(t / 0.15f);
             float out = toGround ? 1f : clamp01((c.length() - t) / 0.25f);
             w = Math.min(in, out);
