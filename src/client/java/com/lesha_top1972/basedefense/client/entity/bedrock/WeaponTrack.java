@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public final class WeaponTrack {
 
-    private record Track(float fps, float length, boolean loop, float[][] q) {
+    private record Track(float fps, float length, boolean loop, float[][] q, float[] s) {
     }
 
     private final Map<String, Track> clips = new HashMap<>();
@@ -25,6 +25,10 @@ public final class WeaponTrack {
     public final float gripY;
     public final float gripZ;
     public final String hand;
+    /** Точка хвата от запястья в системе кисти (пиксели Java; 0 — хват в самой кисти). */
+    public final float handX;
+    public final float handY;
+    public final float handZ;
 
     // накопитель смешивания
     private float ax;
@@ -32,6 +36,7 @@ public final class WeaponTrack {
     private float az;
     private float aw;
     private float total;
+    private float as;
 
     public WeaponTrack(String mob) {
         JsonObject root = BedrockModelLoader.readJson("animations/" + mob + ".weapon.json");
@@ -40,6 +45,10 @@ public final class WeaponTrack {
         this.gripY = g.get(1).getAsFloat();
         this.gripZ = g.get(2).getAsFloat();
         this.hand = root.has("hand") ? root.get("hand").getAsString() : "right_hand";
+        JsonArray h = root.has("hand_offset") ? root.getAsJsonArray("hand_offset") : null;
+        this.handX = h != null ? h.get(0).getAsFloat() : 0f;
+        this.handY = h != null ? h.get(1).getAsFloat() : 0f;
+        this.handZ = h != null ? h.get(2).getAsFloat() : 0f;
         for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("clips").entrySet()) {
             JsonObject c = e.getValue().getAsJsonObject();
             JsonArray arr = c.getAsJsonArray("q");
@@ -50,14 +59,23 @@ public final class WeaponTrack {
                     q[i][k] = v.get(k).getAsFloat();
                 }
             }
+            float[] sc = null;
+            if (c.has("s")) {
+                JsonArray sa = c.getAsJsonArray("s");
+                sc = new float[sa.size()];
+                for (int i = 0; i < sc.length; i++) {
+                    sc[i] = sa.get(i).getAsFloat();
+                }
+            }
             this.clips.put(e.getKey(), new Track(c.get("fps").getAsFloat(), c.get("length").getAsFloat(),
-                    c.get("loop").getAsBoolean(), q));
+                    c.get("loop").getAsBoolean(), q, sc));
         }
     }
 
     public void reset() {
         this.ax = this.ay = this.az = this.aw = 0f;
         this.total = 0f;
+        this.as = 0f;
     }
 
     /** Добавить клип в момент seconds с весом weight (как play() у модели). */
@@ -79,6 +97,13 @@ public final class WeaponTrack {
         float qy = a[1] + (b[1] - a[1]) * f;
         float qz = a[2] + (b[2] - a[2]) * f;
         float qw = a[3] + (b[3] - a[3]) * f;
+        float sc = 1f;
+        if (tr.s != null && tr.s.length > 0) {
+            float s0 = tr.s[Math.min(i, tr.s.length - 1)];
+            float s1 = tr.s[Math.min(i + 1, tr.s.length - 1)];
+            sc = s0 + (s1 - s0) * f;
+        }
+        this.as += sc * weight;
         // выровнять знак с уже накопленным (q и −q — один и тот же поворот)
         if (this.total > 0 && qx * this.ax + qy * this.ay + qz * this.az + qw * this.aw < 0) {
             qx = -qx;
@@ -91,6 +116,11 @@ public final class WeaponTrack {
         this.az += qz * weight;
         this.aw += qw * weight;
         this.total += weight;
+    }
+
+    /** Итоговый масштаб оружия (1 — если в дорожке масштаба нет). */
+    public float scale() {
+        return this.total > 1e-6f ? this.as / this.total : 1f;
     }
 
     /** Итоговый поворот (единичный). */

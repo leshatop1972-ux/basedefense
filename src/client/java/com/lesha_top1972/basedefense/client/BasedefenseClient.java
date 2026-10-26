@@ -81,6 +81,7 @@ public class BasedefenseClient implements ClientModInitializer {
         LancerFx.init();               // эффекты «ливня копий» улана
         // Босс «Кровожад», мелкие кровожады и яйца
         EntityModelLayerRegistry.registerModelLayer(BloodthirsterRenderer.LAYER, () -> BedrockModelLoader.load("bloodthirster"));
+        EntityModelLayerRegistry.registerModelLayer(BloodthirsterRenderer.SWORD, () -> BedrockModelLoader.load("bloodthirster_sword"));
         EntityModelLayerRegistry.registerModelLayer(BloodlingRenderer.LAYER, () -> BedrockModelLoader.load("bloodling"));
         EntityModelLayerRegistry.registerModelLayer(BloodEggRenderer.LAYER, () -> BedrockModelLoader.load("blood_egg"));
         EntityRendererRegistry.register(ModEntities.BLOODTHIRSTER, BloodthirsterRenderer::new);

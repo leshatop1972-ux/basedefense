@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.Basedefense;
+import com.lesha_top1972.basedefense.client.entity.nabat.WeaponFeature;
 import com.lesha_top1972.basedefense.entity.BloodthirsterEntity;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -24,6 +25,10 @@ public class BloodthirsterRenderer extends MobEntityRenderer<BloodthirsterEntity
     private static final Identifier TEX2 = tex("bloodthirster_p2");
     private static final Identifier GLOW1 = tex("bloodthirster_glowmask");
     private static final Identifier GLOW2 = tex("bloodthirster_p2_glowmask");
+    public static final EntityModelLayer SWORD =
+            new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "bloodthirster_sword"), "main");
+    private static final Identifier SWORD_TEX = tex("bloodthirster_sword");
+    private static final Identifier SWORD_GLOW = tex("bloodthirster_sword_glowmask");
 
     private static Identifier tex(String name) {
         return new Identifier(Basedefense.MOD_ID, "textures/entity/" + name + ".png");
@@ -32,6 +37,9 @@ public class BloodthirsterRenderer extends MobEntityRenderer<BloodthirsterEntity
     public BloodthirsterRenderer(EntityRendererFactory.Context context) {
         super(context, new BloodthirsterModel(context.getPart(LAYER)), 1.4f);
         this.addFeature(new PhaseGlow(this));
+        // мечи — отдельные модели в правой (0) и левой (1) руке
+        this.addFeature(new WeaponFeature<>(this, context.getPart(SWORD), SWORD_TEX, SWORD_GLOW, 0));
+        this.addFeature(new WeaponFeature<>(this, context.getPart(SWORD), SWORD_TEX, SWORD_GLOW, 1));
     }
 
     /** Модель огромная: ×1.3 (хитбокс 1.6×4.0 подобран под этот масштаб). */

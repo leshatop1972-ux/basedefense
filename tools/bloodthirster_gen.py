@@ -162,26 +162,31 @@ for k, (dx, ln) in enumerate(((-8.0, 9.0), (-7.0, 10.5), (-6.0, 9.0))):
 cube("right_claws", (-7.0, 9.4, 0.4), (0.9, 4.8, 0.9), "claw", face="finger", rot=(25, 0, 0), pivot=(-6.6, 14.2, 0.8))
 # меч в правой руке: ось вдоль −z, рукоять в кулаке (только 2‑я фаза — прячется кодом)
 SG = (-6.6, 15.4, -0.2)
-bone("sword_r", "right_hand", SG)
-sx, sy, sz = SG
-cube("sword_r", (sx - 0.55, sy - 0.55, sz - 1.2), (1.1, 1.1, 5.0), "sword", face="grip")
-cube("sword_r", (sx - 0.9, sy - 0.9, sz + 3.6), (1.8, 1.8, 1.6), "sword", face="pommel")
-cube("sword_r", (sx - 0.3, sy - 0.3, sz + 5.0), (0.6, 0.6, 1.6), "sword", face="pommel_spike")
-# крестовина: широкая, концы загнуты к клинку
-cube("sword_r", (sx - 0.65, sy - 4.2, sz - 2.4), (1.3, 8.4, 1.2), "sword", face="guard")
-cube("sword_r", (sx - 0.5, sy + 3.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(-25, 0, 0),
-     pivot=(sx, sy + 4.0, sz - 2.0))
-cube("sword_r", (sx - 0.5, sy - 4.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(25, 0, 0),
-     pivot=(sx, sy - 4.0, sz - 2.0))
-cube("sword_r", (sx - 0.8, sy - 0.8, sz - 3.4), (1.6, 1.6, 1.2), "gem", face="sword_gem")
-# клинок: широкий у основания, сужается к острию (4 части), зубцы по обуху
-cube("sword_r", (sx - 0.35, sy - 1.8, sz - 13.4), (0.7, 3.6, 10.2), "sword", face="blade")
-cube("sword_r", (sx - 0.3, sy - 1.45, sz - 25.4), (0.6, 2.9, 12.0), "sword", face="blade")
-cube("sword_r", (sx - 0.25, sy - 0.95, sz - 31.4), (0.5, 1.9, 6.0), "sword", face="blade")
-cube("sword_r", (sx - 0.2, sy - 0.45, sz - 34.4), (0.4, 0.9, 3.0), "sword", face="point")
-for z in (-8.0, -14.0, -20.0):
-    cube("sword_r", (sx - 0.2, sy + 1.2, sz + z), (0.4, 1.4, 1.4), "sword", face="serration", rot=(45, 0, 0),
-         pivot=(sx, sy + 1.6, sz + z + 0.7))
+bone("sword_r", "right_hand", SG)          # пустая кость: по ней считается поворот меча для дорожки оружия
+
+
+def add_sword(m, b, sx, sy, sz):
+    """Меч: ось вдоль −z, рукоять в кулаке; отдельная модель bloodthirster_sword (оружие не «вертится»)."""
+    m.cube(b, (sx - 0.55, sy - 0.55, sz - 1.2), (1.1, 1.1, 5.0), "sword", face="grip")
+    m.cube(b, (sx - 0.9, sy - 0.9, sz + 3.6), (1.8, 1.8, 1.6), "sword", face="pommel")
+    m.cube(b, (sx - 0.3, sy - 0.3, sz + 5.0), (0.6, 0.6, 1.6), "sword", face="pommel_spike")
+    # крестовина: широкая, концы загнуты к клинку
+    m.cube(b, (sx - 0.65, sy - 4.2, sz - 2.4), (1.3, 8.4, 1.2), "sword", face="guard")
+    m.cube(b, (sx - 0.5, sy + 3.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(-25, 0, 0),
+         pivot=(sx, sy + 4.0, sz - 2.0))
+    m.cube(b, (sx - 0.5, sy - 4.6, sz - 4.6), (1.0, 1.0, 2.6), "sword", face="guard_tip", rot=(25, 0, 0),
+         pivot=(sx, sy - 4.0, sz - 2.0))
+    m.cube(b, (sx - 0.8, sy - 0.8, sz - 3.4), (1.6, 1.6, 1.2), "gem", face="sword_gem")
+    # клинок: широкий у основания, сужается к острию (4 части), зубцы по обуху
+    m.cube(b, (sx - 0.35, sy - 1.8, sz - 13.4), (0.7, 3.6, 10.2), "sword", face="blade")
+    m.cube(b, (sx - 0.3, sy - 1.45, sz - 25.4), (0.6, 2.9, 12.0), "sword", face="blade")
+    m.cube(b, (sx - 0.25, sy - 0.95, sz - 31.4), (0.5, 1.9, 6.0), "sword", face="blade")
+    m.cube(b, (sx - 0.2, sy - 0.45, sz - 34.4), (0.4, 0.9, 3.0), "sword", face="point")
+    for z in (-8.0, -14.0, -20.0):
+        m.cube(b, (sx - 0.2, sy + 1.2, sz + z), (0.4, 1.4, 1.4), "sword", face="serration", rot=(45, 0, 0),
+             pivot=(sx, sy + 1.6, sz + z + 0.7))
+
+
 SWORD_TIP = 34.4
 M.mirror_x("right_arm", "left_arm")
 M.mirror_x("right_fore", "left_fore", parent="left_arm")
@@ -191,6 +196,14 @@ M.mirror_x("sword_r", "sword_l", parent="left_hand")
 
 M.pack()
 M.finalize()
+
+# отдельная модель меча: кость «sword» в начале координат = точка хвата (кость sword_r / sword_l)
+SWN = "bloodthirster_sword"
+SWORD = Model(SWN, 64, 64)
+SWORD.bone("sword", None, (0, 0, 0))
+add_sword(SWORD, "sword", 0.0, 0.0, 0.0)
+SWORD.pack()
+SWORD.finalize()
 
 
 # =====================================================================
@@ -856,9 +869,56 @@ def bake_clip(fn, length_s, fps, loop, bones):
             d, _, Rp = p["_sword"][b]
             R = mm(axis_R(d, drift * k / max(1, n)), Rs[k])
             p[b]["rot"] = to_euler_safe(mm(tr(Rp), R))
+    # дорожки оружия: мировой поворот меча (кватернион) и масштаб — для отдельной модели меча
+    LAST_TRACKS.clear()
+    for b in ("sword_r", "sword_l"):
+        q_prev, qs, ss = None, [], []
+        for p in poses:
+            Rp = p["_sword"][b][2]
+            Rw = mm(Rp, euler_R(p[b]["rot"]))
+            q = quat(Rw)
+            if q_prev is not None and sum(q[i] * q_prev[i] for i in range(4)) < 0:
+                q = [-v for v in q]
+            q_prev = q
+            qs.append([round(v, 5) for v in q])
+            ss.append(round(p[b].get("scale", (1.0,))[0], 4))
+        LAST_TRACKS[b] = {"fps": fps, "length": length_s, "loop": loop, "q": qs, "s": ss}
     lookup = dict(zip(times, poses))
     out = bake(lambda t: lookup[t], length_s, fps, loop, bones, unwrap=True)
     anchor_end(out)
+    return out
+
+
+LAST_TRACKS = {}
+W_TRACKS = {"sword_r": {}, "sword_l": {}}
+
+
+def euler_R(rot):
+    from mobgen import euler
+    return euler(rot)
+
+
+def quat(R_):
+    tr_ = R_[0][0] + R_[1][1] + R_[2][2]
+    if tr_ > 0:
+        k = math.sqrt(tr_ + 1.0) * 2
+        w, x, y, z = 0.25 * k, (R_[2][1] - R_[1][2]) / k, (R_[0][2] - R_[2][0]) / k, (R_[1][0] - R_[0][1]) / k
+    elif R_[0][0] > R_[1][1] and R_[0][0] > R_[2][2]:
+        k = math.sqrt(1.0 + R_[0][0] - R_[1][1] - R_[2][2]) * 2
+        w, x, y, z = (R_[2][1] - R_[1][2]) / k, 0.25 * k, (R_[0][1] + R_[1][0]) / k, (R_[0][2] + R_[2][0]) / k
+    elif R_[1][1] > R_[2][2]:
+        k = math.sqrt(1.0 + R_[1][1] - R_[0][0] - R_[2][2]) * 2
+        w, x, y, z = (R_[0][2] - R_[2][0]) / k, (R_[0][1] + R_[1][0]) / k, 0.25 * k, (R_[1][2] + R_[2][1]) / k
+    else:
+        k = math.sqrt(1.0 + R_[2][2] - R_[0][0] - R_[1][1]) * 2
+        w, x, y, z = (R_[1][0] - R_[0][1]) / k, (R_[0][2] + R_[2][0]) / k, (R_[1][2] + R_[2][1]) / k, 0.25 * k
+    return [x, y, z, w]
+
+
+def B(name, fn, length_s, fps, loop, bones):
+    out = bake_clip(fn, length_s, fps, loop, bones)
+    for b in W_TRACKS:
+        W_TRACKS[b][name] = LAST_TRACKS[b]
     return out
 
 
@@ -1345,25 +1405,25 @@ def exec_land(t):
 
 
 animations = {
-    "idle1": bake_clip(idle1, 2.6, 20, True, A_BONES),
-    "walk1": bake_clip(walk1, 1.4, 20, True, A_BONES),
-    "run1": bake_clip(run1, 0.8, 30, True, A_BONES),
-    "swing": bake_clip(swing, 2.2 * SLOW + TAIL, 60, False, A_BONES),
-    "rift": bake_clip(rift, 2.9 + TAIL, 60, False, A_BONES),
-    "pounce_start": bake_clip(pounce_start, 1.2 * SLOW, 60, False, A_BONES),
-    "pounce_air": bake_clip(pounce_air, 0.6, 20, True, A_BONES),
-    "pounce_land": bake_clip(pounce_land, 1.4 * SLOW + TAIL, 60, False, A_BONES),
-    "transform": bake_clip(transform, 3.0, 60, False, A_BONES),
-    "idle2": bake_clip(idle2, 3.0, 20, True, A_BONES),
-    "walk2": bake_clip(walk2, 1.2, 20, True, A_BONES),
-    "run2": bake_clip(run2, 0.7, 30, True, A_BONES),
-    "slash": bake_clip(slash, REAP_W[-1][0] + TAIL, 60, False, A_BONES),
-    "thrust": bake_clip(thrust, THRUST_W[-1][0] + TAIL, 60, False, A_BONES),
-    "summon": bake_clip(summon, 2.6 * SLOW + TAIL, 60, False, A_BONES),
-    "eggs": bake_clip(eggs, 2.8 * SLOW + TAIL, 60, False, A_BONES),
-    "exec_start": bake_clip(exec_start, EXEC_START_W[-1][0], 60, False, A_BONES),
-    "exec_air": bake_clip(exec_air, 1.3, 60, False, A_BONES),
-    "exec_land": bake_clip(exec_land, 2.2 * SLOW + TAIL, 60, False, A_BONES),
+    "idle1": B("idle1", idle1, 2.6, 20, True, A_BONES),
+    "walk1": B("walk1", walk1, 1.4, 20, True, A_BONES),
+    "run1": B("run1", run1, 0.8, 30, True, A_BONES),
+    "swing": B("swing", swing, 2.2 * SLOW + TAIL, 60, False, A_BONES),
+    "rift": B("rift", rift, 2.9 + TAIL, 60, False, A_BONES),
+    "pounce_start": B("pounce_start", pounce_start, 1.2 * SLOW, 60, False, A_BONES),
+    "pounce_air": B("pounce_air", pounce_air, 0.6, 20, True, A_BONES),
+    "pounce_land": B("pounce_land", pounce_land, 1.4 * SLOW + TAIL, 60, False, A_BONES),
+    "transform": B("transform", transform, 3.0, 60, False, A_BONES),
+    "idle2": B("idle2", idle2, 3.0, 20, True, A_BONES),
+    "walk2": B("walk2", walk2, 1.2, 20, True, A_BONES),
+    "run2": B("run2", run2, 0.7, 30, True, A_BONES),
+    "slash": B("slash", slash, REAP_W[-1][0] + TAIL, 60, False, A_BONES),
+    "thrust": B("thrust", thrust, THRUST_W[-1][0] + TAIL, 60, False, A_BONES),
+    "summon": B("summon", summon, 2.6 * SLOW + TAIL, 60, False, A_BONES),
+    "eggs": B("eggs", eggs, 2.8 * SLOW + TAIL, 60, False, A_BONES),
+    "exec_start": B("exec_start", exec_start, EXEC_START_W[-1][0], 60, False, A_BONES),
+    "exec_air": B("exec_air", exec_air, 1.3, 60, False, A_BONES),
+    "exec_land": B("exec_land", exec_land, 2.2 * SLOW + TAIL, 60, False, A_BONES),
 }
 animations = {"animation.%s.%s" % (NAME, k): v for k, v in animations.items()}
 
@@ -1553,6 +1613,18 @@ if __name__ == "__main__":
     bleed_icon()
     M.write_geo(ROOT)
     write_anims(ROOT, NAME, animations)
+    SWORD.write_geo(ROOT)
+    SP = make_painter(SWORD, 2, 71)
+    SP.img.save(os.path.join(ROOT, "textures", "entity", SWN + ".png"))
+    SP.glow.save(os.path.join(ROOT, "textures", "entity", SWN + "_glowmask.png"))
+    import json
+    for b, hand, side in (("sword_r", "right_hand", "r"), ("sword_l", "left_hand", "l")):
+        hp, bp = M.by_name[hand]["pivot"], M.by_name[b]["pivot"]
+        # точка хвата от запястья (система кисти, Java: y вниз)
+        off = [bp[0] - hp[0], -(bp[1] - hp[1]), bp[2] - hp[2]]
+        with open(os.path.join(ROOT, "animations", "%s_%s.weapon.json" % (NAME, side)), "w", encoding="utf-8") as f:
+            json.dump({"weapon": SWN, "hand": hand, "hand_offset": [round(v, 4) for v in off],
+                       "grip_offset": [0.0, 0.0, 0.0], "clips": W_TRACKS[b]}, f, separators=(",", ":"))
     P1.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
     P1.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
     P2.img.save(os.path.join(ROOT, "textures", "entity", NAME + "_p2.png"))

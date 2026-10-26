@@ -26,9 +26,16 @@ public class WeaponFeature<T extends LivingEntity, M extends EntityModel<T> & We
     private final Identifier texture;
     private final RenderLayer glow;
     private final Vector3f tmp = new Vector3f();
+    private final int slot;
 
     public WeaponFeature(FeatureRendererContext<T, M> context, ModelPart weaponRoot, Identifier texture, Identifier glowmask) {
+        this(context, weaponRoot, texture, glowmask, 0);
+    }
+
+    public WeaponFeature(FeatureRendererContext<T, M> context, ModelPart weaponRoot, Identifier texture, Identifier glowmask,
+                         int slot) {
         super(context);
+        this.slot = slot;
         this.weapon = weaponRoot;
         this.texture = texture;
         this.glow = glowmask != null ? RenderLayer.getEyes(glowmask) : null;
@@ -38,20 +45,29 @@ public class WeaponFeature<T extends LivingEntity, M extends EntityModel<T> & We
     public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, T entity, float limbAngle,
                        float limbDistance, float tickDelta, float animationProgress, float headYaw, float headPitch) {
         M model = this.getContextModel();
-        if (!model.weaponVisible()) {
+        if (!model.weaponVisible(this.slot)) {
             return;
         }
-        // точка кисти в системе модели — по костям текущего кадра
+        WeaponTrack tr = model.weaponTrack(this.slot);
+        // точка хвата в системе модели — по костям текущего кадра
         MatrixStack chain = new MatrixStack();
-        for (ModelPart p : model.handChain()) {
+        for (ModelPart p : model.handChain(this.slot)) {
             p.rotate(chain);
         }
+        chain.translate(tr.handX / 16f, tr.handY / 16f, tr.handZ / 16f);
         Matrix4f m = chain.peek().getPositionMatrix();
         m.getTranslation(this.tmp);
-        WeaponTrack tr = model.weaponTrack();
         matrices.push();
         matrices.translate(this.tmp.x, this.tmp.y, this.tmp.z);
-        matrices.multiply(model.weaponRotation());
+        matrices.multiply(model.weaponRotation(this.slot));
+        float sc = model.weaponScale(this.slot);
+        if (sc < 0.01f) {
+            matrices.pop();
+            return;
+        }
+        if (sc != 1f) {
+            matrices.scale(sc, sc, sc);
+        }
         matrices.translate(tr.gripX / 16f, tr.gripY / 16f - 1.5f, tr.gripZ / 16f);   // −1.5: загрузчик сдвигает y на 24 px
         int overlay = LivingEntityRenderer.getOverlay(entity, 0f);
         this.weapon.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(this.texture)), light,
