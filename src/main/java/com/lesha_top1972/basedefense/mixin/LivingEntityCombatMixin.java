@@ -55,6 +55,15 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
         return this.basedefense$shieldTick == self.getWorld().getTime();
     }
 
+    /** Слуги Набата бьют не чаще раза в 2.3 с (мечник сам выдерживает паузы между сериями). */
+    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void basedefense$minionPace(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (!self.getWorld().isClient && !NabatHooks.allowMinionHit(self, source)) {
+            cir.setReturnValue(false);
+        }
+    }
+
     @ModifyVariable(method = "damage", at = @At("HEAD"), argsOnly = true)
     private float basedefense$modifyDamage(float amount, DamageSource source, float original) {
         LivingEntity self = (LivingEntity) (Object) this;

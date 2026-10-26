@@ -7,6 +7,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Связь Набата с остальным миром (вызывается из LivingEntityCombatMixin):
@@ -20,7 +22,30 @@ public final class NabatHooks {
     /** Тег «не выпускает душу» (колокола, якорь, плен — части самого Набата). */
     public static final String NO_SOUL = "basedefense.nabat_nosoul";
 
+    /** Пауза между ударами слуг Набата (тики): 2.3 с. */
+    public static final int MINION_HIT_PAUSE = 46;
+    private static final Map<Entity, Long> LAST_HIT = new WeakHashMap<>();
+
     private NabatHooks() {
+    }
+
+    /**
+     * Можно ли слуге Набата нанести этот удар: ближний удар слуги (не мечника — у него свои паузы между
+     * сериями, и не улана‑босса) проходит не чаще раза в 2.3 с. В тот же тик — можно (удар по нескольким целям).
+     */
+    public static boolean allowMinionHit(LivingEntity victim, DamageSource source) {
+        Entity a = source.getAttacker();
+        if (a == null || a != source.getSource() || !a.getCommandTags().contains(TAG) || a instanceof NabatBladeEntity
+                || a instanceof TatteredLancerEntity || a instanceof NabatEntity) {
+            return true;
+        }
+        long now = a.getWorld().getTime();
+        Long last = LAST_HIT.get(a);
+        if (last != null && now != last && now - last < MINION_HIT_PAUSE) {
+            return false;
+        }
+        LAST_HIT.put(a, now);
+        return true;
     }
 
     public static boolean isKin(Entity e) {
