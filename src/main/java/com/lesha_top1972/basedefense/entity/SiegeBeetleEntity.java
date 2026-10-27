@@ -231,7 +231,10 @@ public class SiegeBeetleEntity extends HostileEntity {
         return false;
     }
 
-    /** Удар тарана: пролом 3×3 перед «лбом» (по размеру жука; первый непустой слой из двух), по mobGriefing. */
+    /**
+     * Удар тарана: пролом 5 в ширину × 4 в высоту × 2 в глубину перед «лбом» (до 40 блоков), по mobGriefing.
+     * Обсидиан, бедрок и «База» не ломаются.
+     */
     void ramBlocks() {
         World w = this.getWorld();
         if (!SapperBlast.griefing(w)) {
@@ -239,14 +242,80 @@ public class SiegeBeetleEntity extends HostileEntity {
         }
         Vec3d f = this.forward();
         Vec3d side = new Vec3d(-f.z, 0, f.x);
-        int broken = 0;
-        for (double d = FRONT + 0.5; d <= FRONT + 1.6 && broken == 0; d += 1.0) {
-            for (double s = -1.0; s <= 1.0; s += 1.0) {
-                for (int dy = 0; dy <= 2; dy++) {
+        Set<BlockPos> done = new HashSet<>();
+        for (double d = FRONT + 0.3; d <= FRONT + 2.4; d += 0.5) {
+            for (double s = -2.2; s <= 2.21; s += 0.55) {
+                for (int dy = 0; dy <= 3; dy++) {
                     BlockPos p = BlockPos.ofFloored(this.getPos().add(f.multiply(d)).add(side.multiply(s))).up(dy);
-                    if (!w.getBlockState(p).isAir() && this.rammable(p)) {
+                    if (done.size() >= 40 || !done.add(p)) {
+                        continue;
+                    }
+                    if (!w.getBlockState(p).isAir() && this.rammable(p) && !this.isGroundBelow(p)) {
                         w.breakBlock(p, false, this);
-                        broken++;
+                    }
+                }
+            }
+        }
+    }
+
+    /** Земля под ногами (уровень пола и ниже, природный блок) — таран её не роет. */
+    private boolean isGroundBelow(BlockPos p) {
+        return p.getY() < this.getBlockY() && natural(this.getWorld().getBlockState(p));
+    }
+
+    /** Природный грунт (земля, камень, песок, гравий) — не постройка. */
+    static boolean natural(BlockState st) {
+        return st.isIn(net.minecraft.registry.tag.BlockTags.DIRT) || st.isIn(net.minecraft.registry.tag.BlockTags.SAND)
+                || st.isIn(net.minecraft.registry.tag.BlockTags.BASE_STONE_OVERWORLD)
+                || st.isOf(net.minecraft.block.Blocks.GRAVEL) || st.isOf(net.minecraft.block.Blocks.DIRT_PATH)
+                || st.isOf(net.minecraft.block.Blocks.FARMLAND);
+    }
+
+    /** Стоит на постройке (крыша, стена, забор): под ним искусственные блоки. */
+    boolean onBuilding() {
+        World w = this.getWorld();
+        Box b = this.getBoundingBox();
+        int n = 0;
+        for (double x = b.minX + 0.3; x < b.maxX; x += 1.0) {
+            for (double z = b.minZ + 0.3; z < b.maxZ; z += 1.0) {
+                BlockPos p = BlockPos.ofFloored(x, b.minY - 0.5, z);
+                BlockState st = w.getBlockState(p);
+                if (!st.isAir() && !natural(st) && this.rammable(p)) {
+                    n++;
+                }
+            }
+        }
+        if (n < 2) {
+            return false;
+        }
+        // крыша/стена: под постройкой в 1–4 блоках — пустота или ещё постройка (а не пол на земле)
+        BlockPos c = BlockPos.ofFloored(this.getX(), b.minY - 0.5, this.getZ());
+        for (int k = 1; k <= 4; k++) {
+            BlockState st = w.getBlockState(c.down(k));
+            if (st.isAir() || st.getCollisionShape(w, c.down(k)).isEmpty()) {
+                return true;
+            }
+            if (natural(st)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** «Пролом вниз»: ломает всё под жуком (2 слоя по размеру хитбокса) — проваливается с крыши. */
+    void stompBlocks() {
+        World w = this.getWorld();
+        if (!SapperBlast.griefing(w)) {
+            return;
+        }
+        Box b = this.getBoundingBox();
+        for (int dy = 1; dy <= 2; dy++) {
+            for (int x = MathHelper.floor(b.minX); x <= MathHelper.floor(b.maxX - 1e-3); x++) {
+                for (int z = MathHelper.floor(b.minZ); z <= MathHelper.floor(b.maxZ - 1e-3); z++) {
+                    BlockPos p = new BlockPos(x, MathHelper.floor(b.minY - 0.01) - dy + 1, z);
+                    BlockState st = w.getBlockState(p);
+                    if (!st.isAir() && this.rammable(p) && !natural(st)) {
+                        w.breakBlock(p, false, this);
                     }
                 }
             }
@@ -345,6 +414,8 @@ public class SiegeBeetleEntity extends HostileEntity {
         private int farTicks;
         private Vec3d dir = Vec3d.ZERO;
         private boolean impacted;
+        /** Таран вниз (стоит на постройке). */
+        private boolean stomp;
         private final Set<Integer> hit = new HashSet<>();
 
         BeetleGoal(SiegeBeetleEntity mob) {
@@ -469,6 +540,12 @@ public class SiegeBeetleEntity extends HostileEntity {
                 return;
             }
             Vec3d bc = Vec3d.ofBottomCenter(base);
+            // залез на постройку (крышу, стену) — проламывает её под собой и проваливается
+            if (this.ramCd <= 0 && m.isOnGround() && m.onBuilding()) {
+                this.stomp = true;
+                this.begin(RAM);
+                return;
+            }
             // постройка прямо перед «лбом» — таранит её
             if (m.build != null && this.ramCd <= 0 && m.squaredDistanceTo(bc.x, m.getY(), bc.z) < (FRONT + 2.2) * (FRONT + 2.2)) {
                 m.turnSmooth(bc.x, bc.z, 5f);
@@ -515,6 +592,26 @@ public class SiegeBeetleEntity extends HostileEntity {
                 case RAM -> {
                     if (t == RAM_ROAR) {
                         m.playSound(ModSounds.BEETLE_ROAR, 1.4f, 0.9f + m.random.nextFloat() * 0.15f);
+                    }
+                    if (this.stomp) {
+                        // «Пролом вниз»: на месте, удар всем телом вниз на RAM_HIT
+                        m.setVelocity(0, m.getVelocity().y, 0);
+                        if (t == RAM_HIT) {
+                            m.stompBlocks();
+                            this.trample(RAM_DMG, 1.0);
+                            if (w instanceof ServerWorld s) {
+                                Fx.impact(s, m.getPos(), 1.0f, true);
+                                Fx.ring(s, m.getPos(), 2.4, 18, 0, Fx.F_BLOCK | Fx.F_CLOUD);
+                            }
+                            m.playSound(ModSounds.BEETLE_RAM, 1.8f, 0.8f);
+                        }
+                        m.velocityModified = true;
+                        if (t >= RAM_TICKS) {
+                            this.stomp = false;
+                            this.ramCd = RAM_CD / 2;
+                            this.done();
+                        }
+                        return;
                     }
                     if (t < RAM_GO) {
                         // отходит назад для разгона
@@ -629,6 +726,7 @@ public class SiegeBeetleEntity extends HostileEntity {
 
         private void done() {
             this.action = NONE;
+            this.stomp = false;
             this.pathDelay = 0;
         }
 

@@ -323,6 +323,27 @@ public class SapperEntity extends HostileEntity {
         return passable(w, p) || SapperBlast.breakable(w, p, MAX_DIG_HARDNESS);
     }
 
+    /**
+     * Уровень поверхности над столбцом: открытая шахта (лаз) не считается «поверхностью» — берётся
+     * вторая снизу высота соседних столбцов (так стена дома рядом или соседняя яма не мешают).
+     */
+    static int surfaceAt(World w, int x, int z) {
+        int t0 = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int[] n = {
+                w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x + 1, z),
+                w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x - 1, z),
+                w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z + 1),
+                w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z - 1)};
+        java.util.Arrays.sort(n);
+        return Math.max(t0, n[1]);
+    }
+
+    /** Стоит в яме (≥ 2 блока ниже поверхности вокруг). */
+    boolean inPit() {
+        BlockPos f = this.getBlockPos();
+        return surfaceAt(this.getWorld(), f.getX(), f.getZ()) - f.getY() >= 2;
+    }
+
     static boolean wet(World w, BlockPos p) {
         return !w.getBlockState(p).getFluidState().isEmpty();
     }
@@ -656,6 +677,8 @@ public class SapperEntity extends HostileEntity {
             }
             if (m.isUnder()) {
                 this.underTick(target);
+            } else if (this.escapePit()) {
+                return;
             } else {
                 this.surfaceTick(target);
             }
@@ -894,6 +917,9 @@ public class SapperEntity extends HostileEntity {
             SapperEntity m = this.mob;
             World w = m.getWorld();
             BlockPos feet = m.getBlockPos();
+            if (m.inPit()) {
+                return false;                       // уже в яме — глубже не роет, сначала выбирается
+            }
             BlockPos f = BlockPos.ofFloored(m.getPos().add(m.forward().multiply(0.8)));
             BlockPos col = new BlockPos(f.getX(), feet.getY(), f.getZ());
             if (!passable(w, col)) {
@@ -1255,6 +1281,24 @@ public class SapperEntity extends HostileEntity {
             }
         }
 
+        private int pitTicks;
+
+        /** Застрял в яме (своём лазе) больше 1 с — выбирается наверх, как из туннеля. */
+        private boolean escapePit() {
+            SapperEntity m = this.mob;
+            if (!m.isOnGround() || !m.inPit()) {
+                this.pitTicks = 0;
+                return false;
+            }
+            if (++this.pitTicks < 20) {
+                return false;
+            }
+            this.pitTicks = 0;
+            this.cell = m.getBlockPos();
+            this.emergeHere(false);
+            return true;
+        }
+
         private boolean pendingEmerge;
         private boolean queuedMove;
 
@@ -1297,7 +1341,7 @@ public class SapperEntity extends HostileEntity {
         /** Глубина хода: 2–3 блока под поверхностью; сверху открыто — ниже, слишком глубоко — выше. */
         private int[] depthPrefs(BlockPos col) {
             World w = this.mob.getWorld();
-            int top = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, col.getX(), col.getZ());
+            int top = surfaceAt(w, col.getX(), col.getZ());
             int depth = top - col.getY();
             if (depth < 3) {
                 return new int[]{-1, 0};
@@ -1390,7 +1434,7 @@ public class SapperEntity extends HostileEntity {
         /** Прокопать шахту вверх (по блоку за 5 тиков), потом выскочить. */
         private void startEmergeShaft() {
             World w = this.mob.getWorld();
-            int top = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, this.cell.getX(), this.cell.getZ());
+            int top = surfaceAt(w, this.cell.getX(), this.cell.getZ());
             this.toBreak.clear();
             for (int y = this.cell.getY() + 2; y < top; y++) {
                 BlockPos p = new BlockPos(this.cell.getX(), y, this.cell.getZ());
@@ -1422,7 +1466,7 @@ public class SapperEntity extends HostileEntity {
             SapperEntity m = this.mob;
             World w = m.getWorld();
             BlockPos c = this.cell != null ? this.cell : m.getBlockPos();
-            int top = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, c.getX(), c.getZ());
+            int top = surfaceAt(w, c.getX(), c.getZ());
             if (force) {
                 // аварийно: прокапывает всё до поверхности сразу (только прокапываемое)
                 for (int y = c.getY(); y < top; y++) {
