@@ -57,17 +57,42 @@ def stutter(x, chunk=0.03, reps=4):
 
 
 # ---------------------------------------------------------------- туманная
+def scream(t, f0, vowel, vib=8.0, k=1.0):
+    """Нечеловеческий крик: пила с сильной дрожью через форманты гласной, кольцевая модуляция (звериный хрип)."""
+    f = f0 * (1 + 0.04 * np.sin(2 * np.pi * vib * t)) * (1 + 0.25 * np.clip(t / 0.15, 0, 1))
+    x = saw(f, t) + 0.6 * saw(f * 0.5 * 1.012, t)
+    x = sum(bp(x, fr * 0.85, fr * 1.18) * g for fr, g in zip(vowel, (1.0, 0.8, 0.45)))
+    x *= 0.65 + 0.35 * np.sin(2 * np.pi * 73 * t)
+    return dist(x * k, 3)
+
+
 def mist_screech():
+    """«Скример» при атаке: обратный вдох‑нарастание → удар суббаса с треском → крик с дрожью
+    и диссонансный аккорд (малая секунда + тритон) → обрывается в треск. Резко и громко, но без «пилы»."""
+    vowels = [(900, 1350, 2700), (380, 2300, 3100), (650, 1100, 2500)]
     for v in range(3):
-        sec = 0.9
+        pre, sec = 0.28, 1.25
         t = T(sec)
-        f = (1300 + v * 260) * (1 + 0.35 * np.sin(2 * np.pi * (7 + v) * t)) * (1 + 0.6 * t)
-        x = sum(saw(f * r, t) for r in (1.0, 1.013, 0.497))
-        x += 0.6 * bp(noise(sec), 2000, 9000)
-        x = dist(bp(x, 600, 9000), 6)
-        env = np.minimum(1, t / 0.008) * np.exp(-t / 0.5)
-        x = crush(x * env, bits=4 + v, hold=3 + v)
-        save("mist_screech%d" % v, reverb(stutter(x, 0.025), 0.2, 0.5))
+        x = np.zeros(int((pre + sec) * SR))
+        # обратный вдох: шум, раскрывающийся по полосе, — нарастает к удару
+        tp = T(pre)
+        breath = bp(noise(pre), 600, 5000) * (tp / pre) ** 3 * 1.3
+        place(x, reverb(breath[::-1], 0.6, 0.8)[::-1][: len(tp)], 0.0)
+        # удар: суббас + треск, перегруз
+        hit = dist(np.sin(2 * np.pi * 42 * t * (1 - 0.35 * t)) * np.exp(-t / 0.35) * 2.2
+                   + bp(noise(sec), 120, 6000) * np.exp(-t / 0.025) * 2.0, 4)
+        # крик: два голоса (обычный и на октаву ниже, чуть расстроенный) — нечеловеческий
+        env = np.minimum(1, t / 0.012) * np.exp(-t / 0.55)
+        cry = (scream(t, 520 + v * 90, vowels[v]) + 0.5 * scream(t, (520 + v * 90) * 0.749, vowels[(v + 1) % 3], vib=6.5)) * env
+        # диссонансный аккорд «струнных»: малая секунда и тритон, тремоло
+        chord = sum(np.sin(2 * np.pi * fq * t + rng.random() * 6) for fq in (1046.5, 1108.7, 1480.0, 1568.0))
+        chord *= (0.6 + 0.4 * np.sin(2 * np.pi * 14 * t)) * np.minimum(1, t / 0.02) * np.exp(-t / 0.7) * 0.22
+        body = hit * 0.9 + cry * 1.2 + chord
+        # обрыв в цифровой треск
+        cut = int(0.82 * SR)
+        body[cut:] = crush(body[cut:], 3, 10) * np.exp(-np.arange(len(body) - cut) / (0.12 * SR))
+        place(x, body, pre)
+        save("mist_screech%d" % v, reverb(x, 0.3, 1.1), vol=1.0)
 
 
 def mist_glitch():

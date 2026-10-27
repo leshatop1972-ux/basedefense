@@ -196,7 +196,7 @@ public abstract class HorrorEntity extends HostileEntity {
                         m.faceTo(t);
                     }
                     if (this.tick >= m.attackHit() && this.tick <= m.attackHit() + 1) {
-                        m.coneHit(1.6, m.attackDamage(), this.hit);
+                        m.coneHit(2.6, m.attackDamage(), this.hit);
                     }
                     if (this.tick >= m.attackTicks()) {
                         this.action = NONE;
@@ -223,7 +223,7 @@ public abstract class HorrorEntity extends HostileEntity {
                 this.begin(LUNGE);
                 return;
             }
-            if (this.cd <= 0 && d < 1.3 && see) {
+            if (this.cd <= 0 && d < 2.2 && see) {
                 m.faceTo(t);
                 this.begin(ATTACK);
                 return;

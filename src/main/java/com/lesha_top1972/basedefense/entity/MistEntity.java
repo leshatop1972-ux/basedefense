@@ -54,7 +54,7 @@ public class MistEntity extends HorrorEntity {
 
     @Override
     protected void attackSound(int action) {
-        this.playSound(ModSounds.MIST_SCREECH, 1.3f, 0.9f + this.random.nextFloat() * 0.2f);
+        this.playSound(ModSounds.MIST_SCREECH, 2.0f, 0.92f + this.random.nextFloat() * 0.16f);
     }
 
     @Override

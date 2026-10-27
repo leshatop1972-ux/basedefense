@@ -69,7 +69,7 @@ public class BloodEntity extends HorrorEntity {
 
     @Override
     protected boolean canLunge(double dist) {
-        return this.rendCd <= 0 && dist < 1.4;
+        return this.rendCd <= 0 && dist < 2.0;
     }
 
     @Override
@@ -91,7 +91,7 @@ public class BloodEntity extends HorrorEntity {
                 this.playSound(ModSounds.BLOOD_ATTACK, 0.9f, 1.0f + this.random.nextFloat() * 0.2f);
             }
             if (tick >= h && tick <= h + 1) {
-                this.coneHit(1.6, REND_DMG, hit);
+                this.coneHit(2.5, REND_DMG, hit);
             }
         }
     }
