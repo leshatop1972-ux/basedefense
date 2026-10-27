@@ -43,6 +43,10 @@ public final class Fx {
     public static final int ARC = 8;
     /** Кольца кровавых гейзеров радиусами 1.5..a. */
     public static final int GEYSER_RING = 9;
+    /** Взрыв подкопщика (не ванильный): вспышка, дым, осколки блока, искры, ударная волна по земле; a — радиус, F_LOUD — подрыв (крупнее, куски стены). */
+    public static final int BLAST = 10;
+    /** Фонтан земли из лаза: комья блока разлетаются вверх и в стороны. */
+    public static final int FOUNTAIN = 11;
 
     // --- флаги ---
     public static final int F_BLOCK = 1;
@@ -122,6 +126,16 @@ public final class Fx {
 
     public static void geyserRing(ServerWorld w, Vec3d c, double r) {
         send(w, GEYSER_RING, c, Vec3d.ZERO, (float) r, 0f, 0, 0, F_BLOOD);
+    }
+
+    /** Взрыв бомбы (big = false) или подрыва (big = true) радиусом r; block — из чего осколки (0 — блок под точкой). */
+    public static void blast(ServerWorld w, Vec3d p, double r, boolean big, int block) {
+        send(w, BLAST, p, Vec3d.ZERO, (float) r, 0f, 0, block != 0 ? block : groundId(w, p), big ? F_LOUD : 0);
+    }
+
+    /** Фонтан земли из лаза. */
+    public static void fountain(ServerWorld w, Vec3d p, BlockState st) {
+        send(w, FOUNTAIN, p, Vec3d.ZERO, 0f, 0f, 0, blockId(st), F_BLOCK);
     }
 
     public static void quakeFront(ServerWorld w, Vec3d c, double r) {

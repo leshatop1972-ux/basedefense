@@ -105,6 +105,16 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.NABAT_FALLING_BELL, NabatFallingBellRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_SOUL, NabatSoulRenderer::new);
         EntityRendererRegistry.register(ModEntities.NABAT_QUAKE, EmptyEntityRenderer::new);
+        // подкопщик
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.sapper.SapperRenderer.LAYER, () -> BedrockModelLoader.load("sapper"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.sapper.SapperRenderer.PICK, () -> BedrockModelLoader.load("sapper_pick"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.BOMB, () -> BedrockModelLoader.load("sapper_bomb"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.CHARGE, () -> BedrockModelLoader.load("sapper_charge"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.SMOKE, () -> BedrockModelLoader.load("sapper_smoke"));
+        EntityRendererRegistry.register(ModEntities.SAPPER, com.lesha_top1972.basedefense.client.entity.sapper.SapperRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SAPPER_BOMB, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.bomb());
+        EntityRendererRegistry.register(ModEntities.SAPPER_CHARGE, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.charge());
+        EntityRendererRegistry.register(ModEntities.SAPPER_SMOKE, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.smoke());
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

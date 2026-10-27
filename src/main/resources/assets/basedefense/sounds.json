@@ -406,5 +406,184 @@
         "attenuation_distance": 24
       }
     ]
+  },
+  "entity.sapper.dig": {
+    "subtitle": "subtitles.basedefense.sapper.dig",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/dig0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:sapper/dig1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:sapper/dig2",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.sapper.crumble": {
+    "subtitle": "subtitles.basedefense.sapper.crumble",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/crumble0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:sapper/crumble1",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.sapper.emerge": {
+    "subtitle": "subtitles.basedefense.sapper.emerge",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/emerge",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.sapper.light": {
+    "subtitle": "subtitles.basedefense.sapper.light",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/light",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.sapper.fuse": {
+    "subtitle": "subtitles.basedefense.sapper.fuse",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/fuse",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.sapper.bomb": {
+    "subtitle": "subtitles.basedefense.sapper.bomb",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/bomb0",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "basedefense:sapper/bomb1",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "entity.sapper.blast": {
+    "subtitle": "subtitles.basedefense.sapper.blast",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/blast",
+        "attenuation_distance": 64
+      }
+    ]
+  },
+  "entity.sapper.smoke": {
+    "subtitle": "subtitles.basedefense.sapper.smoke",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/smoke",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.sapper.ambient": {
+    "subtitle": "subtitles.basedefense.sapper.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/ambient0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:sapper/ambient1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:sapper/ambient2",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.sapper.step": {
+    "subtitle": "subtitles.basedefense.sapper.step",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/step0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:sapper/step1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:sapper/step2",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.sapper.jab": {
+    "subtitle": "subtitles.basedefense.sapper.jab",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/jab0",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:sapper/jab1",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.sapper.snuff": {
+    "subtitle": "subtitles.basedefense.sapper.snuff",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/snuff",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.sapper.throw": {
+    "subtitle": "subtitles.basedefense.sapper.throw",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/throw0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:sapper/throw1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.sapper.hurt": {
+    "subtitle": "subtitles.basedefense.sapper.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/hurt0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:sapper/hurt1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.sapper.death": {
+    "subtitle": "subtitles.basedefense.sapper.death",
+    "sounds": [
+      {
+        "name": "basedefense:sapper/death",
+        "attenuation_distance": 24
+      }
+    ]
   }
 }

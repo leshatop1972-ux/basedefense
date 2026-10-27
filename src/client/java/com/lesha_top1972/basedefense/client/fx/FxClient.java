@@ -76,6 +76,56 @@ public final class FxClient {
         }
     }
 
+    private static final DustParticleEffect SOIL = new DustParticleEffect(new Vector3f(0.36f, 0.27f, 0.18f), 1.4f);
+    private static final DustParticleEffect SOOT = new DustParticleEffect(new Vector3f(0.16f, 0.14f, 0.13f), 2.2f);
+    private static final DustParticleEffect GLOW = new DustParticleEffect(new Vector3f(1.0f, 0.62f, 0.2f), 0.9f);
+
+    /** Взрыв подкопщика: своя вспышка вместо ванильного огромного взрыва. */
+    static void blast(ClientWorld w, double x, double y, double z, double r, boolean big, ParticleEffect blockFx) {
+        Random rnd = w.random;
+        w.addParticle(ParticleTypes.FLASH, x, y + 0.5, z, 0, 0, 0);
+        spawn(w, ParticleTypes.EXPLOSION, x, y + 0.5, z, big ? 3 : 1, r * 0.2, 0.3, r * 0.2, 0);
+        // облако пыли и дыма
+        int clouds = big ? 26 : 14;
+        for (int i = 0; i < clouds; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2;
+            double d = rnd.nextDouble() * r * 0.6;
+            w.addParticle(i % 3 == 0 ? ParticleTypes.CAMPFIRE_COSY_SMOKE : ParticleTypes.LARGE_SMOKE,
+                    x + Math.cos(ang) * d, y + 0.3 + rnd.nextDouble() * 0.8, z + Math.sin(ang) * d,
+                    Math.cos(ang) * 0.04, 0.02 + rnd.nextDouble() * (big ? 0.07 : 0.04), Math.sin(ang) * 0.04);
+        }
+        spawn(w, SOOT, x, y + 0.6, z, big ? 18 : 10, r * 0.35, 0.4, r * 0.35, 0.02);
+        // осколки блоков и куски стены
+        if (blockFx != null) {
+            int n = big ? 60 : 28;
+            for (int i = 0; i < n; i++) {
+                double ang = rnd.nextDouble() * Math.PI * 2;
+                double sp = (big ? 0.25 : 0.15) + rnd.nextDouble() * (big ? 0.35 : 0.2);
+                w.addParticle(blockFx, x, y + 0.4 + rnd.nextDouble() * (big ? 1.2 : 0.4), z,
+                        Math.cos(ang) * sp, 0.15 + rnd.nextDouble() * 0.4, Math.sin(ang) * sp);
+            }
+        }
+        // искры
+        int sparks = big ? 22 : 12;
+        for (int i = 0; i < sparks; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2;
+            double sp = 0.15 + rnd.nextDouble() * 0.3;
+            w.addParticle(i % 2 == 0 ? ParticleTypes.LAVA : GLOW, x, y + 0.5, z,
+                    Math.cos(ang) * sp, 0.1 + rnd.nextDouble() * 0.3, Math.sin(ang) * sp);
+        }
+        // ударная волна по земле
+        int pts = (int) (r * (big ? 14 : 10));
+        for (int i = 0; i < pts; i++) {
+            double ang = i * Math.PI * 2 / pts;
+            double px = x + Math.cos(ang) * r * 0.5;
+            double pz = z + Math.sin(ang) * r * 0.5;
+            w.addParticle(ParticleTypes.CLOUD, px, y + 0.15, pz, Math.cos(ang) * 0.22, 0.01, Math.sin(ang) * 0.22);
+            if (blockFx != null && i % 2 == 0) {
+                w.addParticle(blockFx, px, y + 0.1, pz, Math.cos(ang) * 0.3, 0.05, Math.sin(ang) * 0.3);
+            }
+        }
+    }
+
     private static void play(int type, double x, double y, double z, float x2, float y2, float z2, float a, float b,
                              int color, int block, int flags) {
         ClientWorld w = MinecraftClient.getInstance().world;
@@ -210,6 +260,20 @@ public final class FxClient {
                         spawn(w, ParticleTypes.CLOUD, bx + 0.5, top + 1.2, bz + 0.5, 1, 0.1, 0.05, 0.1, 0.03);
                     }
                 }
+            }
+            case Fx.BLAST -> blast(w, x, y, z, a, (flags & Fx.F_LOUD) != 0, blockFx);
+            case Fx.FOUNTAIN -> {
+                Random r = w.random;
+                for (int i = 0; i < 26; i++) {
+                    double ang = r.nextDouble() * Math.PI * 2;
+                    double sp = 0.08 + r.nextDouble() * 0.16;
+                    if (blockFx != null) {
+                        w.addParticle(blockFx, x + Math.cos(ang) * 0.3, y + 0.2, z + Math.sin(ang) * 0.3,
+                                Math.cos(ang) * sp, 0.25 + r.nextDouble() * 0.3, Math.sin(ang) * sp);
+                    }
+                }
+                spawn(w, ParticleTypes.CLOUD, x, y + 0.3, z, 5, 0.3, 0.2, 0.3, 0.03);
+                spawn(w, SOIL, x, y + 0.4, z, 8, 0.35, 0.3, 0.35, 0.02);
             }
             default -> {
             }

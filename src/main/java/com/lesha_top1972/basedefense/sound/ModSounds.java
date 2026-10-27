@@ -50,6 +50,23 @@ public final class ModSounds {
     public static final SoundEvent BLADE_DEATH = register("entity.nabat_blade.death");
     public static final SoundEvent BLADE_ASSEMBLE = register("entity.nabat_blade.assemble");
 
+    // Подкопщик (tools/sapper_sounds.py)
+    public static final SoundEvent SAPPER_DIG = register("entity.sapper.dig");
+    public static final SoundEvent SAPPER_CRUMBLE = register("entity.sapper.crumble");
+    public static final SoundEvent SAPPER_EMERGE = register("entity.sapper.emerge");
+    public static final SoundEvent SAPPER_LIGHT = register("entity.sapper.light");
+    public static final SoundEvent SAPPER_FUSE = register("entity.sapper.fuse");
+    public static final SoundEvent SAPPER_BOMB = register("entity.sapper.bomb");
+    public static final SoundEvent SAPPER_BLAST = register("entity.sapper.blast");
+    public static final SoundEvent SAPPER_SMOKE = register("entity.sapper.smoke");
+    public static final SoundEvent SAPPER_AMBIENT = register("entity.sapper.ambient");
+    public static final SoundEvent SAPPER_STEP = register("entity.sapper.step");
+    public static final SoundEvent SAPPER_JAB = register("entity.sapper.jab");
+    public static final SoundEvent SAPPER_SNUFF = register("entity.sapper.snuff");
+    public static final SoundEvent SAPPER_THROW = register("entity.sapper.throw");
+    public static final SoundEvent SAPPER_HURT = register("entity.sapper.hurt");
+    public static final SoundEvent SAPPER_DEATH = register("entity.sapper.death");
+
     private ModSounds() {
     }
 

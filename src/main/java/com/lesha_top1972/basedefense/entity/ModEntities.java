@@ -236,6 +236,46 @@ public final class ModEntities {
                     .trackRangeBlocks(32)
                     .build());
 
+    /** «Подкопщик» — карлик‑сапёр (модель ×0.85). */
+    public static final EntityType<SapperEntity> SAPPER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "sapper"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, SapperEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.7f, 1.3f))
+                    .trackRangeBlocks(64)
+                    .trackedUpdateRate(2)
+                    .build());
+
+    /** «Бомба‑банка» подкопщика. */
+    public static final EntityType<SapperBombEntity> SAPPER_BOMB = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "sapper_bomb"),
+            FabricEntityTypeBuilder.<SapperBombEntity>create(SpawnGroup.MISC, SapperBombEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.3f, 0.3f))
+                    .trackRangeBlocks(64)
+                    .trackedUpdateRate(1)
+                    .build());
+
+    /** «Подрыв» — связка шашек на стене. */
+    public static final EntityType<SapperChargeEntity> SAPPER_CHARGE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "sapper_charge"),
+            FabricEntityTypeBuilder.<SapperChargeEntity>create(SpawnGroup.MISC, SapperChargeEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.4f, 0.5f))
+                    .trackRangeBlocks(64)
+                    .trackedUpdateRate(10)
+                    .build());
+
+    /** Дымовая банка. */
+    public static final EntityType<SapperSmokeEntity> SAPPER_SMOKE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "sapper_smoke"),
+            FabricEntityTypeBuilder.<SapperSmokeEntity>create(SpawnGroup.MISC, SapperSmokeEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.25f, 0.3f))
+                    .trackRangeBlocks(48)
+                    .trackedUpdateRate(2)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -258,6 +298,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(CURB_MINION, CurbMinionEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT, NabatEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SAPPER, SapperEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
     }
 }
