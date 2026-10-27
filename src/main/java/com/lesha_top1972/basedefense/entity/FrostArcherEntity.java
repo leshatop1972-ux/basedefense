@@ -45,6 +45,12 @@ public class FrostArcherEntity extends HostileEntity {
 
     public static final byte STATUS_ATTACK = 4;
     public static final byte STATUS_CANCEL = 5;
+    /** «Ледяной веер»: три стрелы веером, натяжение дольше. */
+    public static final byte STATUS_VOLLEY = 6;
+    public static final int VOLLEY_TICKS = 64;      // 3.2 с (клип volley в frost_archer_gen.py)
+    public static final int VOLLEY_RELEASE = 46;    // 2.3 с
+    static final int VOLLEY_COOLDOWN = 400;         // раз в ~20 с
+    static final double VOLLEY_SPREAD = 15.0;       // градусов между стрелами
 
     /** На сколько блоков модель парит над землёй (для рендера и точки выстрела). */
     public static final float HOVER = 0.4f;
@@ -65,6 +71,8 @@ public class FrostArcherEntity extends HostileEntity {
 
     /** Только на клиенте: возраст, когда началась атака (оборот + выстрел). */
     public int attackStartAge = -10000;
+    /** Клиент: текущая атака — «Ледяной веер». */
+    public boolean attackVolley;
 
     public FrostArcherEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -121,12 +129,16 @@ public class FrostArcherEntity extends HostileEntity {
                     this.getParticleX(0.6), this.getY() + HOVER * 0.5 + this.random.nextDouble() * 0.4, this.getParticleZ(0.6),
                     0, -0.02, 0);
         }
+        if (this.getWorld().isClient) {
+            this.frostFx();
+        }
     }
 
     @Override
     public void handleStatus(byte status) {
-        if (status == STATUS_ATTACK) {
+        if (status == STATUS_ATTACK || status == STATUS_VOLLEY) {
             this.attackStartAge = this.age;
+            this.attackVolley = status == STATUS_VOLLEY;
         } else if (status == STATUS_CANCEL) {
             this.attackStartAge = -10000;
         } else {
@@ -219,6 +231,62 @@ public class FrostArcherEntity extends HostileEntity {
         this.velocityModified = true;
     }
 
+    /** «Ледяной веер»: центральная стрела — как обычный выстрел, по бокам ещё две под углом ±15°. */
+    void shootVolley(LivingEntity target, Vec3d targetVelocity) {
+        Vec3d from = this.bowPos();
+        Vec3d aim = target.getPos().add(0, target.getHeight() * 0.55, 0);
+        Vec3d predicted = aim;
+        for (int i = 0; i < 3; i++) {
+            double t = predicted.distanceTo(from) / FrostArrowEntity.SPEED;
+            predicted = aim.add(targetVelocity.x * t, 0, targetVelocity.z * t);
+        }
+        Vec3d dir = predicted.subtract(from);
+        boolean hit = this.random.nextDouble() < this.hitChance(target, targetVelocity);
+        FrostArrowEntity.shoot(this.getWorld(), this, from, dir, hit ? target : null, hit ? 0.12 : 0);
+        for (int k = -1; k <= 1; k += 2) {
+            FrostArrowEntity.shoot(this.getWorld(), this, from, dir.rotateY((float) Math.toRadians(VOLLEY_SPREAD * k)), null, 0);
+        }
+        this.playSound(SoundEvents.ENTITY_ARROW_SHOOT, 1.2f, 1.1f);
+        this.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.4f, 1.3f);
+        if (this.getWorld() instanceof ServerWorld sw) {
+            Vec3d p = from.add(dir.normalize().multiply(0.6));
+            sw.spawnParticles(ParticleTypes.SNOWFLAKE, p.x, p.y, p.z, 14, 0.25, 0.25, 0.25, 0.08);
+        }
+        Vec3d back = this.forward().multiply(-0.8);
+        this.addVelocity(back.x, 0.24, back.z);
+        this.velocityModified = true;
+    }
+
+    private static final net.minecraft.particle.DustParticleEffect RIME =
+            new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(0.86f, 0.94f, 1.0f), 0.7f);
+
+    /** Клиент: под парящей лучницей — изморозь (иней по кругу ~1.5 блока и лёгкая белая дымка), блоки не меняются. */
+    private void frostFx() {
+        World w = this.getWorld();
+        net.minecraft.util.math.BlockPos below = this.getBlockPos().down();
+        if (w.getBlockState(below).isAir() && w.getBlockState(below.down()).isAir()) {
+            return;                                           // высоко над землёй — инея нет
+        }
+        double gy = below.getY() + 1.02;
+        if (w.getBlockState(below).isAir()) {
+            gy -= 1.0;
+        }
+        if (this.age % 3 == 0) {
+            double a = this.random.nextDouble() * Math.PI * 2;
+            double r = 0.4 + Math.sqrt(this.random.nextDouble()) * 1.1;
+            w.addParticle(RIME, this.getX() + Math.cos(a) * r, gy, this.getZ() + Math.sin(a) * r, 0, 0.002, 0);
+        }
+        if (this.age % 9 == 0) {
+            double a = this.random.nextDouble() * Math.PI * 2;
+            w.addParticle(ParticleTypes.WHITE_ASH, this.getX() + Math.cos(a) * 1.4, gy + 0.05, this.getZ() + Math.sin(a) * 1.4,
+                    0, 0.01, 0);
+        }
+        if (this.age % 14 == 0) {
+            w.addParticle(ParticleTypes.CLOUD, this.getX() + (this.random.nextDouble() - 0.5) * 1.6, gy + 0.1,
+                    this.getZ() + (this.random.nextDouble() - 0.5) * 1.6, 0, 0.004, 0);
+        }
+    }
+
     void dashAway(LivingEntity from) {
         Vec3d away = new Vec3d(this.getX() - from.getX(), 0, this.getZ() - from.getZ());
         if (away.lengthSquared() < 1.0e-4) {
@@ -240,6 +308,8 @@ public class FrostArcherEntity extends HostileEntity {
         private final Vec3d[] history = new Vec3d[6];
         private int historyCount;
         private int cooldown = 20;
+        private int volleyCooldown = 200;
+        private boolean volley;
         private int attackTick = -1;
         private boolean dashUsed;
         private int dashPause;
@@ -318,31 +388,43 @@ public class FrostArcherEntity extends HostileEntity {
                 this.archer.getNavigation().stop();
                 this.archer.getMoveControl().strafeTo(0, 0);
                 this.archer.faceTarget(target);
-                if (this.attackTick == RELEASE_TICK + 2) {
+                int release = this.volley ? VOLLEY_RELEASE : RELEASE_TICK;
+                int total = this.volley ? VOLLEY_TICKS : ATTACK_TICKS;
+                if (this.attackTick == release + 2) {
                     this.archer.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.7f);
                 } else if (this.attackTick == DRAW_START) {
                     this.archer.playSound(SoundEvents.ITEM_CROSSBOW_LOADING_MIDDLE, 1.0f, 1.25f);
                 }
-                if (this.attackTick < RELEASE_TICK && (!canSee || dist > SEE_RANGE + 4)) {
+                if (this.volley && this.attackTick == DRAW_START + 12) {
+                    this.archer.playSound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.9f);
+                }
+                if (this.attackTick < release && (!canSee || dist > SEE_RANGE + 4)) {
                     // цель пропала — отменить выстрел
                     this.archer.getWorld().sendEntityStatus(this.archer, STATUS_CANCEL);
                     this.attackTick = -1;
                     this.cooldown = 30;
                     return;
                 }
-                if (this.attackTick == RELEASE_TICK) {
-                    this.archer.shoot(target, this.targetVelocity());
+                if (this.attackTick == release) {
+                    if (this.volley) {
+                        this.archer.shootVolley(target, this.targetVelocity());
+                    } else {
+                        this.archer.shoot(target, this.targetVelocity());
+                    }
                     this.dashUsed = false;
                 }
-                if (this.attackTick >= ATTACK_TICKS) {
+                if (this.attackTick >= total) {
                     this.attackTick = -1;
-                    this.cooldown = SHOT_CYCLE - ATTACK_TICKS;
+                    this.cooldown = Math.max(20, SHOT_CYCLE - total);
                 }
                 return;
             }
 
             if (this.cooldown > 0) {
                 this.cooldown--;
+            }
+            if (this.volleyCooldown > 0) {
+                this.volleyCooldown--;
             }
 
             // --- рывок назад: один раз за перезарядку, если подошли вплотную ---
@@ -362,7 +444,11 @@ public class FrostArcherEntity extends HostileEntity {
             // --- начать атаку ---
             if (this.cooldown <= 0 && canSee && dist <= SEE_RANGE) {
                 this.attackTick = 0;
-                this.archer.getWorld().sendEntityStatus(this.archer, STATUS_ATTACK);
+                this.volley = this.volleyCooldown <= 0 && dist >= 6.0;
+                if (this.volley) {
+                    this.volleyCooldown = VOLLEY_COOLDOWN;
+                }
+                this.archer.getWorld().sendEntityStatus(this.archer, this.volley ? STATUS_VOLLEY : STATUS_ATTACK);
                 return;
             }
 

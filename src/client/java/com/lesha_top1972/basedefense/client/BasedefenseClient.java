@@ -71,9 +71,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.IRON_ZOMBIE, IronZombieRenderer::new);
         EntityRendererRegistry.register(ModEntities.IRON_KNIGHT, IronKnightRenderer::new);
         EntityModelLayerRegistry.registerModelLayer(FrostArcherRenderer.LAYER, () -> BedrockModelLoader.load("frost_archer"));
+        EntityModelLayerRegistry.registerModelLayer(FrostArcherRenderer.BOW, () -> BedrockModelLoader.load("frost_archer_bow"));
         EntityRendererRegistry.register(ModEntities.FROST_ARCHER, FrostArcherRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROST_ARROW, FrostArrowRenderer::new);
         EntityModelLayerRegistry.registerModelLayer(TatteredLancerRenderer.LAYER, () -> BedrockModelLoader.load("tattered_lancer"));
+        EntityModelLayerRegistry.registerModelLayer(TatteredLancerRenderer.LANCE, () -> BedrockModelLoader.load("tattered_lancer_lance"));
         EntityRendererRegistry.register(ModEntities.TATTERED_LANCER, TatteredLancerRenderer::new);
         EntityRendererRegistry.register(ModEntities.FALLING_LANCE, FallingLanceRenderer::new);
         LancerZoneRenderer.init();

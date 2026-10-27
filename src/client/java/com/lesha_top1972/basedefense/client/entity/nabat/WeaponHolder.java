@@ -47,4 +47,8 @@ public interface WeaponHolder {
     default float weaponScale(int slot) {
         return this.weaponScale();
     }
+
+    /** Поставить кости внутри модели оружия (тетива, вымпел…) перед отрисовкой; по умолчанию — ничего. */
+    default void poseWeapon(int slot, ModelPart weaponRoot) {
+    }
 }

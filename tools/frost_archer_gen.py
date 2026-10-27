@@ -102,6 +102,12 @@ cube("hand_arrow", (-5.25, 0.4, -0.25), (0.5, 10.6, 0.5), "shaft")
 cube("hand_arrow", (-5.5, -1.0, -0.5), (1, 1.5, 1), "ice")
 cube("hand_arrow", (-5.35, 8.6, -1.1), (0.2, 2, 2.2), "fletch")
 cube("hand_arrow", (-6.1, 8.6, -0.1), (2.2, 2, 0.2), "fletch")
+# «Ледяной веер»: ещё две стрелы веером (видны только в залпе)
+bone("hand_arrow_fan", "right_fore", (-5, 11, 0))
+for k in (-1, 1):
+    for o, sz, mat in (((-5.25, 0.4, -0.25), (0.5, 10.6, 0.5), "shaft"), ((-5.5, -1.0, -0.5), (1, 1.5, 1), "ice"),
+                       ((-5.35, 8.6, -1.1), (0.2, 2, 2.2), "fletch"), ((-6.1, 8.6, -0.1), (2.2, 2, 0.2), "fletch")):
+        cube("hand_arrow_fan", o, sz, mat, rot=(0, 0, 13 * k), pivot=(-5, 8.0, 0))
 
 bone("left_arm", "torso", (5, 22, 0))
 cube("left_arm", (3.5, 16.5, -1.5), (3, 5.5, 3), "sleeve", face="upper")
@@ -148,6 +154,13 @@ cube("bow_arrow", (P[0] - 0.25, P[1] - 0.25, P[2] - 3.5), (0.5, 0.5, 12), "shaft
 cube("bow_arrow", (P[0] - 0.5, P[1] - 0.5, P[2] - 5), (1, 1, 1.5), "ice")
 cube("bow_arrow", (P[0] - 0.1, P[1] - 1, P[2] + 6.4), (0.2, 2, 2), "fletch")
 cube("bow_arrow", (P[0] - 1, P[1] - 0.1, P[2] + 6.4), (2, 0.2, 2), "fletch")
+bone("bow_arrow_fan", "bow_arrow", P)
+for k in (-1, 1):
+    for o, sz, mat in (((P[0] - 0.25, P[1] - 0.25, P[2] - 3.5), (0.5, 0.5, 12), "shaft"),
+                       ((P[0] - 0.5, P[1] - 0.5, P[2] - 5), (1, 1, 1.5), "ice"),
+                       ((P[0] - 0.1, P[1] - 1, P[2] + 6.4), (0.2, 2, 2), "fletch"),
+                       ((P[0] - 1, P[1] - 0.1, P[2] + 6.4), (2, 0.2, 2), "fletch")):
+        cube("bow_arrow_fan", o, sz, mat, rot=(13 * k, 0, 0), pivot=(P[0], P[1], P[2] + 8.0))
 
 # --- голова ---
 bone("head", "torso", (0, 23.5, 0))
@@ -596,7 +609,7 @@ for c in M.cubes():
 # =====================================================================
 A_BONES = ["root", "body", "torso", "head", "hair_back", "hair_mid", "hair_tip", "cape",
            "right_arm", "right_fore", "left_arm", "left_fore", "bow", "bow_top", "bow_bot",
-           "string_top", "string_bot", "bow_arrow", "hand_arrow",
+           "string_top", "string_bot", "bow_arrow", "bow_arrow_fan", "hand_arrow", "hand_arrow_fan",
            "right_leg", "right_shin", "right_foot", "left_leg", "left_shin", "left_foot",
            "skirt_fr", "skirt_fl", "skirt_b", "skirt_sr", "skirt_sl", "quiver", "shards"]
 
@@ -876,16 +889,34 @@ def attack_pose(t):
     return pose
 
 
+# «Ледяной веер»: та же атака, но три стрелы и натяжение дольше (тики в FrostArcherEntity: выстрел 46, всего 64)
+VOLLEY_LEN = 3.2
+VOLLEY_RELEASE = 2.3
+
+
+def volley_pose(t):
+    if t < NOCK:
+        ta = t
+    elif t < VOLLEY_RELEASE:
+        ta = NOCK + (t - NOCK) * (RELEASE - NOCK) / (VOLLEY_RELEASE - NOCK)
+    else:
+        ta = RELEASE + (t - VOLLEY_RELEASE) * (ATTACK_LEN - RELEASE) / (VOLLEY_LEN - VOLLEY_RELEASE)
+    return attack_pose(ta)
+
+
 def shards(pose, t):
     pose["shards"] = {"rot": (0, -360 * (t % 3.0) / 3.0, 0), "pos": (0, -0.6 * math.sin(2 * math.pi * t / 1.5), 0)}
 
 
-animations = {
-    "animation.%s.idle" % NAME: bake(lambda t: base_pose(t), 3.0, 20, True, A_BONES, shards),
-    "animation.%s.move" % NAME: bake(lambda t: move_pose(t), 1.2, 20, True, A_BONES),
-    "animation.%s.move_back" % NAME: bake(lambda t: move_pose(t, True), 1.2, 20, True, A_BONES),
-    "animation.%s.attack" % NAME: bake(attack_pose, ATTACK_LEN, 40, False, A_BONES),
-}
+CLIPS = [
+    ("idle", lambda t: base_pose(t), 3.0, 20, True),
+    ("move", lambda t: move_pose(t), 1.2, 20, True),
+    ("move_back", lambda t: move_pose(t, True), 1.2, 20, True),
+    ("attack", attack_pose, ATTACK_LEN, 40, False),
+    ("volley", volley_pose, VOLLEY_LEN, 40, False),
+]
+animations = {"animation.%s.%s" % (NAME, n): bake(fn, ln, fps, lp, A_BONES, shards if n == "idle" else None)
+              for n, fn, ln, fps, lp in CLIPS}
 
 # =====================================================================
 # 4. Прочие текстуры: стрела, иконка эффекта, иней на экране
@@ -982,8 +1013,9 @@ def overlay():
 
 
 if __name__ == "__main__":
-    M.write_geo(ROOT)
-    write_anims(ROOT, NAME, animations)
+    # лук (с тетивой и стрелами на нём) — отдельной моделью frost_archer_bow с дорожкой поворота
+    import weaponize
+    write_anims(ROOT, NAME, weaponize.export(ROOT, M, animations, CLIPS, "bow", NAME + "_bow"))
     PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
     PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
     arrow_texture()

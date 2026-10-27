@@ -49,6 +49,7 @@ public class WeaponFeature<T extends LivingEntity, M extends EntityModel<T> & We
             return;
         }
         WeaponTrack tr = model.weaponTrack(this.slot);
+        model.poseWeapon(this.slot, this.weapon);
         // точка хвата в системе модели — по костям текущего кадра
         MatrixStack chain = new MatrixStack();
         for (ModelPart p : model.handChain(this.slot)) {

@@ -847,24 +847,25 @@ def rain_descend(t):
     return resolve(pr)
 
 
-animations = {
-    "animation.%s.idle" % NAME: bake(idle, 2.4, 20, True, A_BONES),
-    "animation.%s.walk" % NAME: bake(walk, 1.0, 20, True, A_BONES),
-    "animation.%s.run" % NAME: bake(run, 0.6, 30, True, A_BONES),
-    "animation.%s.thrust" % NAME: bake(thrust, 1.5, 40, False, A_BONES),
-    "animation.%s.charge" % NAME: bake(charge, 1.8, 40, False, A_BONES),
-    "animation.%s.leap_start" % NAME: bake(leap_start, 0.5, 40, False, A_BONES),
-    "animation.%s.leap_air" % NAME: bake(leap_air, 1.6, 40, False, A_BONES),
-    "animation.%s.leap_land" % NAME: bake(leap_land, 0.8, 40, False, A_BONES),
-    "animation.%s.sweep" % NAME: bake(sweep, 1.3, 40, False, A_BONES),
-    "animation.%s.uppercut" % NAME: bake(uppercut, 1.3, 40, False, A_BONES),
-    "animation.%s.backstep" % NAME: bake(backstep, 0.7, 40, False, A_BONES),
-    "animation.%s.roar" % NAME: bake(roar, 1.5, 40, False, A_BONES),
-    "animation.%s.grand" % NAME: bake(grand, 3.95, 40, False, A_BONES),
-    "animation.%s.rain_rise" % NAME: bake(rain_rise, 1.2, 40, False, A_BONES),
-    "animation.%s.rain_hover" % NAME: bake(rain_hover, 1.0, 20, True, A_BONES),
-    "animation.%s.rain_descend" % NAME: bake(rain_descend, 0.6, 20, True, A_BONES),
-}
+CLIPS = [
+    ("idle", idle, 2.4, 20, True),
+    ("walk", walk, 1.0, 20, True),
+    ("run", run, 0.6, 30, True),
+    ("thrust", thrust, 1.5, 40, False),
+    ("charge", charge, 1.8, 40, False),
+    ("leap_start", leap_start, 0.5, 40, False),
+    ("leap_air", leap_air, 1.6, 40, False),
+    ("leap_land", leap_land, 0.8, 40, False),
+    ("sweep", sweep, 1.3, 40, False),
+    ("uppercut", uppercut, 1.3, 40, False),
+    ("backstep", backstep, 0.7, 40, False),
+    ("roar", roar, 1.5, 40, False),
+    ("grand", grand, 3.95, 40, False),
+    ("rain_rise", rain_rise, 1.2, 40, False),
+    ("rain_hover", rain_hover, 1.0, 20, True),
+    ("rain_descend", rain_descend, 0.6, 20, True),
+]
+animations = {"animation.%s.%s" % (NAME, n): bake(fn, ln, fps, lp, A_BONES) for n, fn, ln, fps, lp in CLIPS}
 
 # =====================================================================
 # 4. Прочие текстуры: призрачное копьё, иконка «Дуэлянта», зона ливня копий
@@ -972,8 +973,9 @@ if __name__ == "__main__":
     duelist_icon()
     rat_icon()
     zone_texture()
-    M.write_geo(ROOT)
-    write_anims(ROOT, NAME, animations)
+    # копьё — отдельной моделью (tattered_lancer_lance) с дорожкой поворота: не «прокручивается» на переходах
+    import weaponize
+    write_anims(ROOT, NAME, weaponize.export(ROOT, M, animations, CLIPS, "lance", NAME + "_lance"))
     PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
     PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
     print("готово:", NAME, "кубов:", len(M.cubes()))

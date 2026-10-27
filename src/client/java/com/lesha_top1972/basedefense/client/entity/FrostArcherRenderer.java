@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.Basedefense;
+import com.lesha_top1972.basedefense.client.entity.nabat.WeaponFeature;
 import com.lesha_top1972.basedefense.entity.FrostArcherEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
@@ -16,6 +17,9 @@ public class FrostArcherRenderer extends MobEntityRenderer<FrostArcherEntity, Fr
     public static final EntityModelLayer LAYER =
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "frost_archer"), "main");
 
+    public static final EntityModelLayer BOW =
+            new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "frost_archer_bow"), "main");
+
     private static final Identifier TEXTURE =
             new Identifier(Basedefense.MOD_ID, "textures/entity/frost_archer.png");
     private static final Identifier GLOW =
@@ -24,6 +28,8 @@ public class FrostArcherRenderer extends MobEntityRenderer<FrostArcherEntity, Fr
     public FrostArcherRenderer(EntityRendererFactory.Context context) {
         super(context, new FrostArcherModel(context.getPart(LAYER)), 0.45f);
         this.addFeature(new GlowLayer<>(this, GLOW));
+        // лук — отдельная модель с текстурой лучницы
+        this.addFeature(new WeaponFeature<>(this, context.getPart(BOW), TEXTURE, GLOW));
     }
 
     @Override
