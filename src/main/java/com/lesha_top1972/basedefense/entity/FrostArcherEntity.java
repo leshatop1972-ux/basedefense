@@ -293,7 +293,7 @@ public class FrostArcherEntity extends HostileEntity {
             away = this.forward().multiply(-1);
         }
         away = away.normalize();
-        this.setVelocity(away.x * 1.05, 0.38, away.z * 1.05);
+        this.setVelocity(away.x * 1.41, 0.38, away.z * 1.41);       // ≈11.8 блока (было ≈10.3)
         this.velocityModified = true;
         this.playSound(SoundEvents.ENTITY_PHANTOM_FLAP, 1.0f, 1.4f);
         if (this.getWorld() instanceof ServerWorld sw) {

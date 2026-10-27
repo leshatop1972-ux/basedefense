@@ -1009,7 +1009,7 @@ public class TatteredLancerEntity extends HostileEntity {
             if (t == RAIN_START - 10) {
                 l.sound(SoundEvents.ITEM_TRIDENT_THUNDER, 1.0f, 1.5f);
             }
-            if (t >= RAIN_START && t < RAIN_STOP && t % 3 == 0) {
+            if (t >= RAIN_START && t < RAIN_STOP && t % 2 == 0) {
                 this.spawnLances(target);
             }
             if (t >= RAIN_HOVER_END) {
@@ -1021,7 +1021,11 @@ public class TatteredLancerEntity extends HostileEntity {
             }
         }
 
-        /** Группа из 3 призрачных копий: чаще рядом с игроками в зоне, иначе в случайном месте зоны. */
+        /**
+         * Раз в 2 тика: две группы по 3 копья (каждая на 75% — рядом с кем‑то в зоне, иначе где угодно в зоне)
+         * и по три копья на каждого в зоне: на опережение, вбок от точки опережения (уход в сторону тоже накрыт)
+         * и прямо в него (если стоит на месте).
+         */
         private void spawnLances(LivingEntity target) {
             TatteredLancerEntity l = this.lancer;
             List<LivingEntity> inZone = new ArrayList<>();
@@ -1032,23 +1036,41 @@ public class TatteredLancerEntity extends HostileEntity {
                     inZone.add(e);
                 }
             }
-            double cx;
-            double cz;
-            if (!inZone.isEmpty() && l.random.nextFloat() < 0.6f) {
-                LivingEntity e = inZone.get(l.random.nextInt(inZone.size()));
-                cx = e.getX() + (l.random.nextDouble() - 0.5) * 3.0;
-                cz = e.getZ() + (l.random.nextDouble() - 0.5) * 3.0;
-            } else {
-                double a = l.random.nextDouble() * Math.PI * 2;
-                double r = Math.sqrt(l.random.nextDouble()) * RAIN_RADIUS;
-                cx = this.zone.x + Math.cos(a) * r;
-                cz = this.zone.z + Math.sin(a) * r;
+            for (int g = 0; g < 2; g++) {
+                double cx;
+                double cz;
+                if (!inZone.isEmpty() && l.random.nextFloat() < 0.75f) {
+                    LivingEntity e = inZone.get(l.random.nextInt(inZone.size()));
+                    cx = e.getX() + (l.random.nextDouble() - 0.5) * 4.0;
+                    cz = e.getZ() + (l.random.nextDouble() - 0.5) * 4.0;
+                } else {
+                    double a = l.random.nextDouble() * Math.PI * 2;
+                    double r = Math.sqrt(l.random.nextDouble()) * RAIN_RADIUS;
+                    cx = this.zone.x + Math.cos(a) * r;
+                    cz = this.zone.z + Math.sin(a) * r;
+                }
+                for (int i = 0; i < 3; i++) {
+                    double x = cx + (l.random.nextDouble() - 0.5) * 2.4;
+                    double z = cz + (l.random.nextDouble() - 0.5) * 2.4;
+                    double y = this.zone.y + 13 + l.random.nextDouble() * 4;
+                    FallingLanceEntity.drop(l.getWorld(), l, x, y, z);
+                }
             }
-            for (int i = 0; i < 3; i++) {
-                double x = cx + (l.random.nextDouble() - 0.5) * 2.4;
-                double z = cz + (l.random.nextDouble() - 0.5) * 2.4;
-                double y = this.zone.y + 13 + l.random.nextDouble() * 4;
-                FallingLanceEntity.drop(l.getWorld(), l, x, y, z);
+            // по три копья на каждого в зоне (копьё падает ≈10 тиков)
+            for (LivingEntity e : inZone) {
+                Vec3d v = e.getVelocity();
+                double lx = e.getX() + v.x * 10;
+                double lz = e.getZ() + v.z * 10;
+                FallingLanceEntity.drop(l.getWorld(), l, lx + (l.random.nextDouble() - 0.5) * 1.2,
+                        this.zone.y + 13 + l.random.nextDouble() * 3, lz + (l.random.nextDouble() - 0.5) * 1.2);
+                double a = l.random.nextDouble() * Math.PI * 2;
+                double r = 1.8 + l.random.nextDouble() * 1.4;
+                FallingLanceEntity.drop(l.getWorld(), l, lx + Math.cos(a) * r, this.zone.y + 13 + l.random.nextDouble() * 3,
+                        lz + Math.sin(a) * r);
+                if (l.random.nextInt(2) == 0) {
+                    FallingLanceEntity.drop(l.getWorld(), l, e.getX() + (l.random.nextDouble() - 0.5) * 0.8,
+                            this.zone.y + 13 + l.random.nextDouble() * 3, e.getZ() + (l.random.nextDouble() - 0.5) * 0.8);
+                }
             }
         }
     }

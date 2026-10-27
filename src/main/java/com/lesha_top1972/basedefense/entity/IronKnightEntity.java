@@ -1,6 +1,5 @@
 package com.lesha_top1972.basedefense.entity;
 
-import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.AnimationState;
 import net.minecraft.entity.EntityType;
@@ -119,7 +118,7 @@ public class IronKnightEntity extends HostileEntity {
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return ModSounds.IRON_KNIGHT_HURT;
+        return SoundEvents.ENTITY_IRON_GOLEM_HURT;
     }
 
     @Override
