@@ -105,6 +105,19 @@ public final class ModSounds {
     public static final SoundEvent CURB_MINION_HURT = register("entity.curb_minion.hurt");
     public static final SoundEvent CURB_MINION_DEATH = register("entity.curb_minion.death");
 
+    // Туманная и кровавая сущности (tools/entity_sounds.py)
+    public static final SoundEvent MIST_SCREECH = register("entity.mist_entity.screech");
+    public static final SoundEvent MIST_GLITCH = register("entity.mist_entity.glitch");
+    public static final SoundEvent MIST_WHISPER = register("entity.mist_entity.whisper");
+    public static final SoundEvent MIST_STING = register("entity.mist_entity.sting");
+    public static final SoundEvent MIST_HURT = register("entity.mist_entity.hurt");
+    public static final SoundEvent MIST_DEATH = register("entity.mist_entity.death");
+    public static final SoundEvent BLOOD_GROWL = register("entity.blood_entity.growl");
+    public static final SoundEvent BLOOD_ATTACK = register("entity.blood_entity.attack");
+    public static final SoundEvent BLOOD_HISS = register("entity.blood_entity.hiss");
+    public static final SoundEvent BLOOD_HURT = register("entity.blood_entity.hurt");
+    public static final SoundEvent BLOOD_DEATH = register("entity.blood_entity.death");
+
     private ModSounds() {
     }
 

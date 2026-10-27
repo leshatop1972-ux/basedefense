@@ -124,6 +124,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SIEGE_BEETLE, com.lesha_top1972.basedefense.client.entity.beetle.SiegeBeetleRenderer::new);
         EntityRendererRegistry.register(ModEntities.BEETLE_MITE, com.lesha_top1972.basedefense.client.entity.beetle.BeetleMiteRenderer::new);
         EntityRendererRegistry.register(ModEntities.BEETLE_EGG, com.lesha_top1972.basedefense.client.entity.beetle.BeetleEggRenderer::new);
+        // туманная и кровавая сущности
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.horror.MistEntityRenderer.LAYER, () -> BedrockModelLoader.load("mist_entity"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.horror.BloodEntityRenderer.LAYER, () -> BedrockModelLoader.load("blood_entity"));
+        EntityRendererRegistry.register(ModEntities.MIST_ENTITY, com.lesha_top1972.basedefense.client.entity.horror.MistEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BLOOD_ENTITY, com.lesha_top1972.basedefense.client.entity.horror.BloodEntityRenderer::new);
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

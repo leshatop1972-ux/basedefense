@@ -283,5 +283,20 @@
   "subtitles.basedefense.curb_minion.step": "Шаги прислужника",
   "subtitles.basedefense.curb_minion.servo": "Жужжит прислужник",
   "subtitles.basedefense.curb_minion.hurt": "Прислужник ранен",
-  "subtitles.basedefense.curb_minion.death": "Прислужник разваливается"
+  "subtitles.basedefense.curb_minion.death": "Прислужник разваливается",
+  "entity.basedefense.mist_entity": "Туманная сущность",
+  "entity.basedefense.blood_entity": "Кровавая сущность",
+  "item.basedefense.mist_entity_spawn_egg": "Яйцо призыва туманной сущности",
+  "item.basedefense.blood_entity_spawn_egg": "Яйцо призыва кровавой сущности",
+  "subtitles.basedefense.mist_entity.screech": "Искажённый визг",
+  "subtitles.basedefense.mist_entity.glitch": "Что‑то трещит и сбоит",
+  "subtitles.basedefense.mist_entity.whisper": "Шёпот из тумана",
+  "subtitles.basedefense.mist_entity.sting": "Что‑то рядом",
+  "subtitles.basedefense.mist_entity.hurt": "Туманная сущность ранена",
+  "subtitles.basedefense.mist_entity.death": "Туманная сущность рассеивается",
+  "subtitles.basedefense.blood_entity.growl": "Мокрое рычание",
+  "subtitles.basedefense.blood_entity.attack": "Кровавая сущность бьёт",
+  "subtitles.basedefense.blood_entity.hiss": "Кровавая сущность шипит",
+  "subtitles.basedefense.blood_entity.hurt": "Кровавая сущность ранена",
+  "subtitles.basedefense.blood_entity.death": "Кровавая сущность погибает"
 }

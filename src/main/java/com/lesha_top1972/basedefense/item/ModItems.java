@@ -87,6 +87,10 @@ public final class ModItems {
             new SpawnEggItem(ModEntities.SIEGE_BEETLE, 0x281E1B, 0x8C5A34, new Item.Settings()));
     public static final Item BEETLE_MITE_SPAWN_EGG = register("beetle_mite_spawn_egg",
             new SpawnEggItem(ModEntities.BEETLE_MITE, 0x3A2A24, 0xC4562A, new Item.Settings()));
+    public static final Item MIST_ENTITY_SPAWN_EGG = register("mist_entity_spawn_egg",
+            new SpawnEggItem(ModEntities.MIST_ENTITY, 0xE6E6EA, 0x8E9098, new Item.Settings()));
+    public static final Item BLOOD_ENTITY_SPAWN_EGG = register("blood_entity_spawn_egg",
+            new SpawnEggItem(ModEntities.BLOOD_ENTITY, 0x160C0E, 0xC41620, new Item.Settings()));
 
     private ModItems() {
     }
@@ -120,6 +124,8 @@ public final class ModItems {
             entries.add(SAPPER_SPAWN_EGG);
             entries.add(SIEGE_BEETLE_SPAWN_EGG);
             entries.add(BEETLE_MITE_SPAWN_EGG);
+            entries.add(MIST_ENTITY_SPAWN_EGG);
+            entries.add(BLOOD_ENTITY_SPAWN_EGG);
         });
     }
 }

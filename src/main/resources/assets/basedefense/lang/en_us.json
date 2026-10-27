@@ -283,5 +283,20 @@
   "subtitles.basedefense.curb_minion.step": "Henchman steps",
   "subtitles.basedefense.curb_minion.servo": "Henchman whirs",
   "subtitles.basedefense.curb_minion.hurt": "Henchman hurts",
-  "subtitles.basedefense.curb_minion.death": "Henchman falls apart"
+  "subtitles.basedefense.curb_minion.death": "Henchman falls apart",
+  "entity.basedefense.mist_entity": "Mist Entity",
+  "entity.basedefense.blood_entity": "Blood Entity",
+  "item.basedefense.mist_entity_spawn_egg": "Mist Entity Spawn Egg",
+  "item.basedefense.blood_entity_spawn_egg": "Blood Entity Spawn Egg",
+  "subtitles.basedefense.mist_entity.screech": "Distorted screech",
+  "subtitles.basedefense.mist_entity.glitch": "Something glitches",
+  "subtitles.basedefense.mist_entity.whisper": "Whisper from the mist",
+  "subtitles.basedefense.mist_entity.sting": "Something is near",
+  "subtitles.basedefense.mist_entity.hurt": "Mist Entity hurts",
+  "subtitles.basedefense.mist_entity.death": "Mist Entity dissolves",
+  "subtitles.basedefense.blood_entity.growl": "Wet growl",
+  "subtitles.basedefense.blood_entity.attack": "Blood Entity strikes",
+  "subtitles.basedefense.blood_entity.hiss": "Blood Entity hisses",
+  "subtitles.basedefense.blood_entity.hurt": "Blood Entity hurts",
+  "subtitles.basedefense.blood_entity.death": "Blood Entity dies"
 }

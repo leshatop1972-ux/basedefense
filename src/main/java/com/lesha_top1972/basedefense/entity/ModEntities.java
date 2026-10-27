@@ -304,6 +304,24 @@ public final class ModEntities {
                     .trackRangeBlocks(48)
                     .build());
 
+    /** «Туманная сущность». */
+    public static final EntityType<MistEntity> MIST_ENTITY = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "mist_entity"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, MistEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .trackRangeBlocks(64)
+                    .build());
+
+    /** «Кровавая сущность». */
+    public static final EntityType<BloodEntity> BLOOD_ENTITY = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "blood_entity"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BloodEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .trackRangeBlocks(64)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -328,6 +346,8 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SAPPER, SapperEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SIEGE_BEETLE, SiegeBeetleEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(MIST_ENTITY, MistEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOOD_ENTITY, BloodEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BEETLE_MITE, BeetleMiteEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BEETLE_EGG, BeetleEggEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
