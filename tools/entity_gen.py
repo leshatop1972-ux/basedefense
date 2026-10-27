@@ -73,15 +73,21 @@ def paint(M, kind, seed):
     def mist(face, f, i, j, w, h):
         lit = FACE_LIGHT[f]
         if face == "head" and f == "front":
-            # пустые глаза (2×3, чуть разной высоты) и растянутый тонкий рот
-            if (i in (1, 2) and 2 <= j <= 4) or (i in (5, 6) and 3 <= j <= 5):
-                return VOID
-            if j == 6 and 1 <= i <= 6:
-                return mix(VOID, FOG_D, 0.25)
-            if (i, j) in ((0, 6), (7, 5)):
-                return mix(VOID, FOG_D, 0.4)                     # уголки рта вверх
+            # лица нет: гладкая, чуть светлее тела «маска» без черт, по краю — мягкая серая тень,
+            # где были бы глаза — едва заметные впадины (не дыры)
+            edge = min(i, j, w - 1 - i, h - 1 - j)
+            col = (246, 246, 248)
+            if edge == 0:
+                col = mix(col, FOG, 0.55)
+            elif edge == 1:
+                col = mix(col, FOG, 0.18)
+            if j in (3, 4) and i in (1, 2, 5, 6):
+                col = mix(col, FOG, 0.22)
+            return mul(col, lit)
         if face in ("head2", "body2", "arm2", "leg2"):
             # второй слой — клубы дыма, полупрозрачные
+            if face == "head2" and f == "front":
+                return None                                      # лицо чистое
             n = blob(i, j, seed * 0.7 + (3 if f in ("left", "right") else 0))
             if n < 0.62 or rnd.random() < 0.25:
                 return None
@@ -222,23 +228,20 @@ def mk(kind):
             seq[-1] = (0.80, {"body": (8, 0, 0)})
         return P(**keys(seq, t))
 
-    def lunge(t):
-        """Кровавая: «Бросок» — приседает (0–0.4), прыжок‑рывок вперёд, обе руки сверху вниз (0.55), выпрямляется."""
+    def rend(t):
+        """Кровавая: «Двойной разрыв» — на месте: левая рука с замахом через плечо рвёт наискось (0.35),
+        корпус скручивается — правая рвёт снизу вверх (0.65), возврат (1.0)."""
         seq = [(0.0, {"body": (8, 0, 0)}),
-               (0.40, {"body": (30, 0, 0), "head": (-30, 0, 0), "right_arm": (-60, 0, 30), "left_arm": (-60, 0, -30),
-                       "right_leg": (14, 0, 6), "left_leg": (-22, 0, -6)}),
-               (0.48, {"body": (-10, 0, 0), "head": (-10, 0, 0), "right_arm": (-170, 0, 10), "left_arm": (-170, 0, -10),
-                       "right_leg": (20, 0, 0), "left_leg": (30, 0, 0)}),
-               (0.58, {"body": (38, 0, 0), "head": (-30, 0, 0), "right_arm": (-30, 0, 5), "left_arm": (-30, 0, -5),
-                       "right_leg": (-40, 0, 0), "left_leg": (20, 0, 0)}),
-               (0.80, {"body": (30, 0, 0), "head": (-26, 0, 0), "right_arm": (-20, 0, 10), "left_arm": (-20, 0, -10),
-                       "right_leg": (-30, 0, 0), "left_leg": (15, 0, 0)}),
-               (1.20, {"body": (8, 0, 0)})]
-        pose = P(**keys(seq, t))
-        # опускание корпуса в приседе (ноги согнуты — тело ниже)
-        down = 2.5 * smooth(t / 0.4) * (1 - smooth((t - 0.42) / 0.06)) + 2.0 * smooth((t - 0.55) / 0.05) * (1 - smooth((t - 0.8) / 0.4))
-        pose["root"]["pos"] = (0, down, 0)          # Java: +y вниз
-        return pose
+               (0.25, {"body": (10, -28, 0), "head": (-8, 20, 0), "left_arm": (-150, 0, -40), "right_arm": (-10, 0, 20),
+                       "right_leg": (-10, 0, 0), "left_leg": (12, 0, 0)}),
+               (0.36, {"body": (22, 26, 0), "head": (-14, -18, 0), "left_arm": (-30, 30, 30), "right_arm": (20, 0, 30),
+                       "right_leg": (8, 0, 0), "left_leg": (-14, 0, 0)}),
+               (0.52, {"body": (24, 30, 0), "head": (-16, -20, 0), "left_arm": (-20, 30, 25), "right_arm": (40, -10, 30)}),
+               (0.66, {"body": (6, -30, 0), "head": (-4, 22, 0), "left_arm": (10, 0, -20), "right_arm": (-170, -20, 10),
+                       "right_leg": (-14, 0, 0), "left_leg": (10, 0, 0)}),
+               (0.78, {"body": (4, -26, 0), "head": (-4, 18, 0), "right_arm": (-160, -25, 15)}),
+               (1.00, {"body": (8, 0, 0)})]
+        return P(**keys(seq, t))
 
     def pose_of(fn):
         return lambda t: fn(t) if isinstance(fn(t), dict) and "root" in fn(t) else P(**fn(t))
@@ -246,7 +249,7 @@ def mk(kind):
     clips = {"idle": (lambda t: idle(t), 4.0, 20, True), "walk": (lambda t: walk(t), 1.0 if stiff else 0.8, 20, True),
              "attack": (attack, 0.8, 60, False)}
     if not stiff:
-        clips["lunge"] = (lunge, 1.2, 60, False)
+        clips["rend"] = (rend, 1.0, 60, False)
     return clips
 
 

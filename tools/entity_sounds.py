@@ -170,6 +170,16 @@ def blood_hurt():
         save("blood_hurt%d" % v, growl(0.35, 140 + v * 30, 2.0), vol=0.75)
 
 
+def blood_step():
+    # тяжёлые мокрые шаги: глухой удар + чавканье
+    for v in range(3):
+        sec = 0.3
+        t = T(sec)
+        thud = (np.sin(2 * np.pi * (90 + v * 12) * t) * np.exp(-t / 0.04) + lowp(noise(sec), 300) * np.exp(-t / 0.03)) * 1.2
+        squelch = bp(noise(sec), 300, 1800) * np.exp(-((t - 0.05) / 0.03) ** 2) * 0.8
+        save("blood_step%d" % v, thud + squelch, vol=0.55)
+
+
 def blood_death():
     sec = 1.8
     t = T(sec)
@@ -191,6 +201,7 @@ EVENTS = {
     "entity.blood_entity.hiss": (["blood_hiss"], 16),
     "entity.blood_entity.hurt": (["blood_hurt0", "blood_hurt1"], 16),
     "entity.blood_entity.death": (["blood_death"], 24),
+    "entity.blood_entity.step": (["blood_step0", "blood_step1", "blood_step2"], 12),
 }
 
 
@@ -208,7 +219,7 @@ def write_json():
 
 if __name__ == "__main__":
     for fn in (mist_screech, mist_glitch, mist_whisper, mist_sting, mist_hurt, mist_death,
-               blood_growl, blood_attack, blood_hiss, blood_hurt, blood_death):
+               blood_growl, blood_attack, blood_hiss, blood_hurt, blood_step, blood_death):
         fn()
     write_json()
     print("готово:", len(ns.SOUNDS), "файлов")

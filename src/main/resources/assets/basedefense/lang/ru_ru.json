@@ -298,5 +298,6 @@
   "subtitles.basedefense.blood_entity.attack": "Кровавая сущность бьёт",
   "subtitles.basedefense.blood_entity.hiss": "Кровавая сущность шипит",
   "subtitles.basedefense.blood_entity.hurt": "Кровавая сущность ранена",
-  "subtitles.basedefense.blood_entity.death": "Кровавая сущность погибает"
+  "subtitles.basedefense.blood_entity.death": "Кровавая сущность погибает",
+  "subtitles.basedefense.blood_entity.step": "Шаги кровавой сущности"
 }

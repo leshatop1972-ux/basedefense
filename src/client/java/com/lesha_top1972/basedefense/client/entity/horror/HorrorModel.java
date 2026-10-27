@@ -8,10 +8,10 @@ import net.minecraft.client.model.ModelPart;
 
 import java.util.Map;
 
-/** Модель «сущностей» (как игрок): idle / walk по скорости, удар рукой и «Бросок» — по статусу, голова следит за игроком. */
+/** Модель «сущностей» (как игрок): idle / walk по скорости, удар рукой и «Двойной разрыв» — по статусу, голова следит за игроком. */
 public class HorrorModel<T extends HorrorEntity> extends BedrockEntityModel<T> {
 
-    private static final String[] ACTIONS = {"attack", "lunge"};
+    private static final String[] ACTIONS = {"attack", "rend"};
     private final Map<String, BedrockAnimations.Clip> clips;
     private final ModelPart head;
     private final float walkK;

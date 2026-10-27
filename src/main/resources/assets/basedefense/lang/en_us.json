@@ -298,5 +298,6 @@
   "subtitles.basedefense.blood_entity.attack": "Blood Entity strikes",
   "subtitles.basedefense.blood_entity.hiss": "Blood Entity hisses",
   "subtitles.basedefense.blood_entity.hurt": "Blood Entity hurts",
-  "subtitles.basedefense.blood_entity.death": "Blood Entity dies"
+  "subtitles.basedefense.blood_entity.death": "Blood Entity dies",
+  "subtitles.basedefense.blood_entity.step": "Blood Entity steps"
 }

@@ -1162,5 +1162,22 @@
         "attenuation_distance": 24
       }
     ]
+  },
+  "entity.blood_entity.step": {
+    "subtitle": "subtitles.basedefense.blood_entity.step",
+    "sounds": [
+      {
+        "name": "basedefense:entity/blood_step0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:entity/blood_step1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:entity/blood_step2",
+        "attenuation_distance": 12
+      }
+    ]
   }
 }

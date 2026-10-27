@@ -17,17 +17,18 @@ import org.joml.Vector3f;
 import java.util.Set;
 
 /**
- * «Кровавая сущность»: как человек, чёрная в красных трещинах. 65 HP. Удар рукой (6) и «Бросок» — присед,
- * прыжок к цели и удар обеими руками сверху (9), раз в 8 с, если цель в 3–7 блоках. Каждый удар — «Кровотёк».
+ * «Кровавая сущность»: как человек, чёрная в красных трещинах. 65 HP. Удар рукой (6) и «Двойной разрыв» — вплотную,
+ * на месте, левой и правой по 5, раз в 6 с. Каждый удар — «Кровотёк». Тяжёлые мокрые шаги.
  */
 public class BloodEntity extends HorrorEntity {
 
-    static final int LUNGE_TICKS = 24;
-    static final int LUNGE_JUMP = 9;
-    static final int LUNGE_HIT = 11;
-    static final int LUNGE_CD = 160;
+    /** «Двойной разрыв»: на месте, левой (тик 7) и правой (тик 13), по 5 урона, раз в 6 с. */
+    static final int REND_TICKS = 20;
+    static final int[] REND_HITS = {7, 13};
+    static final float REND_DMG = 5f;
+    static final int REND_CD = 120;
     private static final DustParticleEffect DRIP = new DustParticleEffect(new Vector3f(0.55f, 0.03f, 0.06f), 0.8f);
-    private int lungeCd = 60;
+    private int rendCd = 60;
 
     public BloodEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -68,37 +69,43 @@ public class BloodEntity extends HorrorEntity {
 
     @Override
     protected boolean canLunge(double dist) {
-        return this.lungeCd <= 0 && dist >= 3.0 && dist <= 7.0 && this.isOnGround();
+        return this.rendCd <= 0 && dist < 1.4;
     }
 
     @Override
     protected int lungeTicks() {
-        return LUNGE_TICKS;
+        return REND_TICKS;
     }
 
     @Override
     protected void runLunge(int tick, LivingEntity target, Set<Integer> hit) {
-        if (target != null && tick < LUNGE_JUMP) {
+        if (target != null && tick < REND_HITS[1] - 1) {
             this.faceTo(target);
         }
-        if (tick == LUNGE_JUMP) {
-            this.lungeCd = LUNGE_CD;
-            Vec3d f = this.forward();
-            double sp = target != null ? Math.min(1.0, 0.25 + this.distanceTo(target) * 0.12) : 0.7;
-            this.setVelocity(f.x * sp, 0.38, f.z * sp);
-            this.velocityModified = true;
-            this.playSound(ModSounds.BLOOD_ATTACK, 1.2f, 0.8f);
+        if (tick == 1) {
+            this.rendCd = REND_CD;
         }
-        if (tick >= LUNGE_HIT && tick <= LUNGE_HIT + 3) {
-            this.coneHit(1.8, 9f, hit);
+        for (int h : REND_HITS) {
+            if (tick == h - 2) {
+                hit.clear();
+                this.playSound(ModSounds.BLOOD_ATTACK, 0.9f, 1.0f + this.random.nextFloat() * 0.2f);
+            }
+            if (tick >= h && tick <= h + 1) {
+                this.coneHit(1.6, REND_DMG, hit);
+            }
         }
+    }
+
+    @Override
+    protected void playStepSound(net.minecraft.util.math.BlockPos pos, net.minecraft.block.BlockState state) {
+        this.playSound(ModSounds.BLOOD_STEP, 0.4f, 0.85f + this.random.nextFloat() * 0.2f);
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (this.lungeCd > 0) {
-            this.lungeCd--;
+        if (this.rendCd > 0) {
+            this.rendCd--;
         }
         if (this.getWorld().isClient && this.random.nextInt(8) == 0) {
             Vec3d f = this.forward();

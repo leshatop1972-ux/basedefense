@@ -117,6 +117,7 @@ public final class ModSounds {
     public static final SoundEvent BLOOD_HISS = register("entity.blood_entity.hiss");
     public static final SoundEvent BLOOD_HURT = register("entity.blood_entity.hurt");
     public static final SoundEvent BLOOD_DEATH = register("entity.blood_entity.death");
+    public static final SoundEvent BLOOD_STEP = register("entity.blood_entity.step");
 
     private ModSounds() {
     }
