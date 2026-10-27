@@ -377,6 +377,12 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         return n;
     }
 
+    /** Сервоприводы жужжат не чаще раза в ~10 с. */
+    @Override
+    public int getMinAmbientSoundDelay() {
+        return 200;
+    }
+
     void sound(SoundEvent s, float vol, float pitch) {
         this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), s, SoundCategory.HOSTILE, vol, pitch);
     }
@@ -715,8 +721,8 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                             boolean kick = k == 1;
                             if (m.coneHit(kick ? KICK_REACH : PUNCH_REACH, 55, m.comboDamage(), kick ? 0.6 : 0.35, 0,
                                     this.hitIds) > 0) {
-                                m.sound(kick ? SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK
-                                        : SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 0.8f);
+                                m.sound(ModSounds.CURB_PUNCH, kick ? 1.0f : 0.85f,
+                                        (m instanceof CurbMinionEntity ? 1.3f : 0.9f) + (kick ? -0.1f : 0f));
                             }
                             if (t == h) {
                                 m.impactFx(1.8, kick ? 0.9 : 1.5, false);

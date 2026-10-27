@@ -85,6 +85,26 @@ public final class ModSounds {
     public static final SoundEvent MITE_BITE = register("entity.beetle_mite.bite");
     public static final SoundEvent MITE_DEATH = register("entity.beetle_mite.death");
 
+    // Железный зомби, железный рыцарь (урон), Бордюр и прислужник (tools/iron_sounds.py)
+    public static final SoundEvent IRON_ZOMBIE_STEP = register("entity.iron_zombie.step");
+    public static final SoundEvent IRON_ZOMBIE_AMBIENT = register("entity.iron_zombie.ambient");
+    public static final SoundEvent IRON_ZOMBIE_SCRAPE = register("entity.iron_zombie.scrape");
+    public static final SoundEvent IRON_ZOMBIE_ATTACK = register("entity.iron_zombie.attack");
+    public static final SoundEvent IRON_ZOMBIE_HURT = register("entity.iron_zombie.hurt");
+    public static final SoundEvent IRON_ZOMBIE_DEATH = register("entity.iron_zombie.death");
+    public static final SoundEvent IRON_ZOMBIE_GRAB = register("entity.iron_zombie.grab");
+    public static final SoundEvent IRON_ZOMBIE_LUNGE = register("entity.iron_zombie.lunge");
+    public static final SoundEvent IRON_KNIGHT_HURT = register("entity.iron_knight.hurt");
+    public static final SoundEvent CURB_STEP = register("entity.curb.step");
+    public static final SoundEvent CURB_PUNCH = register("entity.curb.punch");
+    public static final SoundEvent CURB_SERVO = register("entity.curb.servo");
+    public static final SoundEvent CURB_HURT = register("entity.curb.hurt");
+    public static final SoundEvent CURB_DEATH = register("entity.curb.death");
+    public static final SoundEvent CURB_MINION_STEP = register("entity.curb_minion.step");
+    public static final SoundEvent CURB_MINION_SERVO = register("entity.curb_minion.servo");
+    public static final SoundEvent CURB_MINION_HURT = register("entity.curb_minion.hurt");
+    public static final SoundEvent CURB_MINION_DEATH = register("entity.curb_minion.death");
+
     private ModSounds() {
     }
 

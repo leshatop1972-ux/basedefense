@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -137,27 +138,27 @@ public class CurbMinionEntity extends AbstractCurbEntity {
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_IRON_GOLEM_STEP;
+        return ModSounds.CURB_MINION_SERVO;
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.ENTITY_IRON_GOLEM_HURT;
+        return ModSounds.CURB_MINION_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.ENTITY_IRON_GOLEM_DEATH;
+        return ModSounds.CURB_MINION_DEATH;
     }
 
     @Override
     public float getSoundPitch() {
-        return 1.25f + this.random.nextFloat() * 0.1f;
+        return 0.95f + this.random.nextFloat() * 0.1f;
     }
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        this.playSound(SoundEvents.ENTITY_IRON_GOLEM_STEP, 0.2f, 1.6f);
+        this.playSound(ModSounds.CURB_MINION_STEP, 0.3f, 0.95f + this.random.nextFloat() * 0.1f);
     }
 
     /** ИИ прислужника: те же «серия» и «реактивный удар», но перерывы и перезарядка длиннее. */

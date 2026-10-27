@@ -325,27 +325,27 @@ public class CurbEntity extends AbstractCurbEntity {
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_IRON_GOLEM_STEP;
+        return ModSounds.CURB_SERVO;
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.ENTITY_IRON_GOLEM_HURT;
+        return ModSounds.CURB_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.ENTITY_IRON_GOLEM_DEATH;
+        return ModSounds.CURB_DEATH;
     }
 
     @Override
     public float getSoundPitch() {
-        return 0.8f + this.random.nextFloat() * 0.1f;
+        return 0.95f + this.random.nextFloat() * 0.1f;
     }
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        this.playSound(SoundEvents.ENTITY_IRON_GOLEM_STEP, 0.35f, 1.3f);
+        this.playSound(ModSounds.CURB_STEP, 0.45f, 0.95f + this.random.nextFloat() * 0.1f);
     }
 
     boolean isPhase2() {
@@ -529,7 +529,7 @@ public class CurbEntity extends AbstractCurbEntity {
 
     void spinHits(java.util.Set<Integer> hitIds) {
         if (this.radiusHit(SPIN_RADIUS, 1.2, SPIN_DAMAGE, 0.9, 0.25, hitIds) > 0) {
-            this.sound(SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0f, 0.8f);
+            this.sound(ModSounds.CURB_PUNCH, 1.0f, 0.85f);
         }
     }
 
