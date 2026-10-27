@@ -1,54 +1,77 @@
 package com.lesha_top1972.basedefense.entity;
 
-import com.lesha_top1972.basedefense.Basedefense;
+import net.minecraft.block.AbstractFurnaceBlock;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.Identifier;
+
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
- * «Не природные» блоки — то, что построили игроки: доски, кирпич, булыжник, стекло, шерсть, лестницы, плиты,
- * заборы, двери, бетон, полированный камень и т.п. Земля, камень, песок, руды, деревья, листва — природные.
- * Ими интересуется подкопщик: ищет такие блоки и ломает их.
+ * Блоки построек, на которые агрятся подкопщик и осадный жук (поиск — {@link BuildTargets}, радиус 200):
+ * заборы и калитки, стекло (блоки и панели), печки (обычная, плавильная, коптильня), доски (и деревянные
+ * ступеньки/плиты), булыжник (и его ступеньки/плиты/стены) — их можно ломать;
+ * обсидиан и кирпичи (любые) — тоже цель, но подкопщик их сломать не может (жук не может только обсидиан).
  */
 public final class BuiltBlocks {
 
-    private static final String[] KEYS = {"planks", "brick", "cobblestone", "glass", "polished_", "smooth_", "concrete",
-            "glazed", "cut_", "chiseled_", "stripped_", "_tiles", "bookshelf", "hay_block", "lantern", "iron_bars",
-            "ladder", "scaffolding", "carpet", "quartz", "_block"};
-    /** Природные блоки, которые иначе попали бы под ключи (например, «_block» у глины и снега нет — но мох/грибы есть). */
-    private static final String[] NATURAL = {"moss_block", "mushroom_block", "snow_block", "clay", "dripstone_block",
-            "magma_block", "bone_block", "honeycomb_block", "infested", "amethyst_block", "budding", "slime_block",
-            "sculk", "nether_wart_block", "warped_wart_block", "packed_ice", "blue_ice", "dried_kelp_block", "powder_snow"};
+    public static final int NONE = 0;
+    /** Цель, ломается. */
+    public static final int TARGET = 1;
+    /** Цель, но подкопщику не по силам (обсидиан, кирпичи). */
+    public static final int HARD = 2;
+
+    private static final Map<Block, Integer> KIND = new IdentityHashMap<>();
 
     private BuiltBlocks() {
     }
 
+    public static synchronized int kind(Block b) {
+        Integer k = KIND.get(b);
+        if (k == null) {
+            k = compute(b);
+            KIND.put(b, k);
+        }
+        return k;
+    }
+
+    private static int compute(Block b) {
+        if (b == Blocks.OBSIDIAN || b == Blocks.CRYING_OBSIDIAN) {
+            return HARD;
+        }
+        BlockState d = b.getDefaultState();
+        String path = Registries.BLOCK.getId(b).getPath();
+        if (d.isIn(BlockTags.FENCES) || d.isIn(BlockTags.FENCE_GATES)) {
+            return TARGET;
+        }
+        if (path.contains("glass") || b instanceof AbstractFurnaceBlock) {
+            return TARGET;
+        }
+        if (d.isIn(BlockTags.PLANKS) || d.isIn(BlockTags.WOODEN_STAIRS) || d.isIn(BlockTags.WOODEN_SLABS)) {
+            return TARGET;
+        }
+        if (path.contains("cobblestone")) {
+            return TARGET;
+        }
+        if (path.contains("brick")) {
+            return HARD;
+        }
+        return NONE;
+    }
+
+    public static boolean isTarget(BlockState st) {
+        return kind(st.getBlock()) != NONE;
+    }
+
+    /** Старое имя (подкопщик): то же, что {@link #isTarget}. */
     public static boolean artificial(BlockState st) {
-        if (st.isAir() || !st.getFluidState().isEmpty()) {
-            return false;
-        }
-        if (st.isIn(BlockTags.PLANKS) || st.isIn(BlockTags.WOOL) || st.isIn(BlockTags.STAIRS) || st.isIn(BlockTags.SLABS)
-                || st.isIn(BlockTags.WALLS) || st.isIn(BlockTags.FENCES) || st.isIn(BlockTags.FENCE_GATES)
-                || st.isIn(BlockTags.DOORS) || st.isIn(BlockTags.TRAPDOORS) || st.isIn(BlockTags.BEDS)
-                || st.isIn(BlockTags.STONE_BRICKS)) {
-            return true;
-        }
-        Identifier id = Registries.BLOCK.getId(st.getBlock());
-        String path = id.getPath();
-        if (Basedefense.MOD_ID.equals(id.getNamespace())) {
-            return !path.equals("blood_pool") && !path.equals("resonant_stone");
-        }
-        for (String n : NATURAL) {
-            if (path.contains(n)) {
-                return false;
-            }
-        }
-        for (String k : KEYS) {
-            if (path.contains(k)) {
-                return true;
-            }
-        }
-        return false;
+        return isTarget(st);
+    }
+
+    public static boolean isObsidian(BlockState st) {
+        return st.isOf(Blocks.OBSIDIAN) || st.isOf(Blocks.CRYING_OBSIDIAN);
     }
 }

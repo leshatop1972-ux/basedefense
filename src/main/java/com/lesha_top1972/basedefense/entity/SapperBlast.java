@@ -30,10 +30,23 @@ public final class SapperBlast {
         return w.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING);
     }
 
-    /** Можно ли подкопщику сломать блок: не воздух, не жидкость, не бедрок/обсидиан, твёрдость ≤ maxHardness, без блок‑сущности. */
+    /**
+     * Можно ли подкопщику сломать блок. Блоки построек ({@link BuiltBlocks}: заборы, стекло, печки, доски, булыжник) —
+     * всегда; обсидиан и кирпичи — никогда; остальное — не воздух, не жидкость, без блок‑сущности, твёрдость ≤ maxHardness.
+     */
     public static boolean breakable(World w, BlockPos p, float maxHardness) {
         BlockState st = w.getBlockState(p);
-        if (st.isAir() || !st.getFluidState().isEmpty() || st.hasBlockEntity()) {
+        if (st.isAir() || !st.getFluidState().isEmpty()) {
+            return false;
+        }
+        int k = BuiltBlocks.kind(st.getBlock());
+        if (k == BuiltBlocks.HARD) {
+            return false;
+        }
+        if (k == BuiltBlocks.TARGET) {
+            return st.getHardness(w, p) >= 0;
+        }
+        if (st.hasBlockEntity()) {
             return false;
         }
         float h = st.getHardness(w, p);

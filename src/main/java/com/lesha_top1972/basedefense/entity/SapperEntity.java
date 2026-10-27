@@ -228,15 +228,14 @@ public class SapperEntity extends HostileEntity {
     @Override
     protected void mobTick() {
         super.mobTick();
-        if (this.age % 2 == 0) {
+        if (this.age % 20 == 0) {
             this.scanBuild();
         }
     }
 
     /**
-     * Ищет постройки: 40 случайных блоков за раз вокруг себя (r 24) или — через раз — вокруг блока «База» (r 28),
-     * если база в этом измерении и ближе 160 блоков. Запоминает ближайший «не природный» блок, который можно сломать.
-     * Только при mobGriefing (без него ломать нечем).
+     * Раз в секунду — ближайший блок постройки в 200 блоках (заборы, стекло, печки, доски, булыжник, а также обсидиан
+     * и кирпичи, которые он сломать не может), только у поверхности. Только при mobGriefing (без него ломать нечем).
      */
     void scanBuild() {
         World w = this.getWorld();
@@ -244,34 +243,8 @@ public class SapperEntity extends HostileEntity {
             this.build = null;
             return;
         }
-        if (this.build != null && this.age % 20 == 0 && !(BuiltBlocks.artificial(w.getBlockState(this.build))
-                && SapperBlast.breakable(w, this.build, MAX_DIG_HARDNESS))) {
-            this.build = null;
-        }
-        BlockPos center = this.getBlockPos();
-        int r = 24;
-        net.minecraft.server.MinecraftServer srv = w.getServer();
-        if (srv != null && this.random.nextBoolean()) {
-            com.lesha_top1972.basedefense.block.BaseLocationState base = com.lesha_top1972.basedefense.block.BaseLocationState.get(srv);
-            if (base.hasBase() && w.getRegistryKey().equals(base.getDimension())
-                    && base.getPos().getSquaredDistance(center) < 160 * 160) {
-                center = base.getPos();
-                r = 28;
-            }
-        }
-        double best = this.build != null ? this.squaredDistanceTo(Vec3d.ofCenter(this.build)) : Double.MAX_VALUE;
-        for (int i = 0; i < 40; i++) {
-            BlockPos p = center.add(this.random.nextInt(2 * r + 1) - r, this.random.nextInt(11) - 4, this.random.nextInt(2 * r + 1) - r);
-            if (!w.getChunkManager().isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
-                continue;
-            }
-            if (BuiltBlocks.artificial(w.getBlockState(p)) && SapperBlast.breakable(w, p, MAX_DIG_HARDNESS)) {
-                double dd = this.squaredDistanceTo(Vec3d.ofCenter(p));
-                if (dd < best - 1) {
-                    best = dd;
-                    this.build = p.toImmutable();
-                }
-            }
+        if (w instanceof ServerWorld s) {
+            this.build = BuildTargets.nearest(s, this.getBlockPos(), BuildTargets.RADIUS, 6);
         }
     }
 
@@ -829,14 +802,23 @@ public class SapperEntity extends HostileEntity {
                 this.begin(THROW);
                 return;
             }
-            if ((d > 20.0 || this.walled && d > 3.0) && m.age % 10 == 0 && this.canDigDown()) {
+            // далеко — идёт поверху (по точкам), ближе 32 — подкапывается к постройке
+            if (d > 32.0) {
+                m.dataTracker.set(SNEAK, false);
+                if (--this.pathDelay <= 0) {
+                    this.pathDelay = 20;
+                    BuildTargets.walkTo(m, bc, 1.05);
+                }
+                return;
+            }
+            if ((d > 8.0 || this.walled && d > 3.0) && m.age % 10 == 0 && this.canDigDown()) {
                 this.startDigDown();
                 return;
             }
             if (d > 2.0) {
                 if (--this.pathDelay <= 0) {
                     this.pathDelay = 10;
-                    m.getNavigation().startMovingTo(bc.x, b.getY(), bc.z, 1.0);
+                    BuildTargets.walkTo(m, new Vec3d(bc.x, b.getY(), bc.z), 1.0);
                 }
             } else {
                 m.getNavigation().stop();
@@ -865,7 +847,7 @@ public class SapperEntity extends HostileEntity {
             Direction dir = Direction.getFacing(to.x, 0, to.z);
             for (int dy = 0; dy <= 1; dy++) {
                 BlockPos p = m.getBlockPos().offset(dir).up(dy);
-                if (BuiltBlocks.artificial(w.getBlockState(p)) && SapperBlast.breakable(w, p, MAX_DIG_HARDNESS)) {
+                if (BuiltBlocks.isTarget(w.getBlockState(p)) && !passable(w, p)) {
                     this.wall = p.toImmutable();
                     this.wallFace = dir.getOpposite();
                     return true;
@@ -1329,7 +1311,12 @@ public class SapperEntity extends HostileEntity {
         private void chooseGoal(LivingEntity target) {
             SapperEntity m = this.mob;
             if (target == null && m.build != null) {
-                this.planEmergeNear(m.build);
+                double bd = Math.sqrt(m.squaredDistanceTo(m.build.getX() + 0.5, m.getY(), m.build.getZ() + 0.5));
+                if (bd > 36.0) {
+                    this.emergeHere(false);          // далеко — выходит наверх и идёт поверху
+                } else {
+                    this.planEmergeNear(m.build);
+                }
                 return;
             }
             if (target == null) {

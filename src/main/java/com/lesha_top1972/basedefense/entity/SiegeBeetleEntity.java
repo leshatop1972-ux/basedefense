@@ -185,9 +185,30 @@ public class SiegeBeetleEntity extends HostileEntity {
                 && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator()));
     }
 
-    /** Ломает ли таран блок: не бедрок/обсидиан (твёрдость ≤ 25), без блок‑сущности, не жидкость. */
+    /** Таран ломает всё, кроме обсидиана (и неразрушимого: бедрок, блок «База»), жидкости не трогает. */
     boolean rammable(BlockPos p) {
-        return SapperBlast.breakable(this.getWorld(), p, 25f);
+        World w = this.getWorld();
+        BlockState st = w.getBlockState(p);
+        return !st.isAir() && st.getFluidState().isEmpty() && !BuiltBlocks.isObsidian(st) && st.getHardness(w, p) >= 0;
+    }
+
+    /** Ближайшая постройка в 200 блоках (раз в секунду), см. {@link BuildTargets}. */
+    BlockPos build;
+
+    void scanBuild() {
+        if (this.getWorld() instanceof net.minecraft.server.world.ServerWorld s && SapperBlast.griefing(s)) {
+            this.build = BuildTargets.nearest(s, this.getBlockPos(), BuildTargets.RADIUS, 6);
+        } else {
+            this.build = null;
+        }
+    }
+
+    @Override
+    protected void mobTick() {
+        super.mobTick();
+        if (this.age % 20 == 0) {
+            this.scanBuild();
+        }
     }
 
     /** Стена перед жуком на пути (ноги и выше, полоса шириной 2, в 1–2.5 блоках от «лба»). */
@@ -196,7 +217,7 @@ public class SiegeBeetleEntity extends HostileEntity {
         Vec3d f = this.forward();
         Vec3d side = new Vec3d(-f.z, 0, f.x);
         for (double d = FRONT + 0.6; d <= FRONT + 2.2; d += 0.8) {
-            for (double s = -0.6; s <= 0.6; s += 1.2) {
+            for (double s = -1.0; s <= 1.0; s += 1.0) {
                 for (int dy = 1; dy <= 2; dy++) {
                     BlockPos p = BlockPos.ofFloored(this.getPos().add(f.multiply(d)).add(side.multiply(s))).up(dy);
                     if (!w.getBlockState(p).getCollisionShape(w, p).isEmpty() && this.rammable(p)) {
@@ -208,7 +229,7 @@ public class SiegeBeetleEntity extends HostileEntity {
         return false;
     }
 
-    /** Удар тарана: блоки 2×2 перед «лбом» (первый непустой слой из двух), по mobGriefing. */
+    /** Удар тарана: пролом 3×3 перед «лбом» (по размеру жука; первый непустой слой из двух), по mobGriefing. */
     void ramBlocks() {
         World w = this.getWorld();
         if (!SapperBlast.griefing(w)) {
@@ -218,9 +239,9 @@ public class SiegeBeetleEntity extends HostileEntity {
         Vec3d side = new Vec3d(-f.z, 0, f.x);
         int broken = 0;
         for (double d = FRONT + 0.5; d <= FRONT + 1.6 && broken == 0; d += 1.0) {
-            for (double s = -0.5; s <= 0.5; s += 1.0) {
-                for (int dy = 0; dy <= 1; dy++) {
-                    BlockPos p = BlockPos.ofFloored(this.getPos().add(f.multiply(d)).add(side.multiply(s))).up(dy + 1);
+            for (double s = -1.0; s <= 1.0; s += 1.0) {
+                for (int dy = 0; dy <= 2; dy++) {
+                    BlockPos p = BlockPos.ofFloored(this.getPos().add(f.multiply(d)).add(side.multiply(s))).up(dy);
                     if (!w.getBlockState(p).isAir() && this.rammable(p)) {
                         w.breakBlock(p, false, this);
                         broken++;
@@ -434,15 +455,26 @@ public class SiegeBeetleEntity extends HostileEntity {
             }
         }
 
-        /** К базе; упёрся в стену или застрял перед блоками — «Таран». Базы нет — бродит на месте. */
+        /**
+         * К ближайшей постройке (заборы, стекло, печки, доски, булыжник, обсидиан, кирпичи — 200 блоков),
+         * без построек — к базе; упёрся в стену или застрял — «Таран». Нет ни того, ни другого — стоит.
+         */
         private void march() {
             SiegeBeetleEntity m = this.mob;
-            BlockPos base = m.basePos();
+            BlockPos base = m.build != null ? m.build : m.basePos();
             if (base == null) {
                 m.getNavigation().stop();
                 return;
             }
             Vec3d bc = Vec3d.ofBottomCenter(base);
+            // постройка прямо перед «лбом» — таранит её
+            if (m.build != null && this.ramCd <= 0 && m.squaredDistanceTo(bc.x, m.getY(), bc.z) < (FRONT + 2.2) * (FRONT + 2.2)) {
+                m.turnSmooth(bc.x, bc.z, 5f);
+                if (m.angleTo(bc.x, bc.z) < 20f) {
+                    this.begin(RAM);
+                }
+                return;
+            }
             double dist = Math.sqrt(m.squaredDistanceTo(bc.x, m.getY(), bc.z));
             // застрял: почти не сдвинулся за 2 с
             if (m.age % 40 == 0) {
@@ -450,7 +482,7 @@ public class SiegeBeetleEntity extends HostileEntity {
                 this.lastPos = m.getPos();
             }
             boolean blocked = m.wallAhead() && (m.horizontalCollision || this.stuck > 0 || m.getNavigation().isIdle());
-            if (blocked && this.ramCd <= 0 && dist > 3.0) {
+            if (blocked && this.ramCd <= 0 && (dist > 3.0 || m.build != null)) {
                 this.begin(RAM);
                 return;
             }
@@ -463,13 +495,10 @@ public class SiegeBeetleEntity extends HostileEntity {
                 }
                 return;
             }
-            if (dist > 4.0) {
+            if (dist > (m.build != null ? 2.5 : 4.0)) {
                 if (--this.pathDelay <= 0) {
                     this.pathDelay = 20;
-                    if (!m.getNavigation().startMovingTo(bc.x, bc.y, bc.z, 1.0)) {
-                        // пути нет — идёт напрямую, пока не упрётся
-                        m.getMoveControl().moveTo(bc.x, bc.y, bc.z, 1.0);
-                    }
+                    BuildTargets.walkTo(m, bc, 1.0);
                 }
             } else {
                 m.getNavigation().stop();
