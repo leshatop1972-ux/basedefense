@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.client.entity.bedrock.WeaponTrack;
 import com.lesha_top1972.basedefense.client.entity.nabat.WeaponHolder;
 import com.lesha_top1972.basedefense.entity.BloodthirsterEntity;
@@ -160,7 +161,6 @@ public class BloodthirsterModel extends BedrockEntityModel<BloodthirsterEntity> 
         this.blades = p2 || (a == TRANSFORM && t >= SWORDS_APPEAR && t < 3.5f);
         this.halo.visible = this.blades;
 
-        this.head.yaw += headYaw * DEG * free * 0.7f;
-        this.head.pitch += headPitch * DEG * free * 0.7f;
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.7f);
     }
 }

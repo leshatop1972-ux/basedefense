@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity.beetle;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.SiegeBeetleEntity;
 import net.minecraft.client.model.ModelPart;
 
@@ -19,11 +20,13 @@ public class SiegeBeetleModel extends BedrockEntityModel<SiegeBeetleEntity> {
     private static final float RUN_K = 0.165f;
 
     private final Map<String, BedrockAnimations.Clip> clips;
+    private final ModelPart head;
     private float speed;
     private float lastAnim = -1f;
 
     public SiegeBeetleModel(ModelPart root) {
         super(root);
+        this.head = this.bone("head");
         this.clips = BedrockAnimations.load("siege_beetle");
     }
 
@@ -60,5 +63,6 @@ public class SiegeBeetleModel extends BedrockEntityModel<SiegeBeetleEntity> {
         if (name != null) {
             this.clip(name, ct, w);
         }
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.6f, 35f, 20f);
     }
 }

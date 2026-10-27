@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.TatteredLancerEntity;
 import com.lesha_top1972.basedefense.client.entity.bedrock.WeaponTrack;
 import com.lesha_top1972.basedefense.client.entity.nabat.WeaponHolder;
@@ -178,7 +179,6 @@ public class TatteredLancerModel extends BedrockEntityModel<TatteredLancerEntity
         this.flutterAge = age;
         this.plume.pitch += MathHelper.sin(age * 0.35f) * (0.05f + 0.1f * speed);
 
-        this.head.yaw += headYaw * DEG * free;
-        this.head.pitch += headPitch * DEG * free;
+        HeadLook.apply(this.head, headYaw, headPitch, free);
     }
 }

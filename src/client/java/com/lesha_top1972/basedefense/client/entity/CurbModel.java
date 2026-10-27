@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.AbstractCurbEntity;
 import com.lesha_top1972.basedefense.entity.CurbMinionEntity;
 import net.minecraft.client.MinecraftClient;
@@ -98,7 +99,6 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
             }
         }
 
-        this.head.yaw += headYaw * DEG * free * 0.8f;
-        this.head.pitch += headPitch * DEG * free * 0.8f;
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.8f);
     }
 }

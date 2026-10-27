@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.IronZombieEntity;
 import net.minecraft.client.model.ModelPart;
 
@@ -48,7 +49,6 @@ public class IronZombieModel extends BedrockEntityModel<IronZombieEntity> {
             }
         }
 
-        this.head.yaw += headYaw * DEG;
-        this.head.pitch += headPitch * DEG;
+        HeadLook.apply(this.head, headYaw, headPitch, 1f);
     }
 }

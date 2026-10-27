@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.BloodlingEntity;
 import net.minecraft.client.model.ModelPart;
 
@@ -33,7 +34,6 @@ public class BloodlingModel extends BedrockEntityModel<BloodlingEntity> {
         if (atk > 0f) {
             this.play(ATTACK, this.handSwingProgress * ATTACK.length(), 1f);
         }
-        this.head.yaw += headYaw * DEG;
-        this.head.pitch += headPitch * DEG;
+        HeadLook.apply(this.head, headYaw, headPitch, 1f);
     }
 }

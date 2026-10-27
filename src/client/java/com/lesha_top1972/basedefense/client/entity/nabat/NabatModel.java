@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity.nabat;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.client.entity.bedrock.WeaponTrack;
 import com.lesha_top1972.basedefense.entity.NabatEntity;
 import net.minecraft.client.MinecraftClient;
@@ -151,7 +152,6 @@ public class NabatModel extends BedrockEntityModel<NabatEntity> implements Weapo
             this.halo.zScale *= k;
         }
         this.reliq.visible = !entity.isReliquaryGone();
-        this.head.yaw += headYaw * DEG * free * 0.5f;
-        this.head.pitch += headPitch * DEG * free * 0.4f;
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.5f);
     }
 }

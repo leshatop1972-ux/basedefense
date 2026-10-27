@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity.nabat;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.client.entity.bedrock.WeaponTrack;
 import com.lesha_top1972.basedefense.entity.NabatBladeEntity;
 import net.minecraft.client.model.ModelPart;
@@ -82,7 +83,6 @@ public class NabatBladeModel extends BedrockEntityModel<NabatBladeEntity> implem
             this.play2(clip, ct, w);
         }
         this.weapon.result(this.weaponRot);
-        this.head.yaw += headYaw * DEG * free * 0.8f;
-        this.head.pitch += headPitch * DEG * free * 0.8f;
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.8f);
     }
 }

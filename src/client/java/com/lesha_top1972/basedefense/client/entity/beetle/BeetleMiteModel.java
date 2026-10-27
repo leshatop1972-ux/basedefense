@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.client.entity.beetle;
 
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockAnimations;
 import com.lesha_top1972.basedefense.client.entity.bedrock.BedrockEntityModel;
+import com.lesha_top1972.basedefense.client.entity.bedrock.HeadLook;
 import com.lesha_top1972.basedefense.entity.BeetleMiteEntity;
 import net.minecraft.client.model.ModelPart;
 
@@ -11,9 +12,11 @@ import java.util.Map;
 public class BeetleMiteModel extends BedrockEntityModel<BeetleMiteEntity> {
 
     private final Map<String, BedrockAnimations.Clip> clips;
+    private final ModelPart head;
 
     public BeetleMiteModel(ModelPart root) {
         super(root);
+        this.head = this.bone("head");
         this.clips = BedrockAnimations.load("beetle_mite");
     }
 
@@ -34,5 +37,6 @@ public class BeetleMiteModel extends BedrockEntityModel<BeetleMiteEntity> {
         if (w > 0) {
             this.play(bite, t, w);
         }
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.7f, 45f, 25f);
     }
 }

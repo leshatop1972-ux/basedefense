@@ -7,6 +7,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
+import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -50,6 +51,7 @@ public class BeetleMiteEntity extends HostileEntity {
         this.goalSelector.add(0, new SwimGoal(this));
         this.goalSelector.add(2, new MiteGoal(this));
         this.goalSelector.add(7, new WanderAroundFarGoal(this, 0.8));
+        this.goalSelector.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 12.0f));
         this.goalSelector.add(8, new LookAroundGoal(this));
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
     }
