@@ -585,5 +585,189 @@
         "attenuation_distance": 24
       }
     ]
+  },
+  "entity.siege_beetle.step": {
+    "subtitle": "subtitles.basedefense.siege_beetle.step",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/step0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:beetle/step1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:beetle/step2",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.siege_beetle.scrape": {
+    "subtitle": "subtitles.basedefense.siege_beetle.scrape",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/scrape",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.siege_beetle.ambient": {
+    "subtitle": "subtitles.basedefense.siege_beetle.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/ambient0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:beetle/ambient1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.siege_beetle.roar": {
+    "subtitle": "subtitles.basedefense.siege_beetle.roar",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/roar",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.siege_beetle.ram": {
+    "subtitle": "subtitles.basedefense.siege_beetle.ram",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/ram",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "entity.siege_beetle.horn_swing": {
+    "subtitle": "subtitles.basedefense.siege_beetle.horn_swing",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/horn_swing0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:beetle/horn_swing1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.siege_beetle.horn_hit": {
+    "subtitle": "subtitles.basedefense.siege_beetle.horn_hit",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/horn_hit",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.siege_beetle.mandible": {
+    "subtitle": "subtitles.basedefense.siege_beetle.mandible",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/mandible0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:beetle/mandible1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:beetle/mandible2",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.siege_beetle.lay": {
+    "subtitle": "subtitles.basedefense.siege_beetle.lay",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/lay",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.siege_beetle.hurt": {
+    "subtitle": "subtitles.basedefense.siege_beetle.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/hurt0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:beetle/hurt1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.siege_beetle.death": {
+    "subtitle": "subtitles.basedefense.siege_beetle.death",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/death",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.beetle_egg.hatch": {
+    "subtitle": "subtitles.basedefense.beetle_egg.hatch",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/hatch",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.beetle_mite.ambient": {
+    "subtitle": "subtitles.basedefense.beetle_mite.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/mite_chirp0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:beetle/mite_chirp1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.beetle_mite.step": {
+    "subtitle": "subtitles.basedefense.beetle_mite.step",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/mite_step0",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:beetle/mite_step1",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.beetle_mite.bite": {
+    "subtitle": "subtitles.basedefense.beetle_mite.bite",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/mite_bite0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:beetle/mite_bite1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.beetle_mite.death": {
+    "subtitle": "subtitles.basedefense.beetle_mite.death",
+    "sounds": [
+      {
+        "name": "basedefense:beetle/mite_death",
+        "attenuation_distance": 16
+      }
+    ]
   }
 }

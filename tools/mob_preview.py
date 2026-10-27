@@ -229,6 +229,8 @@ def main():
     tex = Image.open(os.path.join(ASSETS, "textures", "entity", tex_name + ".png")).convert("RGBA")
     scale = SCALE
     size = (int(260 * max(1.0, scale / 5)), int(300 * max(1.0, scale / 5)))
+    if os.environ.get("PREVIEW_SIZE"):                 # «ширина,высота» кадра — для больших мобов
+        size = tuple(int(v) for v in os.environ["PREVIEW_SIZE"].split(","))
     frames = []
     if anim_name:
         anims = load_anims(name)

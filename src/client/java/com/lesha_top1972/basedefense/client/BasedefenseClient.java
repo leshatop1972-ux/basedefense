@@ -115,6 +115,13 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SAPPER_BOMB, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.bomb());
         EntityRendererRegistry.register(ModEntities.SAPPER_CHARGE, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.charge());
         EntityRendererRegistry.register(ModEntities.SAPPER_SMOKE, com.lesha_top1972.basedefense.client.entity.sapper.SapperPropRenderer.smoke());
+        // осадный жук, маленький жук, яйцо
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.beetle.SiegeBeetleRenderer.LAYER, () -> BedrockModelLoader.load("siege_beetle"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.beetle.BeetleMiteRenderer.LAYER, () -> BedrockModelLoader.load("beetle_mite"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.beetle.BeetleEggRenderer.LAYER, () -> BedrockModelLoader.load("beetle_egg"));
+        EntityRendererRegistry.register(ModEntities.SIEGE_BEETLE, com.lesha_top1972.basedefense.client.entity.beetle.SiegeBeetleRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BEETLE_MITE, com.lesha_top1972.basedefense.client.entity.beetle.BeetleMiteRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BEETLE_EGG, com.lesha_top1972.basedefense.client.entity.beetle.BeetleEggRenderer::new);
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

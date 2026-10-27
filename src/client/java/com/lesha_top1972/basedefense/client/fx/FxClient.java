@@ -262,6 +262,26 @@ public final class FxClient {
                 }
             }
             case Fx.BLAST -> blast(w, x, y, z, a, (flags & Fx.F_LOUD) != 0, blockFx);
+            case Fx.IMPACT -> {
+                Random r = w.random;
+                boolean big = (flags & Fx.F_LOUD) != 0;
+                int n = big ? 30 : 12;
+                for (int i = 0; i < n; i++) {
+                    double vx = r.nextGaussian() * 0.25 * a;
+                    double vz = r.nextGaussian() * 0.25 * a;
+                    if (blockFx != null) {
+                        w.addParticle(blockFx, x, y, z, vx, 0.15 + r.nextDouble() * 0.3, vz);
+                    }
+                    if (i % 2 == 0) {
+                        w.addParticle(ParticleTypes.CRIT, x, y, z, vx * 2, 0.2 + r.nextDouble() * 0.3, vz * 2);
+                    }
+                }
+                spawn(w, ParticleTypes.POOF, x, y, z, big ? 8 : 3, 0.4 * a, 0.3, 0.4 * a, 0.03);
+                spawn(w, SOOT, x, y - 0.3, z, big ? 10 : 4, 0.5 * a, 0.2, 0.5 * a, 0.02);
+                if (big) {
+                    w.addParticle(ParticleTypes.EXPLOSION, x, y, z, 0, 0, 0);
+                }
+            }
             case Fx.FOUNTAIN -> {
                 Random r = w.random;
                 for (int i = 0; i < 26; i++) {

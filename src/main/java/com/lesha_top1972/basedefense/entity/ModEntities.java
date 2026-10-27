@@ -276,6 +276,34 @@ public final class ModEntities {
                     .trackedUpdateRate(2)
                     .build());
 
+    /** «Осадный жук» (модель ×1.3). */
+    public static final EntityType<SiegeBeetleEntity> SIEGE_BEETLE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "siege_beetle"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, SiegeBeetleEntity::new)
+                    .dimensions(EntityDimensions.fixed(3.0f, 2.6f))
+                    .trackRangeBlocks(80)
+                    .trackedUpdateRate(1)
+                    .build());
+
+    /** «Маленький жук». */
+    public static final EntityType<BeetleMiteEntity> BEETLE_MITE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "beetle_mite"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BeetleMiteEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.9f, 0.5f))
+                    .trackRangeBlocks(48)
+                    .build());
+
+    /** Яйцо осадного жука. */
+    public static final EntityType<BeetleEggEntity> BEETLE_EGG = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "beetle_egg"),
+            FabricEntityTypeBuilder.<BeetleEggEntity>create(SpawnGroup.MISC, BeetleEggEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.8f, 1.0f))
+                    .trackRangeBlocks(48)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -299,6 +327,9 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(NABAT, NabatEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SAPPER, SapperEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SIEGE_BEETLE, SiegeBeetleEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BEETLE_MITE, BeetleMiteEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BEETLE_EGG, BeetleEggEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
     }
 }

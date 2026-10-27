@@ -67,6 +67,24 @@ public final class ModSounds {
     public static final SoundEvent SAPPER_HURT = register("entity.sapper.hurt");
     public static final SoundEvent SAPPER_DEATH = register("entity.sapper.death");
 
+    // Осадный жук, маленький жук, яйцо (tools/beetle_sounds.py)
+    public static final SoundEvent BEETLE_STEP = register("entity.siege_beetle.step");
+    public static final SoundEvent BEETLE_SCRAPE = register("entity.siege_beetle.scrape");
+    public static final SoundEvent BEETLE_AMBIENT = register("entity.siege_beetle.ambient");
+    public static final SoundEvent BEETLE_ROAR = register("entity.siege_beetle.roar");
+    public static final SoundEvent BEETLE_RAM = register("entity.siege_beetle.ram");
+    public static final SoundEvent BEETLE_HORN_SWING = register("entity.siege_beetle.horn_swing");
+    public static final SoundEvent BEETLE_HORN_HIT = register("entity.siege_beetle.horn_hit");
+    public static final SoundEvent BEETLE_MANDIBLE = register("entity.siege_beetle.mandible");
+    public static final SoundEvent BEETLE_LAY = register("entity.siege_beetle.lay");
+    public static final SoundEvent BEETLE_HURT = register("entity.siege_beetle.hurt");
+    public static final SoundEvent BEETLE_DEATH = register("entity.siege_beetle.death");
+    public static final SoundEvent BEETLE_HATCH = register("entity.beetle_egg.hatch");
+    public static final SoundEvent MITE_AMBIENT = register("entity.beetle_mite.ambient");
+    public static final SoundEvent MITE_STEP = register("entity.beetle_mite.step");
+    public static final SoundEvent MITE_BITE = register("entity.beetle_mite.bite");
+    public static final SoundEvent MITE_DEATH = register("entity.beetle_mite.death");
+
     private ModSounds() {
     }
 

@@ -47,6 +47,8 @@ public final class Fx {
     public static final int BLAST = 10;
     /** Фонтан земли из лаза: комья блока разлетаются вверх и в стороны. */
     public static final int FOUNTAIN = 11;
+    /** Удар (таран, «Рогом»): искры, щепки и куски блока в точке, облачко пыли; a — сила, F_LOUD — крупнее. */
+    public static final int IMPACT = 12;
 
     // --- флаги ---
     public static final int F_BLOCK = 1;
@@ -136,6 +138,13 @@ public final class Fx {
     /** Фонтан земли из лаза. */
     public static void fountain(ServerWorld w, Vec3d p, BlockState st) {
         send(w, FOUNTAIN, p, Vec3d.ZERO, 0f, 0f, 0, blockId(st), F_BLOCK);
+    }
+
+    /** Удар в точке p: осколки блока в этой точке (или под ней), искры, пыль. */
+    public static void impact(ServerWorld w, Vec3d p, float power, boolean big) {
+        BlockState st = w.getBlockState(BlockPos.ofFloored(p));
+        int block = st.isAir() ? groundId(w, p) : blockId(st);
+        send(w, IMPACT, p, Vec3d.ZERO, power, 0f, 0, block, big ? F_LOUD : 0);
     }
 
     public static void quakeFront(ServerWorld w, Vec3d c, double r) {
