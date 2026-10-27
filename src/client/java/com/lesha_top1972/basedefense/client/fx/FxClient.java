@@ -126,6 +126,55 @@ public final class FxClient {
         }
     }
 
+    private static final DustParticleEffect PETAL = new DustParticleEffect(new Vector3f(0.55f, 0.03f, 0.07f), 2.2f);
+    private static final DustParticleEffect PETAL_DARK = new DustParticleEffect(new Vector3f(0.22f, 0.0f, 0.03f), 2.6f);
+    private static final DustParticleEffect SPARK_RED = new DustParticleEffect(new Vector3f(1.0f, 0.2f, 0.18f), 1.0f);
+
+    /** Кровожад вырывается из кокона: вспышка, ошмётки кокона веером, брызги вверх, ударная волна по земле. */
+    static void cocoonBurst(ClientWorld w, double x, double y, double z, double r, ParticleEffect blockFx) {
+        Random rnd = w.random;
+        w.addParticle(ParticleTypes.FLASH, x, y + 1.6, z, 0, 0, 0);
+        // ошмётки кокона — лепестки летят во все стороны от тела
+        for (int i = 0; i < 70; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2;
+            double el = (rnd.nextDouble() - 0.3) * 1.2;
+            double sp = 0.25 + rnd.nextDouble() * 0.35;
+            double h = 0.6 + rnd.nextDouble() * 2.2;
+            w.addParticle(i % 3 == 0 ? PETAL_DARK : PETAL, x + Math.cos(ang) * 0.8, y + h, z + Math.sin(ang) * 0.8,
+                    Math.cos(ang) * sp * Math.cos(el), Math.sin(el) * sp, Math.sin(ang) * sp * Math.cos(el));
+        }
+        // брызги крови фонтаном вверх и в стороны
+        for (int i = 0; i < 50; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2;
+            double sp = 0.15 + rnd.nextDouble() * 0.35;
+            w.addParticle(i % 3 == 0 ? CLOTS : DROPS, x, y + 1.2 + rnd.nextDouble() * 1.2, z,
+                    Math.cos(ang) * sp, 0.25 + rnd.nextDouble() * 0.45, Math.sin(ang) * sp);
+        }
+        spawn(w, MIST, x, y + 1.5, z, 30, 0.9, 0.9, 0.9, 0.0);
+        // яркие искры‑капли
+        for (int i = 0; i < 18; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2;
+            w.addParticle(SPARK_RED, x, y + 1.5, z, Math.cos(ang) * 0.5, (rnd.nextDouble() - 0.3) * 0.4, Math.sin(ang) * 0.5);
+        }
+        // ударная волна: два кольца по земле расходятся (облака + пыль блока + кровавая взвесь)
+        for (int k = 0; k < 2; k++) {
+            int pts = (int) (r * 8);
+            double sp = k == 0 ? 0.55 : 0.35;
+            for (int i = 0; i < pts; i++) {
+                double ang = (i + k * 0.5) * Math.PI * 2 / pts;
+                double px = x + Math.cos(ang) * 0.9;
+                double pz = z + Math.sin(ang) * 0.9;
+                w.addParticle(ParticleTypes.CLOUD, px, y + 0.15, pz, Math.cos(ang) * sp, 0.01, Math.sin(ang) * sp);
+                if (i % 2 == 0) {
+                    w.addParticle(PETAL, px, y + 0.3, pz, Math.cos(ang) * sp * 0.9, 0.02, Math.sin(ang) * sp * 0.9);
+                }
+                if (blockFx != null && i % 3 == 0) {
+                    w.addParticle(blockFx, px, y + 0.1, pz, Math.cos(ang) * sp, 0.08, Math.sin(ang) * sp);
+                }
+            }
+        }
+    }
+
     private static void play(int type, double x, double y, double z, float x2, float y2, float z2, float a, float b,
                              int color, int block, int flags) {
         ClientWorld w = MinecraftClient.getInstance().world;
@@ -262,6 +311,7 @@ public final class FxClient {
                 }
             }
             case Fx.BLAST -> blast(w, x, y, z, a, (flags & Fx.F_LOUD) != 0, blockFx);
+            case Fx.COCOON_BURST -> cocoonBurst(w, x, y, z, a, blockFx);
             case Fx.IMPACT -> {
                 Random r = w.random;
                 boolean big = (flags & Fx.F_LOUD) != 0;

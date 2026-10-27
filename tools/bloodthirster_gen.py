@@ -1181,26 +1181,53 @@ UPRIGHT = dict(body=(0, 0, 0), body_pos=(0, 0.3, 0), torso=(-3, 0, 0), neck=(2, 
                jaw=2.0, ribbon=0.0, sw=SW, halo=1.0, hair=0.0)
 
 
+# Кокон (TRANSFORM, 3.0 с, переход на 2.2 с = серверный тик 44): судороги → сжимается в комок, руки обхватывают
+# тело, кокон пульсирует (удары сердца раз в 0.5 с с 0.9 с) → напряжение → вырывается: распрямляется, руки
+# с мечами раскинуты, рёв → поза второй фазы.
+COCOON_CURL = dict(CROUCH, body=(16, 0, 0), body_pos=(0, 10.5, 0), torso=(40, 0, 0), neck=(8, 0, 0), head=(14, 0, 0),
+                   rh=(2.5, 9.5, -7.5), lh=(-2.5, 10.5, -7.0), r_pole=(0.8, -0.6, 0.4), l_pole=(-0.8, -0.6, 0.4),
+                   rhand=(-30, 0, 0), lhand=(-30, 0, 0), rcurl=70.0, lcurl=70.0, jaw=0.0, ribbon=12.0, hair=12.0,
+                   sw=0.0, halo=0.0)
+COCOON_BEAT0, COCOON_BEAT, COCOON_TENSE = 0.9, 0.5, 2.12
+
+
+def heartbeat(t):
+    """Двойной удар сердца раз в COCOON_BEAT с: 0..1."""
+    if t < COCOON_BEAT0 - 0.1 or t > COCOON_TENSE:
+        return 0.0
+    ph = (t - COCOON_BEAT0) % COCOON_BEAT
+    return math.exp(-(ph / 0.05) ** 2) + 0.6 * math.exp(-((ph - 0.15) / 0.05) ** 2)
+
+
 def transform(t):
     keys = [
         (0.00, HUNCH, "lin"),
-        (0.30, dict(torso=(54, 10, 8), head=(-50, -20, 0), jaw=40.0, body_pos=(0, 5.0, 0)), "out"),
-        (0.55, dict(torso=(40, -14, -10), head=(-20, 24, 10)), "ease"),
-        (0.80, dict(torso=(58, 8, 4), head=(-60, -10, 0), jaw=48.0), "ease"),
-        (1.10, dict(CROUCH, sw=0.0, halo=0.0), "ease"),
-        (2.00, dict(UPRIGHT, torso=(-14, 0, 0), head=(-26, 0, 0), neck=(-10, 0, 0), body_pos=(0, -0.2, 0),
-                    rh=(-21, -10, 0), lh=(21, -10, 0), r_pole=(0, 0.5, 1), l_pole=(0, 0.5, 1), rhand=(0, 0, -20),
-                    lhand=(0, 0, 20), rcurl=-10.0, lcurl=-10.0, jaw=36.0, sw=0.0, halo=0.0,
-                    rdir=(-1, -0.3, 0), ldir=(1, -0.3, 0), ribbon=-10.0), "out"),
-        (2.20, dict(rcurl=70.0, lcurl=70.0, sw=SW * 0.15), "lin"),
-        (2.50, dict(sw=SW, halo=1.0, jaw=20.0, head=(-20, 0, 0)), "out"),
+        (0.25, dict(torso=(54, 10, 8), head=(-50, -20, 0), jaw=40.0, body_pos=(0, 5.0, 0)), "out"),
+        (0.50, dict(torso=(40, -14, -10), head=(-20, 24, 10)), "ease"),
+        (0.85, COCOON_CURL, "ease"),
+        (1.90, dict(COCOON_CURL, body_pos=(0, 11.2, 0), torso=(44, 0, 0)), "lin"),
+        (COCOON_TENSE, dict(COCOON_CURL, body_pos=(0, 11.8, 0), torso=(48, 0, 0), head=(20, 0, 0),
+                            rh=(3.0, 9.0, -7.0), lh=(-3.0, 10.0, -6.5)), "in"),
+        (2.25, dict(UPRIGHT, body=(-6, 0, 0), body_pos=(0, -1.0, 0), torso=(-22, 0, 0), neck=(-12, 0, 0),
+                    head=(-34, 0, 0), rh=(-24, -6, 2), lh=(24, -6, 2), r_pole=(0, 0.6, 1), l_pole=(0, 0.6, 1),
+                    rhand=(0, 0, -20), lhand=(0, 0, 20), rcurl=70.0, lcurl=70.0, rdir=(-1, -0.2, 0.1),
+                    ldir=(1, -0.2, 0.1), jaw=50.0, sw=SW * 0.6, halo=0.6, ribbon=-16.0, hair=-20.0), "out"),
+        (2.50, dict(sw=SW, halo=1.0, jaw=40.0, head=(-30, 0, 0), torso=(-16, 0, 0), body_pos=(0, -0.4, 0)), "out"),
         (3.00, UPRIGHT, "ease"),
     ]
     pr = keyed(keys, t)
-    if t < 1.1:                                             # дрожь
-        k = math.sin(math.pi * t / 1.1)
+    if t < 0.85:                                            # судороги
+        k = math.sin(math.pi * t / 0.85)
         pr["torso"] = add(list(pr["torso"]), [3 * math.sin(t * 70) * k, 4 * math.sin(t * 53) * k, 0])
         pr["head"] = add(list(pr["head"]), [6 * math.sin(t * 61) * k, 8 * math.sin(t * 47) * k, 0])
+    hb = heartbeat(t)
+    if hb > 0:                                              # тело вздрагивает с ударами сердца кокона
+        pr["body_pos"] = add(list(pr["body_pos"]), [0, -0.7 * hb, 0])
+        pr["torso"] = add(list(pr["torso"]), [-4 * hb, 0, 0])
+        pr["head"] = add(list(pr["head"]), [-3 * hb, 0, 0])
+    if 1.95 < t < 2.2:                                      # напряжение перед разрывом — мелкая дрожь
+        k = math.sin(math.pi * (t - 1.95) / 0.25)
+        pr["torso"] = add(list(pr["torso"]), [2 * math.sin(t * 120) * k, 2 * math.sin(t * 97) * k, 0])
     return resolve(pr)
 
 

@@ -301,6 +301,81 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
         BloodFx.splash(this.getWorld(), this.getX(), this.getBodyY(0.5), this.getZ(), 60, 1.2);
     }
 
+    private static final net.minecraft.particle.DustParticleEffect COCOON_STREAM =
+            new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(0.62f, 0.02f, 0.08f), 1.3f);
+    private static final net.minecraft.particle.DustParticleEffect COCOON_SHELL =
+            new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(0.30f, 0.0f, 0.04f), 2.4f);
+    private static final net.minecraft.particle.DustParticleEffect COCOON_GLOW =
+            new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(1.0f, 0.18f, 0.15f), 1.0f);
+
+    @Override
+    public void tickMovement() {
+        super.tickMovement();
+        if (this.getWorld().isClient && this.clientAction == TRANSFORM) {
+            int t = this.age - this.clientActionAge;
+            if (t >= 0 && t < TRANSFORM_SWITCH) {
+                this.cocoonFx(t);
+            }
+        }
+    }
+
+    /**
+     * Кровавый кокон (только клиент, тики 0..43 смены облика): из земли по спирали поднимаются 4 кровавых потока,
+     * вокруг тела смыкается оболочка из тёмных «лепестков», с ударами сердца (18, 28, 38) она вздувается
+     * и сквозь неё пробивается алое свечение; перед разрывом оболочка сжимается и светится трещинами.
+     */
+    private void cocoonFx(int t) {
+        net.minecraft.world.World w = this.getWorld();
+        net.minecraft.util.math.random.Random r = this.random;
+        double cx = this.getX();
+        double cy = this.getY();
+        double cz = this.getZ();
+        float close = MathHelper.clamp(t / 22f, 0f, 1f);                  // насколько кокон сомкнулся
+        float tense = MathHelper.clamp((t - 36) / 8f, 0f, 1f);             // сжатие перед разрывом
+        int ph = t >= 18 ? (t - 18) % 10 : 99;
+        float beat = ph == 0 ? 1f : ph == 1 ? 0.6f : ph == 3 ? 0.7f : 0f;  // двойной удар
+        double rad = 1.35 - 0.25 * close - 0.25 * tense + 0.15 * beat;
+        double height = 2.6 - 0.3 * tense;
+        // потоки по спирали снизу вверх
+        for (int k = 0; k < 4; k++) {
+            for (int j = 0; j < 3; j++) {
+                double h = ((t * 0.18 + j * 0.33 + k * 0.25) % 1.0);
+                double ang = k * Math.PI / 2 + t * 0.22 + h * 3.0;
+                double rr = rad * (0.6 + 0.4 * Math.sin(Math.PI * h));
+                w.addParticle(COCOON_STREAM, cx + Math.cos(ang) * rr, cy + h * height, cz + Math.sin(ang) * rr,
+                        0, 0.02, 0);
+            }
+        }
+        // оболочка из «лепестков»: чем дальше, тем гуще
+        int petals = 2 + (int) (close * 8);
+        for (int i = 0; i < petals; i++) {
+            double ang = r.nextDouble() * Math.PI * 2;
+            double v = r.nextDouble() * 2 - 1;                                // −1..1 по высоте
+            double rr = rad * Math.sqrt(1 - v * v * 0.85);
+            w.addParticle(COCOON_SHELL, cx + Math.cos(ang) * rr, cy + height * 0.5 + v * height * 0.5,
+                    cz + Math.sin(ang) * rr, 0, 0.01, 0);
+        }
+        if (t < 24 && t % 2 == 0) {                                           // поднимающиеся лепестки
+            double ang = r.nextDouble() * Math.PI * 2;
+            w.addParticle(ParticleTypes.CRIMSON_SPORE, cx + Math.cos(ang) * 1.6, cy + 0.2, cz + Math.sin(ang) * 1.6,
+                    0, 0.06, 0);
+        }
+        if (beat >= 1f || (tense > 0 && t % 2 == 0)) {                        // свет сквозь кокон
+            int n = beat >= 1f ? 10 : 3;
+            for (int i = 0; i < n; i++) {
+                double ang = r.nextDouble() * Math.PI * 2;
+                double hh = 0.4 + r.nextDouble() * (height - 0.6);
+                w.addParticle(COCOON_GLOW, cx + Math.cos(ang) * rad * 0.95, cy + hh, cz + Math.sin(ang) * rad * 0.95,
+                        Math.cos(ang) * 0.05, 0, Math.sin(ang) * 0.05);
+            }
+        }
+        if (t % 5 == 0) {                                                     // капли стекают с кокона
+            double ang = r.nextDouble() * Math.PI * 2;
+            w.addParticle(ParticleTypes.DRIPPING_DRIPSTONE_LAVA, cx + Math.cos(ang) * rad, cy + height * 0.4,
+                    cz + Math.sin(ang) * rad, 0, 0, 0);
+        }
+    }
+
     @Override
     public void handleStatus(byte status) {
         int a = status - STATUS_BASE;
@@ -1047,16 +1122,25 @@ public class BloodthirsterEntity extends HostileEntity implements BloodKin {
                         b.sound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.55f);
                         BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.6), b.getZ(), 40, 1.0);
                     }
-                    if (t < TRANSFORM_SWITCH && t % 4 == 0) {
-                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.3 + b.random.nextDouble() * 0.5),
-                                b.getZ(), 10, 0.8);
+                    // кокон (частицы рисует клиент): сердце бьётся на тиках 18, 28, 38 — как в анимации
+                    if (t >= 18 && t < TRANSFORM_SWITCH && (t - 18) % 10 == 0) {
+                        b.sound(SoundEvents.ENTITY_WARDEN_HEARTBEAT, 2.0f, 0.6f);
+                    }
+                    if (t == 10) {
+                        b.sound(SoundEvents.BLOCK_HONEY_BLOCK_SLIDE, 1.4f, 0.5f);
+                    }
+                    if (t == TRANSFORM_SWITCH - 4) {
+                        b.sound(SoundEvents.BLOCK_SCULK_SHRIEKER_SHRIEK, 1.0f, 0.6f);
                     }
                     if (t == TRANSFORM_SWITCH) {
                         b.setPhase2();
                         b.sound(SoundEvents.ENTITY_WARDEN_ROAR, 1.4f, 1.2f);
-                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.5), b.getZ(), 100, 1.8);
-                        b.geyserRing(6.0);
-                        b.push(5.0, 1.6, 0.35);
+                        b.sound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f, 0.6f);
+                        if (b.getWorld() instanceof net.minecraft.server.world.ServerWorld sw) {
+                            com.lesha_top1972.basedefense.fx.Fx.cocoonBurst(sw, b.getPos(), 6.0);
+                        }
+                        BloodFx.splash(b.getWorld(), b.getX(), b.getBodyY(0.5), b.getZ(), 40, 1.4);
+                        b.push(5.0, 1.6, 0.35);     // ударная волна без урона
                     }
                     if (t >= TRANSFORM_TICKS) {
                         b.transforming = false;

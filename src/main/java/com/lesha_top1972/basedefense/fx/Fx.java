@@ -49,6 +49,8 @@ public final class Fx {
     public static final int FOUNTAIN = 11;
     /** Удар (таран, «Рогом»): искры, щепки и куски блока в точке, облачко пыли; a — сила, F_LOUD — крупнее. */
     public static final int IMPACT = 12;
+    /** Разрыв кровавого кокона кровожада: вспышка, лепестки‑ошмётки веером, брызги, ударная волна по земле (a — радиус). */
+    public static final int COCOON_BURST = 13;
 
     // --- флаги ---
     public static final int F_BLOCK = 1;
@@ -145,6 +147,11 @@ public final class Fx {
         BlockState st = w.getBlockState(BlockPos.ofFloored(p));
         int block = st.isAir() ? groundId(w, p) : blockId(st);
         send(w, IMPACT, p, Vec3d.ZERO, power, 0f, 0, block, big ? F_LOUD : 0);
+    }
+
+    /** Кровожад вырывается из кокона (центр — у ног), волна радиусом r. */
+    public static void cocoonBurst(ServerWorld w, Vec3d c, double r) {
+        send(w, COCOON_BURST, c, Vec3d.ZERO, (float) r, 0f, 0, groundId(w, c), F_BLOOD);
     }
 
     public static void quakeFront(ServerWorld w, Vec3d c, double r) {
