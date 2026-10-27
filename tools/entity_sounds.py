@@ -215,18 +215,18 @@ def blood_death():
 
 
 EVENTS = {
-    "entity.mist_entity.screech": (["mist_screech0", "mist_screech1", "mist_screech2"], 32),
-    "entity.mist_entity.glitch": (["mist_glitch0", "mist_glitch1", "mist_glitch2"], 20),
-    "entity.mist_entity.whisper": (["mist_whisper0", "mist_whisper1"], 16),
-    "entity.mist_entity.sting": (["mist_sting"], 24),
-    "entity.mist_entity.hurt": (["mist_hurt0", "mist_hurt1"], 16),
-    "entity.mist_entity.death": (["mist_death"], 32),
-    "entity.blood_entity.growl": (["blood_growl0", "blood_growl1"], 16),
-    "entity.blood_entity.attack": (["blood_attack0", "blood_attack1", "blood_attack2"], 20),
-    "entity.blood_entity.hiss": (["blood_hiss"], 16),
-    "entity.blood_entity.hurt": (["blood_hurt0", "blood_hurt1"], 16),
-    "entity.blood_entity.death": (["blood_death"], 24),
-    "entity.blood_entity.step": (["blood_step0", "blood_step1", "blood_step2"], 12),
+    "entity.mist_entity.screech": (["mist_screech0", "mist_screech1", "mist_screech2"], 64),
+    "entity.mist_entity.glitch": (["mist_glitch0", "mist_glitch1", "mist_glitch2"], 48),
+    "entity.mist_entity.whisper": (["mist_whisper0", "mist_whisper1"], 40),
+    "entity.mist_entity.sting": (["mist_sting"], 64),
+    "entity.mist_entity.hurt": (["mist_hurt0", "mist_hurt1"], 32),
+    "entity.mist_entity.death": (["mist_death"], 48),
+    "entity.blood_entity.growl": (["blood_growl0", "blood_growl1"], 40),
+    "entity.blood_entity.attack": (["blood_attack0", "blood_attack1", "blood_attack2"], 40),
+    "entity.blood_entity.hiss": (["blood_hiss"], 32),
+    "entity.blood_entity.hurt": (["blood_hurt0", "blood_hurt1"], 32),
+    "entity.blood_entity.death": (["blood_death"], 40),
+    "entity.blood_entity.step": (["blood_step0", "blood_step1", "blood_step2"], 24),
 }
 
 

@@ -1029,15 +1029,15 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_screech0",
-        "attenuation_distance": 32
+        "attenuation_distance": 64
       },
       {
         "name": "basedefense:entity/mist_screech1",
-        "attenuation_distance": 32
+        "attenuation_distance": 64
       },
       {
         "name": "basedefense:entity/mist_screech2",
-        "attenuation_distance": 32
+        "attenuation_distance": 64
       }
     ]
   },
@@ -1046,15 +1046,15 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_glitch0",
-        "attenuation_distance": 20
+        "attenuation_distance": 48
       },
       {
         "name": "basedefense:entity/mist_glitch1",
-        "attenuation_distance": 20
+        "attenuation_distance": 48
       },
       {
         "name": "basedefense:entity/mist_glitch2",
-        "attenuation_distance": 20
+        "attenuation_distance": 48
       }
     ]
   },
@@ -1063,11 +1063,11 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_whisper0",
-        "attenuation_distance": 16
+        "attenuation_distance": 40
       },
       {
         "name": "basedefense:entity/mist_whisper1",
-        "attenuation_distance": 16
+        "attenuation_distance": 40
       }
     ]
   },
@@ -1076,7 +1076,7 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_sting",
-        "attenuation_distance": 24
+        "attenuation_distance": 64
       }
     ]
   },
@@ -1085,11 +1085,11 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_hurt0",
-        "attenuation_distance": 16
+        "attenuation_distance": 32
       },
       {
         "name": "basedefense:entity/mist_hurt1",
-        "attenuation_distance": 16
+        "attenuation_distance": 32
       }
     ]
   },
@@ -1098,7 +1098,7 @@
     "sounds": [
       {
         "name": "basedefense:entity/mist_death",
-        "attenuation_distance": 32
+        "attenuation_distance": 48
       }
     ]
   },
@@ -1107,11 +1107,11 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_growl0",
-        "attenuation_distance": 16
+        "attenuation_distance": 40
       },
       {
         "name": "basedefense:entity/blood_growl1",
-        "attenuation_distance": 16
+        "attenuation_distance": 40
       }
     ]
   },
@@ -1120,15 +1120,15 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_attack0",
-        "attenuation_distance": 20
+        "attenuation_distance": 40
       },
       {
         "name": "basedefense:entity/blood_attack1",
-        "attenuation_distance": 20
+        "attenuation_distance": 40
       },
       {
         "name": "basedefense:entity/blood_attack2",
-        "attenuation_distance": 20
+        "attenuation_distance": 40
       }
     ]
   },
@@ -1137,7 +1137,7 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_hiss",
-        "attenuation_distance": 16
+        "attenuation_distance": 32
       }
     ]
   },
@@ -1146,11 +1146,11 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_hurt0",
-        "attenuation_distance": 16
+        "attenuation_distance": 32
       },
       {
         "name": "basedefense:entity/blood_hurt1",
-        "attenuation_distance": 16
+        "attenuation_distance": 32
       }
     ]
   },
@@ -1159,7 +1159,7 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_death",
-        "attenuation_distance": 24
+        "attenuation_distance": 40
       }
     ]
   },
@@ -1168,15 +1168,15 @@
     "sounds": [
       {
         "name": "basedefense:entity/blood_step0",
-        "attenuation_distance": 12
+        "attenuation_distance": 24
       },
       {
         "name": "basedefense:entity/blood_step1",
-        "attenuation_distance": 12
+        "attenuation_distance": 24
       },
       {
         "name": "basedefense:entity/blood_step2",
-        "attenuation_distance": 12
+        "attenuation_distance": 24
       }
     ]
   }

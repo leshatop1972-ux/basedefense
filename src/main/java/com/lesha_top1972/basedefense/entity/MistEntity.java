@@ -16,7 +16,7 @@ import org.joml.Vector3f;
 
 /**
  * «Туманная сущность»: как человек, вся белая с дымно‑серым. Живёт в тумане (будущее событие).
- * 45 HP, удар рукой 7 урона раз в 2 с. Шагов не слышно; рядом с игроком (10 бл) — сбои, треск и обратный шёпот,
+ * 45 HP, удар рукой 9 урона раз в 2 с. Новую цель сначала 8 с выслеживает — кружит рядом и пугает. Шагов не слышно; рядом с игроком (10 бл) — сбои, треск и обратный шёпот,
  * подобралась ближе 5 бл — резкий удар со звоном в ушах (не чаще раза в 30 с), при атаке — искажённый визг.
  */
 public class MistEntity extends HorrorEntity {
@@ -34,7 +34,13 @@ public class MistEntity extends HorrorEntity {
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 45.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.26)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 7.0);
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 9.0);
+    }
+
+    /** Прежде чем напасть, 8 с кружит рядом с игроком и пугает звуками. */
+    @Override
+    protected int stalkTicks() {
+        return 160;
     }
 
     @Override
@@ -49,7 +55,7 @@ public class MistEntity extends HorrorEntity {
 
     @Override
     protected float attackDamage() {
-        return 7f;
+        return 9f;
     }
 
     @Override
@@ -79,7 +85,7 @@ public class MistEntity extends HorrorEntity {
             this.stingCd--;
         }
         if (this.age % 10 == 0) {
-            PlayerEntity p = w.getClosestPlayer(this, 10.0);
+            PlayerEntity p = w.getClosestPlayer(this, 14.0);
             if (p != null && !p.isCreative() && !p.isSpectator()) {
                 double d = this.distanceTo(p);
                 if (d < 5.0 && this.stingCd <= 0) {
@@ -87,7 +93,7 @@ public class MistEntity extends HorrorEntity {
                     this.scareCd = 80;
                     w.playSound(null, this.getX(), this.getY() + 1, this.getZ(), ModSounds.MIST_STING, SoundCategory.HOSTILE, 1.4f, 1.0f);
                 } else if (this.scareCd <= 0) {
-                    this.scareCd = 60 + this.random.nextInt(80);
+                    this.scareCd = this.stalking ? 25 + this.random.nextInt(30) : 60 + this.random.nextInt(80);
                     SoundEvent s = this.random.nextBoolean() ? ModSounds.MIST_GLITCH : ModSounds.MIST_WHISPER;
                     w.playSound(null, this.getX(), this.getY() + 1, this.getZ(), s, SoundCategory.HOSTILE, 1.1f,
                             0.85f + this.random.nextFloat() * 0.3f);

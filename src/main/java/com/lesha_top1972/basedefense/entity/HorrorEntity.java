@@ -72,6 +72,14 @@ public abstract class HorrorEntity extends HostileEntity {
     protected void attackSound(int action) {
     }
 
+    /** Сколько тиков «выслеживать» новую цель (кружить рядом) перед нападением; 0 — сразу нападает. */
+    protected int stalkTicks() {
+        return 0;
+    }
+
+    /** Сейчас кружит вокруг цели (не нападает). */
+    public boolean stalking;
+
     /** Вторая атака: можно ли начать при такой дистанции (по умолчанию — нет). */
     protected boolean canLunge(double dist) {
         return false;
@@ -143,6 +151,10 @@ public abstract class HorrorEntity extends HostileEntity {
         private int action = NONE;
         private int tick;
         private int cd = 20;
+        private LivingEntity stalkTarget;
+        private int stalkLeft;
+        private double stalkAng;
+        private int stalkDir = 1;
         private int pathDelay;
         private final Set<Integer> hit = new HashSet<>();
 
@@ -179,6 +191,46 @@ public abstract class HorrorEntity extends HostileEntity {
             this.mob.attackSound(a);
         }
 
+        /**
+         * Выслеживание: новая цель — сначала stalkTicks() тиков кружит вокруг неё на 6–8 блоках (время идёт, только
+         * когда цель ближе 12 блоков), изредка меняя направление; ударили её — сразу нападает.
+         */
+        private boolean stalk(LivingEntity t) {
+            HorrorEntity m = this.mob;
+            if (t != this.stalkTarget) {
+                this.stalkTarget = t;
+                this.stalkLeft = m.stalkTicks();
+                this.stalkAng = Math.atan2(m.getZ() - t.getZ(), m.getX() - t.getX());
+                this.stalkDir = m.random.nextBoolean() ? 1 : -1;
+            }
+            if (this.stalkLeft <= 0 || m.hurtTime > 0 && m.getAttacker() == t) {
+                this.stalkLeft = 0;
+                m.stalking = false;
+                return false;
+            }
+            m.stalking = true;
+            double dist = m.distanceTo(t);
+            if (dist > 12.0) {
+                if (--this.pathDelay <= 0) {
+                    this.pathDelay = 10;
+                    m.getNavigation().startMovingTo(t, 1.0);
+                }
+                return true;
+            }
+            this.stalkLeft--;
+            if (m.random.nextInt(90) == 0) {
+                this.stalkDir = -this.stalkDir;
+            }
+            this.stalkAng += this.stalkDir * 0.035;
+            double r = 6.0 + 2.0 * Math.sin(m.age * 0.05);
+            if (--this.pathDelay <= 0) {
+                this.pathDelay = 8;
+                m.getNavigation().startMovingTo(t.getX() + Math.cos(this.stalkAng) * r, t.getY(),
+                        t.getZ() + Math.sin(this.stalkAng) * r, 0.85);
+            }
+            return true;
+        }
+
         @Override
         public void tick() {
             HorrorEntity m = this.mob;
@@ -212,9 +264,13 @@ public abstract class HorrorEntity extends HostileEntity {
                 return;
             }
             if (t == null) {
+                m.stalking = false;
                 return;
             }
             m.getLookControl().lookAt(t, 30f, 30f);
+            if (this.stalk(t)) {
+                return;
+            }
             Vec3d to = new Vec3d(t.getX() - m.getX(), 0, t.getZ() - m.getZ());
             double d = Math.max(0, to.length() - t.getWidth() / 2 - m.getWidth() / 2);
             boolean see = m.getVisibilityCache().canSee(t);
