@@ -64,14 +64,14 @@ public final class SapperBlast {
         }
     }
 
-    /** Бомба: r 2.5, ломает слабые блоки (твёрдость ≤ 1.5) в шаре 1.5. */
+    /** Бомба: r 2.5, ломает блоки твёрдостью ≤ 2 (стекло, земля, камень, доски, булыжник, кирпич) в шаре 1.5. */
     static void bomb(ServerWorld w, Vec3d c, float dmg, Entity owner) {
         hurt(w, c, 2.5, dmg, 0.6, owner);
         int block = Fx.groundId(w, c);
         if (griefing(w)) {
             BlockPos o = BlockPos.ofFloored(c);
             for (BlockPos p : BlockPos.iterate(o.add(-2, -2, -2), o.add(2, 2, 2))) {
-                if (p.getSquaredDistance(c) <= 1.5 * 1.5 + 0.3 && breakable(w, p, 1.5f)) {
+                if (p.getSquaredDistance(c) <= 1.5 * 1.5 + 0.3 && breakable(w, p, 2.0f)) {
                     w.breakBlock(p.toImmutable(), false, owner);
                 }
             }

@@ -95,7 +95,7 @@ public class SapperEntity extends HostileEntity {
 
     static final int BOMB_CD = 100;
     static final int JAB_CD = 120;
-    static final int PLANT_CD = 400;
+    static final int PLANT_CD = 240;
     static final int SMOKE_CD = 240;
     static final float JAB_DMG = 5f;
     static final int STUN_TICKS = 20;
@@ -123,6 +123,8 @@ public class SapperEntity extends HostileEntity {
 
     // --- сервер ---
     final List<BlockPos> lairs = new ArrayList<>();
+    /** Ближайший найденный «не природный» блок (постройка) — главная цель подкопщика. */
+    BlockPos build;
 
     public SapperEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -221,6 +223,56 @@ public class SapperEntity extends HostileEntity {
     @Override
     public boolean canImmediatelyDespawn(double distanceSquared) {
         return !this.isUnder() && super.canImmediatelyDespawn(distanceSquared);
+    }
+
+    @Override
+    protected void mobTick() {
+        super.mobTick();
+        if (this.age % 2 == 0) {
+            this.scanBuild();
+        }
+    }
+
+    /**
+     * Ищет постройки: 40 случайных блоков за раз вокруг себя (r 24) или — через раз — вокруг блока «База» (r 28),
+     * если база в этом измерении и ближе 160 блоков. Запоминает ближайший «не природный» блок, который можно сломать.
+     * Только при mobGriefing (без него ломать нечем).
+     */
+    void scanBuild() {
+        World w = this.getWorld();
+        if (!SapperBlast.griefing(w)) {
+            this.build = null;
+            return;
+        }
+        if (this.build != null && this.age % 20 == 0 && !(BuiltBlocks.artificial(w.getBlockState(this.build))
+                && SapperBlast.breakable(w, this.build, MAX_DIG_HARDNESS))) {
+            this.build = null;
+        }
+        BlockPos center = this.getBlockPos();
+        int r = 24;
+        net.minecraft.server.MinecraftServer srv = w.getServer();
+        if (srv != null && this.random.nextBoolean()) {
+            com.lesha_top1972.basedefense.block.BaseLocationState base = com.lesha_top1972.basedefense.block.BaseLocationState.get(srv);
+            if (base.hasBase() && w.getRegistryKey().equals(base.getDimension())
+                    && base.getPos().getSquaredDistance(center) < 160 * 160) {
+                center = base.getPos();
+                r = 28;
+            }
+        }
+        double best = this.build != null ? this.squaredDistanceTo(Vec3d.ofCenter(this.build)) : Double.MAX_VALUE;
+        for (int i = 0; i < 40; i++) {
+            BlockPos p = center.add(this.random.nextInt(2 * r + 1) - r, this.random.nextInt(11) - 4, this.random.nextInt(2 * r + 1) - r);
+            if (!w.getChunkManager().isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
+                continue;
+            }
+            if (BuiltBlocks.artificial(w.getBlockState(p)) && SapperBlast.breakable(w, p, MAX_DIG_HARDNESS)) {
+                double dd = this.squaredDistanceTo(Vec3d.ofCenter(p));
+                if (dd < best - 1) {
+                    best = dd;
+                    this.build = p.toImmutable();
+                }
+            }
+        }
     }
 
     @Override
@@ -428,6 +480,19 @@ public class SapperEntity extends HostileEntity {
         return this.getPos().add(f.multiply(0.35)).add(left.multiply(0.25)).add(0, 1.05, 0);
     }
 
+    /** Бомба в точку (по постройке). */
+    void throwAt(Vec3d to) {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        Vec3d from = this.handPos();
+        int flight = (int) (14 + Math.sqrt(this.squaredDistanceTo(to)) * 0.9);
+        SapperBombEntity b = new SapperBombEntity(ModEntities.SAPPER_BOMB, s);
+        b.launch(this, from, to, flight);
+        s.spawnEntity(b);
+        this.playSound(ModSounds.SAPPER_THROW, 0.9f, 1.0f);
+    }
+
     void throwBomb(LivingEntity target) {
         if (!(this.getWorld() instanceof ServerWorld s)) {
             return;
@@ -529,6 +594,9 @@ public class SapperEntity extends HostileEntity {
         private boolean walled;
         private boolean emergeCombo;
         private LivingEntity lastTarget;
+        private LivingEntity aimEntity;
+        private Vec3d aim;
+        private Vec3d fleeFrom;
         private int targetTicks;
         // копание вниз
         private BlockPos shaft;
@@ -561,7 +629,7 @@ public class SapperEntity extends HostileEntity {
 
         @Override
         public boolean canStart() {
-            return this.mob.isUnder() || valid(this.mob.getTarget());
+            return this.mob.isUnder() || valid(this.mob.getTarget()) || this.mob.build != null;
         }
 
         @Override
@@ -604,6 +672,10 @@ public class SapperEntity extends HostileEntity {
                 target = null;
             }
             this.trackTarget(target);
+            // игроки — только угроза вблизи (14 бл) или кто его бьёт; главная цель — постройки
+            if (target != null && m.squaredDistanceTo(target) > 14 * 14 && m.getAttacker() != target) {
+                target = null;
+            }
             if (this.action != NONE) {
                 this.tick++;
                 this.runAction(target);
@@ -638,6 +710,9 @@ public class SapperEntity extends HostileEntity {
             SapperEntity m = this.mob;
             if (target == null) {
                 m.dataTracker.set(SNEAK, false);
+                if (m.build != null) {
+                    this.buildTick();
+                }
                 return;
             }
             double d = Math.sqrt(m.squaredDistanceTo(target));
@@ -683,6 +758,8 @@ public class SapperEntity extends HostileEntity {
             // бомба
             if (d >= 7.0 && d <= 18.0 && this.bombCd <= 0 && see) {
                 m.faceTo(target.getX(), target.getZ());
+                this.aimEntity = target;
+                this.aim = target.getPos();
                 this.begin(THROW);
                 return;
             }
@@ -712,6 +789,89 @@ public class SapperEntity extends HostileEntity {
                 m.getNavigation().stop();
                 m.getLookControl().lookAt(target, 30f, 30f);
             }
+        }
+
+        /**
+         * Режим «ломать постройки»: идёт к ближайшему не природному блоку; блок рядом — вешает заряд,
+         * заряд на перезарядке — закидывает бомбами с 4–16 блоков; далеко или не пройти — подкапывается.
+         */
+        private void buildTick() {
+            SapperEntity m = this.mob;
+            BlockPos b = m.build;
+            Vec3d bc = Vec3d.ofCenter(b);
+            double d = Math.sqrt(m.squaredDistanceTo(bc.x, m.getY(), bc.z));
+            m.getLookControl().lookAt(bc.x, bc.y, bc.z);
+            if (this.fleeTicks > 0) {
+                this.fleeTicks--;
+                if (--this.pathDelay <= 0) {
+                    this.pathDelay = 10;
+                    Vec3d away = NoPenaltyTargeting.findFrom(m, 10, 5, this.fleeFrom != null ? this.fleeFrom : bc);
+                    if (away != null) {
+                        m.getNavigation().startMovingTo(away.x, away.y, away.z, 1.4);
+                    }
+                }
+                return;
+            }
+            if (--this.walledCheck <= 0) {
+                this.walledCheck = 40;
+                Path p = m.getNavigation().findPathTo(b, 1);
+                this.walled = p == null || !p.reachesTarget();
+            }
+            if (this.plantCd <= 0 && this.findBuildWall(b)) {
+                m.faceTo(this.wall.getX() + 0.5, this.wall.getZ() + 0.5);
+                this.begin(PLANT);
+                return;
+            }
+            if (this.bombCd <= 0 && this.plantCd > 0 && d >= 4.0 && d <= 16.0) {
+                m.faceTo(bc.x, bc.z);
+                this.aimEntity = null;
+                this.aim = bc.add(0, 0.5, 0);
+                this.begin(THROW);
+                return;
+            }
+            if ((d > 20.0 || this.walled && d > 3.0) && m.age % 10 == 0 && this.canDigDown()) {
+                this.startDigDown();
+                return;
+            }
+            if (d > 2.0) {
+                if (--this.pathDelay <= 0) {
+                    this.pathDelay = 10;
+                    m.getNavigation().startMovingTo(bc.x, b.getY(), bc.z, 1.0);
+                }
+            } else {
+                m.getNavigation().stop();
+            }
+        }
+
+        /** Куда повесить заряд: сам блок постройки, если он рядом, иначе постройка прямо перед ним по пути. */
+        private boolean findBuildWall(BlockPos b) {
+            SapperEntity m = this.mob;
+            World w = m.getWorld();
+            int fy = m.getBlockY();
+            if (b.getY() >= fy - 1 && b.getY() <= fy + 2 && m.squaredDistanceTo(Vec3d.ofCenter(b)) < 2.6 * 2.6) {
+                Vec3d to = m.getPos().subtract(Vec3d.ofCenter(b));
+                Direction face = Direction.getFacing(to.x, 0, to.z);
+                if (passable(w, b.offset(face))) {
+                    this.wall = b;
+                    this.wallFace = face;
+                    return true;
+                }
+            }
+            Vec3d bc = Vec3d.ofCenter(b);
+            Vec3d to = new Vec3d(bc.x - m.getX(), 0, bc.z - m.getZ());
+            if (to.lengthSquared() < 1e-4) {
+                return false;
+            }
+            Direction dir = Direction.getFacing(to.x, 0, to.z);
+            for (int dy = 0; dy <= 1; dy++) {
+                BlockPos p = m.getBlockPos().offset(dir).up(dy);
+                if (BuiltBlocks.artificial(w.getBlockState(p)) && SapperBlast.breakable(w, p, MAX_DIG_HARDNESS)) {
+                    this.wall = p.toImmutable();
+                    this.wallFace = dir.getOpposite();
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void flee(LivingEntity target) {
@@ -859,17 +1019,23 @@ public class SapperEntity extends HostileEntity {
                     }
                 }
                 case THROW -> {
-                    if (target != null && t < THROW_RELEASE) {
-                        m.getLookControl().lookAt(target, 30f, 30f);
+                    LivingEntity ae = valid(this.aimEntity) ? this.aimEntity : null;
+                    Vec3d at = ae != null ? ae.getPos() : this.aim;
+                    if (at != null && t < THROW_RELEASE) {
+                        m.getLookControl().lookAt(at.x, at.y + 0.5, at.z);
                         if (t > THROW_RELEASE - 4) {
-                            m.faceTo(target.getX(), target.getZ());
+                            m.faceTo(at.x, at.z);
                         }
                     }
                     if (t == THROW_LIGHT) {
                         m.playSound(ModSounds.SAPPER_LIGHT, 0.8f, 1.0f);
                     }
-                    if (t == THROW_RELEASE && target != null) {
-                        m.throwBomb(target);
+                    if (t == THROW_RELEASE && at != null) {
+                        if (ae != null) {
+                            m.throwBomb(ae);
+                        } else {
+                            m.throwAt(at);
+                        }
                         this.bombCd = BOMB_CD;
                     }
                     if (t >= THROW_TICKS) {
@@ -906,7 +1072,8 @@ public class SapperEntity extends HostileEntity {
                         this.finish(0);
                         if (this.griefing() && this.canDigDown()) {
                             this.startDigDown();
-                        } else if (target != null) {
+                        } else {
+                            this.fleeFrom = this.wall != null ? Vec3d.ofCenter(this.wall) : m.getPos();
                             this.fleeTicks = 50;
                         }
                     }
@@ -1006,7 +1173,8 @@ public class SapperEntity extends HostileEntity {
             }
             // сидит в засаде
             if (m.isHidden()) {
-                if (--this.hideTimer <= 0 || target != null && this.bombCd <= 20 && m.squaredDistanceTo(target) > 36) {
+                if (--this.hideTimer <= 0 || target != null && this.bombCd <= 20 && m.squaredDistanceTo(target) > 36
+                        || target == null && m.build != null && this.hideTimer > 40) {
                     m.dataTracker.set(HIDDEN, false);
                     this.goal = null;
                 } else {
@@ -1160,6 +1328,10 @@ public class SapperEntity extends HostileEntity {
 
         private void chooseGoal(LivingEntity target) {
             SapperEntity m = this.mob;
+            if (target == null && m.build != null) {
+                this.planEmergeNear(m.build);
+                return;
+            }
             if (target == null) {
                 if (this.noTarget > 600 && this.griefing()) {
                     this.emergeHere(false);         // долго никого — выходит наверх
@@ -1197,6 +1369,17 @@ public class SapperEntity extends HostileEntity {
                 this.goal = new BlockPos(MathHelper.floor(target.getX() + Math.cos(ang) * r), this.cell.getY(),
                         MathHelper.floor(target.getZ() + Math.sin(ang) * r));
             }
+            this.goalEmerge = true;
+            this.retries = 0;
+        }
+
+        /** Вынырнуть в 2–3 блоках от постройки, со своей стороны. */
+        private void planEmergeNear(BlockPos b) {
+            SapperEntity m = this.mob;
+            double r = 2.0 + m.random.nextDouble();
+            double ang = Math.atan2(m.getZ() - (b.getZ() + 0.5), m.getX() - (b.getX() + 0.5)) + (m.random.nextDouble() - 0.5);
+            this.goal = new BlockPos(MathHelper.floor(b.getX() + 0.5 + Math.cos(ang) * r), this.cell.getY(),
+                    MathHelper.floor(b.getZ() + 0.5 + Math.sin(ang) * r));
             this.goalEmerge = true;
             this.retries = 0;
         }
@@ -1269,7 +1452,8 @@ public class SapperEntity extends HostileEntity {
             for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 BlockPos s = hole.offset(d);
                 if (passable(w, s) && passable(w, s.up()) && solidFloor(w, s.down())) {
-                    double score = t != null ? Vec3d.ofCenter(s).squaredDistanceTo(t.getPos()) : m.random.nextDouble();
+                    double score = t != null ? Vec3d.ofCenter(s).squaredDistanceTo(t.getPos())
+                            : m.build != null ? Vec3d.ofCenter(s).squaredDistanceTo(Vec3d.ofCenter(m.build)) : m.random.nextDouble();
                     if (score < best) {
                         best = score;
                         side = d;
@@ -1289,6 +1473,8 @@ public class SapperEntity extends HostileEntity {
             m.rememberLair(hole);
             if (t != null) {
                 m.faceTo(t.getX(), t.getZ());
+            } else if (m.build != null) {
+                m.faceTo(m.build.getX() + 0.5, m.build.getZ() + 0.5);
             }
             if (w instanceof ServerWorld s) {
                 BlockState ground = w.getBlockState(hole.offset(side != null ? side : Direction.NORTH).down());
