@@ -541,6 +541,16 @@ public abstract class SettlerEntity extends PathAwareEntity {
     @Override
     public void tick() {
         super.tick();
+        // Утро или житель встал по делу (сохранился мир во сне, его позвали, на него напали) — просыпается.
+        // Без этого после загрузки мира он мог ходить «лёжа».
+        if (!this.getWorld().isClient) {
+            if (this.isSleeping() && (!sleepGoalActive || !isNightTime())) {
+                this.wakeUp();
+            }
+            if (!this.isSleeping() && this.getPose() == net.minecraft.entity.EntityPose.SLEEPING) {
+                this.setPose(net.minecraft.entity.EntityPose.STANDING);
+            }
+        }
         // Если житель появился из яйца — его дом там, где он появился
         if (!this.getWorld().isClient && this.homePos == null) {
             setHome(this.getBlockPos());
@@ -917,6 +927,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
     @Nullable
     private BlockPos bedPos;
     private int bedSearchCooldown;
+    /** Цель «спать» сейчас работает (иначе житель не должен лежать). */
+    private boolean sleepGoalActive;
 
     /** Изголовье свободной кровати возле дома (ищется раз в 10 секунд, пока не найдена). */
     @Nullable
@@ -986,10 +998,12 @@ public abstract class SettlerEntity extends PathAwareEntity {
         @Override
         public void start() {
             walkTicks = 0;
+            settler.sleepGoalActive = true;
         }
 
         @Override
         public void stop() {
+            settler.sleepGoalActive = false;
             if (settler.isSleeping()) {
                 settler.wakeUp();
             }
