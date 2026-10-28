@@ -344,5 +344,8 @@
   "item.basedefense.bloodthirster_sword.tip3": "Slows enemies, +2 ❤ per mob hit",
   "subtitles.basedefense.bloodthirster_sword.charge": "Bloodthirster's Sword raised",
   "subtitles.basedefense.bloodthirster_sword.ready": "Bloodthirster's Sword thirsts",
-  "subtitles.basedefense.bloodthirster_sword.cleave": "Blood cleave"
+  "subtitles.basedefense.bloodthirster_sword.cleave": "Blood cleave",
+  "item.basedefense.katana": "Katana",
+  "item.basedefense.katana.tip1": "3-hit combo: side, other side, overhead",
+  "item.basedefense.katana.tip2": "Each hit dashes forward, 5 damage; 1 s rest after the combo"
 }

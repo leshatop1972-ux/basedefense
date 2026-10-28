@@ -139,6 +139,12 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.BloodSwordRender.LAYER,
                 () -> BedrockModelLoader.load("blood_greatsword"));
         com.lesha_top1972.basedefense.client.weapon.BloodSwordClient.init();
+        // катана: модель и ножны, серия из трёх ударов
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.KatanaRender.LAYER,
+                () -> BedrockModelLoader.load("katana"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.KatanaRender.SAYA,
+                () -> BedrockModelLoader.load("katana_saya"));
+        com.lesha_top1972.basedefense.client.weapon.KatanaClient.init();
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

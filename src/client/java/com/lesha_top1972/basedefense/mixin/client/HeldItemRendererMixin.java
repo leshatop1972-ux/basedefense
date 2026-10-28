@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordRender;
+import com.lesha_top1972.basedefense.client.weapon.KatanaRender;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.HeldItemRenderer;
@@ -26,7 +27,8 @@ public abstract class HeldItemRendererMixin {
                                                    Hand hand, float swingProgress, ItemStack item, float equipProgress,
                                                    MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                                    int light, CallbackInfo ci) {
-        if (BloodSwordRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)) {
+        if (KatanaRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)
+                || BloodSwordRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)) {
             ci.cancel();
         }
     }
@@ -36,7 +38,8 @@ public abstract class HeldItemRendererMixin {
     private void basedefense$bloodSwordInHand(LivingEntity entity, ItemStack stack, ModelTransformationMode mode,
                                               boolean leftHanded, MatrixStack matrices,
                                               VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        if (BloodSwordRender.renderRest(entity, stack, mode, leftHanded, matrices, vertexConsumers, light)) {
+        if (KatanaRender.renderRest(stack, mode, leftHanded, matrices, vertexConsumers, light)
+                || BloodSwordRender.renderRest(entity, stack, mode, leftHanded, matrices, vertexConsumers, light)) {
             ci.cancel();
         }
     }

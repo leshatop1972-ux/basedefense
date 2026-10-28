@@ -344,5 +344,8 @@
   "item.basedefense.bloodthirster_sword.tip3": "Замедляет врагов, за каждого моба +2 ❤",
   "subtitles.basedefense.bloodthirster_sword.charge": "Меч кровожада: замах",
   "subtitles.basedefense.bloodthirster_sword.ready": "Меч кровожада жаждет крови",
-  "subtitles.basedefense.bloodthirster_sword.cleave": "Кровавый разруб"
+  "subtitles.basedefense.bloodthirster_sword.cleave": "Кровавый разруб",
+  "item.basedefense.katana": "Катана",
+  "item.basedefense.katana.tip1": "Серия из 3 ударов: сбоку, с другой стороны, сверху",
+  "item.basedefense.katana.tip2": "Каждый удар — рывок вперёд, урон 5; после серии отдых 1 с"
 }

@@ -25,6 +25,9 @@ public final class ModItems {
     public static final Item BLOODTHIRSTER_SWORD = register("bloodthirster_sword",
             new BloodthirsterSwordItem(new Item.Settings().rarity(Rarity.EPIC)));
 
+    /** Катана: серия из трёх ударов с рывком (урон 5 каждый), в покое — в ножнах у бедра. */
+    public static final Item KATANA = register("katana", new KatanaItem(new Item.Settings()));
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -114,7 +117,10 @@ public final class ModItems {
     public static void init() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BUILDING_TABLET));
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(BLOODTHIRSTER_SWORD));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
+            entries.add(BLOODTHIRSTER_SWORD);
+            entries.add(KATANA);
+        });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);
             entries.add(FARMER_SPAWN_EGG);

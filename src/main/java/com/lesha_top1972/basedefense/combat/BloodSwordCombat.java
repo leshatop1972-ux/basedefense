@@ -240,7 +240,7 @@ public final class BloodSwordCombat {
     }
 
     /** Кого удар не задевает: игроков (игра с друзьями), жителей, своих питомцев, стойки для брони. */
-    private static boolean excluded(PlayerEntity player, LivingEntity e) {
+    static boolean excluded(PlayerEntity player, LivingEntity e) {
         if (e instanceof PlayerEntity || e instanceof SettlerEntity || e instanceof ArmorStandEntity) {
             return true;
         }

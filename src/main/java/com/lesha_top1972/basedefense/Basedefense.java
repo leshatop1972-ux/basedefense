@@ -33,6 +33,7 @@ public class Basedefense implements ModInitializer {
         SettlementManager.init();
         SettlerThreats.init();
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
+        com.lesha_top1972.basedefense.combat.KatanaCombat.init();   // катана: серия из трёх ударов
         // «Шум» игроков в бою с Набатом
         ServerTickEvents.END_SERVER_TICK.register(NabatNoise::tick);
     }

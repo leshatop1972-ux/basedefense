@@ -210,7 +210,7 @@ public final class BloodSwordRender {
     }
 
     /** Рука от 1‑го лица: середина кулака — в hand, рука тянется против dir (к плечу). */
-    private static void renderArm(MatrixStack matrices, VertexConsumerProvider vcp, int light, Identifier skin,
+    static void renderArm(MatrixStack matrices, VertexConsumerProvider vcp, int light, Identifier skin,
                                   ModelPart arm, ModelPart sleeve, boolean sleeveVisible, Vector3f hand, Vector3f dir,
                                   float hx) {
         Matrix3f rot = BloodSwordPose.basis(dir, new Vector3f(-1, 0, 0), new Matrix3f());

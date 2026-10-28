@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordRender;
+import com.lesha_top1972.basedefense.client.weapon.KatanaRender;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.FeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
@@ -22,6 +23,10 @@ public abstract class HeldItemFeatureRendererMixin {
     private void basedefense$bloodSword(LivingEntity entity, ItemStack stack, ModelTransformationMode mode, Arm arm,
                                         MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
                                         CallbackInfo ci) {
+        if (KatanaRender.renderThirdPerson(entity, stack, arm, matrices, vertexConsumers, light)) {
+            ci.cancel();
+            return;
+        }
         Object model = ((FeatureRenderer<?, ?>) (Object) this).getContextModel();
         if (BloodSwordRender.renderThirdPerson(model, entity, stack, arm, matrices, vertexConsumers, light)) {
             ci.cancel();
