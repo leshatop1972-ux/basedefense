@@ -21,19 +21,20 @@ public enum HouseType {
     LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false),
     TOWN_SQUARE("town_square", HousePlans::townSquare, false);
 
-    private static final int DESIGNS = HouseDesign.values().length;
+    // Размер массивов — HouseDesign.values().length прямо в полях: в enum нельзя ссылаться
+    // на свою статическую константу из инициализаторов полей.
 
     private final String id;
     private final Function<HouseDesign, StructurePlan> factory;
     private final boolean selfBuilt;
 
     // Чертёж, шаги постройки и список материалов считаются один раз на каждый дизайн (при первом обращении)
-    private final StructurePlan[] plans = new StructurePlan[DESIGNS];
+    private final StructurePlan[] plans = new StructurePlan[HouseDesign.values().length];
     @SuppressWarnings("unchecked")
-    private final List<List<StructurePlan.Placement>>[] steps = new List[DESIGNS];
+    private final List<List<StructurePlan.Placement>>[] steps = new List[HouseDesign.values().length];
     @SuppressWarnings("unchecked")
-    private final Map<net.minecraft.item.Item, Integer>[] requirements = new Map[DESIGNS];
-    private final int[] costlyBlocks = new int[DESIGNS];
+    private final Map<net.minecraft.item.Item, Integer>[] requirements = new Map[HouseDesign.values().length];
+    private final int[] costlyBlocks = new int[HouseDesign.values().length];
 
     HouseType(String id, Function<HouseDesign, StructurePlan> factory, boolean selfBuilt) {
         this.id = id;
