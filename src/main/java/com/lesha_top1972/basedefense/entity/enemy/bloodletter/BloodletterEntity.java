@@ -71,7 +71,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
     static final int LAUNCH_GAP = 14;
     static final int PRIME = 6;
     public static final int BARRAGE_TICKS = FIRST_LAUNCH + LAUNCH_GAP * (SPEARS - 1) + 16;
-    static final int BARRAGE_CD = 220;
+    static final int BARRAGE_CD = 200;   // 10 с
     static final double BARRAGE_RANGE = 20.0;
     static final float HIT_STILL = 0.8f;
     static final float HIT_RUNNING = 0.2f;
@@ -84,7 +84,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
     public static final double TRAIL_RADIUS = 3.0;
     static final double WHIRL_RADIUS = 4.0;
     static final float WHIRL_DMG = 4f;
-    static final int WHIRL_CD = 200;
+    static final int WHIRL_CD = 180;     // 9 с
     static final int SLOW_TICKS = 80;
 
     private static final TrackedData<Vector3f> AIM = DataTracker.registerData(BloodletterEntity.class,
