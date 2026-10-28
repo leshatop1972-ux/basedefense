@@ -38,6 +38,21 @@ public final class ModItems {
             new com.lesha_top1972.basedefense.artifact.ArtifactItem(new Item.Settings().rarity(Rarity.RARE),
                     "item.basedefense.leap_amulet.tip"));
 
+    /** Амулеты вампиризма I–III: лечение за убийство (4/6/8), у III ещё 1 HP за попадание. Не складываются. */
+    public static final Item VAMPIRE_AMULET_1 = amulet("vampire_amulet_1", Rarity.UNCOMMON);
+    public static final Item VAMPIRE_AMULET_2 = amulet("vampire_amulet_2", Rarity.RARE);
+    public static final Item VAMPIRE_AMULET_3 = amulet("vampire_amulet_3", Rarity.EPIC);
+
+    /** Амулеты скорости I–III: +8/+16/+25% к скорости. Не складываются. */
+    public static final Item SPEED_AMULET_1 = amulet("speed_amulet_1", Rarity.UNCOMMON);
+    public static final Item SPEED_AMULET_2 = amulet("speed_amulet_2", Rarity.RARE);
+    public static final Item SPEED_AMULET_3 = amulet("speed_amulet_3", Rarity.EPIC);
+
+    /** Амулеты жизни I–III: +5/+9/+13 HP. Складываются. */
+    public static final Item LIFE_AMULET_1 = amulet("life_amulet_1", Rarity.UNCOMMON);
+    public static final Item LIFE_AMULET_2 = amulet("life_amulet_2", Rarity.RARE);
+    public static final Item LIFE_AMULET_3 = amulet("life_amulet_3", Rarity.EPIC);
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -120,6 +135,11 @@ public final class ModItems {
     private ModItems() {
     }
 
+    private static Item amulet(String name, Rarity rarity) {
+        return register(name, new com.lesha_top1972.basedefense.artifact.ArtifactItem(
+                new Item.Settings().rarity(rarity), "item.basedefense." + name + ".tip"));
+    }
+
     private static Item register(String name, Item item) {
         return Registry.register(Registries.ITEM, new Identifier(Basedefense.MOD_ID, name), item);
     }
@@ -132,6 +152,15 @@ public final class ModItems {
             entries.add(KATANA);
             entries.add(DASH_AMULET);
             entries.add(LEAP_AMULET);
+            entries.add(VAMPIRE_AMULET_1);
+            entries.add(VAMPIRE_AMULET_2);
+            entries.add(VAMPIRE_AMULET_3);
+            entries.add(SPEED_AMULET_1);
+            entries.add(SPEED_AMULET_2);
+            entries.add(SPEED_AMULET_3);
+            entries.add(LIFE_AMULET_1);
+            entries.add(LIFE_AMULET_2);
+            entries.add(LIFE_AMULET_3);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);

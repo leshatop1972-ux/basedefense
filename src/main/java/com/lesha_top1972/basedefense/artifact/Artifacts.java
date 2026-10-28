@@ -8,6 +8,13 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
@@ -32,6 +39,11 @@ import java.util.UUID;
  * </ul>
  *   <li>Амулет взлёта — клавиша Y: подброс вверх на 3.5 блока, до 3 раз подряд (и в воздухе), потом
  *       перезарядка 6 с; после взлёта до приземления урона от падения нет.</li>
+ * Пассивные амулеты (проверяются раз в 10 тиков, см. {@link #updatePassives}):
+ *   <li>Вампиризм I/II/III — убийство моба лечит на 4/6/8 HP, у III ещё 1 HP за каждое попадание;</li>
+ *   <li>Скорость I/II/III — +8/+16/+25% к скорости;</li>
+ *   <li>Жизнь I/II/III — +5/+9/+13 к максимальному здоровью.</li>
+ * Вампиризм и скорость не складываются (действует самый сильный надетый), жизнь складывается.
  * Артефакты не выпадают при смерти — остаются в слотах.
  */
 public final class Artifacts {
@@ -56,6 +68,12 @@ public final class Artifacts {
     private static final Map<UUID, int[]> LEAP_USED = new HashMap<>();
     /** После взлёта до приземления урона от падения нет. */
     private static final Set<UUID> AIRBORNE = new HashSet<>();
+
+    private static final UUID SPEED_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e01");
+    private static final UUID LIFE_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e02");
+    private static final float[] VAMP_KILL = {0f, 4f, 6f, 8f};
+    private static final float VAMP_HIT = 1f;
+    private static final double[] SPEED = {0, 0.08, 0.16, 0.25};
 
     private Artifacts() {
     }
@@ -90,6 +108,13 @@ public final class Artifacts {
         });
         ServerPlayNetworking.registerGlobalReceiver(LEAP_C2S, (server, player, handler, buf, sender) ->
                 server.execute(() -> leap(player, server.getTicks())));
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 10 == 0) {
+                for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                    updatePassives(p);
+                }
+            }
+        });
         ServerTickEvents.END_SERVER_TICK.register(server -> AIRBORNE.removeIf(id -> {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(id);
             if (p == null || p.isOnGround() || p.isTouchingWater() || p.isClimbing()) {
@@ -102,6 +127,77 @@ public final class Artifacts {
             LEAP_USED.remove(handler.player.getUuid());
             AIRBORNE.remove(handler.player.getUuid());
         });
+    }
+
+    /** Самый сильный надетый амулет из ряда I/II/III: 0 — нет ни одного. */
+    private static int level(PlayerEntity p, Item i1, Item i2, Item i3) {
+        return has(p, i3) ? 3 : has(p, i2) ? 2 : has(p, i1) ? 1 : 0;
+    }
+
+    /** Скорость (самый сильный) и здоровье (сумма всех амулетов жизни) — модификаторами атрибутов. */
+    private static void updatePassives(ServerPlayerEntity p) {
+        SimpleInventory inv = of(p);
+        double life = 0;
+        for (int i = 0; i < inv.size(); i++) {
+            Item it = inv.getStack(i).getItem();
+            if (it == ModItems.LIFE_AMULET_1) {
+                life += 5;
+            } else if (it == ModItems.LIFE_AMULET_2) {
+                life += 9;
+            } else if (it == ModItems.LIFE_AMULET_3) {
+                life += 13;
+            }
+        }
+        double speed = SPEED[level(p, ModItems.SPEED_AMULET_1, ModItems.SPEED_AMULET_2, ModItems.SPEED_AMULET_3)];
+        setModifier(p, EntityAttributes.GENERIC_MOVEMENT_SPEED, SPEED_ID, "basedefense speed amulet", speed,
+                EntityAttributeModifier.Operation.MULTIPLY_BASE);
+        setModifier(p, EntityAttributes.GENERIC_MAX_HEALTH, LIFE_ID, "basedefense life amulet", life,
+                EntityAttributeModifier.Operation.ADDITION);
+        if (p.getHealth() > p.getMaxHealth()) {
+            p.setHealth(p.getMaxHealth());
+        }
+    }
+
+    private static void setModifier(PlayerEntity p, EntityAttribute attr, UUID id, String name, double value,
+                                    EntityAttributeModifier.Operation op) {
+        EntityAttributeInstance inst = p.getAttributeInstance(attr);
+        if (inst == null) {
+            return;
+        }
+        EntityAttributeModifier cur = inst.getModifier(id);
+        if (cur != null && cur.getValue() == value && cur.getOperation() == op) {
+            return;
+        }
+        if (cur != null) {
+            inst.removeModifier(id);
+        }
+        if (value != 0) {
+            // постоянный — сохраняется с игроком, чтобы при входе здоровье сверх 20 не обрезалось
+            inst.addPersistentModifier(new EntityAttributeModifier(id, name, value, op));
+        }
+    }
+
+    /** Вызывается после урона по существу (LivingEntityCombatMixin): вампиризм атакующего игрока. */
+    public static void onDamaged(LivingEntity target, DamageSource source, float dealt) {
+        if (dealt <= 0 || target instanceof PlayerEntity || target instanceof ArmorStandEntity
+                || !(source.getAttacker() instanceof ServerPlayerEntity)) {
+            return;
+        }
+        ServerPlayerEntity p = (ServerPlayerEntity) source.getAttacker();
+        if (!p.isAlive()) {
+            return;
+        }
+        int lvl = level(p, ModItems.VAMPIRE_AMULET_1, ModItems.VAMPIRE_AMULET_2, ModItems.VAMPIRE_AMULET_3);
+        if (lvl == 0) {
+            return;
+        }
+        float heal = lvl == 3 ? VAMP_HIT : 0f;
+        if (target.isDead()) {
+            heal += VAMP_KILL[lvl];
+        }
+        if (heal > 0) {
+            p.heal(heal);
+        }
     }
 
     private static void leap(ServerPlayerEntity player, int now) {
