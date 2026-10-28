@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.entity.enemy.nabat;
 
+import com.lesha_top1972.basedefense.client.entity.bedrock.AssetGroups;
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.entity.enemy.nabat.NabatSpearEntity;
 import net.minecraft.client.model.ModelPart;

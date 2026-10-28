@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.entity.enemy.bloodthirster;
 
+import com.lesha_top1972.basedefense.client.entity.bedrock.AssetGroups;
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.client.entity.bedrock.WeaponFeature;
 import com.lesha_top1972.basedefense.entity.enemy.bloodthirster.BloodthirsterEntity;
