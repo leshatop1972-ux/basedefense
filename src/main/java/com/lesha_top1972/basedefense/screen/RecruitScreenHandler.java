@@ -125,7 +125,8 @@ public class RecruitScreenHandler extends ScreenHandler {
     private static final class ServerProps implements PropertyDelegate {
         private final PlayerEntity player;
         private final ScreenHandlerContext context;
-        private long lastCount = Long.MIN_VALUE;
+        private long lastCount;
+        private boolean counted;
         private int guards;
         private int beds;
 
@@ -136,9 +137,11 @@ public class RecruitScreenHandler extends ScreenHandler {
 
         void refresh(boolean force) {
             long now = player.getWorld().getTime();
-            if (!force && now - lastCount < 20) {
+            // Раньше здесь было переполнение (now − Long.MIN_VALUE < 0) и счёт не делался никогда
+            if (!force && counted && Math.abs(now - lastCount) < 20) {
                 return;
             }
+            counted = true;
             lastCount = now;
             context.run((world, pos) -> {
                 guards = countGuards(world, pos);
@@ -220,6 +223,7 @@ public class RecruitScreenHandler extends ScreenHandler {
         guard.setHome(office);
         guard.setBarracks(office);
         guard.setPersistent();
+        guard.equipDefaultGear();
         world.spawnEntity(guard);
 
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,

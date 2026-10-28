@@ -25,7 +25,7 @@ import static com.lesha_top1972.basedefense.client.screen.UiKit.*;
 public class RecruitScreen extends HandledScreen<RecruitScreenHandler> {
 
     private static final int W = 248;
-    private static final int H = 206;
+    private static final int H = 218;
     private static final int HEADER_H = 22;
     private static final int BTN_W = 120;
     private static final int BTN_H = 20;
@@ -89,18 +89,18 @@ public class RecruitScreen extends HandledScreen<RecruitScreenHandler> {
         int cl = left + 10;
         int ct = top + HEADER_H + 10;
         int cr = right - 10;
-        int cb = ct + 62;
+        int cb = ct + 74;
         card(c, cl, ct, cr, cb, CARD, false);
         int pl = cl + 6;
         int pt = ct + 6;
-        inset(c, pl, pt, pl + 48, pt + 50, CONTENT);
+        inset(c, pl, pt, pl + 48, pt + 62, CONTENT);
         c.getMatrices().push();
-        c.getMatrices().translate(pl + 8, pt + 9, 0);
+        c.getMatrices().translate(pl + 8, pt + 15, 0);
         c.getMatrices().scale(2.0f, 2.0f, 1.0f);
         c.drawItem(SHIELD, 0, 0);
         c.getMatrices().pop();
         c.getMatrices().push();
-        c.getMatrices().translate(pl + 22, pt + 22, 100);
+        c.getMatrices().translate(pl + 22, pt + 28, 100);
         c.getMatrices().scale(1.5f, 1.5f, 1.0f);
         c.drawItem(SWORD, 0, 0);
         c.getMatrices().pop();
@@ -109,9 +109,9 @@ public class RecruitScreen extends HandledScreen<RecruitScreenHandler> {
         embossed(c, this.textRenderer, Text.translatable("entity.basedefense.guard"), tx, ct + 7, TEXT_DARK);
         List<OrderedText> desc = this.textRenderer.wrapLines(
                 Text.translatable("screen.basedefense.recruit.desc"), cr - tx - 6);
-        int ly = ct + 20;
+        int ly = ct + 19;
         for (OrderedText line : desc) {
-            if (ly > cb - 10) {
+            if (ly > cb - 9) {
                 break;
             }
             c.drawText(this.textRenderer, line, tx, ly, TEXT_BODY, false);

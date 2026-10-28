@@ -29,6 +29,14 @@ public class GuardEntity extends SettlerEntity {
         return new ItemStack(Items.IRON_SWORD);
     }
 
+    /** Сразу при вербовке — меч в руку (иначе он появлялся бы только на следующем тике). */
+    public void equipDefaultGear() {
+        if (this.getMainHandStack().isEmpty()) {
+            this.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, getDefaultTool());
+            this.setEquipmentDropChance(net.minecraft.entity.EquipmentSlot.MAINHAND, 0.0f);
+        }
+    }
+
     public void setBarracks(@Nullable BlockPos office) {
         this.barracks = office == null ? null : office.toImmutable();
     }

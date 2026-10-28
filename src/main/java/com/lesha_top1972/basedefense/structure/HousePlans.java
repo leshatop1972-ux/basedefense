@@ -373,8 +373,6 @@ public final class HousePlans {
         p.set(o.getX(), o.getY(), o.getZ(), ModBlocks.RECRUITMENT_OFFICE.getDefaultState()
                 .with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
         p.set(o.getX(), o.getY(), o.getZ() + 1, h.stairs(Direction.NORTH));
-        // Красная дорожка от двери к столу
-        carpet(p, h.doorX, 1, h.doorX, o.getZ() - 1, Blocks.RED_CARPET);
         // Оружейная: двойной сундук и точило у задней стены
         doubleChest(p, 2, 1, 8, 1, 1, 8, Direction.SOUTH);
         p.set(9, 1, 8, Blocks.GRINDSTONE.getDefaultState()
