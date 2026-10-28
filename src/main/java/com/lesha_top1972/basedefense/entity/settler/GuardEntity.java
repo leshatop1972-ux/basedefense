@@ -82,6 +82,13 @@ public class GuardEntity extends SettlerEntity {
     public static final double BOW_RANGE = 15.0;
     /** Шанс попадания лучника. */
     public static final float BOW_HIT_CHANCE = 0.5f;
+    /** Скорости (множитель к атрибуту 0.26): погоня, отход, бег на точку, прогулка. */
+    public static final double SPEED_CHASE = 1.0;
+    public static final double SPEED_RETREAT = 1.05;
+    public static final double SPEED_TO_POINT = 0.95;
+    public static final double SPEED_WALK = 0.6;
+    /** Перед едой отбегает от врага не ближе стольких блоков (или пока не пройдёт 3 с). */
+    public static final double EAT_SAFE_DISTANCE = 9.0;
 
     // ---------- Действия (номер для анимации) ----------
     public static final int ACT_NONE = 0;
@@ -167,6 +174,7 @@ public class GuardEntity extends SettlerEntity {
     public static DefaultAttributeContainer.Builder createGuardAttributes() {
         return SettlerEntity.createSettlerAttributes()
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 30.0)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.26)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 1.0);
     }
 
@@ -438,6 +446,10 @@ public class GuardEntity extends SettlerEntity {
                 if (actionTick == hit) {
                     this.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, sword ? 1.15f : 0.8f);
                     if (target != null && target.isAlive() && inReach(target, 0.9) && this.tryAttack(target)) {
+                        // «Кровотёк» на стражнике срабатывает, когда он бьёт (как у игрока)
+                        if (this.hasStatusEffect(com.lesha_top1972.basedefense.effect.ModEffects.BLEED)) {
+                            com.lesha_top1972.basedefense.effect.ModEffects.triggerBleed(this);
+                        }
                         this.playSound(sword ? SoundEvents.ENTITY_PLAYER_ATTACK_STRONG
                                 : SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 0.8f, 1.0f);
                     }
@@ -675,6 +687,7 @@ public class GuardEntity extends SettlerEntity {
         private int waitTicks;
         private int walkTicks;
         private int repathCooldown;
+        private int retreatTicks;
 
         GuardBrain(GuardEntity guard) {
             this.guard = guard;
@@ -732,16 +745,38 @@ public class GuardEntity extends SettlerEntity {
             }
             g.dataTracker.set(COMBAT, g.enemy != null && weapon != Weapon.NONE);
 
+            // Заморожен или оглушён — не бьёт и не стреляет (начатый удар/выстрел срывается)
+            boolean disabled = com.lesha_top1972.basedefense.effect.ModEffects.isFrozen(g)
+                    || com.lesha_top1972.basedefense.effect.ModEffects.isStunned(g);
+            if (disabled && g.isActing() && g.actionType != ACT_EAT) {
+                g.endAction();
+            }
+
             if (g.isActing()) {
                 g.tickAction();
                 return;
             }
 
-            // Ранен — ест (если есть еда)
+            // Ранен — сначала отбегает от врага, потом ест (если есть еда)
             if (g.getHealth() < g.getMaxHealth() * 0.6f && g.eatCooldown <= 0 && g.findFood() >= 0) {
                 g.mode = MODE_EAT;
+                if (g.enemy != null && g.distanceTo(g.enemy) < EAT_SAFE_DISTANCE && retreatTicks < 60) {
+                    retreatTicks++;
+                    Vec3d away = g.getPos().subtract(g.enemy.getPos()).multiply(1, 0, 1);
+                    if (away.lengthSquared() < 0.01) {
+                        away = new Vec3d(1, 0, 0);
+                    }
+                    moveTo(leash(g.getPos().add(away.normalize().multiply(8))), SPEED_RETREAT);
+                    return;
+                }
+                retreatTicks = 0;
                 g.getNavigation().stop();
                 g.startAction(ACT_EAT);
+                return;
+            }
+            retreatTicks = 0;
+            if (disabled) {
+                g.getNavigation().stop();
                 return;
             }
 
@@ -812,7 +847,7 @@ public class GuardEntity extends SettlerEntity {
                 guard.faceTowards(target, 20.0f);
                 return;
             }
-            moveTo(want, 1.25);
+            moveTo(want, SPEED_CHASE);
         }
 
         private void archer() {
@@ -824,11 +859,11 @@ public class GuardEntity extends SettlerEntity {
             Vec3d away = guard.getPos().subtract(target.getPos()).multiply(1, 0, 1);
             if (dist < BOW_RANGE - 6 && away.lengthSquared() > 0.01) {
                 // Слишком близко — отходит назад
-                moveTo(leash(guard.getPos().add(away.normalize().multiply(5))), 1.2);
+                moveTo(leash(guard.getPos().add(away.normalize().multiply(5))), SPEED_RETREAT);
             } else if (dist > BOW_RANGE + 2 || !see) {
                 Vec3d to = leash(target.getPos());
                 if (guard.getPos().squaredDistanceTo(to) > 2.0) {
-                    moveTo(to, 1.1);
+                    moveTo(to, SPEED_CHASE);
                 } else {
                     guard.getNavigation().stop();
                 }
@@ -853,7 +888,7 @@ public class GuardEntity extends SettlerEntity {
             if (away.lengthSquared() < 0.01) {
                 away = new Vec3d(1, 0, 0);
             }
-            moveTo(guard.getPos().add(away.normalize().multiply(8)), 1.3);
+            moveTo(leash(guard.getPos().add(away.normalize().multiply(8))), SPEED_RETREAT);
         }
 
         private void holdPoint() {
@@ -861,7 +896,7 @@ public class GuardEntity extends SettlerEntity {
             Vec3d c = Vec3d.ofBottomCenter(p);
             double d2 = guard.getPos().squaredDistanceTo(c.x, guard.getY(), c.z);
             if (d2 > 3.5 * 3.5 && walkTarget == null) {
-                moveTo(c, 1.15);   // бежит на точку
+                moveTo(c, SPEED_TO_POINT);   // бежит на точку
                 return;
             }
             // На точке: изредка переступает в пределах 3 блоков
@@ -873,7 +908,7 @@ public class GuardEntity extends SettlerEntity {
                 }
                 return;
             }
-            walk(0.6);
+            walk(SPEED_WALK * 0.9);
         }
 
         private void patrol() {
@@ -888,7 +923,7 @@ public class GuardEntity extends SettlerEntity {
                     return;
                 }
             }
-            walk(0.65);
+            walk(SPEED_WALK);
         }
 
         private void walk(double speed) {

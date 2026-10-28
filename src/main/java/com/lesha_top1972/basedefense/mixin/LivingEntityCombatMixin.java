@@ -94,6 +94,7 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
             float dealt = this.basedefense$hpBefore - (self.getHealth() + self.getAbsorptionAmount());
             NabatHooks.onDamaged(self, source, dealt);
             com.lesha_top1972.basedefense.artifact.Artifacts.onDamaged(self, source, dealt);
+            com.lesha_top1972.basedefense.entity.settler.SettlerThreats.onDamaged(self, source);
         }
     }
 

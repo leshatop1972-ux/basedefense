@@ -105,7 +105,7 @@ public final class ModEffects {
     }
 
     /** Носитель кровотёка ударил кого‑то: сам получает чистый урон, эффект снимается. */
-    private static void triggerBleed(PlayerEntity player) {
+    public static void triggerBleed(LivingEntity player) {
         StatusEffectInstance cur = player.getStatusEffect(BLEED);
         if (cur == null) {
             return;

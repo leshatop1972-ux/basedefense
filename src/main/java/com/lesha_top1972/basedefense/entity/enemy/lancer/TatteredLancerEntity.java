@@ -234,7 +234,8 @@ public class TatteredLancerEntity extends HostileEntity {
         }
         boolean hurt = super.damage(source, amount);
         // «Подлая крыса»: 8% за каждый удар по улану (дуэлянту — никогда)
-        if (hurt && !this.getWorld().isClient && source.getAttacker() instanceof PlayerEntity p
+        if (hurt && !this.getWorld().isClient && source.getAttacker() instanceof LivingEntity p
+                && (p instanceof PlayerEntity || p instanceof com.lesha_top1972.basedefense.entity.settler.SettlerEntity)
                 && !p.hasStatusEffect(ModEffects.DUELIST) && this.random.nextFloat() < RAT_CHANCE) {
             p.addStatusEffect(new StatusEffectInstance(ModEffects.SNEAKY_RAT, RAT_TICKS, 0, false, true, true), this);
             this.sound(SoundEvents.ENTITY_SILVERFISH_AMBIENT, 1.0f, 0.7f);

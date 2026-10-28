@@ -247,6 +247,7 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
 
         // Стражник: боевая стойка, удары, стрельба, еда — свои анимации поверх шага
         if (entity instanceof GuardEntity guard) {
+            hideUnderArmor(guard);
             GuardAnimations.apply(this, guard, animationProgress, walk, swing);
             return;
         }
@@ -300,6 +301,34 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
 
     public ModelPart leftLeg() {
         return leftLeg;
+    }
+
+    /**
+     * Под бронёй прячем то, что торчит сквозь неё: шляпу/кепку/хвост под шлемом, грудь и сумочку
+     * под нагрудником, юбку и сумочку под поножами (setLook перед каждым кадром всё вернёт как было).
+     */
+    private void hideUnderArmor(SettlerEntity entity) {
+        boolean helmet = entity.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD).getItem()
+                instanceof net.minecraft.item.ArmorItem;
+        boolean chest = entity.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).getItem()
+                instanceof net.minecraft.item.ArmorItem;
+        boolean legs = entity.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS).getItem()
+                instanceof net.minecraft.item.ArmorItem;
+        if (helmet) {
+            for (ModelPart part : brimHat) {
+                part.visible = false;
+            }
+            visor.visible = false;
+            ponytail.visible = false;
+        }
+        if (chest) {
+            breast.visible = false;
+            pouch.visible = false;
+        }
+        if (legs) {
+            skirt.visible = false;
+            pouch.visible = false;
+        }
     }
 
     public boolean isFemaleLook() {
