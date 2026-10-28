@@ -33,7 +33,7 @@ import java.util.Map;
 
 /**
  * Артефакты на клиенте: кнопка и вкладка с 5 слотами в инвентаре, клавиша рывка (R) и анимация рывка
- * (3‑е лицо — наклон корпуса, руки назад, ноги в шаге; 1‑е лицо — предмет в руке уходит вниз‑назад,
+ * (3‑е лицо — руки назад, ноги в шаге; 1‑е лицо — предмет в руке уходит вниз‑назад,
  * обзор чуть шире) и клавиша взлёта (Y): подброс на 3.5 блока, до 3 раз подряд. Частиц нет — только анимация.
  */
 public final class ArtifactClient {
@@ -260,20 +260,15 @@ public final class ArtifactClient {
         return p == null ? 0f : Math.max(weight(p.getId()), leapWeight(p.getId()) * 0.8f);
     }
 
-    /** 3‑е лицо (после поз оружия): корпус наклонён по ходу рывка, руки отведены назад, ноги в шаге. */
+    /** 3‑е лицо (после поз оружия): рывок — руки отведены назад, ноги в шаге; взлёт — руки немного в стороны. */
     public static void applyModel(BipedEntityModel<?> model, LivingEntity entity) {
         if (!(model instanceof PlayerEntityModel)) {
             return;
         }
         float lw = leapWeight(entity.getId());
-        if (lw > 0f) {                               // взлёт: руки вверх, ноги поджаты
-            model.rightArm.pitch += (-2.6f - model.rightArm.pitch) * lw;
-            model.leftArm.pitch += (-2.6f - model.leftArm.pitch) * lw;
-            model.rightArm.roll += 0.3f * lw;
-            model.leftArm.roll -= 0.3f * lw;
-            model.rightLeg.pitch += -0.5f * lw;
-            model.leftLeg.pitch += -0.2f * lw;
-            model.body.pitch += -0.1f * lw;
+        if (lw > 0f) {                               // взлёт: руки немного в стороны
+            model.rightArm.roll += 0.45f * lw;
+            model.leftArm.roll -= 0.45f * lw;
         }
         float w = weight(entity.getId());
         if (w <= 0f) {
@@ -282,8 +277,6 @@ public final class ArtifactClient {
         float[] d = DASHES.get(entity.getId());
         float f = d[1];
         float s = d[2];
-        model.body.pitch += 0.45f * f * w;
-        model.body.roll += -0.22f * s * w;
         float back = (0.9f * Math.max(f, 0f) + 0.5f * Math.abs(s) - 0.3f * Math.min(f, 0f)) * w;
         model.rightArm.pitch += back;
         model.leftArm.pitch += back;
