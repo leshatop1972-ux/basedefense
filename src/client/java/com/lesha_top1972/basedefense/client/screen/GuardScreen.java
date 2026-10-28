@@ -45,7 +45,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
                 default -> null;
             };
             if (tip != null) {
-                context.drawTooltip(this.textRenderer, this.textRenderer.wrapLines(tip, 180), mouseX, mouseY);
+                context.drawOrderedTooltip(this.textRenderer, this.textRenderer.wrapLines(tip, 180), mouseX, mouseY);
                 return;
             }
         }
