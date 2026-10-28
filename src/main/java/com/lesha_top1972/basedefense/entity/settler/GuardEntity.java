@@ -109,6 +109,8 @@ public class GuardEntity extends SettlerEntity {
     public static final int BOW_CYCLE = 80;      // выстрел раз в 4 секунды
     public static final int EAT_TICKS = 32;
     public static final int EAT_BITE = 24;
+    /** Ест не чаще раза в 30 секунд. */
+    public static final int EAT_COOLDOWN = 600;
 
     /** Слоты сумки: 0–2 еда, 3–4 стрелы, 5–6 артефакты (пока закрыты). */
     public static final int FOOD_START = 0;
@@ -501,7 +503,7 @@ public class GuardEntity extends SettlerEntity {
                         bag.markDirty();
                         this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.5f, 1.0f);
                     }
-                    eatCooldown = 100;
+                    eatCooldown = EAT_COOLDOWN;
                 }
                 if (actionTick >= EAT_TICKS) {
                     endAction();

@@ -59,6 +59,11 @@ public class GuardArmorFeature extends FeatureRenderer<SettlerEntity, SettlerEnt
             return;
         }
         SettlerEntityModel src = this.getContextModel();
+        // У новой модели по умолчанию child = true (детский размер: тело вдвое меньше) — отсюда
+        // и «половинная» броня на животе и у ног. Ванильный слой брони копирует это из модели игрока.
+        model.child = entity.isBaby();
+        model.riding = entity.hasVehicle();
+        model.sneaking = false;
         model.head.copyTransform(src.head());
         model.hat.copyTransform(src.head());
         model.body.copyTransform(src.body());
