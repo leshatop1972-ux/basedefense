@@ -2,8 +2,6 @@ package com.lesha_top1972.basedefense.entity.settler;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
@@ -12,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Стражник — военный поселенец. Его вербуют в военкомате казармы за монеты исследований,
- * живёт в казарме (спит на своей койке). Бой и команды добавим позже.
+ * живёт в казарме (спит на своей койке). Приходит с пустыми руками — снаряжение выдадим позже.
  */
 public class GuardEntity extends SettlerEntity {
 
@@ -22,19 +20,6 @@ public class GuardEntity extends SettlerEntity {
 
     public GuardEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
-    }
-
-    @Override
-    protected ItemStack getDefaultTool() {
-        return new ItemStack(Items.IRON_SWORD);
-    }
-
-    /** Сразу при вербовке — меч в руку (иначе он появлялся бы только на следующем тике). */
-    public void equipDefaultGear() {
-        if (this.getMainHandStack().isEmpty()) {
-            this.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, getDefaultTool());
-            this.setEquipmentDropChance(net.minecraft.entity.EquipmentSlot.MAINHAND, 0.0f);
-        }
     }
 
     public void setBarracks(@Nullable BlockPos office) {

@@ -223,7 +223,6 @@ public class RecruitScreenHandler extends ScreenHandler {
         guard.setHome(office);
         guard.setBarracks(office);
         guard.setPersistent();
-        guard.equipDefaultGear();
         world.spawnEntity(guard);
 
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
