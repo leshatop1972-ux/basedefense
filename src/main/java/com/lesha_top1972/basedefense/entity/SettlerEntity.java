@@ -615,7 +615,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         ingredients = nbt.getInt("Ingredients");
     }
 
-    // ---------- Звуки: свои голоса, мужские и женские (tools/settler_sounds.py) ----------
+    // ---------- Звуки: отдельные события для мужчин и женщин (файлы задаёт sounds.json) ----------
 
     @Override
     protected SoundEvent getAmbientSound() {

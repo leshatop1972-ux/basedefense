@@ -119,7 +119,7 @@ public final class ModSounds {
     public static final SoundEvent BLOOD_DEATH = register("entity.blood_entity.death");
     public static final SoundEvent BLOOD_STEP = register("entity.blood_entity.step");
 
-    // Голоса жителей: мужские и женские (tools/settler_sounds.py)
+    // Голоса жителей: мужские и женские (пока — звуки обычного жителя Minecraft, у женщин выше; см. sounds.json)
     public static final SoundEvent SETTLER_MALE_AMBIENT = register("entity.settler.male.ambient");
     public static final SoundEvent SETTLER_MALE_GREET = register("entity.settler.male.greet");
     public static final SoundEvent SETTLER_MALE_YES = register("entity.settler.male.yes");
