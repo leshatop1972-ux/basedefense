@@ -24,7 +24,7 @@ JAVA = os.path.join(os.path.dirname(__file__), "..", "src", "client", "java", "c
                     "client", "weapon", "KatanaKeys.java")
 
 SCALE_3P = 0.80
-SCALE_1P = 0.70
+SCALE_1P = 0.85
 GRIP_GAP = 3.6            # px модели между кистями (двуручный хват в стойке и в ударе сверху)
 
 STEEL = (206, 212, 220)
@@ -40,76 +40,95 @@ RED = (150, 24, 32)
 RED_L = (196, 44, 48)
 
 # =====================================================================
-# Модель
+# Модель (строится в KK раз крупнее — на текстуре хватает пикселей на линию закалки и оплётку;
+# в игре рисуется с масштабом 1/KK)
 # =====================================================================
-K = Model("katana", 64, 64)
+KK = 4.0
+K = Model("katana", 128, 128)
 K.bone("katana", None, (0, 0, 0))
-S = Model("katana_saya", 64, 64)
+S = Model("katana_saya", 128, 128)
 S.bone("saya", None, (0, 0, 0))
 
 
 def centered(m, bone, cx, y0, w, h, d, mat, face, rot=None, pivot=None):
-    o = (cx - w / 2, y0, -d / 2)
+    o = ((cx - w / 2) * KK, y0 * KK, -d / 2 * KK)
+    sz = (w * KK, h * KK, d * KK)
     if rot:
-        m.cube(bone, o, (w, h, d), mat, rot=rot, pivot=pivot or (cx, y0, 0), face=face)
+        pv = pivot or (cx, y0, 0)
+        m.cube(bone, o, sz, mat, rot=rot, pivot=[v * KK for v in pv], face=face)
     else:
-        m.cube(bone, o, (w, h, d), mat, face=face)
+        m.cube(bone, o, sz, mat, face=face)
 
 
 # рукоять (цука) с навершием, гарда (цуба), муфта (хабаки)
-centered(K, "katana", 0, -4.6, 1.3, 0.6, 1.3, "iron", "kashira")
-centered(K, "katana", 0, -4.0, 1.1, 6.0, 1.1, "wrap", "tsuka")
-centered(K, "katana", 0, 2.0, 2.8, 0.5, 2.8, "iron", "tsuba")
-centered(K, "katana", 0.05, 2.5, 1.1, 0.7, 0.7, "gold", "habaki")
+centered(K, "katana", 0, -5.0, 1.6, 0.7, 1.4, "iron", "kashira")
+centered(K, "katana", 0, -4.4, 1.4, 6.6, 1.15, "wrap", "tsuka")
+centered(K, "katana", 0, 2.2, 3.2, 0.55, 3.2, "iron", "tsuba")
+centered(K, "katana", 0.05, 2.75, 1.6, 0.8, 0.8, "gold", "habaki")
 # клинок: три отрезка с небольшим изгибом к обуху (−x), острие
-BLADE = [(7.0, 0.0), (6.0, 4.0), (5.0, 9.0)]      # (длина, угол изгиба, °)
-x, y = 0.0, 2.5
-ang = 0.0
+BLADE = [(7.5, 0.0), (6.5, 3.5), (5.5, 8.0)]      # (длина, угол изгиба, °)
+x, y = 0.0, 2.75
 segs = []
 for i, (ln, a) in enumerate(BLADE):
     segs.append((x, y, a, ln))
-    centered(K, "katana", x, y, 1.15, ln, 0.45, "blade", "blade%d" % i, rot=(0, 0, a) if a else None, pivot=(x, y, 0))
+    centered(K, "katana", x, y, 2.1, ln, 0.55, "blade", "blade%d" % i, rot=(0, 0, a) if a else None, pivot=(x, y, 0))
     x -= math.sin(math.radians(a)) * ln
     y += math.cos(math.radians(a)) * ln
-centered(K, "katana", x, y, 0.75, 1.4, 0.4, "blade", "kissaki", rot=(0, 0, 20), pivot=(x, y, 0))
-TIP = y + 1.3
+centered(K, "katana", x + 0.15, y, 1.5, 2.1, 0.5, "blade", "kissaki", rot=(0, 0, 18), pivot=(x, y, 0))
+TIP = y + 2.0
 # ножны (сая): чёрный лак, повторяют изгиб; у устья — алый шнур
 for i, (sx, sy, a, ln) in enumerate(segs):
-    extra = 2.0 if i == len(segs) - 1 else 0.0
-    centered(S, "saya", sx, sy, 1.7, ln + extra, 0.95, "saya", "saya%d" % i, rot=(0, 0, a) if a else None, pivot=(sx, sy, 0))
-centered(S, "saya", 0, 2.55, 1.9, 0.6, 1.15, "iron", "koiguchi")
-centered(S, "saya", 0, 4.3, 1.85, 0.9, 1.1, "cord", "sageo")
+    extra = 2.4 if i == len(segs) - 1 else 0.0
+    centered(S, "saya", sx, sy, 2.6, ln + extra, 1.05, "saya", "saya%d" % i, rot=(0, 0, a) if a else None, pivot=(sx, sy, 0))
+centered(S, "saya", 0, 2.8, 2.4, 0.6, 1.2, "iron", "koiguchi")
+centered(S, "saya", 0, 4.5, 2.35, 1.0, 1.15, "cord", "sageo")
 K.pack()
 S.pack()
 
 
 def paint(m):
-    PT = Painter(64, 64, seed=7)
+    PT = Painter(128, 128, seed=7)
     for c in m.cubes():
         mat, face = c["mat"], c.get("face")
         for fname, rect in faces(c).items():
             def fn(i, j, w, h, fname=fname, mat=mat, face=face):
                 big = fname in ("front", "back")
                 if mat == "blade":
-                    if fname == "right":                      # +x — лезвие
-                        return EDGE
+                    if fname == "right":                      # +x — лезвие: светлая кромка
+                        return EDGE if j % 5 else HAMON
                     if fname == "left":
                         return STEEL_D                         # обух
                     if big:
-                        if i == w - 1:
-                            return HAMON                       # линия закалки у лезвия
-                        return STEEL if i > 0 else STEEL_D
+                        # по ширине: обух (тёмный) → сталь → волнистая линия закалки → кромка
+                        i2 = i if fname == "front" else w - 1 - i
+                        if i2 == w - 1:
+                            return EDGE
+                        wave = w - 3.2 + 0.9 * math.sin(j * 0.55) + 0.4 * math.sin(j * 1.7)
+                        if i2 >= wave:
+                            return HAMON if i2 > wave + 0.6 else mix(HAMON, STEEL, 0.4)
+                        if i2 == 0:
+                            return STEEL_D
+                        if i2 == 1:
+                            return mix(STEEL_D, STEEL, 0.5)
+                        return STEEL
                     return STEEL
-                if mat == "wrap":                              # оплётка ромбами
-                    return SAME if (i + j) % 3 == 0 and (i - j) % 3 == 0 else WRAP
+                if mat == "wrap":                              # оплётка ромбами: тёмный шнур поверх светлой кожи
+                    d1 = (i + j) % 6
+                    d2 = (i - j) % 6
+                    if d1 in (0, 1) or d2 in (0, 1):
+                        return WRAP
+                    return SAME if (i + j) % 2 else mix(SAME, (180, 170, 150), 0.5)
                 if mat == "iron":
-                    return GOLD if face in ("tsuba", "koiguchi") and fname == "top" and (i + j) % 2 == 0 else BLACK_L
+                    if face in ("tsuba", "koiguchi", "kashira"):
+                        rim = i in (0, w - 1) or j in (0, h - 1)
+                        return GOLD if rim and fname in ("top", "bottom") else (BLACK_L if (i * 3 + j) % 5 else (70, 62, 66))
+                    return BLACK_L
                 if mat == "gold":
-                    return GOLD
+                    return GOLD if (i + j) % 3 else mix(GOLD, (255, 230, 140), 0.5)
                 if mat == "saya":
-                    return BLACK_L if i == 0 and big else BLACK
+                    return mix(BLACK, (90, 20, 24), 0.25) if i in (1, 2) and big else BLACK
                 if mat == "cord":
-                    return RED_L if (i + j) % 2 else RED
+                    return RED_L if (i + j) % 3 else RED
                 return (255, 0, 255)
             PT.fill(rect, fn)
     return PT
@@ -179,32 +198,33 @@ TP_SWINGS = [
         TP_GUARD,
     ],
 ]
-FP_IDLE = [(0.0, (0.20, -0.62, -0.78), (-0.35, -0.80, 0.48), (-0.86, 0.0, -0.5), (0.20, -1.0, 0.20))]
-FP_GUARD = (8.0, (0.30, -0.48, -0.85), (-0.20, 0.85, -0.48), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.15))
-# удары от 1‑го лица: клинок поднят над кистью (иначе, глядя вдоль клинка, его почти не видно)
+# 1‑е лицо: как обычный меч в руке (руку не рисуем — как у ванильных предметов), клинок к камере плашмя,
+# чтобы катана была видна целиком; при ударах лезвие идёт по ходу удара
+FP_IDLE = [(0.0, (0.40, -0.50, -0.78), (-0.22, 0.94, -0.26), (0.25, 0.10, 1.0), (0.20, -1.0, 0.20))]
+FP_GUARD = (8.0,) + FP_IDLE[0][1:]
 FP_SWINGS = [
-    [
-        (0.0, (0.50, -0.30, -0.80), (0.60, 0.55, 0.55), (0.0, 1.0, 0.0), (0.40, -1.0, 0.20)),
-        (1.0, (0.35, -0.35, -0.90), (0.45, 0.60, -0.65), (0.0, 1.0, 0.0), (0.35, -1.0, 0.20)),
-        (2.0, (0.05, -0.38, -0.95), (-0.10, 0.60, -0.80), (0.0, 1.0, 0.0), (0.25, -1.0, 0.15)),
-        (3.0, (-0.28, -0.40, -0.85), (-0.70, 0.50, -0.50), (0.0, 1.0, 0.0), (0.45, -1.0, 0.20)),
-        (4.0, (-0.42, -0.42, -0.75), (-0.85, 0.45, 0.20), (0.0, 1.0, 0.0), (0.60, -1.0, 0.30)),
+    [   # 1: справа налево (лезвие смотрит влево)
+        (0.0, (0.42, -0.22, -0.78), (0.60, 0.68, 0.42), (0.0, 0.0, -1.0), (0.20, -1.0, 0.20)),
+        (1.0, (0.42, -0.26, -0.80), (0.35, 0.72, -0.60), (0.0, 0.0, -1.0), (0.20, -1.0, 0.20)),
+        (2.0, (0.06, -0.32, -0.86), (-0.25, 0.62, -0.74), (0.0, 0.0, -1.0), (0.20, -1.0, 0.20)),
+        (3.0, (-0.30, -0.36, -0.76), (-0.75, 0.42, -0.51), (0.0, 0.0, -1.0), (0.20, -1.0, 0.20)),
+        (4.0, (-0.44, -0.40, -0.66), (-0.90, 0.32, 0.20), (0.0, 0.0, -1.0), (0.20, -1.0, 0.20)),
         FP_GUARD,
     ],
-    [
-        (0.0, (-0.32, -0.30, -0.80), (-0.60, 0.55, 0.55), (0.0, -1.0, 0.0), (0.60, -1.0, 0.30)),
-        (1.0, (-0.18, -0.35, -0.90), (-0.45, 0.60, -0.65), (0.0, -1.0, 0.0), (0.45, -1.0, 0.25)),
-        (2.0, (0.08, -0.38, -0.95), (0.10, 0.60, -0.80), (0.0, -1.0, 0.0), (0.25, -1.0, 0.15)),
-        (3.0, (0.38, -0.40, -0.85), (0.70, 0.50, -0.50), (0.0, -1.0, 0.0), (0.20, -1.0, 0.15)),
-        (4.0, (0.55, -0.42, -0.75), (0.85, 0.45, 0.20), (0.0, -1.0, 0.0), (0.20, -1.0, 0.20)),
+    [   # 2: слева направо
+        (0.0, (-0.38, -0.18, -0.70), (-0.55, 0.65, 0.52), (0.0, 0.0, 1.0), (0.20, -1.0, 0.20)),
+        (1.0, (-0.24, -0.26, -0.80), (-0.35, 0.72, -0.60), (0.0, 0.0, 1.0), (0.20, -1.0, 0.20)),
+        (2.0, (0.10, -0.32, -0.86), (0.25, 0.62, -0.74), (0.0, 0.0, 1.0), (0.20, -1.0, 0.20)),
+        (3.0, (0.36, -0.36, -0.80), (0.75, 0.45, -0.49), (0.0, 0.0, 1.0), (0.20, -1.0, 0.20)),
+        (4.0, (0.46, -0.40, -0.72), (0.90, 0.38, 0.20), (0.0, 0.0, 1.0), (0.20, -1.0, 0.20)),
         FP_GUARD,
     ],
-    [
-        (0.0, (0.10, -0.10, -0.80), (0.00, 0.90, 0.42), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.25)),
-        (1.0, (0.10, -0.18, -0.90), (0.00, 0.97, -0.25), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.20)),
-        (2.0, (0.08, -0.32, -0.95), (0.00, 0.60, -0.80), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.15)),
-        (3.0, (0.08, -0.50, -0.85), (0.00, -0.10, -1.00), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.10)),
-        (4.0, (0.08, -0.52, -0.82), (0.00, -0.20, -0.98), (-1.0, 0.0, 0.0), (0.20, -1.0, 0.10)),
+    [   # 3: сверху вниз
+        (0.0, (0.18, -0.02, -0.74), (0.10, 0.90, 0.42), (1.0, 0.0, 0.6), (0.20, -1.0, 0.20)),
+        (1.0, (0.14, -0.12, -0.84), (0.05, 0.95, -0.30), (1.0, 0.0, 0.6), (0.20, -1.0, 0.20)),
+        (2.0, (0.12, -0.30, -0.90), (0.00, 0.55, -0.83), (1.0, 0.0, 0.6), (0.20, -1.0, 0.20)),
+        (3.0, (0.12, -0.48, -0.80), (0.00, -0.05, -1.00), (1.0, 0.0, 0.6), (0.20, -1.0, 0.20)),
+        (4.0, (0.12, -0.50, -0.78), (0.00, -0.15, -0.99), (1.0, 0.0, 0.6), (0.20, -1.0, 0.20)),
         FP_GUARD,
     ],
 ]
@@ -268,7 +288,8 @@ def write_java():
            " * 3‑е лицо: {t, хват x,y,z, клинок x,y,z, нормаль плоскости x,y,z, левая кисть x,y,z, наклон, поворот, нога L, нога R}.\n"
            " * 1‑е лицо: {t, хват x,y,z, клинок x,y,z, нормаль x,y,z, направление к плечу x,y,z}.\n */\n"
            "final class KatanaKeys {\n\n"
-           "    static final float SCALE_3P = %.3ff;\n    static final float SCALE_1P = %.3ff;\n\n" % (SCALE_3P, SCALE_1P))
+           "    static final float SCALE_3P = %.3ff;\n    static final float SCALE_1P = %.3ff;\n"
+           "    static final float MODEL_K = %.1ff;           // модель построена в K раз крупнее\n\n" % (SCALE_3P, SCALE_1P, KK))
     src += keys("TP_IDLE", TP_IDLE) + "\n" + keys("FP_IDLE", FP_IDLE) + "\n"
     src += "    static final float[][][] TP_SWINGS = {\n" + ",\n".join(
         "        " + keys("X", s).split("= ", 1)[1].rstrip(";\n").replace("\n", "\n    ") for s in TP_SWINGS) + "\n    };\n\n"
@@ -288,7 +309,7 @@ def model_quads(m, tf):
         {k: c[k] for k in ("origin", "size", "uv", "pivot", "rotation") if k in c} for c in b["cubes"]]} for b in m.bones]
 
     def conv(v):
-        return tf([v[0], 24 - v[1], -v[2]])
+        return tf([v[0] / KK, (24 - v[1]) / KK, -v[2] / KK])
     return G.java_quads(m, conv)
 
 
@@ -334,12 +355,9 @@ def preview(tk, ts):
     for clip, t, _ in shots:
         v = A.flat(FP_IDLE[0])[1:] if clip == "idle" else A.sample(FP_SWINGS[clip], t)
         p = fp_pose(v)
-        d = A.norm(A.sub(p["grip"], p["sh_r"]))
-        Rm = A.basis(d, [-1, 0, 0])
-        origin = A.sub(p["grip"], A.mv(Rm, [-1 / 16, A.ARM_REACH / 16, 0]))
-        q = A.part_quads([A.box(40, 16, -3, -2, -2, 4, 12, 4)], A.matrix_tf(origin, Rm, lambda x: x, 1 / 16))
+        q = []
         kq = model_quads(K, A.matrix_tf(p["grip"], p["sword"], lambda x: x, SCALE_1P / 16))
-        sq = model_quads(S, A.matrix_tf(fsg["grip"], fsg["sword"], lambda x: x, SCALE_1P / 16))
+        sq = []
 
         def proj(pp):
             if pp[2] > -0.05:
