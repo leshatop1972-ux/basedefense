@@ -20,16 +20,11 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.random.Random;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
@@ -39,12 +34,11 @@ import java.util.Map;
 /**
  * Артефакты на клиенте: кнопка и вкладка с 5 слотами в инвентаре, клавиша рывка (R) и анимация рывка
  * (3‑е лицо — наклон корпуса, руки назад, ноги в шаге; 1‑е лицо — предмет в руке уходит вниз‑назад,
- * обзор чуть шире; вокруг — вихрь и полосы ветра).
+ * обзор чуть шире) и клавиша взлёта (Y): подброс на 3.5 блока, до 3 раз подряд. Частиц нет — только анимация.
  */
 public final class ArtifactClient {
 
     private static final Identifier BUTTON = new Identifier(Basedefense.MOD_ID, "textures/gui/artifact_button.png");
-    private static final DustParticleEffect STREAK = new DustParticleEffect(new Vector3f(0.92f, 0.97f, 1.0f), 0.7f);
 
     /** Вкладка: слева от инвентаря, у брони. */
     public static final int PANEL_X = -31;
@@ -59,6 +53,13 @@ public final class ArtifactClient {
     private static boolean dashStop;
     private static long cooldownUntil;
     private static final Vector3f DIR = new Vector3f();
+
+    private static KeyBinding leapKey;
+    private static int leapUsed;
+    private static long leapLast = -1000;
+    private static long leapCooldownUntil;
+    /** Взлёты (свой и чужие): номер сущности → время начала. */
+    private static final Map<Integer, Long> LEAPS = new HashMap<>();
 
     /** Рывки (свой и чужие): номер сущности → {время начала, вперёд, вбок}. */
     private static final Map<Integer, float[]> DASHES = new HashMap<>();
@@ -76,6 +77,12 @@ public final class ArtifactClient {
         ArtifactSlot.visible = ArtifactClient::panelVisible;
         dashKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.basedefense.dash", InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_R, "category.basedefense"));
+        leapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.basedefense.leap", InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_Y, "category.basedefense"));
+        ClientPlayNetworking.registerGlobalReceiver(Artifacts.LEAP_S2C, (client, handler, buf, sender) -> {
+            int id = buf.readVarInt();
+            client.execute(() -> LEAPS.put(id, ticks));
+        });
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof InventoryScreen)) {
                 return;
@@ -146,13 +153,11 @@ public final class ArtifactClient {
         while (dashKey.wasPressed()) {
             tryDash(client.player);
         }
-        DASHES.entrySet().removeIf(e -> ticks - e.getValue()[0] > 10);
-        for (Map.Entry<Integer, float[]> e : DASHES.entrySet()) {
-            Entity ent = client.world.getEntityById(e.getKey());
-            if (ent instanceof LivingEntity le && ticks - e.getValue()[0] < 6) {
-                particles(client, client.world, le, e.getValue());
-            }
+        while (leapKey.wasPressed()) {
+            tryLeap(client.player);
         }
+        DASHES.entrySet().removeIf(e -> ticks - e.getValue()[0] > 10);
+        LEAPS.entrySet().removeIf(e -> ticks - e.getValue() > 14);
     }
 
     private static void tryDash(ClientPlayerEntity p) {
@@ -183,6 +188,27 @@ public final class ArtifactClient {
         ClientPlayNetworking.send(Artifacts.DASH_C2S, buf);
     }
 
+    /** Взлёт: подброс вверх на 3.5 блока; 3 раза подряд, потом перезарядка 6 с. */
+    private static void tryLeap(ClientPlayerEntity p) {
+        if (p.isSpectator() || p.hasVehicle() || ticks < leapCooldownUntil || !Artifacts.has(p, ModItems.LEAP_AMULET)
+                || p.getItemCooldownManager().isCoolingDown(ModItems.LEAP_AMULET)) {
+            return;
+        }
+        if (ticks - leapLast > Artifacts.LEAP_COOLDOWN) {
+            leapUsed = 0;
+        }
+        leapUsed++;
+        leapLast = ticks;
+        if (leapUsed >= Artifacts.LEAP_CHARGES) {
+            leapUsed = 0;
+            leapCooldownUntil = ticks + Artifacts.LEAP_COOLDOWN;
+        }
+        p.setVelocity(p.getVelocity().x, Artifacts.LEAP_SPEED, p.getVelocity().z);
+        p.fallDistance = 0f;
+        LEAPS.put(p.getId(), ticks);
+        ClientPlayNetworking.send(Artifacts.LEAP_C2S, PacketByteBufs.create());
+    }
+
     /** Скорость рывка ставится до движения игрока в этом тике: 5 тиков по 0.8 блока, потом торможение. */
     private static void applyDash(MinecraftClient client) {
         ClientPlayerEntity p = client.player;
@@ -200,27 +226,6 @@ public final class ArtifactClient {
         }
     }
 
-    private static void particles(MinecraftClient client, ClientWorld w, LivingEntity e, float[] d) {
-        Random r = w.random;
-        float yaw = e.getYaw() * MathHelper.RADIANS_PER_DEGREE;
-        double dx = d[2] * MathHelper.cos(yaw) - d[1] * MathHelper.sin(yaw);
-        double dz = d[1] * MathHelper.cos(yaw) + d[2] * MathHelper.sin(yaw);
-        boolean self = e == client.player && client.options.getPerspective().isFirstPerson();
-        for (int i = 0; i < (self ? 2 : 4); i++) {
-            double back = 0.3 + r.nextDouble() * 0.6;
-            w.addParticle(ParticleTypes.CLOUD, e.getX() - dx * back + r.nextGaussian() * 0.15, e.getY() + 0.1 + r.nextDouble() * 0.3,
-                    e.getZ() - dz * back + r.nextGaussian() * 0.15, -dx * 0.05, 0.01, -dz * 0.05);
-        }
-        if (!self) {                                 // полосы ветра вдоль тела
-            for (int i = 0; i < 5; i++) {
-                double h = 0.3 + r.nextDouble() * 1.4;
-                double side = (r.nextDouble() - 0.5) * 0.9;
-                double back = r.nextDouble() * 1.2;
-                w.addParticle(STREAK, e.getX() - dx * back - dz * side, e.getY() + h, e.getZ() - dz * back + dx * side, 0, 0, 0);
-            }
-        }
-    }
-
     /** Вес анимации рывка 0..1 (быстро нарастает, держится, плавно спадает). */
     public static float weight(int entityId) {
         float[] d = DASHES.get(entityId);
@@ -235,15 +240,40 @@ public final class ArtifactClient {
         return w * w * (3f - 2f * w);
     }
 
+    /** Вес анимации взлёта 0..1. */
+    public static float leapWeight(int entityId) {
+        Long t0 = LEAPS.get(entityId);
+        if (t0 == null) {
+            return 0f;
+        }
+        float a = ticks + MinecraftClient.getInstance().getTickDelta() - t0;
+        if (a < 0f || a > 12f) {
+            return 0f;
+        }
+        float w = a < 2f ? a / 2f : a < 6f ? 1f : 1f - (a - 6f) / 6f;
+        return w * w * (3f - 2f * w);
+    }
+
+    /** Для 1‑го лица (предмет в руке уходит вниз) и обзора. */
     public static float localWeight() {
         ClientPlayerEntity p = MinecraftClient.getInstance().player;
-        return p == null ? 0f : weight(p.getId());
+        return p == null ? 0f : Math.max(weight(p.getId()), leapWeight(p.getId()) * 0.8f);
     }
 
     /** 3‑е лицо (после поз оружия): корпус наклонён по ходу рывка, руки отведены назад, ноги в шаге. */
     public static void applyModel(BipedEntityModel<?> model, LivingEntity entity) {
         if (!(model instanceof PlayerEntityModel)) {
             return;
+        }
+        float lw = leapWeight(entity.getId());
+        if (lw > 0f) {                               // взлёт: руки вверх, ноги поджаты
+            model.rightArm.pitch += (-2.6f - model.rightArm.pitch) * lw;
+            model.leftArm.pitch += (-2.6f - model.leftArm.pitch) * lw;
+            model.rightArm.roll += 0.3f * lw;
+            model.leftArm.roll -= 0.3f * lw;
+            model.rightLeg.pitch += -0.5f * lw;
+            model.leftLeg.pitch += -0.2f * lw;
+            model.body.pitch += -0.1f * lw;
         }
         float w = weight(entity.getId());
         if (w <= 0f) {

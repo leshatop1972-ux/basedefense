@@ -353,5 +353,8 @@
   "item.basedefense.artifact": "Artifact — put it into an artifact slot",
   "gui.basedefense.artifacts": "Artifacts",
   "key.basedefense.dash": "Dash (amulet)",
-  "category.basedefense": "Basedefense"
+  "category.basedefense": "Basedefense",
+  "item.basedefense.leap_amulet": "Leap Amulet",
+  "item.basedefense.leap_amulet.tip": "Y — launch 3.5 blocks up, up to 3 times in a row, then 6 s cooldown",
+  "key.basedefense.leap": "Leap (amulet)"
 }
