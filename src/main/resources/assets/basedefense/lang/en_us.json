@@ -307,5 +307,18 @@
   "subtitles.basedefense.settler.female.greet": "Settler responds",
   "subtitles.basedefense.settler.female.yes": "Settler is pleased",
   "subtitles.basedefense.settler.female.hurt": "Settler hurts",
-  "subtitles.basedefense.settler.female.death": "Settler dies"
+  "subtitles.basedefense.settler.female.death": "Settler dies",
+  "entity.basedefense.bloodletter": "Bloodletter",
+  "entity.basedefense.blood_spear": "Blood Spear",
+  "item.basedefense.bloodletter_spawn_egg": "Bloodletter Spawn Egg",
+  "subtitles.basedefense.bloodletter.ambient": "Wet whisper",
+  "subtitles.basedefense.bloodletter.summon": "Bloodletter summons spears",
+  "subtitles.basedefense.bloodletter.spear_form": "Blood hardens into a spear",
+  "subtitles.basedefense.bloodletter.spear_launch": "Blood spear whistles",
+  "subtitles.basedefense.bloodletter.spear_hit": "Blood spear strikes",
+  "subtitles.basedefense.bloodletter.whirl": "Blood whirl",
+  "subtitles.basedefense.bloodletter.whirl_hit": "Blood whirl knocks back",
+  "subtitles.basedefense.bloodletter.hurt": "Bloodletter hurts",
+  "subtitles.basedefense.bloodletter.death": "Bloodletter dies",
+  "subtitles.basedefense.bloodletter.step": "Bloodletter steps"
 }

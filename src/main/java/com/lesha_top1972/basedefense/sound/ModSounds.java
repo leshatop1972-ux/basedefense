@@ -119,6 +119,18 @@ public final class ModSounds {
     public static final SoundEvent BLOOD_DEATH = register("entity.blood_entity.death");
     public static final SoundEvent BLOOD_STEP = register("entity.blood_entity.step");
 
+    // «Кровопускатель» (tools/bloodletter_sounds.py)
+    public static final SoundEvent BLOODLETTER_AMBIENT = register("entity.bloodletter.ambient");
+    public static final SoundEvent BLOODLETTER_SUMMON = register("entity.bloodletter.summon");
+    public static final SoundEvent BLOODLETTER_SPEAR_FORM = register("entity.bloodletter.spear_form");
+    public static final SoundEvent BLOODLETTER_SPEAR_LAUNCH = register("entity.bloodletter.spear_launch");
+    public static final SoundEvent BLOODLETTER_SPEAR_HIT = register("entity.bloodletter.spear_hit");
+    public static final SoundEvent BLOODLETTER_WHIRL = register("entity.bloodletter.whirl");
+    public static final SoundEvent BLOODLETTER_WHIRL_HIT = register("entity.bloodletter.whirl_hit");
+    public static final SoundEvent BLOODLETTER_HURT = register("entity.bloodletter.hurt");
+    public static final SoundEvent BLOODLETTER_DEATH = register("entity.bloodletter.death");
+    public static final SoundEvent BLOODLETTER_STEP = register("entity.bloodletter.step");
+
     // Голоса жителей: мужские и женские (пока — звуки обычного жителя Minecraft, у женщин выше; см. sounds.json)
     public static final SoundEvent SETTLER_MALE_AMBIENT = register("entity.settler.male.ambient");
     public static final SoundEvent SETTLER_MALE_GREET = register("entity.settler.male.greet");

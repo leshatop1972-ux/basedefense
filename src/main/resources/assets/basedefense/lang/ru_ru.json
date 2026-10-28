@@ -307,5 +307,18 @@
   "subtitles.basedefense.settler.female.greet": "Жительница отзывается",
   "subtitles.basedefense.settler.female.yes": "Жительница довольна",
   "subtitles.basedefense.settler.female.hurt": "Жительница ранена",
-  "subtitles.basedefense.settler.female.death": "Жительница погибла"
+  "subtitles.basedefense.settler.female.death": "Жительница погибла",
+  "entity.basedefense.bloodletter": "Кровопускатель",
+  "entity.basedefense.blood_spear": "Кровавое копьё",
+  "item.basedefense.bloodletter_spawn_egg": "Яйцо призыва кровопускателя",
+  "subtitles.basedefense.bloodletter.ambient": "Мокрый шёпот",
+  "subtitles.basedefense.bloodletter.summon": "Кровопускатель призывает копья",
+  "subtitles.basedefense.bloodletter.spear_form": "Кровь застывает копьём",
+  "subtitles.basedefense.bloodletter.spear_launch": "Свист кровавого копья",
+  "subtitles.basedefense.bloodletter.spear_hit": "Кровавое копьё вонзается",
+  "subtitles.basedefense.bloodletter.whirl": "Кровавый вихрь",
+  "subtitles.basedefense.bloodletter.whirl_hit": "Кровавый вихрь отбрасывает",
+  "subtitles.basedefense.bloodletter.hurt": "Кровопускатель ранен",
+  "subtitles.basedefense.bloodletter.death": "Кровопускатель погибает",
+  "subtitles.basedefense.bloodletter.step": "Шаги кровопускателя"
 }

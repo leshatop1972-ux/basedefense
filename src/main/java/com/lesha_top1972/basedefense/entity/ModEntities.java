@@ -322,6 +322,27 @@ public final class ModEntities {
                     .trackRangeBlocks(64)
                     .build());
 
+    /** «Кровопускатель». */
+    public static final EntityType<BloodletterEntity> BLOODLETTER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "bloodletter"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, BloodletterEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.8f, 2.5f))
+                    .trackRangeBlocks(80)
+                    .trackedUpdateRate(1)
+                    .build());
+
+    /** Кровавое копьё «Кровопускателя». */
+    public static final EntityType<BloodSpearEntity> BLOOD_SPEAR = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "blood_spear"),
+            FabricEntityTypeBuilder.<BloodSpearEntity>create(SpawnGroup.MISC, BloodSpearEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.4f, 0.4f))
+                    .trackRangeBlocks(96)
+                    .trackedUpdateRate(1)
+                    .forceTrackedVelocityUpdates(true)
+                    .build());
+
     private ModEntities() {
     }
 
@@ -351,5 +372,6 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(BEETLE_MITE, BeetleMiteEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BEETLE_EGG, BeetleEggEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BELL, NabatBellEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOODLETTER, BloodletterEntity.createAttributes());
     }
 }

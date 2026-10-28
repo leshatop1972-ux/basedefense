@@ -92,6 +92,9 @@ public final class ModItems {
     public static final Item BLOOD_ENTITY_SPAWN_EGG = register("blood_entity_spawn_egg",
             new SpawnEggItem(ModEntities.BLOOD_ENTITY, 0x160C0E, 0xC41620, new Item.Settings()));
 
+    public static final Item BLOODLETTER_SPAWN_EGG = register("bloodletter_spawn_egg",
+            new SpawnEggItem(ModEntities.BLOODLETTER, 0x1A0A0E, 0xB01226, new Item.Settings()));
+
     private ModItems() {
     }
 
@@ -126,6 +129,7 @@ public final class ModItems {
             entries.add(BEETLE_MITE_SPAWN_EGG);
             entries.add(MIST_ENTITY_SPAWN_EGG);
             entries.add(BLOOD_ENTITY_SPAWN_EGG);
+            entries.add(BLOODLETTER_SPAWN_EGG);
         });
     }
 }

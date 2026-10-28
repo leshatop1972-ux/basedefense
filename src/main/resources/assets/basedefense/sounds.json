@@ -1341,5 +1341,131 @@
         "pitch": 1.18
       }
     ]
+  },
+  "entity.bloodletter.ambient": {
+    "subtitle": "subtitles.basedefense.bloodletter.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/ambient0",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "basedefense:bloodletter/ambient1",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.bloodletter.summon": {
+    "subtitle": "subtitles.basedefense.bloodletter.summon",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/summon",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.bloodletter.spear_form": {
+    "subtitle": "subtitles.basedefense.bloodletter.spear_form",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/spear_form0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:bloodletter/spear_form1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.bloodletter.spear_launch": {
+    "subtitle": "subtitles.basedefense.bloodletter.spear_launch",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/spear_launch0",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "basedefense:bloodletter/spear_launch1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "basedefense:bloodletter/spear_launch2",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.bloodletter.spear_hit": {
+    "subtitle": "subtitles.basedefense.bloodletter.spear_hit",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/spear_hit0",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "basedefense:bloodletter/spear_hit1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "basedefense:bloodletter/spear_hit2",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.bloodletter.whirl": {
+    "subtitle": "subtitles.basedefense.bloodletter.whirl",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/whirl",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.bloodletter.whirl_hit": {
+    "subtitle": "subtitles.basedefense.bloodletter.whirl_hit",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/whirl_hit",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.bloodletter.hurt": {
+    "subtitle": "subtitles.basedefense.bloodletter.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/hurt0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:bloodletter/hurt1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.bloodletter.death": {
+    "subtitle": "subtitles.basedefense.bloodletter.death",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/death",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.bloodletter.step": {
+    "subtitle": "subtitles.basedefense.bloodletter.step",
+    "sounds": [
+      {
+        "name": "basedefense:bloodletter/step0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:bloodletter/step1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:bloodletter/step2",
+        "attenuation_distance": 16
+      }
+    ]
   }
 }
