@@ -31,17 +31,23 @@ public class ConstructionState extends PersistentState {
         public final BlockPos pos;
         public final String dimension;
         public final HouseType type;
+        public final HouseDesign design;
         public final Direction facing;
         public int step;
         @Nullable
         public UUID builder;
         public long lastWorked;
 
-        Site(BlockPos pos, String dimension, HouseType type, Direction facing) {
+        Site(BlockPos pos, String dimension, HouseType type, HouseDesign design, Direction facing) {
             this.pos = pos.toImmutable();
             this.dimension = dimension;
             this.type = type;
+            this.design = design;
             this.facing = facing;
+        }
+
+        public StructurePlan plan() {
+            return type.getPlan(design);
         }
     }
 
@@ -59,9 +65,9 @@ public class ConstructionState extends PersistentState {
 
     // ---------- Площадки ----------
 
-    public void addSite(BlockPos pos, String dimension, HouseType type, Direction facing) {
+    public void addSite(BlockPos pos, String dimension, HouseType type, HouseDesign design, Direction facing) {
         removeSite(pos, dimension);
-        sites.add(new Site(pos, dimension, type, facing));
+        sites.add(new Site(pos, dimension, type, design, facing));
         markDirty();
     }
 
@@ -191,7 +197,7 @@ public class ConstructionState extends PersistentState {
             }
             Direction facing = Direction.byName(e.getString("Facing"));
             Site site = new Site(NbtHelper.toBlockPos(e.getCompound("Pos")), e.getString("Dim"), type,
-                    facing == null || facing.getAxis().isVertical() ? Direction.NORTH : facing);
+                    HouseDesign.byId(e.getString("Design")), facing == null || facing.getAxis().isVertical() ? Direction.NORTH : facing);
             site.step = e.getInt("Step");
             if (e.containsUuid("Builder")) {
                 site.builder = e.getUuid("Builder");
@@ -218,6 +224,7 @@ public class ConstructionState extends PersistentState {
             e.put("Pos", NbtHelper.fromBlockPos(site.pos));
             e.putString("Dim", site.dimension);
             e.putString("Type", site.type.getId());
+            e.putString("Design", site.design.getId());
             e.putString("Facing", site.facing.getName());
             e.putInt("Step", site.step);
             if (site.builder != null) {

@@ -17,9 +17,12 @@ import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Чертежи домов поселения. Все дома в ОДНОМ стиле (одни и те же материалы:
- * дубовые доски, еловые брёвна-углы и балки, булыжный цоколь, еловая крыша, стеклянные панели),
- * но разных размеров и форм: ширина, глубина, высота стен, направление конька крыши,
+ * Чертежи домов поселения. Каждый дом строится в одном из 4 дизайнов ({@link HouseDesign}, класс Style ниже):
+ * дубовая слобода (классика), таёжный сруб (лежачие еловые брёвна, торчащие концы, широкие свесы, крыльцо),
+ * каменная застава (каменный кирпич, стены выше, плоская крыша с зубцами и башенками, бойницы),
+ * берёзовый терем (белые стены в тёмном фахверке, крутая крыша с коньком).
+ * Размер «коробки» (ширина и глубина) у дизайнов одинаковый, поэтому мебель и двор общие.
+ * Дома разных размеров и форм: ширина, глубина, высота стен, направление конька крыши,
  * у повара и кузнеца — дымоход. За каждым домом свой двор (огород, загон, шахта…).
  *
  * Баланс: в домах нет дорогих блоков и нет блоков из рецептов домов
@@ -37,12 +40,7 @@ public final class HousePlans {
     private static final BlockState AIR = Blocks.AIR.getDefaultState();
     private static final BlockState COBBLE = Blocks.COBBLESTONE.getDefaultState();
     private static final BlockState DIRT = Blocks.DIRT.getDefaultState();
-    private static final BlockState WALL = Blocks.OAK_PLANKS.getDefaultState();
-    private static final BlockState FLOOR = Blocks.SPRUCE_PLANKS.getDefaultState();
     private static final BlockState LOG = Blocks.SPRUCE_LOG.getDefaultState();   // ель: лесоруб её не рубит
-    private static final BlockState GABLE = Blocks.SPRUCE_PLANKS.getDefaultState();
-    private static final Block ROOF = Blocks.SPRUCE_STAIRS;
-    private static final BlockState GLASS = Blocks.GLASS_PANE.getDefaultState();
     private static final BlockState FENCE = Blocks.OAK_FENCE.getDefaultState();
 
     private HousePlans() {
@@ -52,8 +50,8 @@ public final class HousePlans {
     // Дом строителя: самый большой, 6 сундуков-склад; двор со стройматериалами
     // (строится сам, без ресурсов — ведь строителя ещё нет)
     // =====================================================================
-    public static StructurePlan builder() {
-        House h = new House(10, 8, 4, false, 6);
+    public static StructurePlan builder(HouseDesign design) {
+        House h = new House(10, 8, 4, false, 6, design);
         StructurePlan p = h.p;
         // Склад: три двойных сундука
         doubleChest(p, 2, 1, 6, 1, 1, 6, Direction.SOUTH);   // у задней стены слева
@@ -93,14 +91,14 @@ public final class HousePlans {
     // =====================================================================
     // Фермер: маленький дом 8×6, конёк поперёк; огород во дворе
     // =====================================================================
-    public static StructurePlan farmer() {
-        House h = new House(8, 6, 3, true, 8);
+    public static StructurePlan farmer(HouseDesign design) {
+        House h = new House(8, 6, 3, true, 8, design);
         StructurePlan p = h.p;
         bed(p, 1, 3, Blocks.GREEN_BED);
         chest(p, 6, 1, 4, Direction.WEST);
         p.set(1, 1, 1, FENCE);                       // столик
         p.late(1, 2, 1, Blocks.POTTED_POPPY.getDefaultState());
-        p.set(2, 1, 1, stairs(Direction.EAST));      // стул
+        p.set(2, 1, 1, h.stairs(Direction.EAST));      // стул
         p.set(6, 1, 1, barrel());
         p.set(6, 1, 2, Blocks.HAY_BLOCK.getDefaultState());
         p.set(6, 1, 3, Blocks.FLETCHING_TABLE.getDefaultState());
@@ -120,8 +118,8 @@ public final class HousePlans {
     // =====================================================================
     // Скотовод: длинный дом-«амбар» 8×10; загон с сеном (рабочее место) и поилкой
     // =====================================================================
-    public static StructurePlan rancher() {
-        House h = new House(8, 10, 3, false, 8);
+    public static StructurePlan rancher(HouseDesign design) {
+        House h = new House(8, 10, 3, false, 8, design);
         StructurePlan p = h.p;
         bed(p, 1, 7, Blocks.BROWN_BED);
         chest(p, 6, 1, 8, Direction.WEST);
@@ -150,8 +148,8 @@ public final class HousePlans {
     // =====================================================================
     // Повар: высокий дом 8×8, конёк поперёк, кирпичная печь с дымоходом
     // =====================================================================
-    public static StructurePlan cook() {
-        House h = new House(8, 8, 4, true, 6);
+    public static StructurePlan cook(HouseDesign design) {
+        House h = new House(8, 8, 4, true, 6, design);
         StructurePlan p = h.p;
         // Печь (рабочее место повара — кирпичи) и дымоход сквозь крышу
         p.set(6, 1, 5, Blocks.BRICKS.getDefaultState());
@@ -167,7 +165,7 @@ public final class HousePlans {
         chest(p, 1, 1, 3, Direction.EAST);
         p.set(4, 1, 4, FENCE);
         p.late(4, 2, 4, Blocks.OAK_PRESSURE_PLATE.getDefaultState());
-        p.set(5, 1, 4, stairs(Direction.EAST));
+        p.set(5, 1, 4, h.stairs(Direction.EAST));
         carpet(p, 2, 1, 2, 2, Blocks.RED_CARPET);
 
         // Летняя кухня во дворе
@@ -194,8 +192,8 @@ public final class HousePlans {
     // =====================================================================
     private static final int MINE_DEPTH = 9;
 
-    public static StructurePlan miner() {
-        House h = new House(6, 6, 3, false, 6);
+    public static StructurePlan miner(HouseDesign design) {
+        House h = new House(6, 6, 3, false, 6, design);
         StructurePlan p = h.p;
         bed(p, 1, 3, Blocks.BLACK_BED);
         chest(p, 4, 1, 4, Direction.WEST);
@@ -215,8 +213,8 @@ public final class HousePlans {
     // =====================================================================
     // Лесоруб: узкий дом 6×8; длинный двор с деревьями (брёвна — рабочее место)
     // =====================================================================
-    public static StructurePlan lumberjack() {
-        House h = new House(6, 8, 3, false, 9);
+    public static StructurePlan lumberjack(HouseDesign design) {
+        House h = new House(6, 8, 3, false, 9, design);
         StructurePlan p = h.p;
         bed(p, 1, 5, Blocks.RED_BED);
         chest(p, 4, 1, 6, Direction.WEST);
@@ -247,8 +245,8 @@ public final class HousePlans {
     // =====================================================================
     // Кузнец: широкий низкий дом 10×8, конёк поперёк, каменный дымоход над горном
     // =====================================================================
-    public static StructurePlan blacksmith() {
-        House h = new House(10, 8, 3, true, 6);
+    public static StructurePlan blacksmith(HouseDesign design) {
+        House h = new House(10, 8, 3, true, 6, design);
         StructurePlan p = h.p;
         // Горн в углу и дымоход сквозь крышу
         p.set(8, 1, 6, Blocks.MAGMA_BLOCK.getDefaultState());
@@ -284,28 +282,156 @@ public final class HousePlans {
     }
 
     // =====================================================================
+    // Стиль (дизайн): материалы и форма
+    // =====================================================================
+
+    private enum Roof { GABLE, STEEP, FLAT }
+
+    /** Всё, чем дизайны отличаются друг от друга. */
+    private static final class Style {
+        HouseDesign design;
+        BlockState wall, plinth, corner, floor, floorEdge, gable, roofBlock, window, fence, gate, ridge;
+        @Nullable
+        BlockState post;              // фахверк: столбы между окнами
+        Block roofStairs, door, furnitureStairs;
+        Roof roof = Roof.GABLE;
+        int extraHeight;              // на сколько стены выше обычного
+        int eave = 1;                 // свес крыши (блоков за стену)
+        boolean porch;                // крытое крыльцо со столбами и фонарями
+        boolean logEnds;              // торчащие концы брёвен по углам (сруб)
+        boolean horizontalLogs;       // стены из лежачих брёвен
+
+        static Style of(HouseDesign design) {
+            Style s = new Style();
+            s.design = design;
+            switch (design) {
+                case SPRUCE -> {
+                    s.wall = Blocks.SPRUCE_LOG.getDefaultState();
+                    s.horizontalLogs = true;
+                    s.plinth = s.wall;
+                    s.corner = Blocks.STRIPPED_SPRUCE_LOG.getDefaultState();
+                    s.floor = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.floorEdge = Blocks.MOSSY_COBBLESTONE.getDefaultState();
+                    s.gable = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.roofStairs = Blocks.SPRUCE_STAIRS;
+                    s.roofBlock = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.window = Blocks.GLASS_PANE.getDefaultState();
+                    s.fence = Blocks.SPRUCE_FENCE.getDefaultState();
+                    s.gate = Blocks.SPRUCE_FENCE_GATE.getDefaultState();
+                    s.door = Blocks.SPRUCE_DOOR;
+                    s.furnitureStairs = Blocks.SPRUCE_STAIRS;
+                    s.ridge = Blocks.SPRUCE_SLAB.getDefaultState();
+                    s.eave = 2;
+                    s.porch = true;
+                    s.logEnds = true;
+                }
+                case STONE -> {
+                    s.wall = Blocks.STONE_BRICKS.getDefaultState();
+                    s.plinth = Blocks.COBBLESTONE.getDefaultState();
+                    s.corner = Blocks.CHISELED_STONE_BRICKS.getDefaultState();
+                    s.floor = Blocks.POLISHED_ANDESITE.getDefaultState();
+                    s.floorEdge = Blocks.COBBLESTONE.getDefaultState();
+                    s.gable = s.wall;
+                    s.roofStairs = Blocks.STONE_BRICK_STAIRS;
+                    s.roofBlock = Blocks.STONE_BRICK_SLAB.getDefaultState().with(Properties.SLAB_TYPE, SlabType.TOP);
+                    s.window = Blocks.IRON_BARS.getDefaultState();
+                    s.fence = Blocks.COBBLESTONE_WALL.getDefaultState();
+                    s.gate = Blocks.SPRUCE_FENCE_GATE.getDefaultState();
+                    s.door = Blocks.SPRUCE_DOOR;
+                    s.furnitureStairs = Blocks.SPRUCE_STAIRS;
+                    s.ridge = Blocks.STONE_BRICK_SLAB.getDefaultState();
+                    s.roof = Roof.FLAT;
+                    s.extraHeight = 1;
+                }
+                case BIRCH -> {
+                    s.wall = Blocks.BIRCH_PLANKS.getDefaultState();
+                    s.plinth = Blocks.STRIPPED_DARK_OAK_LOG.getDefaultState();
+                    s.corner = Blocks.DARK_OAK_LOG.getDefaultState();
+                    s.post = Blocks.STRIPPED_DARK_OAK_LOG.getDefaultState();
+                    s.floor = Blocks.BIRCH_PLANKS.getDefaultState();
+                    s.floorEdge = Blocks.STONE_BRICKS.getDefaultState();
+                    s.gable = Blocks.BIRCH_PLANKS.getDefaultState();
+                    s.roofStairs = Blocks.DARK_OAK_STAIRS;
+                    s.roofBlock = Blocks.DARK_OAK_PLANKS.getDefaultState();
+                    s.window = Blocks.GLASS_PANE.getDefaultState();
+                    s.fence = Blocks.BIRCH_FENCE.getDefaultState();
+                    s.gate = Blocks.BIRCH_FENCE_GATE.getDefaultState();
+                    s.door = Blocks.BIRCH_DOOR;
+                    s.furnitureStairs = Blocks.BIRCH_STAIRS;
+                    s.ridge = Blocks.DARK_OAK_SLAB.getDefaultState();
+                    s.roof = Roof.STEEP;
+                }
+                default -> {
+                    s.wall = Blocks.OAK_PLANKS.getDefaultState();
+                    s.plinth = COBBLE;
+                    s.corner = LOG;
+                    s.floor = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.floorEdge = COBBLE;
+                    s.gable = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.roofStairs = Blocks.SPRUCE_STAIRS;
+                    s.roofBlock = Blocks.SPRUCE_PLANKS.getDefaultState();
+                    s.window = Blocks.GLASS_PANE.getDefaultState();
+                    s.fence = Blocks.OAK_FENCE.getDefaultState();
+                    s.gate = Blocks.OAK_FENCE_GATE.getDefaultState();
+                    s.door = Blocks.OAK_DOOR;
+                    s.furnitureStairs = Blocks.OAK_STAIRS;
+                    s.ridge = null;
+                }
+            }
+            return s;
+        }
+
+        /** Балка вдоль оси (бревно лежит; у камня — просто каменный кирпич). */
+        BlockState beam(Direction.Axis axis) {
+            return switch (design) {
+                case STONE -> Blocks.STONE_BRICKS.getDefaultState();
+                case BIRCH -> Blocks.DARK_OAK_LOG.getDefaultState().with(Properties.AXIS, axis);
+                default -> LOG.with(Properties.AXIS, axis);
+            };
+        }
+
+        /** Блок стены: у сруба брёвна лежат вдоль стены. */
+        BlockState wallFor(boolean sideX) {
+            if (horizontalLogs) {
+                return wall.with(Properties.AXIS, sideX ? Direction.Axis.Z : Direction.Axis.X);
+            }
+            return wall;
+        }
+
+        BlockState stairs(Direction facing) {
+            return furnitureStairs.getDefaultState().with(Properties.HORIZONTAL_FACING, facing);
+        }
+    }
+
+    // =====================================================================
     // Коробка дома
     // =====================================================================
 
-    /** Один дом: коробка, крыша, двор. Создаётся с размерами, мебель ставится отдельно. */
+    /** Один дом: коробка, крыша, двор. Создаётся с размерами и дизайном, мебель ставится отдельно. */
     private static final class House {
         final StructurePlan p;
+        final Style s;
         final int w, d, h;           // ширина, глубина, высота стен
         final boolean ridgeAlongX;   // конёк поперёк дома (скаты на перед и зад)
         final int doorX, backX;      // передняя и задняя двери
         final int beamY, roofTop;
         final int yardStart, yardEnd;
 
-        House(int w, int d, int h, boolean ridgeAlongX, int yardDepth) {
+        House(int w, int d, int h, boolean ridgeAlongX, int yardDepth, HouseDesign design) {
+            this.s = Style.of(design);
             this.w = w;
             this.d = d;
-            this.h = h;
+            this.h = h + s.extraHeight;
             this.ridgeAlongX = ridgeAlongX;
             this.doorX = w / 2 - 1;
             this.backX = w / 2;
-            this.beamY = h + 1;
+            this.beamY = this.h + 1;
             int span = ridgeAlongX ? d : w;
-            this.roofTop = beamY + span / 2;
+            this.roofTop = switch (s.roof) {
+                case GABLE -> beamY + span / 2;
+                case STEEP -> beamY + 2 * (span / 2) + 1;
+                case FLAT -> beamY + 4;
+            };
             this.yardStart = d;
             this.yardEnd = d + yardDepth - 1;
             this.p = new StructurePlan(new BlockPos(doorX, 1, -1));
@@ -316,10 +442,14 @@ public final class HousePlans {
             return new BlockPos(x, y, z);
         }
 
+        BlockState stairs(Direction facing) {
+            return s.stairs(facing);
+        }
+
         private void build() {
-            // Расчистка места над землёй
-            for (int x = -1; x <= w; x++) {
-                for (int z = -1; z <= yardEnd; z++) {
+            // Расчистка места над землёй (с запасом под свесы и крыльцо)
+            for (int x = -2; x <= w + 1; x++) {
+                for (int z = -3; z <= yardEnd; z++) {
                     for (int y = 1; y <= roofTop + 2; y++) {
                         p.set(x, y, z, AIR);
                     }
@@ -337,19 +467,40 @@ public final class HousePlans {
             for (int x = 0; x < w; x++) {
                 for (int z = 0; z < d; z++) {
                     boolean edge = x == 0 || x == w - 1 || z == 0 || z == d - 1;
-                    p.set(x, 0, z, edge ? COBBLE : FLOOR);
+                    p.set(x, 0, z, edge ? s.floorEdge : s.floor);
                 }
             }
             p.set(doorX, 0, -1, Blocks.DIRT_PATH.getDefaultState());
 
-            // Стены: нижний ряд — булыжник, углы — брёвна
+            // Стены: нижний ряд — цоколь, углы — столбы
             for (int y = 1; y <= h; y++) {
                 for (int x = 0; x < w; x++) {
                     for (int z = 0; z < d; z++) {
                         boolean sideX = x == 0 || x == w - 1;
                         boolean sideZ = z == 0 || z == d - 1;
-                        if (sideX || sideZ) {
-                            p.set(x, y, z, (sideX && sideZ) ? LOG : (y == 1 ? COBBLE : WALL));
+                        if (sideX && sideZ) {
+                            p.set(x, y, z, s.corner);
+                        } else if (sideX || sideZ) {
+                            BlockState wall;
+                            if (y == 1 && !s.horizontalLogs) {
+                                wall = s.plinth.contains(Properties.AXIS)
+                                        ? s.plinth.with(Properties.AXIS, sideX ? Direction.Axis.Z : Direction.Axis.X)
+                                        : s.plinth;
+                            } else {
+                                wall = s.wallFor(sideX);
+                            }
+                            p.set(x, y, z, wall);
+                        }
+                    }
+                }
+            }
+            // Фахверк: тёмные столбы между окнами на боковых стенах
+            if (s.post != null) {
+                for (int z = 2; z <= d - 3; z++) {
+                    if ((z - 2) % 3 == 2) {
+                        for (int y = 2; y <= h; y++) {
+                            p.set(0, y, z, s.post);
+                            p.set(w - 1, y, z, s.post);
                         }
                     }
                 }
@@ -374,88 +525,200 @@ public final class HousePlans {
             p.set(backX, 2, d - 1, AIR);
 
             // Балки поверх стен
-            BlockState logX = LOG.with(Properties.AXIS, Direction.Axis.X);
-            BlockState logZ = LOG.with(Properties.AXIS, Direction.Axis.Z);
             for (int z = 0; z < d; z++) {
-                p.set(0, beamY, z, logZ);
-                p.set(w - 1, beamY, z, logZ);
+                p.set(0, beamY, z, s.beam(Direction.Axis.Z));
+                p.set(w - 1, beamY, z, s.beam(Direction.Axis.Z));
             }
             for (int x = 1; x < w - 1; x++) {
-                p.set(x, beamY, 0, logX);
-                p.set(x, beamY, d - 1, logX);
+                p.set(x, beamY, 0, s.beam(Direction.Axis.X));
+                p.set(x, beamY, d - 1, s.beam(Direction.Axis.X));
             }
-            buildRoof();
+            switch (s.roof) {
+                case FLAT -> buildFlatRoof();
+                default -> buildRoof(s.roof == Roof.STEEP ? 2 : 1);
+            }
+            if (s.logEnds) {
+                logEnds();
+            }
+            if (s.porch) {
+                porch();
+            }
 
-            // Двери и факелы
-            BlockState door = Blocks.OAK_DOOR.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+            // Двери и свет
+            BlockState door = s.door.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
             p.lateDouble(doorX, 1, 0, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER),
                     doorX, 2, 0, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
             p.lateDouble(backX, 1, d - 1, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER),
                     backX, 2, d - 1, door.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
             p.late(1, h, d / 2, wallTorch(Direction.EAST));
             p.late(w - 2, h, d / 2, wallTorch(Direction.WEST));
-            p.late(doorX - 1, h, -1, wallTorch(Direction.SOUTH));
-            p.late(doorX + 1, h, -1, wallTorch(Direction.SOUTH));
+            if (!s.porch) {
+                p.late(doorX - 1, h, -1, wallTorch(Direction.SOUTH));
+                p.late(doorX + 1, h, -1, wallTorch(Direction.SOUTH));
+            }
         }
 
-        /** Двускатная крыша со свесами, фронтонами и окошком на чердаке. */
-        private void buildRoof() {
+        /**
+         * Двускатная крыша со свесами и фронтонами. step — сколько блоков вверх на шаг ската:
+         * 1 — обычная, 2 — крутая (терем). Вдоль конька свес s.eave, у сруба ещё нижний ряд свеса.
+         */
+        private void buildRoof(int step) {
             int span = ridgeAlongX ? d : w;
+            int other = ridgeAlongX ? w : d;
+            int ov = s.eave;
             for (int r = 0; r <= span / 2; r++) {
-                int y = beamY + r;
-                if (ridgeAlongX) {
-                    // Скаты на перед и на зад, фронтоны на боковых стенах
-                    BlockState front = ROOF.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
-                    BlockState back = ROOF.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
-                    for (int x = -1; x <= w; x++) {
-                        p.set(x, y, -1 + r, front);
-                        p.set(x, y, d - r, back);
+                int y = beamY + step * r;
+                for (int b = -ov; b <= other - 1 + ov; b++) {
+                    roofCell(-1 + r, y, b, true);
+                    roofCell(span - r, y, b, false);
+                    if (step == 2 && r >= 1) {
+                        put(-1 + r, y - 1, b, s.roofBlock);
+                        put(span - r, y - 1, b, s.roofBlock);
                     }
-                    if (r >= 1 && r < span / 2) {
-                        for (int z = r; z <= d - 1 - r; z++) {
-                            p.set(0, y, z, GABLE);
-                            p.set(w - 1, y, z, GABLE);
+                }
+                // Фронтоны
+                int gableTop = step == 2 ? 2 : 1;
+                if (r >= 1 && r <= (span - 1) / 2 && (step == 2 || r < span / 2)) {
+                    for (int a = r; a <= span - 1 - r; a++) {
+                        for (int k = 0; k < gableTop; k++) {
+                            int gy = y - k;
+                            if (gy > beamY) {
+                                put(a, gy, 0, s.gable);
+                                put(a, gy, other - 1, s.gable);
+                            }
                         }
                     }
-                } else {
-                    // Скаты влево и вправо, фронтоны спереди и сзади
-                    BlockState left = ROOF.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST);
-                    BlockState right = ROOF.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST);
-                    for (int z = -1; z <= d; z++) {
-                        p.set(-1 + r, y, z, left);
-                        p.set(w - r, y, z, right);
-                    }
-                    if (r >= 1 && r < span / 2) {
-                        for (int x = r; x <= w - 1 - r; x++) {
-                            p.set(x, y, 0, GABLE);
-                            p.set(x, y, d - 1, GABLE);
-                        }
-                    }
+                }
+            }
+            // Нижний ряд свеса (у сруба)
+            if (ov >= 2) {
+                for (int b = -ov; b <= other - 1 + ov; b++) {
+                    roofCell(-2, beamY - 1, b, true);
+                    roofCell(span + 1, beamY - 1, b, false);
+                }
+            }
+            // Конёк
+            if (s.ridge != null) {
+                int topY = beamY + step * (span / 2) + 1;
+                for (int b = -ov; b <= other - 1 + ov; b++) {
+                    put(span / 2 - 1, topY, b, s.ridge);
+                    put(span / 2, topY, b, s.ridge);
                 }
             }
             // Окошко на чердаке (если фронтон достаточно высокий)
-            if (span / 2 - 1 >= 2) {
+            if (span / 2 - 1 >= 2 || step == 2 && span / 2 >= 2) {
                 int y = beamY + 2;
+                int a = span / 2 - 1;
                 if (ridgeAlongX) {
-                    int z = d / 2 - 1;
-                    window(0, y, z);
-                    window(0, y, z + 1);
-                    window(w - 1, y, z);
-                    window(w - 1, y, z + 1);
+                    window(0, y, a);
+                    window(0, y, a + 1);
+                    window(w - 1, y, a);
+                    window(w - 1, y, a + 1);
                 } else {
-                    int x = w / 2 - 1;
-                    window(x, y, 0);
-                    window(x + 1, y, 0);
-                    window(x, y, d - 1);
-                    window(x + 1, y, d - 1);
+                    window(a, y, 0);
+                    window(a + 1, y, 0);
+                    window(a, y, d - 1);
+                    window(a + 1, y, d - 1);
                 }
             }
         }
 
-        /** Стекло ставится в конце, чтобы соединиться с соседями. */
+        /** Ступенька ската: a — поперёк конька (0 — край дома), b — вдоль конька. */
+        private void roofCell(int a, int y, int b, boolean nearSide) {
+            Direction facing;
+            if (ridgeAlongX) {
+                facing = nearSide ? Direction.NORTH : Direction.SOUTH;
+            } else {
+                facing = nearSide ? Direction.EAST : Direction.WEST;
+            }
+            put(a, y, b, s.roofStairs.getDefaultState().with(Properties.HORIZONTAL_FACING, facing));
+        }
+
+        /** Поставить блок по координатам «поперёк конька / вдоль конька». */
+        private void put(int a, int y, int b, BlockState state) {
+            if (ridgeAlongX) {
+                p.set(b, y, a, state);
+            } else {
+                p.set(a, y, b, state);
+            }
+        }
+
+        /** Плоская крыша с зубцами по краю и башенками по углам (каменная застава). */
+        private void buildFlatRoof() {
+            for (int x = 1; x < w - 1; x++) {
+                for (int z = 1; z < d - 1; z++) {
+                    p.set(x, beamY, z, s.roofBlock);
+                }
+            }
+            // Сплошной парапет по краю, сверху зубцы через один
+            for (int x = 0; x < w; x++) {
+                for (int z = 0; z < d; z++) {
+                    boolean edge = x == 0 || x == w - 1 || z == 0 || z == d - 1;
+                    if (edge) {
+                        p.set(x, beamY + 1, z, s.wall);
+                        if ((x + z) % 2 == 0) {
+                            p.set(x, beamY + 2, z, s.wall);
+                        }
+                    }
+                }
+            }
+            // Башенки по углам: на блок выше зубцов, сверху фонарь
+            for (int[] c : new int[][]{{0, 0}, {w - 1, 0}, {0, d - 1}, {w - 1, d - 1}}) {
+                for (int y = beamY + 1; y <= beamY + 3; y++) {
+                    p.set(c[0], y, c[1], s.corner);
+                }
+                p.late(c[0], beamY + 4, c[1], Blocks.LANTERN.getDefaultState());
+            }
+            // Козырёк над входом: перевёрнутые ступени
+            BlockState hood = Blocks.STONE_BRICK_STAIRS.getDefaultState()
+                    .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+                    .with(Properties.BLOCK_HALF, net.minecraft.block.enums.BlockHalf.TOP);
+            for (int x = doorX - 1; x <= doorX + 1; x++) {
+                p.set(x, 3, -1, hood);
+            }
+        }
+
+        /** Сруб: концы брёвен торчат из углов (через ряд — то вдоль, то поперёк). */
+        private void logEnds() {
+            BlockState alongX = s.wall.with(Properties.AXIS, Direction.Axis.X);
+            BlockState alongZ = s.wall.with(Properties.AXIS, Direction.Axis.Z);
+            for (int y = 1; y <= h; y++) {
+                boolean odd = y % 2 == 1;
+                if (odd) {
+                    p.set(-1, y, 0, alongX);
+                    p.set(w, y, 0, alongX);
+                    p.set(-1, y, d - 1, alongX);
+                    p.set(w, y, d - 1, alongX);
+                } else {
+                    p.set(0, y, -1, alongZ);
+                    p.set(w - 1, y, -1, alongZ);
+                }
+            }
+        }
+
+        /** Крытое крыльцо: столбы, навес из полублоков и два фонаря. */
+        private void porch() {
+            int top = h;
+            for (int x : new int[]{doorX - 2, doorX + 2}) {
+                for (int y = 1; y < top; y++) {
+                    p.set(x, y, -2, s.fence);
+                }
+            }
+            BlockState slab = s.ridge != null ? s.ridge : Blocks.SPRUCE_SLAB.getDefaultState();
+            for (int x = doorX - 2; x <= doorX + 2; x++) {
+                for (int z = -2; z <= -1; z++) {
+                    p.set(x, top, z, slab);
+                }
+            }
+            BlockState lantern = Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true);
+            p.late(doorX - 1, top - 1, -2, lantern);
+            p.late(doorX + 1, top - 1, -2, lantern);
+        }
+
+        /** Окно ставится в конце, чтобы соединиться с соседями. */
         private void window(int x, int y, int z) {
             p.set(x, y, z, AIR);
-            p.lateConnected(x, y, z, GLASS);
+            p.lateConnected(x, y, z, s.window);
         }
 
         /** Земля двора: трава по краю, дорожка у задней двери, внутри — заданный блок. */
@@ -482,13 +745,13 @@ public final class HousePlans {
         /** Забор вокруг двора с калиткой напротив задней двери и факелами на углах. */
         void yardFence() {
             for (int z = yardStart; z <= yardEnd; z++) {
-                p.lateConnected(0, 1, z, FENCE);
-                p.lateConnected(w - 1, 1, z, FENCE);
+                p.lateConnected(0, 1, z, s.fence);
+                p.lateConnected(w - 1, 1, z, s.fence);
             }
             for (int x = 1; x < w - 1; x++) {
                 p.lateConnected(x, 1, yardEnd, x == backX
-                        ? Blocks.OAK_FENCE_GATE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH)
-                        : FENCE);
+                        ? s.gate.with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+                        : s.fence);
             }
             p.late(0, 2, yardEnd, Blocks.TORCH.getDefaultState());
             p.late(w - 1, 2, yardEnd, Blocks.TORCH.getDefaultState());
@@ -533,14 +796,25 @@ public final class HousePlans {
     /** Где стоят покупатели у прилавков (смещение от центра: x — вправо, z — вглубь). */
     public static final int[][] MARKET_SPOTS = {{-5, -4}, {5, -4}, {-5, 4}, {5, 4}};
 
-    public static StructurePlan townSquare() {
+    public static StructurePlan townSquare(HouseDesign design) {
         int c = SQUARE_RADIUS;            // центр площади
         int size = 2 * c + 1;
         StructurePlan p = new StructurePlan(new BlockPos(c, 1, -1));
+        // Мощение кольцами (от центра наружу) — своё у каждого дизайна
+        BlockState[] paving = switch (design) {
+            case SPRUCE -> new BlockState[]{Blocks.SPRUCE_PLANKS.getDefaultState(), Blocks.MOSSY_COBBLESTONE.getDefaultState(),
+                    Blocks.COARSE_DIRT.getDefaultState(), Blocks.DIRT_PATH.getDefaultState()};
+            case STONE -> new BlockState[]{Blocks.CHISELED_STONE_BRICKS.getDefaultState(), Blocks.STONE_BRICKS.getDefaultState(),
+                    Blocks.POLISHED_ANDESITE.getDefaultState(), COBBLE};
+            case BIRCH -> new BlockState[]{Blocks.POLISHED_DIORITE.getDefaultState(), Blocks.BIRCH_PLANKS.getDefaultState(),
+                    Blocks.SMOOTH_STONE.getDefaultState(), Blocks.DIRT_PATH.getDefaultState()};
+            default -> new BlockState[]{Blocks.STONE_BRICKS.getDefaultState(), Blocks.POLISHED_ANDESITE.getDefaultState(),
+                    COBBLE, Blocks.DIRT_PATH.getDefaultState()};
+        };
         // Расчистка и засыпка
         for (int x = -1; x <= size; x++) {
             for (int z = -1; z <= size; z++) {
-                for (int y = 1; y <= 6; y++) {
+                for (int y = 1; y <= 8; y++) {
                     p.set(x, y, z, AIR);
                 }
             }
@@ -553,10 +827,10 @@ public final class HousePlans {
                 // Мощение кольцами от центра
                 int ring = Math.max(Math.abs(x - c), Math.abs(z - c));
                 BlockState ground = switch (ring) {
-                    case 0, 1 -> Blocks.STONE_BRICKS.getDefaultState();
-                    case 2 -> Blocks.POLISHED_ANDESITE.getDefaultState();
-                    case 4 -> COBBLE;
-                    default -> Blocks.DIRT_PATH.getDefaultState();
+                    case 0, 1 -> paving[0];
+                    case 2 -> paving[1];
+                    case 4 -> paving[2];
+                    default -> paving[3];
                 };
                 p.set(x, 0, z, ground);
             }
@@ -573,19 +847,7 @@ public final class HousePlans {
             };
             p.late(beds[i][0], 1, beds[i][1], flower.getDefaultState());
         }
-        // Звонница: два столба, перекладина и колокол
-        BlockState logX = LOG.with(Properties.AXIS, Direction.Axis.X);
-        for (int y = 1; y <= 3; y++) {
-            p.set(c - 1, y, c, LOG);
-            p.set(c + 1, y, c, LOG);
-        }
-        for (int x = c - 1; x <= c + 1; x++) {
-            p.set(x, 4, c, logX);
-        }
-        p.set(c, 5, c, Blocks.SPRUCE_SLAB.getDefaultState());
-        p.late(c, 3, c, Blocks.BELL.getDefaultState()
-                .with(Properties.ATTACHMENT, net.minecraft.block.enums.Attachment.CEILING)
-                .with(Properties.HORIZONTAL_FACING, Direction.NORTH));
+        belfry(p, c, design);
         // Скамейки лицом к колоколу (проходы по центру каждой стороны свободны)
         for (int d : new int[]{-1, 1}) {
             p.set(c - 3, 1, c + d, stairs(Direction.WEST));
@@ -594,9 +856,15 @@ public final class HousePlans {
             p.set(c + d, 1, c - 3, stairs(Direction.SOUTH));
         }
         // Фонари на столбах у внутренних углов
+        BlockState lampPost = switch (design) {
+            case SPRUCE -> Blocks.SPRUCE_FENCE.getDefaultState();
+            case STONE -> Blocks.STONE_BRICK_WALL.getDefaultState();
+            case BIRCH -> Blocks.BIRCH_FENCE.getDefaultState();
+            default -> FENCE;
+        };
         for (int[] lp : new int[][]{{c - 3, c - 3}, {c + 3, c - 3}, {c - 3, c + 3}, {c + 3, c + 3}}) {
-            p.set(lp[0], 1, lp[1], FENCE);
-            p.set(lp[0], 2, lp[1], FENCE);
+            p.set(lp[0], 1, lp[1], lampPost);
+            p.set(lp[0], 2, lp[1], lampPost);
             p.late(lp[0], 3, lp[1], Blocks.LANTERN.getDefaultState());
         }
         // Рынок: 4 прилавка с полосатыми навесами (прилавком к центру площади)
@@ -609,6 +877,99 @@ public final class HousePlans {
         p.onFinish(task -> TownState.get(task.getWorld().getServer()).setSquare(
                 task.toWorld(c, 0, c), task.toWorld(c, 3, c), SQUARE_RADIUS, task.getFacing(), dimensionOf(task)));
         return p;
+    }
+
+    /**
+     * Звонница в центре площади (колокол всегда в (c, 3, c), висит на перекладине (c, 4, c)).
+     * Дуб — два столба и перекладина; ель — с двускатной крышей; камень — каменные столбы с плитами
+     * и фонарём; берёза — четыре столба и шатёр.
+     */
+    private static void belfry(StructurePlan p, int c, HouseDesign design) {
+        BlockState postBlock = switch (design) {
+            case STONE -> Blocks.STONE_BRICKS.getDefaultState();
+            case BIRCH -> Blocks.BIRCH_LOG.getDefaultState();
+            default -> LOG;
+        };
+        BlockState beam = switch (design) {
+            case STONE -> Blocks.STONE_BRICKS.getDefaultState();
+            case BIRCH -> Blocks.DARK_OAK_LOG.getDefaultState().with(Properties.AXIS, Direction.Axis.X);
+            default -> LOG.with(Properties.AXIS, Direction.Axis.X);
+        };
+        if (design == HouseDesign.BIRCH) {
+            // Четыре столба по углам 3×3
+            for (int[] q : new int[][]{{c - 1, c - 1}, {c + 1, c - 1}, {c - 1, c + 1}, {c + 1, c + 1}}) {
+                for (int y = 1; y <= 3; y++) {
+                    p.set(q[0], y, q[1], postBlock);
+                }
+            }
+            for (int x = c - 1; x <= c + 1; x++) {
+                p.set(x, 4, c - 1, beam);
+                p.set(x, 4, c + 1, beam);
+                p.set(x, 4, c, beam);
+            }
+            // Шатёр: кольцо ступеней и маковка
+            for (int x = c - 2; x <= c + 2; x++) {
+                for (int z = c - 2; z <= c + 2; z++) {
+                    int ring = Math.max(Math.abs(x - c), Math.abs(z - c));
+                    if (ring == 2) {
+                        p.set(x, 5, z, tentStair(x - c, z - c));
+                    } else if (ring == 1) {
+                        p.set(x, 6, z, tentStair(x - c, z - c));
+                        p.set(x, 5, z, Blocks.DARK_OAK_PLANKS.getDefaultState());
+                    }
+                }
+            }
+            p.set(c, 5, c, Blocks.DARK_OAK_PLANKS.getDefaultState());
+            p.set(c, 6, c, Blocks.DARK_OAK_PLANKS.getDefaultState());
+            p.set(c, 7, c, Blocks.DARK_OAK_FENCE.getDefaultState());
+        } else {
+            int postTop = design == HouseDesign.STONE ? 4 : 3;
+            for (int y = 1; y <= postTop; y++) {
+                p.set(c - 1, y, c, postBlock);
+                p.set(c + 1, y, c, postBlock);
+            }
+            for (int x = c - 1; x <= c + 1; x++) {
+                p.set(x, 4, c, beam);
+            }
+            switch (design) {
+                case SPRUCE -> {
+                    // Двускатная крыша над колоколом
+                    for (int x = c - 2; x <= c + 2; x++) {
+                        p.set(x, 5, c - 1, Blocks.SPRUCE_STAIRS.getDefaultState()
+                                .with(Properties.HORIZONTAL_FACING, Direction.NORTH));
+                        p.set(x, 5, c + 1, Blocks.SPRUCE_STAIRS.getDefaultState()
+                                .with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
+                        p.set(x, 5, c, Blocks.SPRUCE_PLANKS.getDefaultState());
+                        p.set(x, 6, c, Blocks.SPRUCE_SLAB.getDefaultState());
+                    }
+                }
+                case STONE -> {
+                    for (int x = c - 2; x <= c + 2; x++) {
+                        p.set(x, 5, c, Blocks.STONE_BRICK_SLAB.getDefaultState());
+                    }
+                    p.set(c - 1, 5, c, Blocks.CHISELED_STONE_BRICKS.getDefaultState());
+                    p.set(c + 1, 5, c, Blocks.CHISELED_STONE_BRICKS.getDefaultState());
+                    p.late(c - 1, 6, c, Blocks.LANTERN.getDefaultState());
+                    p.late(c + 1, 6, c, Blocks.LANTERN.getDefaultState());
+                }
+                default -> p.set(c, 5, c, Blocks.SPRUCE_SLAB.getDefaultState());
+            }
+        }
+        p.late(c, 3, c, Blocks.BELL.getDefaultState()
+                .with(Properties.ATTACHMENT, net.minecraft.block.enums.Attachment.CEILING)
+                .with(Properties.HORIZONTAL_FACING, Direction.NORTH));
+    }
+
+    /** Ступень шатра (dx, dz — смещение от центра): высокой стороной к центру. */
+    private static BlockState tentStair(int dx, int dz) {
+        Direction facing;
+        if (Math.abs(dz) >= Math.abs(dx)) {
+            facing = dz < 0 ? Direction.NORTH : Direction.SOUTH;
+        } else {
+            facing = dx < 0 ? Direction.EAST : Direction.WEST;
+        }
+        // Высокая часть ступеньки смотрит к центру (локально NORTH = +z, как у ската крыши)
+        return Blocks.DARK_OAK_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, facing);
     }
 
     /**

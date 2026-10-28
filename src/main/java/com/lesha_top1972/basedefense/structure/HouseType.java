@@ -1,14 +1,13 @@
 package com.lesha_top1972.basedefense.structure;
 
-import com.lesha_top1972.basedefense.research.Technology;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
- * Виды домов. Связывает блок дома с его чертежом.
+ * Виды домов. Связывает блок дома с его чертежами (по одному на каждый дизайн {@link HouseDesign}).
  * selfBuilt — дом строится сам, без ресурсов (только дом строителя: строить его ещё некому).
  * Остальные дома строит житель-строитель из материалов в сундуках своего дома.
  */
@@ -22,23 +21,25 @@ public enum HouseType {
     LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false),
     TOWN_SQUARE("town_square", HousePlans::townSquare, false);
 
+    private static final int DESIGNS = HouseDesign.values().length;
+
     private final String id;
-    private final Supplier<StructurePlan> factory;
+    private final Function<HouseDesign, StructurePlan> factory;
     private final boolean selfBuilt;
 
-    // Чертёж, шаги постройки и список материалов считаются один раз (при первом обращении)
-    @Nullable
-    private StructurePlan plan;
-    @Nullable
-    private List<List<StructurePlan.Placement>> steps;
-    @Nullable
-    private Map<net.minecraft.item.Item, Integer> requirements;
-    private int costlyBlocks = -1;
+    // Чертёж, шаги постройки и список материалов считаются один раз на каждый дизайн (при первом обращении)
+    private final StructurePlan[] plans = new StructurePlan[DESIGNS];
+    @SuppressWarnings("unchecked")
+    private final List<List<StructurePlan.Placement>>[] steps = new List[DESIGNS];
+    @SuppressWarnings("unchecked")
+    private final Map<net.minecraft.item.Item, Integer>[] requirements = new Map[DESIGNS];
+    private final int[] costlyBlocks = new int[DESIGNS];
 
-    HouseType(String id, Supplier<StructurePlan> factory, boolean selfBuilt) {
+    HouseType(String id, Function<HouseDesign, StructurePlan> factory, boolean selfBuilt) {
         this.id = id;
         this.factory = factory;
         this.selfBuilt = selfBuilt;
+        java.util.Arrays.fill(costlyBlocks, -1);
     }
 
     public String getId() {
@@ -49,10 +50,9 @@ public enum HouseType {
         return selfBuilt;
     }
 
-    /** Открыта ли постройка в планшете при такой маске исследований (дом строителя — всегда). */
-    public boolean isUnlocked(int researchMask) {
-        Technology tech = Technology.forHouse(this);
-        return tech == null || (researchMask & tech.bit()) != 0;
+    /** Все постройки доступны сразу (исследований больше нет). */
+    public boolean isUnlocked() {
+        return true;
     }
 
     /** Название постройки (как у её блока). */
@@ -66,38 +66,42 @@ public enum HouseType {
         return index >= 0 && index < all.length ? all[index] : null;
     }
 
-    public synchronized StructurePlan getPlan() {
-        if (plan == null) {
-            plan = factory.get();
+    public synchronized StructurePlan getPlan(HouseDesign design) {
+        int i = design.ordinal();
+        if (plans[i] == null) {
+            plans[i] = factory.apply(design);
         }
-        return plan;
+        return plans[i];
     }
 
-    public synchronized List<List<StructurePlan.Placement>> getSteps() {
-        if (steps == null) {
-            steps = getPlan().toSteps();
+    public synchronized List<List<StructurePlan.Placement>> getSteps(HouseDesign design) {
+        int i = design.ordinal();
+        if (steps[i] == null) {
+            steps[i] = getPlan(design).toSteps();
         }
-        return steps;
+        return steps[i];
     }
 
-    /** Все материалы на дом (по порядку постройки). */
-    public synchronized Map<net.minecraft.item.Item, Integer> getRequirements() {
-        if (requirements == null) {
-            requirements = BuildCost.count(getSteps(), 0, getPlan().getOrigin());
+    /** Все материалы на дом этого дизайна (по порядку постройки). */
+    public synchronized Map<net.minecraft.item.Item, Integer> getRequirements(HouseDesign design) {
+        int i = design.ordinal();
+        if (requirements[i] == null) {
+            requirements[i] = BuildCost.count(getSteps(design), 0, getPlan(design).getOrigin());
         }
-        return requirements;
+        return requirements[i];
     }
 
-    /** Сколько блоков-материалов в доме (от этого зависит время постройки). */
-    public synchronized int getCostlyBlocks() {
-        if (costlyBlocks < 0) {
+    /** Сколько блоков-материалов в доме этого дизайна (от этого зависит время постройки). */
+    public synchronized int getCostlyBlocks(HouseDesign design) {
+        int i = design.ordinal();
+        if (costlyBlocks[i] < 0) {
             int sum = 0;
-            for (int n : getRequirements().values()) {
+            for (int n : getRequirements(design).values()) {
                 sum += n;
             }
-            costlyBlocks = sum;
+            costlyBlocks[i] = sum;
         }
-        return costlyBlocks;
+        return costlyBlocks[i];
     }
 
     @Nullable

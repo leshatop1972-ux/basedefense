@@ -4,6 +4,7 @@ import com.lesha_top1972.basedefense.block.HouseBlock;
 import com.lesha_top1972.basedefense.structure.BuildCost;
 import com.lesha_top1972.basedefense.structure.BuildTask;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import com.lesha_top1972.basedefense.structure.PathPlanner;
 import com.lesha_top1972.basedefense.structure.TownState;
@@ -142,14 +143,14 @@ public class BuilderEntity extends SettlerEntity {
     /** Примерно сколько секунд строителю этого уровня осталось строить (если материалы есть). */
     public static int estimateSeconds(int remainingBlocks, int level) {
         int lv = Math.max(1, Math.min(MAX_LEVEL, level));
-        int reference = Math.max(1, HouseType.FARMER.getCostlyBlocks());
+        int reference = Math.max(1, HouseType.FARMER.getCostlyBlocks(HouseDesign.OAK));
         return (int) Math.ceil(remainingBlocks * (double) SECONDS_PER_REFERENCE_HOUSE[lv] / reference);
     }
 
     /** Сколько блоков-материалов строитель ставит за тик. */
     private double blocksPerTick() {
         int level = Math.max(1, Math.min(MAX_LEVEL, getLevel()));
-        int reference = HouseType.FARMER.getCostlyBlocks();
+        int reference = HouseType.FARMER.getCostlyBlocks(HouseDesign.OAK);
         return reference / (SECONDS_PER_REFERENCE_HOUSE[level] * 20.0);
     }
 
@@ -186,14 +187,14 @@ public class BuilderEntity extends SettlerEntity {
             clearWork();
             return;
         }
-        if (task == null || !task.getPlan().equals(site.type.getPlan()) || !samePlace(task, site)) {
-            task = new BuildTask(world, site.type.getPlan(), site.type.getSteps(), site.pos, site.facing, true);
+        if (task == null || task.getPlan() != site.plan() || !samePlace(task, site)) {
+            task = new BuildTask(world, site.plan(), site.type.getSteps(site.design), site.pos, site.facing, true);
             task.setIndex(site.step);
             budget = 0;
         }
         currentHouse = site.type;
         if (this.age % 20 == 0) {
-            progress = progressOf(site.type, task.getIndex());
+            progress = progressOf(site.type, site.design, task.getIndex());
         }
         if (isSettlementFrozen()) {
             return;
@@ -378,13 +379,13 @@ public class BuilderEntity extends SettlerEntity {
     }
 
     /** Сколько процентов дома готово, если строительство дошло до шага step. */
-    public static int progressOf(HouseType type, int step) {
-        int total = type.getCostlyBlocks();
+    public static int progressOf(HouseType type, HouseDesign design, int step) {
+        int total = type.getCostlyBlocks(design);
         if (total <= 0) {
             return 100;
         }
         int left = 0;
-        for (int n : BuildCost.count(type.getSteps(), step, type.getPlan().getOrigin()).values()) {
+        for (int n : BuildCost.count(type.getSteps(design), step, type.getPlan(design).getOrigin()).values()) {
             left += n;
         }
         return Math.max(0, Math.min(100, (total - left) * 100 / total));

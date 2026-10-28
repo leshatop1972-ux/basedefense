@@ -1179,5 +1179,175 @@
         "attenuation_distance": 24
       }
     ]
+  },
+  "entity.settler.male.ambient": {
+    "subtitle": "subtitles.basedefense.settler.male.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:settler/male_ambient0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/male_ambient1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/male_ambient2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/male_ambient3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/male_ambient4",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.settler.male.greet": {
+    "subtitle": "subtitles.basedefense.settler.male.greet",
+    "sounds": [
+      {
+        "name": "basedefense:settler/male_greet0",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/male_greet1",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/male_greet2",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/male_greet3",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.settler.male.yes": {
+    "subtitle": "subtitles.basedefense.settler.male.yes",
+    "sounds": [
+      {
+        "name": "basedefense:settler/male_yes0",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/male_yes1",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.settler.male.hurt": {
+    "subtitle": "subtitles.basedefense.settler.male.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:settler/male_hurt0",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:settler/male_hurt1",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:settler/male_hurt2",
+        "attenuation_distance": 14
+      }
+    ]
+  },
+  "entity.settler.male.death": {
+    "subtitle": "subtitles.basedefense.settler.male.death",
+    "sounds": [
+      {
+        "name": "basedefense:settler/male_death",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.settler.female.ambient": {
+    "subtitle": "subtitles.basedefense.settler.female.ambient",
+    "sounds": [
+      {
+        "name": "basedefense:settler/female_ambient0",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/female_ambient1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/female_ambient2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/female_ambient3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "basedefense:settler/female_ambient4",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.settler.female.greet": {
+    "subtitle": "subtitles.basedefense.settler.female.greet",
+    "sounds": [
+      {
+        "name": "basedefense:settler/female_greet0",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/female_greet1",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/female_greet2",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/female_greet3",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.settler.female.yes": {
+    "subtitle": "subtitles.basedefense.settler.female.yes",
+    "sounds": [
+      {
+        "name": "basedefense:settler/female_yes0",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "basedefense:settler/female_yes1",
+        "attenuation_distance": 10
+      }
+    ]
+  },
+  "entity.settler.female.hurt": {
+    "subtitle": "subtitles.basedefense.settler.female.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:settler/female_hurt0",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:settler/female_hurt1",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:settler/female_hurt2",
+        "attenuation_distance": 14
+      }
+    ]
+  },
+  "entity.settler.female.death": {
+    "subtitle": "subtitles.basedefense.settler.female.death",
+    "sounds": [
+      {
+        "name": "basedefense:settler/female_death",
+        "attenuation_distance": 16
+      }
+    ]
   }
 }

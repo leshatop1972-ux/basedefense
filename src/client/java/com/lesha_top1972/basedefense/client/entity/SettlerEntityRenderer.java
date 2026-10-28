@@ -13,7 +13,7 @@ import net.minecraft.util.Identifier;
 
 /**
  * Отрисовка жителей поселения. Внешность не зависит от профессии: каждому жителю случайно
- * достаётся одна из 12 (7 мужчин, 5 женщин, список — SettlerLooks), текстуры 128×64.
+ * достаётся одна из 14 (8 мужчин, 6 женщин, список — SettlerLooks), текстуры 128×64.
  * Для женщин модель включает тонкие руки, грудь, юбку и причёску; у некоторых — шляпа, кепка
  * или сумочка на поясе (см. LOOKS).
  */
@@ -46,6 +46,8 @@ public class SettlerEntityRenderer extends MobEntityRenderer<SettlerEntity, Sett
             new SettlerEntityModel.Look(false, false, false, CAP, false),    // male_7 — парень в кепке
             new SettlerEntityModel.Look(true, false, true, NONE, true),      // female_4 — рыжая коса, сумочка
             new SettlerEntityModel.Look(true, false, false, BRIM, false),    // female_5 — каре, шляпа
+            new SettlerEntityModel.Look(false, false, false, BRIM, true),    // male_8 — бородач в зелёном сюртуке и фетровой шляпе
+            new SettlerEntityModel.Look(true, false, false, NONE, false),    // female_6 — седая бабушка с пучком
     };
 
     static {

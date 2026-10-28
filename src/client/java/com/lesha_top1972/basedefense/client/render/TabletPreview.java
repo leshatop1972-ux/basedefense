@@ -48,7 +48,7 @@ public final class TabletPreview {
         boolean ok = mc.world.getBlockState(pos).isReplaceable();
         Direction facing = mc.player.getHorizontalFacing();
 
-        StructurePlan plan = type.getPlan();
+        StructurePlan plan = type.getPlan(BuildingTabletItem.getSelectedDesign(BuildingTabletItem.findInHands(mc.player)));
         BlockPos[] bounds = plan.getBounds();
         BlockPos a = plan.toWorld(pos, facing, bounds[0].getX(), bounds[0].getY(), bounds[0].getZ());
         BlockPos b = plan.toWorld(pos, facing, bounds[1].getX(), bounds[1].getY(), bounds[1].getZ());

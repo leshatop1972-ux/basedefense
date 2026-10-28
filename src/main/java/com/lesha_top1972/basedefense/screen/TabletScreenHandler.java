@@ -2,8 +2,8 @@ package com.lesha_top1972.basedefense.screen;
 
 import com.lesha_top1972.basedefense.block.HouseBlock;
 import com.lesha_top1972.basedefense.item.BuildingTabletItem;
-import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -21,14 +21,20 @@ import net.minecraft.util.Hand;
 
 /**
  * Серверная часть меню строительного планшета.
- * Клиенту передаются исследования и есть ли строитель; нажатие кнопки = номер постройки (HouseType.ordinal),
- * сервер проверяет исследование и записывает выбор в планшет.
+ * Клиенту передаётся, есть ли строитель. Кнопки (номер = id):
+ *   id &lt; {@link #REMEMBER_BASE} — выбрать постройку для установки: id = номер постройки × 4 + номер дизайна;
+ *   id ≥ {@link #REMEMBER_BASE} — только запомнить дизайн здания (из окна дизайнов), так же закодировано.
  */
 public class TabletScreenHandler extends ScreenHandler {
 
-    public static final int PROP_RESEARCH = 0;
-    public static final int PROP_HAS_BUILDER = 1;
-    public static final int PROP_COUNT = 2;
+    public static final int PROP_HAS_BUILDER = 0;
+    public static final int PROP_COUNT = 1;
+    public static final int REMEMBER_BASE = 128;
+
+    /** Номер кнопки для пары «здание + дизайн». */
+    public static int encode(HouseType type, HouseDesign design) {
+        return type.ordinal() * HouseDesign.values().length + design.ordinal();
+    }
 
     private final PropertyDelegate props;
     private final Hand hand;
@@ -58,12 +64,8 @@ public class TabletScreenHandler extends ScreenHandler {
                 if (server == null) {
                     return 0;
                 }
-                return switch (index) {
-                    case PROP_RESEARCH -> ResearchManager.researchMask(server);
-                    case PROP_HAS_BUILDER -> ConstructionState.get(server)
-                            .hasBuilders(HouseBlock.dimensionId(player.getWorld())) ? 1 : 0;
-                    default -> 0;
-                };
+                return index == PROP_HAS_BUILDER && ConstructionState.get(server)
+                        .hasBuilders(HouseBlock.dimensionId(player.getWorld())) ? 1 : 0;
             }
 
             @Override
@@ -79,10 +81,6 @@ public class TabletScreenHandler extends ScreenHandler {
 
     // ---------- Для экрана (клиент) ----------
 
-    public boolean isUnlocked(HouseType type) {
-        return type.isUnlocked(props.get(PROP_RESEARCH));
-    }
-
     public boolean hasBuilder() {
         return props.get(PROP_HAS_BUILDER) != 0;
     }
@@ -91,17 +89,25 @@ public class TabletScreenHandler extends ScreenHandler {
 
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
-        HouseType type = HouseType.byIndex(id);
+        boolean remember = id >= REMEMBER_BASE;
+        int code = remember ? id - REMEMBER_BASE : id;
+        int n = HouseDesign.values().length;
+        HouseType type = HouseType.byIndex(code / n);
+        HouseDesign design = HouseDesign.byIndex(code % n);
         ItemStack stack = player.getStackInHand(hand);
-        if (type == null || !(stack.getItem() instanceof BuildingTabletItem) || !isUnlocked(type)) {
+        if (code < 0 || type == null || !(stack.getItem() instanceof BuildingTabletItem)) {
             return false;
         }
-        BuildingTabletItem.setSelected(stack, type);
+        if (remember) {
+            BuildingTabletItem.rememberDesign(stack, type, design);
+            return true;
+        }
+        BuildingTabletItem.setSelected(stack, type, design);
         if (player instanceof ServerPlayerEntity serverPlayer) {
             serverPlayer.getWorld().playSound(null, serverPlayer.getBlockPos(), SoundEvents.ITEM_BOOK_PAGE_TURN,
                     SoundCategory.PLAYERS, 1.0f, 1.2f);
-            serverPlayer.sendMessage(Text.translatable("message.basedefense.tablet.selected", type.getName())
-                    .formatted(Formatting.GREEN), true);
+            serverPlayer.sendMessage(Text.translatable("message.basedefense.tablet.selected", type.getName(),
+                    design.getName()).formatted(Formatting.GREEN), true);
             serverPlayer.closeHandledScreen();
         }
         return true;

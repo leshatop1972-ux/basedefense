@@ -1,8 +1,6 @@
 package com.lesha_top1972.basedefense.screen;
 
 import com.lesha_top1972.basedefense.block.ModBlocks;
-import com.lesha_top1972.basedefense.research.ResearchManager;
-import com.lesha_top1972.basedefense.research.Technology;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
@@ -23,14 +21,13 @@ import net.minecraft.sound.SoundEvents;
 
 /**
  * Серверная часть меню базы.
- * - Передаёт клиенту исследования и состояние поселения (через PropertyDelegate).
- * - Принимает нажатие кнопки «Исследовать» (номер кнопки = номер технологии).
+ * - Передаёт клиенту состояние поселения (через PropertyDelegate).
  * - Вкладка «Потребности»: слот, куда кладут еду, + инвентарь игрока.
  */
 public class BaseScreenHandler extends ScreenHandler {
 
     // ---------- Номера значений, которые сервер передаёт клиенту ----------
-    public static final int PROP_RESEARCH = 0;
+    public static final int PROP_RESEARCH = 0;   // не используется (исследования убраны)
     public static final int PROP_SETTLERS = 1;
     public static final int PROP_FOOD = 2;
     public static final int PROP_FOOD_DAY = 3;   // сколько еды поселение тратит в день
@@ -92,9 +89,6 @@ public class BaseScreenHandler extends ScreenHandler {
                 if (server == null) {
                     return 0;
                 }
-                if (index == PROP_RESEARCH) {
-                    return ResearchManager.researchMask(server);
-                }
                 SettlementState s = SettlementState.get(server);
                 return switch (index) {
                     case PROP_SETTLERS -> s.getSettlerCount();
@@ -125,29 +119,7 @@ public class BaseScreenHandler extends ScreenHandler {
         this.slotsVisible = visible;
     }
 
-    /** Исследована ли технология (работает на клиенте). */
-    public boolean isResearched(Technology tech) {
-        return (props.get(PROP_RESEARCH) & tech.bit()) != 0;
-    }
-
-    /** Можно ли уже исследовать технологию (предыдущая в цепочке открыта). */
-    public boolean isAvailable(Technology tech) {
-        return tech.isAvailable(props.get(PROP_RESEARCH));
-    }
-
     // ---------- Логика ----------
-
-    @Override
-    public boolean onButtonClick(PlayerEntity player, int id) {
-        Technology tech = Technology.byIndex(id);
-        if (tech == null) {
-            return false;
-        }
-        if (player instanceof ServerPlayerEntity serverPlayer) {
-            ResearchManager.tryResearch(serverPlayer, tech);
-        }
-        return true;
-    }
 
     /** Каждый тик на сервере: всё, что лежит в слоте «положить», уходит в запасы Базы. */
     @Override

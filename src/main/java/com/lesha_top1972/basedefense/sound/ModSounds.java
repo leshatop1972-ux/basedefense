@@ -119,6 +119,18 @@ public final class ModSounds {
     public static final SoundEvent BLOOD_DEATH = register("entity.blood_entity.death");
     public static final SoundEvent BLOOD_STEP = register("entity.blood_entity.step");
 
+    // Голоса жителей: мужские и женские (tools/settler_sounds.py)
+    public static final SoundEvent SETTLER_MALE_AMBIENT = register("entity.settler.male.ambient");
+    public static final SoundEvent SETTLER_MALE_GREET = register("entity.settler.male.greet");
+    public static final SoundEvent SETTLER_MALE_YES = register("entity.settler.male.yes");
+    public static final SoundEvent SETTLER_MALE_HURT = register("entity.settler.male.hurt");
+    public static final SoundEvent SETTLER_MALE_DEATH = register("entity.settler.male.death");
+    public static final SoundEvent SETTLER_FEMALE_AMBIENT = register("entity.settler.female.ambient");
+    public static final SoundEvent SETTLER_FEMALE_GREET = register("entity.settler.female.greet");
+    public static final SoundEvent SETTLER_FEMALE_YES = register("entity.settler.female.yes");
+    public static final SoundEvent SETTLER_FEMALE_HURT = register("entity.settler.female.hurt");
+    public static final SoundEvent SETTLER_FEMALE_DEATH = register("entity.settler.female.death");
+
     private ModSounds() {
     }
 

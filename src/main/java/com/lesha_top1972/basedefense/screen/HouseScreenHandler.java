@@ -4,6 +4,7 @@ import com.lesha_top1972.basedefense.block.HouseBlock;
 import com.lesha_top1972.basedefense.entity.BuilderEntity;
 import com.lesha_top1972.basedefense.structure.BuildCost;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -50,6 +51,7 @@ public class HouseScreenHandler extends ScreenHandler {
 
     private final BlockPos pos;
     private final HouseType type;
+    private final HouseDesign design;
     private final List<Item> items;
     private final List<Integer> totals;
     private final PropertyDelegate props;
@@ -57,25 +59,27 @@ public class HouseScreenHandler extends ScreenHandler {
     private final ServerWorld world;
     private final int[] values = new int[PROP_COUNT];
 
-    /** Конструктор для клиента: позиция и вид дома приходят от сервера. */
+    /** Конструктор для клиента: позиция, вид дома и дизайн приходят от сервера. */
     public HouseScreenHandler(int syncId, PlayerInventory inventory, PacketByteBuf buf) {
-        this(syncId, buf.readBlockPos(), typeOrDefault(buf.readString()), null);
+        this(syncId, buf.readBlockPos(), typeOrDefault(buf.readString()), HouseDesign.byId(buf.readString()), null);
     }
 
     /** Конструктор для сервера. */
-    public HouseScreenHandler(int syncId, PlayerInventory inventory, ServerWorld world, BlockPos pos, HouseType type) {
-        this(syncId, pos, type, world);
+    public HouseScreenHandler(int syncId, PlayerInventory inventory, ServerWorld world, BlockPos pos, HouseType type,
+                              HouseDesign design) {
+        this(syncId, pos, type, design, world);
         refresh();
     }
 
-    private HouseScreenHandler(int syncId, BlockPos pos, HouseType type, @Nullable ServerWorld world) {
+    private HouseScreenHandler(int syncId, BlockPos pos, HouseType type, HouseDesign design, @Nullable ServerWorld world) {
         super(ModScreenHandlers.HOUSE, syncId);
         this.pos = pos;
         this.type = type;
+        this.design = design;
         this.world = world;
         this.items = new ArrayList<>();
         this.totals = new ArrayList<>();
-        for (Map.Entry<Item, Integer> e : type.getRequirements().entrySet()) {
+        for (Map.Entry<Item, Integer> e : type.getRequirements(design).entrySet()) {
             if (items.size() >= MAX_ITEMS) {
                 break;
             }
@@ -107,6 +111,10 @@ public class HouseScreenHandler extends ScreenHandler {
     }
 
     // ---------- Для экрана ----------
+
+    public HouseDesign getDesign() {
+        return design;
+    }
 
     public HouseType getHouseType() {
         return type;
@@ -190,7 +198,7 @@ public class HouseScreenHandler extends ScreenHandler {
 
     /** Сколько ещё нужно каждого материала, если стройка дошла до шага step (работает и на клиенте). */
     public Map<Item, Integer> remainingFrom(int step) {
-        return BuildCost.count(type.getSteps(), step, type.getPlan().getOrigin());
+        return BuildCost.count(type.getSteps(design), step, type.getPlan(design).getOrigin());
     }
 
     @Override

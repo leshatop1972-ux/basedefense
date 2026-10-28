@@ -3,7 +3,6 @@ package com.lesha_top1972.basedefense.client.screen;
 import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
-import com.lesha_top1972.basedefense.research.Technology;
 import com.lesha_top1972.basedefense.screen.BaseScreenHandler;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
@@ -19,15 +18,13 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Экран меню базы: заголовок «База», строка вкладок и область с древом исследований.
- * Клик по квадратику технологии открывает справа панель с описанием и кнопкой «Исследовать».
- * Вкладка «Потребности» — запасы поселения, склад и слот, куда кладут еду и ресурсы.
+ * Экран меню базы: заголовок «База» и вкладка «Потребности» — запасы поселения и слот,
+ * куда кладут еду. Исследований больше нет: все постройки сразу доступны в строительном планшете.
  * Всё рисуется кодом (заливками, стиль «тёмное стекло» — UiKit), поэтому окно подстраивается под размер экрана.
  */
 public class BaseScreen extends HandledScreen<BaseScreenHandler> {
@@ -40,18 +37,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private static final int TEXT_MUTED    = UiKit.TEXT_MUTED;
     private static final int ACCENT        = UiKit.TEAL;
 
-    private static final int NODE_BG       = 0xC0222830;
-    private static final int NODE_BG_HOVER = 0xD02E3842;
-    private static final int NODE_EDGE     = 0xFF4A5560;
-    private static final int NODE_DONE_BG  = 0xC01A3A2E;
-    private static final int NODE_DONE_EDGE = 0xFF3FAF6E;
-    private static final int NODE_LOCKED_BG = 0xA0141619;
-    private static final int NODE_LOCKED_EDGE = 0xFF2C3238;
-    private static final int LOCK_OVERLAY  = 0xA0101215;
-    private static final int LINK_OPEN     = UiKit.TEAL;
-    private static final int LINK_CLOSED   = 0xFF353D45;
 
-    private static final int INFO_BG       = 0xE00E1114;
     private static final int GOOD          = UiKit.GOOD;
     private static final int BAD           = UiKit.BAD;
 
@@ -60,25 +46,15 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
     private static final int TAB_H = 18;
     private static final int TAB_W_MAX = 92;
     private static final int PAD = 9;
-    private static final int NODE = 28;          // размер квадратика технологии
-    private static final int NODE_STEP = 44;     // шаг сетки древа
-    private static final int INFO_W = 170;       // ширина панели описания
-    private static final int BUTTON_H = 18;
 
     /** Вкладки. Названия берутся из файлов перевода (lang). */
     private static final Text[] TABS = {
-            Text.translatable("screen.basedefense.base.tab.economy"),   // «Хозяйство» — древо исследований
             Text.translatable("screen.basedefense.base.tab.needs")
     };
     /** Номер вкладки «Потребности». */
-    private static final int NEEDS_TAB = 1;
-    private static final int INFO_CIRCLE = 0xFF1E9E95;
-    private static final int INFO_CIRCLE_HOVER = 0xFF33C9BE;
+    private static final int NEEDS_TAB = 0;
 
     private int selectedTab = 0;
-    @Nullable
-    private Technology selectedTech = null;
-    private long notEnoughUntil = 0;
 
     // Прямоугольник области контента (считается в init)
     private int contentLeft, contentTop, contentRight, contentBottom;
@@ -104,29 +80,6 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
 
-        // Синий кружок «?» в панели описания — подробности о работе жителя
-        if (selectedTech != null && isOverWorkInfo(mouseX, mouseY)) {
-            context.drawOrderedTooltip(this.textRenderer,
-                    this.textRenderer.wrapLines(selectedTech.getWorkInfo(), 230), mouseX, mouseY);
-        }
-
-        // Подсказка при наведении на квадратик
-        Technology hovered = getNodeAt(mouseX, mouseY);
-        if (hovered != null) {
-            List<Text> lines = new ArrayList<>();
-            lines.add(hovered.getName());
-            if (handler.isResearched(hovered)) {
-                lines.add(Text.translatable("screen.basedefense.base.researched").styled(s -> s.withColor(GOOD & 0xFFFFFF)));
-            } else {
-                lines.add(Text.translatable("screen.basedefense.base.cost", hovered.getCost())
-                        .styled(s -> s.withColor(TEXT_MUTED & 0xFFFFFF)));
-                if (!handler.isAvailable(hovered)) {
-                    lines.add(Text.translatable("screen.basedefense.base.requires", hovered.getRequires().getName())
-                            .styled(s -> s.withColor(BAD & 0xFFFFFF)));
-                }
-            }
-            context.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
-        }
         this.drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
@@ -161,38 +114,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
             drawTab(context, i, tabsTop, mouseX, mouseY);
         }
 
-        // Вкладка «Потребности» рисуется отдельно
-        if (selectedTab == NEEDS_TAB) {
-            drawNeeds(context, mouseX, mouseY);
-            return;
-        }
-
-        // Древо исследований текущей вкладки: сначала линии-связи, потом квадратики
-        boolean anyNode = false;
-        for (Technology tech : Technology.values()) {
-            if (tech.getTab() == selectedTab && isNodeVisible(tech)) {
-                drawLink(context, tech);
-            }
-        }
-        for (Technology tech : Technology.values()) {
-            if (tech.getTab() == selectedTab) {
-                anyNode = true;
-                if (isNodeVisible(tech)) {
-                    drawNode(context, tech, mouseX, mouseY);
-                }
-            }
-        }
-        if (!anyNode) {
-            Text hint = Text.translatable("screen.basedefense.base.coming_soon");
-            int hintX = (contentLeft + contentRight - this.textRenderer.getWidth(hint)) / 2;
-            int hintY = (contentTop + contentBottom - this.textRenderer.fontHeight) / 2;
-            context.drawText(this.textRenderer, hint, hintX, hintY, TEXT_MUTED, false);
-        }
-
-        // Панель описания выбранной технологии
-        if (selectedTech != null) {
-            drawInfoPanel(context, selectedTech, mouseX, mouseY);
-        }
+        drawNeeds(context, mouseX, mouseY);
     }
 
     // ---------------------------------------------------------------------
@@ -246,180 +168,12 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         }
     }
 
-    private void drawNode(DrawContext context, Technology tech, int mouseX, int mouseY) {
-        int nx = getNodeX(tech);
-        int ny = getNodeY(tech);
-        boolean done = handler.isResearched(tech);
-        boolean locked = !done && !handler.isAvailable(tech);
-        boolean hovered = isOverNode(tech, mouseX, mouseY);
-        boolean selected = tech == selectedTech;
-
-        int edge = selected ? ACCENT : (done ? NODE_DONE_EDGE : (locked ? NODE_LOCKED_EDGE : NODE_EDGE));
-        int bg = done ? NODE_DONE_BG : (locked ? NODE_LOCKED_BG : (hovered ? NODE_BG_HOVER : NODE_BG));
-
-        // Мягкая тень, рамка, фон с градиентом, фаска; у выбранного — золотая рамка с заклёпками
-        context.fill(nx + 1, ny + 2, nx + NODE + 2, ny + NODE + 2, 0x2A000000);
-        // Фон полупрозрачный, поэтому рамку рисуем контуром, а не залитым квадратом под фоном
-        UiKit.outline(context, nx, ny, nx + NODE, ny + NODE, edge);
-        if (selected) {
-            UiKit.outline(context, nx + 1, ny + 1, nx + NODE - 1, ny + NODE - 1, edge);
-        }
-        int inset = selected ? 2 : 1;
-        context.fillGradient(nx + inset, ny + inset, nx + NODE - inset, ny + NODE - inset,
-                lighten(bg), bg);
-        context.fill(nx + inset, ny + inset, nx + NODE - inset, ny + inset + 1, 0x22FFFFFF);
-        context.fill(nx + inset, ny + NODE - inset - 1, nx + NODE - inset, ny + NODE - inset, 0x30000000);
-        if (selected) {
-            UiKit.outline(context, nx - 2, ny - 2, nx + NODE + 2, ny + NODE + 2, UiKit.TEAL_GLOW);
-            UiKit.corners(context, nx - 1, ny - 1, nx + NODE + 1, ny + NODE + 1, 6, UiKit.TEAL_LIGHT);
-        } else if (hovered && !locked) {
-            UiKit.outline(context, nx - 1, ny - 1, nx + NODE + 1, ny + NODE + 1, UiKit.TEAL_GLOW);
-        }
-
-        context.drawItem(new ItemStack(tech.getIcon()), nx + (NODE - 16) / 2, ny + (NODE - 16) / 2);
-
-        // Закрытая технология — иконка «выцветшая» и маленький замочек
-        if (locked) {
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 300);
-            context.fill(nx + 1, ny + 1, nx + NODE - 1, ny + NODE - 1, LOCK_OVERLAY);
-            UiKit.lock(context, nx + NODE - 10, ny + NODE - 11);
-            context.getMatrices().pop();
-        }
-
-        // Зелёная галочка-метка в углу у исследованного
-        if (done) {
-            context.fill(nx + NODE - 7, ny + NODE - 7, nx + NODE - 1, ny + NODE - 1, NODE_DONE_EDGE);
-            context.fill(nx + NODE - 6, ny + NODE - 4, nx + NODE - 5, ny + NODE - 3, 0xFFFFFFFF);
-            context.fill(nx + NODE - 5, ny + NODE - 3, nx + NODE - 4, ny + NODE - 2, 0xFFFFFFFF);
-            context.fill(nx + NODE - 4, ny + NODE - 5, nx + NODE - 3, ny + NODE - 3, 0xFFFFFFFF);
-            context.fill(nx + NODE - 3, ny + NODE - 6, nx + NODE - 2, ny + NODE - 4, 0xFFFFFFFF);
-        }
-    }
-
     /** Чуть светлее цвет (для верха градиента); прозрачность сохраняется. */
     private static int lighten(int color) {
         int r = Math.min(255, ((color >> 16) & 0xFF) + 14);
         int g = Math.min(255, ((color >> 8) & 0xFF) + 14);
         int b = Math.min(255, (color & 0xFF) + 14);
         return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
-    }
-
-    /** Линия от предыдущей технологии в цепочке к этой. */
-    private void drawLink(DrawContext context, Technology tech) {
-        Technology from = tech.getRequires();
-        if (from == null || from.getTab() != tech.getTab() || !isNodeVisible(from)) {
-            return;
-        }
-        int color = handler.isResearched(from) ? LINK_OPEN : LINK_CLOSED;
-        int x1 = getNodeX(from) + NODE / 2;
-        int y1 = getNodeY(from) + NODE / 2;
-        int x2 = getNodeX(tech) + NODE / 2;
-        int y2 = getNodeY(tech) + NODE / 2;
-        // Г-образная линия толщиной 2 пикселя: сначала вниз/вверх, потом вбок
-        // (так ветка на другой строке не проходит сквозь соседний квадратик)
-        // Тонкая тень под линией, затем сама линия
-        context.fill(x1, Math.min(y1, y2) + 1, x1 + 2, Math.max(y1, y2) + 2, 0x22000000);
-        context.fill(Math.min(x1, x2) + 1, y2, Math.max(x1, x2) + 2, y2 + 2, 0x22000000);
-        context.fill(x1 - 1, Math.min(y1, y2), x1 + 1, Math.max(y1, y2) + 1, color);
-        context.fill(Math.min(x1, x2), y2 - 1, Math.max(x1, x2) + 1, y2 + 1, color);
-        // Ромбик-стрелка у входа в квадратик
-        if (handler.isResearched(from)) {
-            UiKit.diamond(context, x2 > x1 ? getNodeX(tech) - 4 : x2 - 1, x2 > x1 ? y2 : getNodeY(tech) - 3, color);
-        }
-    }
-
-    /** Квадратик не рисуем, если его закрывает панель описания. */
-    private boolean isNodeVisible(Technology tech) {
-        return selectedTech == null || getNodeX(tech) + NODE < getInfoLeft() - 4;
-    }
-
-    private void drawInfoPanel(DrawContext context, Technology tech, int mouseX, int mouseY) {
-        int pl = getInfoLeft();
-        int pt = contentTop + 6;
-        int pr = contentRight - 6;
-        int pb = contentBottom - 6;
-        int pw = pr - pl;
-
-        // Фон панели: карточка с полосой-заголовком
-        context.fill(pl + 2, pt + 3, pr + 3, pb + 3, 0x50000000);
-        UiKit.outline(context, pl - 1, pt - 1, pr + 1, pb + 1, UiKit.FRAME);
-        context.fill(pl, pt, pr, pb, INFO_BG);
-        context.fillGradient(pl, pt, pr, pt + 26, 0x5033C9BE, 0x00000000);
-        context.fill(pl, pt, pr, pt + 1, UiKit.TEAL);
-        UiKit.corners(context, pl - 1, pt - 1, pr + 1, pb + 1, 5, UiKit.TEAL);
-
-        // Кнопка закрытия ×
-        boolean closeHovered = isOverClose(mouseX, mouseY);
-        context.drawText(this.textRenderer, "×", pr - 10, pt + 5, closeHovered ? BAD : TEXT_BODY, false);
-
-        // Синий кружок «?» — наведи, чтобы узнать про работу жителя
-        drawInfoCircle(context, pr - 27, pt + 6, isOverWorkInfo(mouseX, mouseY));
-
-        // Заголовок: иконка + название
-        context.drawItem(new ItemStack(tech.getIcon()), pl + 6, pt + 6);
-        UiKit.embossed(context, this.textRenderer, tech.getName(), pl + 26, pt + 10, 0xFFFFFFFF);
-        UiKit.divider(context, pl + 6, pr - 6, pt + 26);
-
-        // Описание (переносится по словам)
-        int textY = pt + 32;
-        Technology requires = tech.getRequires();
-        int descBottom = requires != null ? pb - 74 : pb - 62;
-        for (OrderedText line : this.textRenderer.wrapLines(tech.getDescription(), pw - 12)) {
-            if (textY + 9 > descBottom) {
-                break;
-            }
-            context.drawText(this.textRenderer, line, pl + 6, textY, TEXT_BODY, false);
-            textY += 10;
-        }
-
-        // Что нужно исследовать раньше
-        if (requires != null) {
-            boolean reqDone = handler.isResearched(requires);
-            context.drawText(this.textRenderer, Text.translatable("screen.basedefense.base.requires", requires.getName()),
-                    pl + 6, pb - 70, reqDone ? GOOD : BAD, false);
-        }
-
-        // Что открывает
-        int unlockY = pb - 58;
-        context.drawText(this.textRenderer, Text.translatable("screen.basedefense.base.unlocks", tech.getName()),
-                pl + 6, unlockY, TEXT_MUTED, false);
-
-        // Цена и сколько монет у игрока
-        int coins = ResearchManager.countCoins(this.client.player);
-        boolean done = handler.isResearched(tech);
-        boolean locked = !done && !handler.isAvailable(tech);
-        int costY = pb - 46;
-        Text costText = Text.translatable("screen.basedefense.base.cost", tech.getCost());
-        UiKit.inset(context, pl + 4, costY - 2, pr - 4, costY + 18, 0x90000000);
-        UiKit.embossed(context, this.textRenderer, costText, pl + 6, costY + 4, TEXT_DARK);
-        int coinX = pl + 6 + this.textRenderer.getWidth(costText) + 2;
-        context.drawItem(new ItemStack(ModItems.RESEARCH_COIN), coinX, costY);
-        if (!done) {
-            Text have = Text.translatable("screen.basedefense.base.have", coins);
-            context.drawText(this.textRenderer, have, pr - 6 - this.textRenderer.getWidth(have), costY + 4,
-                    coins >= tech.getCost() ? GOOD : BAD, false);
-        }
-
-        // Сообщение «недостаточно монет»
-        if (!done && Util.getMeasuringTimeMs() < notEnoughUntil) {
-            Text msg = Text.translatable("screen.basedefense.base.not_enough");
-            int msgX = pl + (pw - this.textRenderer.getWidth(msg)) / 2;
-            context.drawText(this.textRenderer, msg, msgX, pb - 34, BAD, false);
-        }
-
-        // Кнопка «Исследовать» или плашка «Исследовано»
-        int bl = pl + 6, bt = pb - 6 - BUTTON_H, br = pr - 6, bb = pb - 6;
-        if (done) {
-            UiKit.button(context, this.textRenderer, bl, bt, br, bb,
-                    Text.translatable("screen.basedefense.base.researched"), 3);
-        } else if (locked) {
-            UiKit.button(context, this.textRenderer, bl, bt, br, bb,
-                    Text.translatable("screen.basedefense.base.locked"), 2);
-        } else {
-            UiKit.button(context, this.textRenderer, bl, bt, br, bb,
-                    Text.translatable("screen.basedefense.base.research_button"), isOverButton(mouseX, mouseY) ? 1 : 0);
-        }
     }
 
     // ---------------------------------------------------------------------
@@ -541,77 +295,10 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         return Math.min(TAB_W_MAX, fit);
     }
 
-    private int getNodeX(Technology tech) {
-        return contentLeft + 20 + tech.getGridX() * NODE_STEP;
-    }
-
-    private int getNodeY(Technology tech) {
-        return contentTop + 20 + tech.getGridY() * NODE_STEP;
-    }
-
-    private int getInfoLeft() {
-        return Math.max(contentLeft + 70, contentRight - 6 - INFO_W);
-    }
-
     private boolean isOverTab(int index, double mouseX, double mouseY) {
         int tabLeft = getTabLeft(index);
         int tabsTop = getTabsTop();
         return mouseX >= tabLeft && mouseX < tabLeft + getTabWidth() && mouseY >= tabsTop - 2 && mouseY < tabsTop + TAB_H;
-    }
-
-    private boolean isOverNode(Technology tech, double mouseX, double mouseY) {
-        int nx = getNodeX(tech);
-        int ny = getNodeY(tech);
-        return mouseX >= nx && mouseX < nx + NODE && mouseY >= ny && mouseY < ny + NODE;
-    }
-
-    @Nullable
-    private Technology getNodeAt(double mouseX, double mouseY) {
-        if (selectedTech != null && isOverInfoPanel(mouseX, mouseY)) {
-            return null;
-        }
-        for (Technology tech : Technology.values()) {
-            if (tech.getTab() == selectedTab && isNodeVisible(tech) && isOverNode(tech, mouseX, mouseY)) {
-                return tech;
-            }
-        }
-        return null;
-    }
-
-    private boolean isOverInfoPanel(double mouseX, double mouseY) {
-        return mouseX >= getInfoLeft() && mouseX < contentRight - 6 && mouseY >= contentTop + 6 && mouseY < contentBottom - 6;
-    }
-
-    /** Кружок 11×11 с белым «?». */
-    private void drawInfoCircle(DrawContext context, int x, int y, boolean hover) {
-        int color = hover ? INFO_CIRCLE_HOVER : INFO_CIRCLE;
-        // Ширина каждой строки круга (рисуем «пиксельный» круг)
-        int[] inset = {3, 1, 1, 0, 0, 0, 0, 0, 1, 1, 3};
-        for (int row = 0; row < 11; row++) {
-            context.fill(x + inset[row], y + row, x + 11 - inset[row], y + row + 1, color);
-        }
-        context.drawText(this.textRenderer, "?", x + 3, y + 2, 0xFFFFFFFF, false);
-    }
-
-    private boolean isOverWorkInfo(double mouseX, double mouseY) {
-        if (selectedTech == null) {
-            return false;
-        }
-        int x = contentRight - 6 - 27;
-        int y = contentTop + 6 + 6;
-        return mouseX >= x && mouseX < x + 11 && mouseY >= y && mouseY < y + 11;
-    }
-
-    private boolean isOverClose(double mouseX, double mouseY) {
-        int pr = contentRight - 6;
-        int pt = contentTop + 6;
-        return mouseX >= pr - 13 && mouseX < pr - 1 && mouseY >= pt + 2 && mouseY < pt + 15;
-    }
-
-    private boolean isOverButton(double mouseX, double mouseY) {
-        int pb = contentBottom - 6;
-        return mouseX >= getInfoLeft() + 6 && mouseX < contentRight - 12
-                && mouseY >= pb - 6 - BUTTON_H && mouseY < pb - 6;
     }
 
     // ---------------------------------------------------------------------
@@ -626,7 +313,6 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                 if (isOverTab(i, mouseX, mouseY)) {
                     if (selectedTab != i) {
                         selectedTab = i;
-                        selectedTech = null;
                         handler.setSlotsVisible(i == NEEDS_TAB);
                         playClick();
                     }
@@ -634,41 +320,8 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
                 }
             }
 
-            // Панель описания
-            if (selectedTech != null && isOverInfoPanel(mouseX, mouseY)) {
-                if (isOverClose(mouseX, mouseY)) {
-                    selectedTech = null;
-                    playClick();
-                } else if (isOverButton(mouseX, mouseY) && !handler.isResearched(selectedTech)
-                        && handler.isAvailable(selectedTech)) {
-                    onResearchPressed(selectedTech);
-                }
-                return true;
-            }
-
-            // Квадратики технологий
-            Technology node = getNodeAt(mouseX, mouseY);
-            if (node != null) {
-                selectedTech = node == selectedTech ? null : node;
-                playClick();
-                return true;
-            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    private void onResearchPressed(Technology tech) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (ResearchManager.countCoins(mc.player) < tech.getCost()) {
-            notEnoughUntil = Util.getMeasuringTimeMs() + 2500;
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_VILLAGER_NO, 1.0f));
-            return;
-        }
-        playClick();
-        // Номер кнопки = номер технологии. Сервер проверит монеты ещё раз и проведёт исследование.
-        if (mc.interactionManager != null) {
-            mc.interactionManager.clickButton(this.handler.syncId, tech.ordinal());
-        }
     }
 
     private void playClick() {

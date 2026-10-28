@@ -13,14 +13,16 @@ public final class SettlerLooks {
             "male_1", "male_2", "male_3", "male_4", "male_5",
             "female_1", "female_2", "female_3",
             "male_6", "male_7",
-            "female_4", "female_5"
+            "female_4", "female_5",
+            "male_8", "female_6"
     };
 
     private static final boolean[] FEMALE = {
             false, false, false, false, false,
             true, true, true,
             false, false,
-            true, true
+            true, true,
+            false, true
     };
 
     public static final int COUNT = NAMES.length;

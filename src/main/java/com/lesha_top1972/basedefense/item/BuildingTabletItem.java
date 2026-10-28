@@ -2,8 +2,8 @@ package com.lesha_top1972.basedefense.item;
 
 import com.lesha_top1972.basedefense.block.HouseBlock;
 import com.lesha_top1972.basedefense.block.ModBlocks;
-import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.TabletScreenHandler;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -32,14 +32,17 @@ import java.util.List;
 /**
  * Строительный планшет. Им ставятся все постройки поселения.
  * - ПКМ в воздух (или по блоку, когда ничего не выбрано) — меню выбора постройки.
- *   В меню открыты дом строителя и всё, что исследовано в Базе.
+ *   Все постройки доступны сразу; у каждой можно выбрать один из 4 дизайнов.
  * - Выбрал постройку — наводишь на место (видна рамка) и жмёшь ПКМ по блоку:
  *   там появляется блок постройки (стройплощадка), дальше всё как раньше — строит строитель.
- * Выбранная постройка хранится в NBT планшета ("House").
+ * Выбранная постройка хранится в NBT планшета ("House", "Design"), а последний выбранный дизайн
+ * каждого здания — в "Designs" (чтобы в меню он был отмечен).
  */
 public class BuildingTabletItem extends Item {
 
     private static final String NBT_HOUSE = "House";
+    private static final String NBT_DESIGN = "Design";
+    private static final String NBT_DESIGNS = "Designs";
 
     public BuildingTabletItem(Settings settings) {
         super(settings);
@@ -56,12 +59,35 @@ public class BuildingTabletItem extends Item {
         return HouseType.byId(nbt.getString(NBT_HOUSE));
     }
 
-    public static void setSelected(ItemStack stack, @Nullable HouseType type) {
+    /** Дизайн выбранной постройки. */
+    public static HouseDesign getSelectedDesign(ItemStack stack) {
+        NbtCompound nbt = stack.getNbt();
+        return nbt == null ? HouseDesign.OAK : HouseDesign.byId(nbt.getString(NBT_DESIGN));
+    }
+
+    public static void setSelected(ItemStack stack, @Nullable HouseType type, HouseDesign design) {
         if (type == null) {
             stack.removeSubNbt(NBT_HOUSE);
+            stack.removeSubNbt(NBT_DESIGN);
         } else {
             stack.getOrCreateNbt().putString(NBT_HOUSE, type.getId());
+            stack.getOrCreateNbt().putString(NBT_DESIGN, design.getId());
+            rememberDesign(stack, type, design);
         }
+    }
+
+    /** Какой дизайн игрок последний раз выбрал для этого здания (по умолчанию — дубовый). */
+    public static HouseDesign getRememberedDesign(ItemStack stack, HouseType type) {
+        NbtCompound nbt = stack.getNbt();
+        if (nbt == null || !nbt.contains(NBT_DESIGNS)) {
+            return HouseDesign.OAK;
+        }
+        return HouseDesign.byId(nbt.getCompound(NBT_DESIGNS).getString(type.getId()));
+    }
+
+    public static void rememberDesign(ItemStack stack, HouseType type, HouseDesign design) {
+        NbtCompound designs = stack.getOrCreateSubNbt(NBT_DESIGNS);
+        designs.putString(type.getId(), design.getId());
     }
 
     /** Планшет в руке игрока (сначала основная рука, потом вторая) или пустой стек. */
@@ -108,14 +134,6 @@ public class BuildingTabletItem extends Item {
         }
         ServerWorld serverWorld = (ServerWorld) world;
 
-        // Исследование могли «потерять» (например, другой мир) — проверяем ещё раз
-        if (!type.isUnlocked(ResearchManager.researchMask(serverWorld.getServer()))) {
-            setSelected(stack, null);
-            player.sendMessage(Text.translatable("message.basedefense.tablet.locked", type.getName())
-                    .formatted(Formatting.RED), true);
-            return ActionResult.FAIL;
-        }
-
         // Куда ставить: в саму клетку, если она «заменяемая» (трава, снег), иначе — рядом, как обычный блок
         BlockPos clicked = context.getBlockPos();
         BlockPos pos = world.getBlockState(clicked).isReplaceable() ? clicked : clicked.offset(context.getSide());
@@ -131,10 +149,10 @@ public class BuildingTabletItem extends Item {
         world.setBlockState(pos, block.getDefaultState(), Block.NOTIFY_ALL);
         world.playSound(null, pos, SoundEvents.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 1.0f, 0.9f);
         world.playSound(null, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 1.0f, 1.0f);
-        HouseBlock.startConstruction(serverWorld, pos, type, player.getHorizontalFacing(), player);
+        HouseBlock.startConstruction(serverWorld, pos, type, getSelectedDesign(stack), player.getHorizontalFacing(), player);
 
         // Одна постройка за раз: после установки выбор сбрасывается
-        setSelected(stack, null);
+        setSelected(stack, null, HouseDesign.OAK);
         return ActionResult.CONSUME;
     }
 
@@ -158,6 +176,7 @@ public class BuildingTabletItem extends Item {
         if (type != null) {
             tooltip.add(Text.translatable("item.basedefense.building_tablet.selected", type.getName())
                     .formatted(Formatting.GOLD));
+            tooltip.add(getSelectedDesign(stack).getName().copy().formatted(Formatting.AQUA));
             tooltip.add(Text.translatable("item.basedefense.building_tablet.hint_place").formatted(Formatting.GRAY));
         } else {
             tooltip.add(Text.translatable("item.basedefense.building_tablet.hint_menu").formatted(Formatting.GRAY));

@@ -1,9 +1,11 @@
 package com.lesha_top1972.basedefense.client.screen;
 
-import com.lesha_top1972.basedefense.block.ModBlocks;
+import com.lesha_top1972.basedefense.Basedefense;
+import com.lesha_top1972.basedefense.client.render.StructurePreview;
 import com.lesha_top1972.basedefense.item.BuildingTabletItem;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.screen.TabletScreenHandler;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -12,84 +14,136 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.lesha_top1972.basedefense.client.screen.UiKit.*;
 
 /**
- * Меню строительного планшета в стиле «тёмное стекло».
- * Слева — список всех построек (открытые, закрытые с замком, выбранная с галочкой).
- * Справа — подробная панель отмеченной постройки: крупная иконка, статус, описание,
- * самые нужные материалы и кнопка «Выбрать для постройки».
- * Клик по строке отмечает постройку, двойной клик или кнопка — выбирает её в планшет.
+ * Меню строительного планшета («тёмное стекло» с бирюзой, в духе MineColonies).
+ * Слева — список зданий: значок работы, название и выбранный дизайн.
+ * Справа — объёмный предпросмотр здания в выбранном дизайне (вращается, можно крутить мышкой),
+ * описание, главные материалы и кнопки «Дизайн» и «Выбрать для постройки».
+ * Кнопка «Дизайн» открывает окно с 4 дизайнами: у каждого свой предпросмотр, название и цена.
  */
 public class TabletScreen extends HandledScreen<TabletScreenHandler> {
 
+    // ---------- Размеры ----------
     private static final int PAD = 10;
     private static final int HEADER_H = 22;
-    private static final int LIST_W = 160;
-    private static final int ROW_H = 22;
-    private static final int ROW_GAP = 2;
-    private static final int LIST_TOP = HEADER_H + 14;   // от верха окна
-    private static final int DETAIL_W = 196;
+    private static final int TOP = 34;             // верх списка и панели (от верха окна)
+    private static final int LIST_W = 150;
+    private static final int ROW_H = 25;
+    private static final int DETAIL_W = 232;
+    private static final int PREVIEW_H = 112;
     private static final int BUTTON_H = 18;
-    private static final int MAT_COLS = 4;
-    private static final int MAT_ROWS = 2;
+    private static final int DESIGN_BTN_W = 78;
+    private static final int MATS = 8;
 
-    /** Отмеченная в списке постройка (то, что показано справа). */
+    // Окно дизайнов
+    private static final int CARD_W = 92;
+    private static final int CARD_H = 152;
+    private static final int CARD_GAP = 6;
+    private static final int CARD_PREVIEW_H = 74;
+
+    private static final int ROWS = HouseType.values().length;
+
     private HouseType focused = HouseType.BUILDER;
+    /** Выбранный дизайн каждого здания (берётся из планшета, меняется в окне дизайнов). */
+    private final Map<HouseType, HouseDesign> designs = new EnumMap<>(HouseType.class);
+    /** Открыто окно дизайнов. */
+    private boolean designWindow;
+
+    // Вращение предпросмотра
+    private float dragYaw;
+    private boolean dragging;
     private long lastClickTime;
     @Nullable
     private HouseType lastClicked;
 
     public TabletScreen(TabletScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        int rows = HouseType.values().length;
         this.backgroundWidth = PAD * 2 + LIST_W + 8 + DETAIL_W;
-        this.backgroundHeight = LIST_TOP + rows * (ROW_H + ROW_GAP) - ROW_GAP + 26;
+        this.backgroundHeight = TOP + ROWS * ROW_H + 20;
     }
 
     @Override
     protected void init() {
         super.init();
-        HouseType current = currentSelection();
+        ItemStack tablet = tablet();
+        for (HouseType type : HouseType.values()) {
+            designs.put(type, BuildingTabletItem.getRememberedDesign(tablet, type));
+        }
+        HouseType current = BuildingTabletItem.getSelected(tablet);
         if (current != null) {
             focused = current;
         }
     }
 
-    @Nullable
-    private HouseType currentSelection() {
+    private ItemStack tablet() {
         MinecraftClient mc = MinecraftClient.getInstance();
-        return mc.player == null ? null : BuildingTabletItem.getSelected(BuildingTabletItem.findInHands(mc.player));
+        return mc.player == null ? ItemStack.EMPTY : BuildingTabletItem.findInHands(mc.player);
     }
 
-    // ---------------------------------------------------------------------
+    @Nullable
+    private HouseType currentSelection() {
+        return BuildingTabletItem.getSelected(tablet());
+    }
+
+    private HouseDesign designOf(HouseType type) {
+        return designs.getOrDefault(type, HouseDesign.OAK);
+    }
+
+    private static Identifier icon(HouseType type) {
+        return new Identifier(Basedefense.MOD_ID, "textures/gui/tablet/" + type.getId() + ".png");
+    }
+
+    /** Медленное вращение + поворот мышкой. */
+    private float yaw(float offset) {
+        return -30.0f + dragYaw + offset + (dragging ? 0 : (Util.getMeasuringTimeMs() % 36000L) / 1000.0f * 10.0f);
+    }
+
+    // =====================================================================
     // Отрисовка
-    // ---------------------------------------------------------------------
+    // =====================================================================
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
 
-        // Подсказка над материалом: название и количество
-        Item mat = getMaterialAt(mouseX, mouseY);
-        if (mat != null) {
-            List<Text> lines = new ArrayList<>();
-            lines.add(mat.getName());
-            lines.add(Text.translatable("screen.basedefense.tablet.tip.count", focused.getRequirements().get(mat))
-                    .styled(s -> s.withColor(TEXT_BODY & 0xFFFFFF)));
-            context.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 500);
+        if (designWindow) {
+            HouseDesign hover = getCardAt(mouseX, mouseY);
+            if (hover != null) {
+                List<OrderedText> lines = new ArrayList<>();
+                lines.add(hover.getName().copy().styled(s -> s.withColor(hover.getColor() & 0xFFFFFF)).asOrderedText());
+                lines.addAll(this.textRenderer.wrapLines(hover.getDescription(), 200));
+                context.drawOrderedTooltip(this.textRenderer, lines, mouseX, mouseY);
+            }
+        } else {
+            Item mat = getMaterialAt(mouseX, mouseY);
+            if (mat != null) {
+                List<Text> lines = new ArrayList<>();
+                lines.add(mat.getName());
+                lines.add(Text.translatable("screen.basedefense.tablet.tip.count",
+                        focused.getRequirements(designOf(focused)).get(mat)).styled(s -> s.withColor(TEXT_BODY & 0xFFFFFF)));
+                context.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
+            }
         }
+        context.getMatrices().pop();
     }
 
     @Override
@@ -103,31 +157,22 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         header(context, left + 4, top + 4, right - 4, HEADER_H);
         context.drawItem(new ItemStack(ModItems.BUILDING_TABLET), left + 9, top + 7);
         embossed(context, this.textRenderer, this.title, left + 29, top + 11, TEXT_DARK);
-
-        // Справа в заголовке: открыто построек / всего
-        int open = 0;
-        for (HouseType type : HouseType.values()) {
-            if (handler.isUnlocked(type)) {
-                open++;
-            }
-        }
-        Text counter = Text.translatable("screen.basedefense.tablet.open", open, HouseType.values().length);
+        Text counter = Text.translatable("screen.basedefense.tablet.count", ROWS);
         pill(context, this.textRenderer, right - 12 - this.textRenderer.getWidth(counter) - 8, top + 9, counter, TEAL_LIGHT);
 
-        // Список построек
+        // Список зданий
         int listL = left + PAD;
-        int listT = top + LIST_TOP;
-        int listB = listT + HouseType.values().length * (ROW_H + ROW_GAP) - ROW_GAP;
-        inset(context, listL - 3, listT - 3, listL + LIST_W + 3, listB + 3, CONTENT);
+        int listT = top + TOP;
+        inset(context, listL - 3, listT - 3, listL + LIST_W + 3, listT + ROWS * ROW_H + 1, CONTENT);
         HouseType selected = currentSelection();
-        HouseType hovered = getRowAt(mouseX, mouseY);
+        HouseType hoveredRow = designWindow ? null : getRowAt(mouseX, mouseY);
         for (HouseType type : HouseType.values()) {
-            drawRow(context, type, listL, rowY(type), type == hovered, type == selected);
+            drawRow(context, type, listL, rowY(type), type == hoveredRow, type == selected);
         }
 
         drawDetail(context, mouseX, mouseY, selected);
 
-        // Нижняя строка: подсказка или предупреждение
+        // Нижняя строка
         Text hint;
         int hintColor;
         if (!handler.hasBuilder() && focused != HouseType.BUILDER) {
@@ -137,161 +182,254 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
             hint = Text.translatable("screen.basedefense.tablet.footer");
             hintColor = TEXT_MUTED;
         }
-        embossedCentered(context, this.textRenderer, hint, (left + right) / 2, bottom - 16, hintColor);
+        embossedCentered(context, this.textRenderer, hint, (left + right) / 2, bottom - 15, hintColor);
+
+        if (designWindow) {
+            drawDesignWindow(context, mouseX, mouseY);
+        }
     }
 
-    /** Строка списка: иконка, название, статус справа. */
+    /** Строка списка: значок в «гнезде», название и дизайн. */
     private void drawRow(DrawContext c, HouseType type, int rl, int rt, boolean hover, boolean selected) {
-        boolean unlocked = handler.isUnlocked(type);
         boolean isFocused = type == focused;
         int rr = rl + LIST_W;
-        int rb = rt + ROW_H;
+        int rb = rt + ROW_H - 2;
+        HouseDesign design = designOf(type);
 
-        // Фон строки
         if (isFocused) {
-            c.fillGradient(rl, rt, rr, rb, 0x8033C9BE, 0x40167A73);
+            c.fillGradient(rl, rt, rr, rb, 0x7033C9BE, 0x30167A73);
             c.fill(rl, rt, rl + 2, rb, TEAL_LIGHT);
             outline(c, rl, rt, rr, rb, 0x8033C9BE);
-        } else if (hover && unlocked) {
-            c.fill(rl, rt, rr, rb, 0x30FFFFFF);
+        } else if (hover) {
+            c.fill(rl, rt, rr, rb, 0x28FFFFFF);
             c.fill(rl, rt, rl + 2, rb, TEAL);
         } else {
-            c.fill(rl, rt, rr, rb, unlocked ? 0x30222830 : 0x18000000);
+            c.fill(rl, rt, rr, rb, 0x30222830);
         }
 
-        c.drawItem(new ItemStack(ModBlocks.houseBlock(type)), rl + 4, rt + 3);
-        if (!unlocked) {
-            c.fill(rl + 4, rt + 3, rl + 20, rt + 19, 0x99101215);
-        }
-        int textColor = !unlocked ? TEXT_MUTED : (isFocused ? 0xFFFFFFFF : TEXT_DARK);
-        c.drawText(this.textRenderer, type.getName(), rl + 24, rt + 7, textColor, true);
+        // Значок: тёмное гнездо с бирюзовой подсветкой
+        int ix = rl + 4;
+        int iy = rt + 2;
+        c.fill(ix, iy, ix + 19, iy + 19, isFocused ? 0xC0123A38 : 0xB0101318);
+        outline(c, ix, iy, ix + 19, iy + 19, isFocused ? TEAL : 0xFF2C343C);
+        c.drawTexture(icon(type), ix + 2, iy + 2, 0, 0, 16, 16, 16, 16);
+
+        int tx = rl + 28;
+        c.drawText(this.textRenderer, type.getName(), tx, rt + 3, isFocused ? 0xFFFFFFFF : TEXT_DARK, true);
+        // Цветная точка и название дизайна
+        c.fill(tx, rt + 15, tx + 4, rt + 19, design.getColor());
+        c.drawText(this.textRenderer, design.getName(), tx + 7, rt + 13, TEXT_MUTED, false);
 
         if (selected) {
             check(c, rr - 12, rt + 7, GOOD);
-        } else if (!unlocked) {
-            lock(c, rr - 12, rt + 6);
         }
     }
 
-    /** Правая панель: подробности отмеченной постройки. */
+    /** Правая панель: предпросмотр, описание, материалы, кнопки. */
     private void drawDetail(DrawContext c, int mouseX, int mouseY, @Nullable HouseType selected) {
         int dl = detailLeft();
-        int dt = this.y + LIST_TOP - 3;
+        int dt = this.y + TOP - 3;
         int dr = dl + DETAIL_W;
         int db = detailBottom();
-        boolean unlocked = handler.isUnlocked(focused);
+        HouseDesign design = designOf(focused);
 
-        // Подложка панели
-        c.fill(dl, dt, dr, db, 0x70000000);
-        outline(c, dl, dt, dr, db, 0xFF262D34);
-        corners(c, dl, dt, dr, db, 5, TEAL_DARK);
-
-        // Крупная иконка в рамке
-        int il = dl + 8, it = dt + 8;
-        c.fillGradient(il, it, il + 38, it + 38, 0x6033C9BE, 0x20167A73);
-        outline(c, il, it, il + 38, it + 38, unlocked ? TEAL : 0xFF3A424A);
+        // Предпросмотр: тёмная «сцена» с бирюзовым полом
+        int pt = dt;
+        int pb = dt + PREVIEW_H;
+        inset(c, dl, pt, dr, pb, 0xC0080A0D);
+        c.fillGradient(dl, pb - 40, dr, pb, 0x00000000, 0x4033C9BE);
+        for (int gx = dl + 8; gx < dr - 4; gx += 12) {          // сетка-«чертёж»
+            c.fill(gx, pt + 1, gx + 1, pb, 0x0C33C9BE);
+        }
+        for (int gy = pt + 8; gy < pb - 2; gy += 12) {
+            c.fill(dl + 1, gy, dr, gy + 1, 0x0C33C9BE);
+        }
+        corners(c, dl - 1, pt - 1, dr + 1, pb + 1, 5, TEAL);
+        if (!designWindow) {
+            StructurePreview.draw(c, focused.getPlan(design), dl + 2, pt + 14, dr - 2, pb - 2, yaw(0), 28.0f);
+        }
+        // Подписи поверх сцены
         c.getMatrices().push();
-        c.getMatrices().translate(il + 3, it + 3, 0);
-        c.getMatrices().scale(2.0f, 2.0f, 1.0f);
-        c.drawItem(new ItemStack(ModBlocks.houseBlock(focused)), 0, 0);
-        c.getMatrices().pop();
-        if (!unlocked) {
-            c.getMatrices().push();
-            c.getMatrices().translate(0, 0, 300);
-            c.fill(il + 1, it + 1, il + 37, it + 37, 0x99101215);
-            lock(c, il + 15, it + 14);
-            c.getMatrices().pop();
-        }
-
-        // Название и статус
-        int tx = il + 46;
-        embossed(c, this.textRenderer, focused.getName(), tx, it + 4, 0xFFFFFFFF);
-        Text status;
-        int statusColor;
-        if (focused == selected) {
-            status = Text.translatable("screen.basedefense.tablet.status.selected");
-            statusColor = GOOD_LIGHT;
-        } else if (!unlocked) {
-            status = Text.translatable("screen.basedefense.tablet.locked");
-            statusColor = BAD;
-        } else if (focused.isSelfBuilt()) {
-            status = Text.translatable("screen.basedefense.tablet.self_built");
-            statusColor = TEAL_LIGHT;
+        c.getMatrices().translate(0, 0, 400);
+        embossed(c, this.textRenderer, focused.getName(), dl + 6, pt + 5, 0xFFFFFFFF);
+        Text dName = design.getName();
+        int pw = this.textRenderer.getWidth(dName) + 8;
+        pill(c, this.textRenderer, dr - 6 - pw, pt + 4, dName, 0xC0101418, design.getColor());
+        if (focused == selected && designOf(focused) == BuildingTabletItem.getSelectedDesign(tablet())) {
+            pill(c, this.textRenderer, dl + 6, pb - 15, Text.translatable("screen.basedefense.tablet.status.selected"),
+                    GOOD_LIGHT);
         } else {
-            status = Text.translatable("screen.basedefense.tablet.status.open");
-            statusColor = TEAL_LIGHT;
+            c.drawText(this.textRenderer, Text.translatable("screen.basedefense.tablet.drag"), dl + 6, pb - 12,
+                    0x8078848F, false);
         }
-        pill(c, this.textRenderer, tx, it + 16, status, statusColor);
-        if (!focused.isSelfBuilt()) {
-            c.drawText(this.textRenderer, Text.translatable("screen.basedefense.tablet.cost", focused.getCostlyBlocks()),
-                    tx, it + 30, TEXT_MUTED, false);
-        }
+        c.getMatrices().pop();
 
         // Описание
-        int textY = it + 46;
-        int matTop = matTop();
-        for (OrderedText line : this.textRenderer.wrapLines(
-                Text.translatable("research.basedefense." + focused.getId() + ".desc"), DETAIL_W - 16)) {
-            if (textY + 9 > matTop - 14) {
-                break;
-            }
-            c.drawText(this.textRenderer, line, dl + 8, textY, TEXT_BODY, false);
+        int textY = pb + 5;
+        List<OrderedText> desc = this.textRenderer.wrapLines(
+                Text.translatable("research.basedefense." + focused.getId() + ".desc"), DETAIL_W - 4);
+        for (int i = 0; i < Math.min(2, desc.size()); i++) {
+            OrderedText line = desc.get(i);
+            c.drawText(this.textRenderer, line, dl + 2, textY, TEXT_BODY, false);
             textY += 10;
         }
+        if (desc.size() > 2) {
+            c.drawText(this.textRenderer, "…", dr - 8, textY - 10, TEXT_MUTED, false);
+        }
 
-        // Материалы (самые нужные)
-        c.drawText(this.textRenderer, Text.translatable(focused.isSelfBuilt()
-                        ? "screen.basedefense.tablet.materials_free" : "screen.basedefense.tablet.materials"),
-                dl + 8, matTop - 11, TEXT_MUTED, false);
+        // Материалы
+        int matLabelY = matTop() - 11;
+        Text matLabel = focused.isSelfBuilt() ? Text.translatable("screen.basedefense.tablet.materials_free")
+                : Text.translatable("screen.basedefense.tablet.materials_n", focused.getCostlyBlocks(design));
+        c.drawText(this.textRenderer, matLabel, dl + 2, matLabelY, TEXT_MUTED, false);
         if (!focused.isSelfBuilt()) {
-            List<Map.Entry<Item, Integer>> mats = topMaterials();
-            for (int i = 0; i < MAT_COLS * MAT_ROWS; i++) {
-                int sx = matX(i), sy = matY(i);
+            List<Map.Entry<Item, Integer>> mats = topMaterials(focused, design);
+            for (int i = 0; i < MATS; i++) {
+                int sx = matX(i);
+                int sy = matTop();
                 slot(c, sx, sy, false);
                 if (i < mats.size()) {
-                    Map.Entry<Item, Integer> e = mats.get(i);
-                    ItemStack stack = new ItemStack(e.getKey());
+                    ItemStack stack = new ItemStack(mats.get(i).getKey());
                     c.drawItem(stack, sx, sy);
-                    c.drawItemInSlot(this.textRenderer, stack, sx, sy, String.valueOf(e.getValue()));
+                    c.drawItemInSlot(this.textRenderer, stack, sx, sy, compact(mats.get(i).getValue()));
                 }
             }
-            int more = focused.getRequirements().size() - MAT_COLS * MAT_ROWS;
+            int more = mats.size() - MATS;
             if (more > 0) {
                 c.drawText(this.textRenderer, Text.translatable("screen.basedefense.tablet.more", more),
-                        matX(MAT_COLS - 1) + 22, matY(0) + 5, TEXT_MUTED, false);
+                        matX(MATS - 1) + 21, matTop() + 5, TEXT_MUTED, false);
             }
         }
 
-        // Кнопка
-        int bl = dl + 8, bt = db - 8 - BUTTON_H, br = dr - 8, bb = db - 8;
-        if (focused == selected) {
-            button(c, this.textRenderer, bl, bt, br, bb, Text.translatable("screen.basedefense.tablet.button.chosen"), 3);
-        } else if (!unlocked) {
-            button(c, this.textRenderer, bl, bt, br, bb, Text.translatable("screen.basedefense.tablet.button.locked"), 2);
+        // Кнопки: «Дизайн» и «Выбрать для постройки»
+        int bt = db - BUTTON_H;
+        boolean hoverDesign = !designWindow && isOverDesignButton(mouseX, mouseY);
+        button(c, this.textRenderer, dl, bt, dl + DESIGN_BTN_W, db,
+                Text.translatable("screen.basedefense.tablet.button.design"), hoverDesign ? 1 : 0);
+        c.fill(dl + 5, bt + 7, dl + 9, bt + 11, design.getColor());   // цвет текущего дизайна
+        int bl = dl + DESIGN_BTN_W + 4;
+        boolean chosen = focused == selected && design == BuildingTabletItem.getSelectedDesign(tablet());
+        if (chosen) {
+            button(c, this.textRenderer, bl, bt, dr, db, Text.translatable("screen.basedefense.tablet.button.chosen"), 3);
         } else {
-            boolean hover = mouseX >= bl && mouseX < br && mouseY >= bt && mouseY < bb;
-            // Лёгкая «пульсация» рамки, чтобы кнопка привлекала внимание
+            boolean hover = !designWindow && isOverSelectButton(mouseX, mouseY);
             if (!hover && (Util.getMeasuringTimeMs() / 600) % 2 == 0) {
-                outline(c, bl - 1, bt - 1, br + 1, bb + 1, TEAL_FAINT);
+                outline(c, bl - 1, bt - 1, dr + 1, db + 1, TEAL_FAINT);
             }
-            button(c, this.textRenderer, bl, bt, br, bb, Text.translatable("screen.basedefense.tablet.button.select"),
+            button(c, this.textRenderer, bl, bt, dr, db, Text.translatable("screen.basedefense.tablet.button.select"),
                     hover ? 1 : 0);
         }
     }
 
-    /** Материалы постройки по убыванию количества. */
-    private List<Map.Entry<Item, Integer>> topMaterials() {
-        List<Map.Entry<Item, Integer>> list = new ArrayList<>(focused.getRequirements().entrySet());
+    /** Окно выбора дизайна: затемнение и 4 карточки. */
+    private void drawDesignWindow(DrawContext c, int mouseX, int mouseY) {
+        c.getMatrices().push();
+        c.getMatrices().translate(0, 0, 300);
+        c.fill(0, 0, this.width, this.height, 0xB0000000);
+        int wl = windowLeft(), wt = windowTop(), wr = wl + windowWidth(), wb = wt + windowHeight();
+        panel(c, wl, wt, wr, wb);
+        header(c, wl + 4, wt + 4, wr - 4, HEADER_H);
+        c.drawTexture(icon(focused), wl + 10, wt + 7, 0, 0, 16, 16, 16, 16);
+        embossed(c, this.textRenderer, Text.translatable("screen.basedefense.tablet.design_title", focused.getName()),
+                wl + 30, wt + 11, TEXT_DARK);
+        boolean closeHover = isOverClose(mouseX, mouseY);
+        c.drawText(this.textRenderer, "×", wr - 14, wt + 10, closeHover ? BAD : TEXT_BODY, false);
+        c.getMatrices().pop();
+
+        int base = focused.getCostlyBlocks(HouseDesign.OAK);
+        HouseDesign hovered = getCardAt(mouseX, mouseY);
+        for (HouseDesign d : HouseDesign.values()) {
+            int cl = cardX(d);
+            int ct = cardY();
+            int cr = cl + CARD_W;
+            int cb = ct + CARD_H;
+            boolean sel = d == designOf(focused);
+            boolean hov = d == hovered;
+
+            c.getMatrices().push();
+            c.getMatrices().translate(0, 0, 300);
+            // Карточка: рамка, полоска цвета дизайна сверху
+            if (hov || sel) {
+                outline(c, cl - 2, ct - 2, cr + 2, cb + 2, TEAL_GLOW);
+            }
+            c.fill(cl, ct, cr, cb, hov ? CARD_HOVER : CARD);
+            outline(c, cl, ct, cr, cb, sel ? TEAL : (hov ? TEAL_DARK : 0xFF323A42));
+            c.fill(cl + 1, ct + 1, cr - 1, ct + 3, d.getColor());
+            // Сцена предпросмотра
+            int pl = cl + 4, pt = ct + 6, pr = cr - 4, pb = ct + 6 + CARD_PREVIEW_H;
+            c.fill(pl, pt, pr, pb, 0xD0080A0D);
+            c.fillGradient(pl, pb - 26, pr, pb, 0x00000000, 0x4033C9BE);
+            outline(c, pl - 1, pt - 1, pr + 1, pb + 1, 0xFF1C2228);
+            c.getMatrices().pop();
+
+            c.getMatrices().push();
+            c.getMatrices().translate(0, 0, 300);
+            StructurePreview.draw(c, focused.getPlan(d), pl + 1, pt + 1, pr - 1, pb - 1, yaw(d.ordinal() * 20.0f), 26.0f);
+            c.getMatrices().pop();
+
+            c.getMatrices().push();
+            c.getMatrices().translate(0, 0, 700);
+            // Название (до двух строк)
+            int ty = pb + 5;
+            for (OrderedText line : this.textRenderer.wrapLines(d.getName(), CARD_W - 8)) {
+                if (ty > pb + 16) {
+                    break;
+                }
+                c.drawText(this.textRenderer, line, cl + 5, ty, sel ? 0xFFFFFFFF : TEXT_DARK, true);
+                ty += 10;
+            }
+            // Цена и разница с дубовым
+            int cost = focused.getCostlyBlocks(d);
+            int costY = cb - 38;
+            if (focused.isSelfBuilt()) {
+                c.drawText(this.textRenderer, Text.translatable("screen.basedefense.tablet.free_short"), cl + 5, costY,
+                        TEAL_LIGHT, false);
+            } else {
+                c.drawText(this.textRenderer, Text.translatable("screen.basedefense.tablet.blocks", cost), cl + 5, costY,
+                        TEXT_BODY, false);
+                if (base > 0 && d != HouseDesign.OAK) {
+                    int pct = Math.round((cost - base) * 100.0f / base);
+                    Text diff = Text.literal((pct >= 0 ? "+" : "") + pct + "%");
+                    c.drawText(this.textRenderer, diff, cr - 5 - this.textRenderer.getWidth(diff), costY,
+                            pct > 0 ? WARN : GOOD, false);
+                }
+            }
+            // Кнопка/отметка
+            int bt = cb - 22, bb = cb - 5;
+            if (sel) {
+                button(c, this.textRenderer, cl + 5, bt, cr - 5, bb, Text.translatable("screen.basedefense.tablet.status.selected"), 3);
+            } else {
+                button(c, this.textRenderer, cl + 5, bt, cr - 5, bb, Text.translatable("screen.basedefense.tablet.button.pick"),
+                        hov ? 1 : 0);
+            }
+            c.getMatrices().pop();
+        }
+
+        c.getMatrices().push();
+        c.getMatrices().translate(0, 0, 700);
+        embossedCentered(c, this.textRenderer, Text.translatable("screen.basedefense.tablet.design_hint"),
+                windowLeft() + windowWidth() / 2, windowTop() + windowHeight() - 15, TEXT_MUTED);
+        c.getMatrices().pop();
+    }
+
+    /** Материалы по убыванию количества. */
+    private static List<Map.Entry<Item, Integer>> topMaterials(HouseType type, HouseDesign design) {
+        List<Map.Entry<Item, Integer>> list = new ArrayList<>(type.getRequirements(design).entrySet());
         list.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
         return list;
     }
 
-    // ---------------------------------------------------------------------
+    /** Количество в ячейке: 1234 → «1.2k», чтобы влезало. */
+    private static String compact(int n) {
+        return n >= 1000 ? String.format("%.1fk", n / 1000.0f) : String.valueOf(n);
+    }
+
+    // =====================================================================
     // Координаты
-    // ---------------------------------------------------------------------
+    // =====================================================================
 
     private int rowY(HouseType type) {
-        return this.y + LIST_TOP + type.ordinal() * (ROW_H + ROW_GAP);
+        return this.y + TOP + type.ordinal() * ROW_H;
     }
 
     private int detailLeft() {
@@ -299,19 +437,39 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
     }
 
     private int detailBottom() {
-        return this.y + LIST_TOP + HouseType.values().length * (ROW_H + ROW_GAP) - ROW_GAP + 3;
+        return this.y + TOP + ROWS * ROW_H - 2;
     }
 
     private int matTop() {
-        return detailBottom() - 8 - BUTTON_H - 6 - MAT_ROWS * 19;
+        return detailBottom() - BUTTON_H - 6 - 17;
     }
 
     private int matX(int i) {
-        return detailLeft() + 9 + (i % MAT_COLS) * 19;
+        return detailLeft() + 1 + i * 19;
     }
 
-    private int matY(int i) {
-        return matTop() + (i / MAT_COLS) * 19;
+    private int windowWidth() {
+        return 4 * CARD_W + 3 * CARD_GAP + 20;
+    }
+
+    private int windowHeight() {
+        return HEADER_H + 14 + CARD_H + 24;
+    }
+
+    private int windowLeft() {
+        return (this.width - windowWidth()) / 2;
+    }
+
+    private int windowTop() {
+        return (this.height - windowHeight()) / 2;
+    }
+
+    private int cardX(HouseDesign d) {
+        return windowLeft() + 10 + d.ordinal() * (CARD_W + CARD_GAP);
+    }
+
+    private int cardY() {
+        return windowTop() + HEADER_H + 12;
     }
 
     @Nullable
@@ -319,7 +477,7 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         int rl = this.x + PAD;
         for (HouseType type : HouseType.values()) {
             int rt = rowY(type);
-            if (mouseX >= rl && mouseX < rl + LIST_W && mouseY >= rt && mouseY < rt + ROW_H) {
+            if (mouseX >= rl && mouseX < rl + LIST_W && mouseY >= rt && mouseY < rt + ROW_H - 2) {
                 return type;
             }
         }
@@ -328,12 +486,12 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
 
     @Nullable
     private Item getMaterialAt(double mouseX, double mouseY) {
-        if (focused.isSelfBuilt()) {
+        if (focused.isSelfBuilt() || designWindow) {
             return null;
         }
-        List<Map.Entry<Item, Integer>> mats = topMaterials();
-        for (int i = 0; i < Math.min(mats.size(), MAT_COLS * MAT_ROWS); i++) {
-            int sx = matX(i), sy = matY(i);
+        List<Map.Entry<Item, Integer>> mats = topMaterials(focused, designOf(focused));
+        for (int i = 0; i < Math.min(mats.size(), MATS); i++) {
+            int sx = matX(i), sy = matTop();
             if (mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {
                 return mats.get(i).getKey();
             }
@@ -341,18 +499,63 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         return null;
     }
 
-    private boolean isOverButton(double mouseX, double mouseY) {
-        int dl = detailLeft();
-        int db = detailBottom();
-        return mouseX >= dl + 8 && mouseX < dl + DETAIL_W - 8 && mouseY >= db - 8 - BUTTON_H && mouseY < db - 8;
+    @Nullable
+    private HouseDesign getCardAt(double mouseX, double mouseY) {
+        if (!designWindow) {
+            return null;
+        }
+        for (HouseDesign d : HouseDesign.values()) {
+            int cl = cardX(d), ct = cardY();
+            if (mouseX >= cl && mouseX < cl + CARD_W && mouseY >= ct && mouseY < ct + CARD_H) {
+                return d;
+            }
+        }
+        return null;
     }
 
-    // ---------------------------------------------------------------------
-    // Клики
-    // ---------------------------------------------------------------------
+    private boolean isOverPreview(double mouseX, double mouseY) {
+        int dl = detailLeft(), dt = this.y + TOP - 3;
+        return mouseX >= dl && mouseX < dl + DETAIL_W && mouseY >= dt && mouseY < dt + PREVIEW_H;
+    }
+
+    private boolean isOverDesignButton(double mouseX, double mouseY) {
+        int dl = detailLeft(), db = detailBottom();
+        return mouseX >= dl && mouseX < dl + DESIGN_BTN_W && mouseY >= db - BUTTON_H && mouseY < db;
+    }
+
+    private boolean isOverSelectButton(double mouseX, double mouseY) {
+        int bl = detailLeft() + DESIGN_BTN_W + 4, db = detailBottom();
+        return mouseX >= bl && mouseX < detailLeft() + DETAIL_W && mouseY >= db - BUTTON_H && mouseY < db;
+    }
+
+    private boolean isOverClose(double mouseX, double mouseY) {
+        int wr = windowLeft() + windowWidth(), wt = windowTop();
+        return mouseX >= wr - 18 && mouseX < wr - 6 && mouseY >= wt + 6 && mouseY < wt + 20;
+    }
+
+    private boolean isInsideWindow(double mouseX, double mouseY) {
+        return mouseX >= windowLeft() && mouseX < windowLeft() + windowWidth()
+                && mouseY >= windowTop() && mouseY < windowTop() + windowHeight();
+    }
+
+    // =====================================================================
+    // Мышь и клавиши
+    // =====================================================================
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (designWindow) {
+            if (button == 0) {
+                HouseDesign card = getCardAt(mouseX, mouseY);
+                if (card != null) {
+                    pickDesign(card);
+                } else if (isOverClose(mouseX, mouseY) || !isInsideWindow(mouseX, mouseY)) {
+                    designWindow = false;
+                    playSound(SoundEvents.UI_BUTTON_CLICK, 0.9f);
+                }
+            }
+            return true;
+        }
         if (button == 0) {
             HouseType row = getRowAt(mouseX, mouseY);
             if (row != null) {
@@ -360,42 +563,94 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
                 boolean doubleClick = row == lastClicked && now - lastClickTime < 300;
                 lastClicked = row;
                 lastClickTime = now;
+                if (row != focused) {
+                    dragYaw = 0;
+                }
                 focused = row;
-                if (doubleClick && handler.isUnlocked(row)) {
+                if (doubleClick) {
                     choose(row);
                 } else {
                     playSound(SoundEvents.UI_BUTTON_CLICK, 1.4f);
                 }
                 return true;
             }
-            if (isOverButton(mouseX, mouseY)) {
-                if (handler.isUnlocked(focused) && focused != currentSelection()) {
+            if (isOverDesignButton(mouseX, mouseY)) {
+                designWindow = true;
+                playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+                return true;
+            }
+            if (isOverSelectButton(mouseX, mouseY)) {
+                if (!(focused == currentSelection() && designOf(focused) == BuildingTabletItem.getSelectedDesign(tablet()))) {
                     choose(focused);
-                } else if (!handler.isUnlocked(focused)) {
-                    playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0f);
                 }
+                return true;
+            }
+            if (isOverPreview(mouseX, mouseY)) {
+                dragging = true;
+                // Фиксируем текущий угол, чтобы при перетаскивании не было скачка
+                dragYaw += (Util.getMeasuringTimeMs() % 36000L) / 1000.0f * 10.0f;
                 return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    /** Номер кнопки = номер постройки. Сервер проверит исследование, запишет выбор и закроет меню. */
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (dragging) {
+            dragYaw += (float) deltaX * 2.0f;
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (dragging) {
+            dragging = false;
+            // Автовращение продолжится с того же угла
+            dragYaw -= (Util.getMeasuringTimeMs() % 36000L) / 1000.0f * 10.0f;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (designWindow && keyCode == 256) {   // Esc закрывает только окно дизайнов
+            designWindow = false;
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /** Дизайн выбран в окне: запоминаем (и в планшете) и закрываем окно. */
+    private void pickDesign(HouseDesign design) {
+        designs.put(focused, design);
+        designWindow = false;
+        playSound(SoundEvents.UI_BUTTON_CLICK, 1.2f);
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.interactionManager != null) {
+            mc.interactionManager.clickButton(this.handler.syncId,
+                    TabletScreenHandler.REMEMBER_BASE + TabletScreenHandler.encode(focused, design));
+        }
+    }
+
+    /** Выбрать здание (с его дизайном) для постройки. Сервер запишет выбор и закроет меню. */
     private void choose(HouseType type) {
         playSound(SoundEvents.UI_BUTTON_CLICK, 1.0f);
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.interactionManager != null) {
-            mc.interactionManager.clickButton(this.handler.syncId, type.ordinal());
+            mc.interactionManager.clickButton(this.handler.syncId, TabletScreenHandler.encode(type, designOf(type)));
         }
     }
 
-    private static void playSound(net.minecraft.sound.SoundEvent sound, float pitch) {
+    private static void playSound(SoundEvent sound, float pitch) {
         MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(sound, pitch));
     }
 
     /** UI_BUTTON_CLICK в 1.20.1 — не SoundEvent, а ссылка на него (RegistryEntry). */
-    private static void playSound(net.minecraft.registry.entry.RegistryEntry<net.minecraft.sound.SoundEvent> sound,
-                                  float pitch) {
+    private static void playSound(RegistryEntry<SoundEvent> sound, float pitch) {
         MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(sound, pitch));
     }
 

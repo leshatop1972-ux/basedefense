@@ -235,6 +235,15 @@ CHARACTERS = {
                      lacing=(86, 58, 40), skirt=(54, 88, 70), apron=(228, 216, 190),
                      boots=(54, 40, 32), socks=(120, 110, 100), hat="brim",
                      hat_color=(60, 92, 72), hat_kind="wool", hat_band=(214, 176, 82)),
+    "male_8": dict(skin=(200, 146, 108), hair=(112, 58, 34), hair_style="messy", eyes=(70, 96, 120),
+                   beard="full", shirt=(222, 214, 196), outer="coat", outer_color=(54, 86, 62),
+                   buttons=(206, 168, 86), trousers=(84, 84, 90), boots=(66, 48, 36), boot_style="tall",
+                   hat="brim", hat_color=(104, 74, 50), hat_kind="wool", hat_band=(44, 34, 30),
+                   pouch=(132, 92, 56)),
+    "female_6": dict(skin=(236, 198, 170), hair=(214, 212, 206), hair_style="bun", eyes=(88, 108, 132),
+                     female=True, shirt=(240, 236, 226), outer="bodice", outer_color=(124, 96, 150),
+                     lacing=(232, 220, 236), skirt=(62, 54, 80), hem=(196, 180, 120),
+                     apron=(226, 222, 212), boots=(46, 36, 32), socks=(150, 140, 156)),
 }
 
 

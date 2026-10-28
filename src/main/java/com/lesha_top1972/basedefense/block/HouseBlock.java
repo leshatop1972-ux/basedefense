@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.block;
 import com.lesha_top1972.basedefense.screen.HouseScreenHandler;
 import com.lesha_top1972.basedefense.structure.BuildManager;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
+import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
@@ -58,26 +59,26 @@ public class HouseBlock extends Block {
             return;
         }
         Direction facing = placer != null ? placer.getHorizontalFacing() : Direction.NORTH;
-        startConstruction(serverWorld, pos, type, facing, placer instanceof PlayerEntity player ? player : null);
+        startConstruction(serverWorld, pos, type, HouseDesign.OAK, facing, placer instanceof PlayerEntity player ? player : null);
     }
 
     /**
      * Блок дома уже стоит в pos — запускаем стройку.
      * Вызывается и при обычной установке блока (творческий режим), и из строительного планшета.
      */
-    public static void startConstruction(ServerWorld world, BlockPos pos, HouseType type, Direction facing,
-                                         @Nullable PlayerEntity player) {
+    public static void startConstruction(ServerWorld world, BlockPos pos, HouseType type, HouseDesign design,
+                                         Direction facing, @Nullable PlayerEntity player) {
         // Творческий режим: любой дом встаёт сразу целиком, без строителя и материалов
         if (player != null && player.isCreative()) {
-            BuildManager.startInstant(world, type.getPlan(), pos, facing);
+            BuildManager.startInstant(world, type.getPlan(design), pos, facing);
             return;
         }
         if (type.isSelfBuilt()) {
-            BuildManager.start(world, type.getPlan(), pos, facing);
+            BuildManager.start(world, type.getPlan(design), pos, facing);
             return;
         }
         ConstructionState construction = ConstructionState.get(world.getServer());
-        construction.addSite(pos, dimensionId(world), type, facing);
+        construction.addSite(pos, dimensionId(world), type, design, facing);
         if (player != null) {
             boolean hasBuilder = construction.hasBuilders(dimensionId(world));
             player.sendMessage(Text.translatable(hasBuilder ? "message.basedefense.house.site_created"
@@ -91,11 +92,14 @@ public class HouseBlock extends Block {
             return ActionResult.PASS;
         }
         if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
+            ConstructionState.Site site = ConstructionState.get(serverPlayer.getServer()).getSite(pos, dimensionId(world));
+            HouseDesign design = site != null ? site.design : HouseDesign.OAK;
             serverPlayer.openHandledScreen(new ExtendedScreenHandlerFactory() {
                 @Override
                 public void writeScreenOpeningData(ServerPlayerEntity p, PacketByteBuf buf) {
                     buf.writeBlockPos(pos);
                     buf.writeString(type.getId());
+                    buf.writeString(design.getId());
                 }
 
                 @Override
@@ -105,7 +109,7 @@ public class HouseBlock extends Block {
 
                 @Override
                 public ScreenHandler createMenu(int syncId, PlayerInventory inventory, PlayerEntity p) {
-                    return new HouseScreenHandler(syncId, inventory, (ServerWorld) world, pos, type);
+                    return new HouseScreenHandler(syncId, inventory, (ServerWorld) world, pos, type, design);
                 }
             });
         }

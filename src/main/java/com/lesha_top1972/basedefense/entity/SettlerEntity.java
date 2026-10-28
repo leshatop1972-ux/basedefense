@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.sound.ModSounds;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
@@ -92,6 +93,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     @Nullable
     private BlockPos homePos;
+    /** Когда житель последний раз отозвался на клик (возраст в тиках). */
+    private int lastGreetAge = -100;
     /** Сундук дома, куда житель складывает добычу. */
     @Nullable
     private BlockPos chestPos;
@@ -330,7 +333,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
         hand.decrement(count);
         setIngredients(ingredients + count * value);
-        this.playSound(SoundEvents.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
+        this.playSound(isFemale() ? ModSounds.SETTLER_FEMALE_YES : ModSounds.SETTLER_MALE_YES, 1.0f, getSoundPitch());
         player.sendMessage(Text.translatable("message.basedefense.settler.ingredients_added",
                 count * value, ingredients).formatted(Formatting.GREEN), true);
     }
@@ -464,6 +467,12 @@ public abstract class SettlerEntity extends PathAwareEntity {
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (hand != Hand.MAIN_HAND) {
             return super.interactMob(player, hand);
+        }
+        if (!this.getWorld().isClient && this.age - lastGreetAge > 30) {
+            // Житель отзывается на клик (не чаще раза в 1,5 секунды) и поворачивается к игроку
+            lastGreetAge = this.age;
+            this.playSound(getGreetSound(), 1.0f, getSoundPitch());
+            this.getLookControl().lookAt(player, 30.0f, 30.0f);
         }
         if (!hasJob()) {
             if (!this.getWorld().isClient) {
@@ -606,21 +615,40 @@ public abstract class SettlerEntity extends PathAwareEntity {
         ingredients = nbt.getInt("Ingredients");
     }
 
-    // ---------- Звуки (пока как у обычного жителя) ----------
+    // ---------- Звуки: свои голоса, мужские и женские (tools/settler_sounds.py) ----------
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_VILLAGER_AMBIENT;
+        return isFemale() ? ModSounds.SETTLER_FEMALE_AMBIENT : ModSounds.SETTLER_MALE_AMBIENT;
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.ENTITY_VILLAGER_HURT;
+        return isFemale() ? ModSounds.SETTLER_FEMALE_HURT : ModSounds.SETTLER_MALE_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.ENTITY_VILLAGER_DEATH;
+        return isFemale() ? ModSounds.SETTLER_FEMALE_DEATH : ModSounds.SETTLER_MALE_DEATH;
+    }
+
+    /** Отзыв на клик игрока («М-м? Да?»). */
+    private SoundEvent getGreetSound() {
+        return isFemale() ? ModSounds.SETTLER_FEMALE_GREET : ModSounds.SETTLER_MALE_GREET;
+    }
+
+    /** Бормочут не слишком часто: не чаще раза в 10 секунд. */
+    @Override
+    public int getMinAmbientSoundDelay() {
+        return 200;
+    }
+
+    /** У каждого жителя свой тембр: высота голоса зависит от внешности, плюс немного случайности. */
+    @Override
+    public float getSoundPitch() {
+        int skin = Math.max(0, getSkin());
+        float personal = 1.0f + ((skin * 7) % 5 - 2) * 0.04f;
+        return personal + (this.random.nextFloat() - 0.5f) * 0.08f;
     }
 
     // =====================================================================
