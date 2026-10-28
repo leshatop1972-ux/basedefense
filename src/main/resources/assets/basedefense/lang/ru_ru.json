@@ -320,5 +320,22 @@
   "subtitles.basedefense.bloodletter.whirl_hit": "Кровавый вихрь отбрасывает",
   "subtitles.basedefense.bloodletter.hurt": "Кровопускатель ранен",
   "subtitles.basedefense.bloodletter.death": "Кровопускатель погибает",
-  "subtitles.basedefense.bloodletter.step": "Шаги кровопускателя"
+  "subtitles.basedefense.bloodletter.step": "Шаги кровопускателя",
+  "block.basedefense.base_house": "База",
+  "research.basedefense.base_house.desc": "Главное здание поселения со складом из 10 сундуков. Когда его достроят, блок «База» сам перенесётся внутрь (запасы и жители сохранятся). Здесь живёт курьер — он сносит добычу из домов на склад, кормит Базу и носит повару продукты. Строитель берёт материалы прямо со склада.",
+  "entity.basedefense.courier": "Курьер",
+  "item.basedefense.courier_spawn_egg": "Яйцо призыва курьера",
+  "message.basedefense.base.moved": "Блок «База» перенесён в здание Базы (%s, %s, %s)",
+  "screen.basedefense.settler.build.repair": "Чинит повреждённые здания",
+  "screen.basedefense.settler.courier.1": "Всё разнесено, ждёт новой добычи",
+  "screen.basedefense.settler.courier.2": "Идёт за добычей к дому",
+  "screen.basedefense.settler.courier.3": "Несёт добычу на склад Базы",
+  "screen.basedefense.settler.courier.4": "Несёт еду в Базу",
+  "screen.basedefense.settler.courier.5": "Несёт продукты повару",
+  "screen.basedefense.settler.courier.6": "Нет блока «База» — некуда носить",
+  "screen.basedefense.settler.chop.on": "Рубка деревьев: ВКЛ",
+  "screen.basedefense.settler.chop.off": "Рубка деревьев: ВЫКЛ",
+  "screen.basedefense.settler.tip.chop": "Днём уходит рубить ближайшие дикие деревья\nне дальше 100 блоков от дома и сажает саженцы.\nБрёвна — в сундук дома (до 32 / 64 / 128 в день).\nВ этом режиме ежедневных брёвен нет.",
+  "message.basedefense.lumberjack.chop_on": "%s пошёл рубить деревья",
+  "message.basedefense.lumberjack.chop_off": "%s больше не рубит деревья"
 }

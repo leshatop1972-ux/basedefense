@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.client.screen;
 
 import com.lesha_top1972.basedefense.entity.BuilderEntity;
+import com.lesha_top1972.basedefense.entity.CourierEntity;
 import com.lesha_top1972.basedefense.entity.SettlerEntity;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
@@ -60,9 +61,13 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
 
     /** Какие кнопки показаны (по порядку сверху вниз): id кнопок из SettlerScreenHandler. */
     private int[] buttons() {
-        return handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1
-                ? new int[]{SettlerScreenHandler.BUTTON_INGREDIENTS, SettlerScreenHandler.BUTTON_UPGRADE}
-                : new int[]{SettlerScreenHandler.BUTTON_UPGRADE};
+        if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
+            return new int[]{SettlerScreenHandler.BUTTON_INGREDIENTS, SettlerScreenHandler.BUTTON_UPGRADE};
+        }
+        if (handler.getProp(SettlerScreenHandler.PROP_TOGGLE) >= 0) {
+            return new int[]{SettlerScreenHandler.BUTTON_TOGGLE, SettlerScreenHandler.BUTTON_UPGRADE};
+        }
+        return new int[]{SettlerScreenHandler.BUTTON_UPGRADE};
     }
 
     private int buttonCount() {
@@ -209,6 +214,10 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS) > 0) {
             return builderStatus();
         }
+        int courier = handler.getProp(SettlerScreenHandler.PROP_COURIER);
+        if (courier > 0) {
+            return Text.translatable("screen.basedefense.settler.courier." + courier);
+        }
         if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1) {
             return Text.translatable("screen.basedefense.settler.status.no_chest", stored);
         }
@@ -228,6 +237,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
     private int statusColor() {
         if (handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1) {
             return UiKit.BAD;
+        }
+        int courierStatus = handler.getProp(SettlerScreenHandler.PROP_COURIER);
+        if (courierStatus > 0) {
+            return courierStatus == CourierEntity.STATUS_NO_BASE ? UiKit.BAD
+                    : courierStatus == CourierEntity.STATUS_IDLE ? UiKit.TEXT_MUTED : UiKit.GOOD;
         }
         int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
         if (bs > 0) {
@@ -250,12 +264,23 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (handler.getProp(SettlerScreenHandler.PROP_FROZEN) == 1) {
             return Items.PACKED_ICE;
         }
+        int courier = handler.getProp(SettlerScreenHandler.PROP_COURIER);
+        if (courier > 0) {
+            return switch (courier) {
+                case CourierEntity.STATUS_COLLECT, CourierEntity.STATUS_DELIVER -> Items.CHEST;
+                case CourierEntity.STATUS_FEED -> Items.BREAD;
+                case CourierEntity.STATUS_COOK -> Items.PUMPKIN_PIE;
+                case CourierEntity.STATUS_NO_BASE -> Items.BARRIER;
+                default -> Items.CLOCK;
+            };
+        }
         int bs = handler.getProp(SettlerScreenHandler.PROP_BUILD_STATUS);
         if (bs > 0) {
             return switch (bs) {
                 case BuilderEntity.STATUS_BUILDING -> Items.IRON_SHOVEL;
                 case BuilderEntity.STATUS_WALKING -> Items.LEATHER_BOOTS;
                 case BuilderEntity.STATUS_PATHS -> Items.DIRT_PATH;
+                case BuilderEntity.STATUS_REPAIR -> Items.ANVIL;
                 case BuilderEntity.STATUS_MISSING -> {
                     int raw = handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING);
                     yield raw < 0 ? Items.BARRIER : Registries.ITEM.get(raw);
@@ -281,6 +306,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
             case BuilderEntity.STATUS_MISSING -> Text.translatable("screen.basedefense.settler.build.missing",
                     itemName(handler.getProp(SettlerScreenHandler.PROP_BUILD_MISSING)));
             case BuilderEntity.STATUS_PATHS -> Text.translatable("screen.basedefense.settler.build.paths");
+            case BuilderEntity.STATUS_REPAIR -> Text.translatable("screen.basedefense.settler.build.repair");
             default -> Text.translatable("screen.basedefense.settler.build.idle");
         };
     }
@@ -324,6 +350,9 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         return switch (index) {
             case SettlerScreenHandler.BUTTON_INGREDIENTS -> Text.translatable("screen.basedefense.settler.ingredients",
                     handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS), SettlerEntity.INGREDIENTS_MAX);
+            case SettlerScreenHandler.BUTTON_TOGGLE -> Text.translatable(
+                    handler.getProp(SettlerScreenHandler.PROP_TOGGLE) == 1
+                            ? "screen.basedefense.settler.chop.on" : "screen.basedefense.settler.chop.off");
             default -> isMaxLevel()
                     ? Text.translatable("screen.basedefense.settler.max_level")
                     : Text.translatable("screen.basedefense.settler.upgrade",
@@ -346,6 +375,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
                 lines.add(Text.translatable("screen.basedefense.settler.tip.ingredients_day",
                         handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY))
                         .styled(s -> s.withColor(0xFFD45A)));
+            }
+            case SettlerScreenHandler.BUTTON_TOGGLE -> {
+                for (String line : Text.translatable("screen.basedefense.settler.tip.chop").getString().split("\n")) {
+                    lines.add(Text.literal(line));
+                }
             }
             case SettlerScreenHandler.BUTTON_UPGRADE -> {
                 if (!isMaxLevel()) {

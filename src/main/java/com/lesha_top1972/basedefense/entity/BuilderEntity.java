@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.entity;
 
+import com.lesha_top1972.basedefense.block.BaseStorage;
 import com.lesha_top1972.basedefense.block.HouseBlock;
 import com.lesha_top1972.basedefense.structure.BuildCost;
 import com.lesha_top1972.basedefense.structure.BuildTask;
@@ -17,6 +18,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -44,6 +46,9 @@ import java.util.Map;
  * забирая блоки из сундуков своего дома. Нет нужного блока — ждёт, пока его положат.
  * Скорость: дом фермера строится за 4 мин (ур. 1), 3 мин (ур. 2), 1,5 мин (ур. 3);
  * дома побольше — дольше, поменьше — быстрее.
+ * Материалы берёт и из сундуков своего дома, и со склада Базы (BaseStorage).
+ * Когда заказов нет — чинит повреждённые здания (ставит недостающие блоки по чертежу; чужие блоки
+ * на месте здания не трогает), а если чинить нечего — прокладывает тропинки. Ночью спит.
  */
 public class BuilderEntity extends SettlerEntity {
 
@@ -60,6 +65,7 @@ public class BuilderEntity extends SettlerEntity {
     public static final int STATUS_BUILDING = 3;   // строит
     public static final int STATUS_MISSING = 4;    // не хватает материала
     public static final int STATUS_PATHS = 5;      // заказов нет — прокладывает тропинки
+    public static final int STATUS_REPAIR = 6;     // чинит повреждённое здание
 
     private int status = STATUS_IDLE;
     private int progress;
@@ -84,6 +90,18 @@ public class BuilderEntity extends SettlerEntity {
     private BlockPos pathTarget;
     private int pathStuck;
     private int chestCacheAge = 1000;
+
+    // ---------- Ремонт зданий ----------
+    /** Одна починка: шаг чертежа (1–2 блока) в здании. */
+    private record RepairJob(BlockPos pos, BuildTask task, List<StructurePlan.Placement> step) {
+    }
+
+    private final ArrayDeque<RepairJob> repairQueue = new ArrayDeque<>();
+    @Nullable
+    private RepairJob repairTarget;
+    private int repairScanCooldown;
+    private int repairBuildingIndex;
+    private int repairStuck;
 
     public BuilderEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -119,7 +137,7 @@ public class BuilderEntity extends SettlerEntity {
 
     @Override
     protected boolean isAwayOnDuty() {
-        return super.isAwayOnDuty() || site != null || pathTarget != null;
+        return super.isAwayOnDuty() || site != null || pathTarget != null || repairTarget != null;
     }
 
     public int getBuildStatus() {
@@ -175,11 +193,18 @@ public class BuilderEntity extends SettlerEntity {
             construction.registerBuilder(this.getUuid(), getHome(), dim, getLevel());
             site = construction.claim(this.getUuid(), dim, now);
         }
+        if (isResting()) {
+            return;   // ночь — спит
+        }
         if (site == null) {
             clearWork();
-            pathTick(world, dim);
+            if (!repairTick(world, dim)) {
+                pathTick(world, dim);
+            }
             return;
         }
+        repairTarget = null;
+        repairQueue.clear();
         pathTarget = null;
         // Блок дома сломали — заказ отменён
         if (world.isChunkLoaded(site.pos) && !(world.getBlockState(site.pos).getBlock() instanceof HouseBlock)) {
@@ -267,6 +292,143 @@ public class BuilderEntity extends SettlerEntity {
         } else if (++pathStuck > 400) {
             pathTarget = null;   // не дойти — пропускаем клетку
         }
+    }
+
+    // =====================================================================
+    // Ремонт зданий
+    // =====================================================================
+
+    /**
+     * Заказов нет — ищем повреждённые здания (по списку построенных в TownState, по одному за раз)
+     * и ставим недостающие блоки. Чинится только то, чего нет (на месте воздух, вода, трава);
+     * если на месте блока здания стоит что-то другое — не трогаем.
+     * @return true — строитель занят ремонтом (тропинки подождут)
+     */
+    private boolean repairTick(ServerWorld world, String dim) {
+        if (repairTarget == null && repairQueue.isEmpty()) {
+            if (--repairScanCooldown > 0) {
+                return false;
+            }
+            repairScanCooldown = 40;
+            List<TownState.Building> list = TownState.get(world.getServer()).getBuildings(dim);
+            if (list.isEmpty()) {
+                return false;
+            }
+            scanForDamage(world, list.get(Math.floorMod(repairBuildingIndex++, list.size())));
+            if (repairQueue.isEmpty()) {
+                return false;
+            }
+        }
+        if (isSettlementFrozen()) {
+            return true;
+        }
+        if (repairTarget == null) {
+            repairTarget = repairQueue.poll();
+            repairStuck = 0;
+            if (repairTarget == null) {
+                return false;
+            }
+        }
+        RepairJob job = repairTarget;
+        if (!isDamaged(world, job)) {
+            repairTarget = null;
+            return true;
+        }
+        status = STATUS_REPAIR;
+        missingItem = null;
+        double dx = this.getX() - (job.pos().getX() + 0.5);
+        double dz = this.getZ() - (job.pos().getZ() + 0.5);
+        double dy = Math.abs(this.getY() - job.pos().getY());
+        if (dx * dx + dz * dz <= 4.0 * 4.0 && dy <= 12) {
+            int interval = switch (getLevel()) {
+                case 3 -> 5;
+                case 2 -> 8;
+                default -> 12;
+            };
+            if (this.age % interval == 0) {
+                List<Item> need = new ArrayList<>();
+                for (StructurePlan.Placement p : job.step()) {
+                    Item item = BuildCost.itemFor(p);
+                    if (item != null) {
+                        need.add(item);
+                    }
+                }
+                Item lacking = takeItems(world, need);
+                if (lacking != null) {
+                    // Нечем чинить — бросаем ремонт на минуту (строитель вернётся, когда материалы появятся)
+                    status = STATUS_MISSING;
+                    missingItem = lacking;
+                    repairQueue.clear();
+                    repairTarget = null;
+                    repairScanCooldown = 1200;
+                    return false;
+                }
+                for (StructurePlan.Placement p : job.step()) {
+                    job.task().placeSingle(p);
+                }
+                this.swingHand(Hand.MAIN_HAND);
+                repairTarget = null;
+            }
+        } else if (++repairStuck > 500) {
+            repairTarget = null;   // не подойти — пропускаем
+        }
+        return true;
+    }
+
+    /** Найти повреждённые места здания (не больше 64 за раз). */
+    private void scanForDamage(ServerWorld world, TownState.Building b) {
+        if (!world.isChunkLoaded(b.pos())) {
+            return;
+        }
+        BuildTask t = new BuildTask(world, b.plan(), b.type().getSteps(b.design()), b.pos(), b.facing(), false);
+        for (List<StructurePlan.Placement> step : t.getSteps()) {
+            if (repairQueue.size() >= 64) {
+                break;
+            }
+            RepairJob job = new RepairJob(t.worldPos(step.get(0)), t, step);
+            if (isDamaged(world, job)) {
+                repairQueue.add(job);
+            }
+        }
+    }
+
+    /**
+     * Шаг чертежа повреждён: хотя бы один его блок пропал (там пусто), и ни на одном месте
+     * не стоит чужой блок. Бесплатные блоки (земля двора, листва, вода, расчистка) не чинятся.
+     */
+    private static boolean isDamaged(ServerWorld world, RepairJob job) {
+        boolean costly = false;
+        boolean missing = false;
+        for (StructurePlan.Placement p : job.step()) {
+            if (p.onlyIfReplaceable() || p.state().isAir()) {
+                return false;
+            }
+            if (BuildCost.itemFor(p) != null) {
+                costly = true;
+            }
+            BlockPos pos = job.task().worldPos(p);
+            if (!world.isChunkLoaded(pos)) {
+                return false;
+            }
+            BlockState current = world.getBlockState(pos);
+            if (current.isOf(job.task().targetState(p).getBlock())) {
+                continue;
+            }
+            if (!current.isReplaceable()) {
+                return false;
+            }
+            missing = true;
+        }
+        return costly && missing;
+    }
+
+    /** Куда идти строителю без заказа: к месту ремонта или к клетке тропинки. */
+    @Nullable
+    private BlockPos walkTarget() {
+        if (repairTarget != null) {
+            return repairTarget.pos();
+        }
+        return pathTarget == null ? null : pathTarget.up();
     }
 
     private static boolean samePlace(BuildTask task, ConstructionState.Site site) {
@@ -363,6 +525,7 @@ public class BuilderEntity extends SettlerEntity {
             world.setBlockState(done.pos, Blocks.AIR.getDefaultState());
         }
         t.getPlan().getFinishAction().run(t);   // заселяем жителя
+        TownState.get(world.getServer()).addBuilding(done.type, done.design, done.pos, done.facing, dim);
         world.playSound(null, done.pos, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0f, 1.0f);
         Text houseName = Text.translatable("block.basedefense." + done.type.getId());
         world.getServer().getPlayerManager().broadcast(
@@ -440,7 +603,13 @@ public class BuilderEntity extends SettlerEntity {
             return List.of();
         }
         if (++chestCacheAge > 100) {
-            chestCache = findChests(world, home);
+            List<BlockPos> all = new ArrayList<>(findChests(world, home));
+            for (BlockPos pos : BaseStorage.chests(world)) {
+                if (!all.contains(pos)) {
+                    all.add(pos);   // склад Базы — тоже источник материалов
+                }
+            }
+            chestCache = all;
             chestCacheAge = 0;
         }
         return chestCache;
@@ -519,7 +688,7 @@ public class BuilderEntity extends SettlerEntity {
 
         @Override
         public boolean canStart() {
-            return builder.site != null && !builder.isSettlementFrozen();
+            return builder.site != null && !builder.isSettlementFrozen() && !builder.isResting();
         }
 
         @Override
@@ -590,7 +759,8 @@ public class BuilderEntity extends SettlerEntity {
 
         @Override
         public boolean canStart() {
-            return builder.site == null && builder.pathTarget != null && !builder.isSettlementFrozen();
+            return builder.site == null && builder.walkTarget() != null && !builder.isSettlementFrozen()
+                    && !builder.isResting();
         }
 
         @Override
@@ -605,7 +775,7 @@ public class BuilderEntity extends SettlerEntity {
 
         @Override
         public void tick() {
-            BlockPos target = builder.pathTarget;
+            BlockPos target = builder.walkTarget();
             if (target == null) {
                 return;
             }
@@ -614,7 +784,7 @@ public class BuilderEntity extends SettlerEntity {
             double dz = builder.getZ() - (target.getZ() + 0.5);
             if (dx * dx + dz * dz > 2.5 * 2.5) {
                 if (builder.getNavigation().isIdle() || builder.age % 40 == 0) {
-                    builder.getNavigation().startMovingTo(target.getX() + 0.5, target.getY() + 1,
+                    builder.getNavigation().startMovingTo(target.getX() + 0.5, target.getY(),
                             target.getZ() + 0.5, 0.7);
                 }
             } else {

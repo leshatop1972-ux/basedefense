@@ -24,6 +24,7 @@ public class SettlerScreenHandler extends ScreenHandler {
 
     public static final int BUTTON_UPGRADE = 2;
     public static final int BUTTON_INGREDIENTS = 3;   // только у повара
+    public static final int BUTTON_TOGGLE = 4;        // переключатель работы (у лесоруба — «Рубка деревьев»)
 
     public static final int PROP_LEVEL = 0;
     public static final int PROP_HAS_CHEST = 1;   // 1 — у жителя есть сундук
@@ -44,7 +45,9 @@ public class SettlerScreenHandler extends ScreenHandler {
     // поэтому номер делится на две половины по 16 бит.
     public static final int PROP_ENTITY_LO = 14;
     public static final int PROP_ENTITY_HI = 15;
-    public static final int PROP_COUNT = 16;
+    public static final int PROP_TOGGLE = 16;         // -1 — нет переключателя, 0 — выключен, 1 — включён
+    public static final int PROP_COURIER = 17;        // 0 — не курьер; см. CourierEntity.STATUS_*
+    public static final int PROP_COUNT = 18;
 
     /** Житель (только на сервере; на клиенте null). */
     @Nullable
@@ -83,6 +86,9 @@ public class SettlerScreenHandler extends ScreenHandler {
                                     new Identifier(Basedefense.MOD_ID, b.getCurrentHouse().getId()))) : -1;
                     case PROP_BUILD_PROGRESS -> settler instanceof BuilderEntity b ? b.getBuildProgress() : 0;
                     case PROP_PROFESSION -> Registries.ENTITY_TYPE.getRawId(settler.getType());
+                    case PROP_TOGGLE -> settler.hasWorkToggle() ? (settler.isWorkToggleOn() ? 1 : 0) : -1;
+                    case PROP_COURIER -> settler instanceof com.lesha_top1972.basedefense.entity.CourierEntity c
+                            ? c.getCourierStatus() : 0;
                     case PROP_ENTITY_LO -> (short) (settler.getId() & 0xFFFF);
                     case PROP_ENTITY_HI -> (short) ((settler.getId() >>> 16) & 0xFFFF);
                     case PROP_BUILD_MISSING -> settler instanceof BuilderEntity b && b.getMissingItem() != null
@@ -116,6 +122,11 @@ public class SettlerScreenHandler extends ScreenHandler {
         switch (id) {
             case BUTTON_UPGRADE -> settler.tryUpgrade(player);
             case BUTTON_INGREDIENTS -> settler.takeIngredientsFromHand(player);
+            case BUTTON_TOGGLE -> {
+                if (settler.hasWorkToggle()) {
+                    settler.flipWorkToggle(player);
+                }
+            }
             default -> {
                 return false;
             }

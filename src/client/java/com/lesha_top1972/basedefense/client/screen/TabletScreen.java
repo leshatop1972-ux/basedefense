@@ -44,7 +44,7 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
     private static final int HEADER_H = 22;
     private static final int TOP = 34;             // верх списка и панели (от верха окна)
     private static final int LIST_W = 150;
-    private static final int ROW_H = 25;
+    private static final int ROW_H = 22;
     private static final int DETAIL_W = 232;
     private static final int PREVIEW_H = 112;
     private static final int BUTTON_H = 18;

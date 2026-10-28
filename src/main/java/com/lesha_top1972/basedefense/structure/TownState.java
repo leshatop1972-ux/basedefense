@@ -16,6 +16,8 @@ import java.util.List;
 /**
  * Планировка поселения: где центральная площадь (и её колокол) и где входы в построенные дома.
  * По этим данным строитель прокладывает тропинки, а жители ходят на площадь.
+ * Ещё здесь список построенных зданий (вид, дизайн, где и куда смотрит) — по нему строитель
+ * находит повреждённые здания и чинит их.
  * Сохраняется в data/basedefense_town.dat в папке мира.
  */
 public class TownState extends PersistentState {
@@ -35,8 +37,17 @@ public class TownState extends PersistentState {
         }
     }
 
+    /** Построенное здание: по чертежу (вид + дизайн), блок дома стоял в pos, игрок смотрел в facing. */
+    public record Building(HouseType type, HouseDesign design, BlockPos pos, Direction facing, String dimension) {
+
+        public StructurePlan plan() {
+            return type.getPlan(design);
+        }
+    }
+
     @Nullable
     private Square square;
+    private final List<Building> buildings = new ArrayList<>();
     private final List<Entrance> entrances = new ArrayList<>();
     /** Меняется при каждом изменении планировки — строитель понимает, что пора пересчитать тропинки. */
     private int revision;
@@ -75,6 +86,24 @@ public class TownState extends PersistentState {
         return result;
     }
 
+    /** Запомнить построенное здание (то же место — заменяется). */
+    public void addBuilding(HouseType type, HouseDesign design, BlockPos pos, Direction facing, String dimension) {
+        BlockPos at = pos.toImmutable();
+        buildings.removeIf(b -> b.pos().equals(at) && b.dimension().equals(dimension));
+        buildings.add(new Building(type, design, at, facing, dimension));
+        markDirty();
+    }
+
+    public List<Building> getBuildings(String dimension) {
+        List<Building> result = new ArrayList<>();
+        for (Building b : buildings) {
+            if (b.dimension().equals(dimension)) {
+                result.add(b);
+            }
+        }
+        return result;
+    }
+
     public int getRevision() {
         return revision;
     }
@@ -96,6 +125,17 @@ public class TownState extends PersistentState {
             Direction dir = Direction.byName(e.getString("Out"));
             state.entrances.add(new Entrance(NbtHelper.toBlockPos(e.getCompound("Pos")),
                     dir == null || dir.getAxis().isVertical() ? Direction.SOUTH : dir, e.getString("Dim")));
+        }
+        NbtList bl = nbt.getList("Buildings", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < bl.size(); i++) {
+            NbtCompound e = bl.getCompound(i);
+            HouseType type = HouseType.byId(e.getString("Type"));
+            Direction dir = Direction.byName(e.getString("Facing"));
+            if (type != null) {
+                state.buildings.add(new Building(type, HouseDesign.byId(e.getString("Design")),
+                        NbtHelper.toBlockPos(e.getCompound("Pos")),
+                        dir == null || dir.getAxis().isVertical() ? Direction.NORTH : dir, e.getString("Dim")));
+            }
         }
         state.revision = nbt.getInt("Revision");
         return state;
@@ -121,6 +161,17 @@ public class TownState extends PersistentState {
             list.add(c);
         }
         nbt.put("Entrances", list);
+        NbtList bl = new NbtList();
+        for (Building b : buildings) {
+            NbtCompound c = new NbtCompound();
+            c.putString("Type", b.type().getId());
+            c.putString("Design", b.design().getId());
+            c.put("Pos", NbtHelper.fromBlockPos(b.pos()));
+            c.putString("Facing", b.facing().getName());
+            c.putString("Dim", b.dimension());
+            bl.add(c);
+        }
+        nbt.put("Buildings", bl);
         nbt.putInt("Revision", revision);
         return nbt;
     }

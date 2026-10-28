@@ -320,5 +320,22 @@
   "subtitles.basedefense.bloodletter.whirl_hit": "Blood whirl knocks back",
   "subtitles.basedefense.bloodletter.hurt": "Bloodletter hurts",
   "subtitles.basedefense.bloodletter.death": "Bloodletter dies",
-  "subtitles.basedefense.bloodletter.step": "Bloodletter steps"
+  "subtitles.basedefense.bloodletter.step": "Bloodletter steps",
+  "block.basedefense.base_house": "Base",
+  "research.basedefense.base_house.desc": "The main building of the settlement with a storage of 10 chests. When it is finished, the Base block moves inside by itself (supplies and settlers are kept). The courier lives here: he carries loot from houses to the storage, feeds the Base and brings ingredients to the cook. The builder takes materials straight from the storage.",
+  "entity.basedefense.courier": "Courier",
+  "item.basedefense.courier_spawn_egg": "Courier Spawn Egg",
+  "message.basedefense.base.moved": "The Base block moved into the Base building (%s, %s, %s)",
+  "screen.basedefense.settler.build.repair": "Repairing damaged buildings",
+  "screen.basedefense.settler.courier.1": "Everything delivered, waiting",
+  "screen.basedefense.settler.courier.2": "Going to a house for loot",
+  "screen.basedefense.settler.courier.3": "Carrying loot to the Base storage",
+  "screen.basedefense.settler.courier.4": "Carrying food to the Base",
+  "screen.basedefense.settler.courier.5": "Bringing ingredients to the cook",
+  "screen.basedefense.settler.courier.6": "No Base block — nowhere to carry",
+  "screen.basedefense.settler.chop.on": "Tree cutting: ON",
+  "screen.basedefense.settler.chop.off": "Tree cutting: OFF",
+  "screen.basedefense.settler.tip.chop": "During the day cuts the nearest wild trees\nwithin 100 blocks of home and replants saplings.\nLogs go to the house chest (up to 32 / 64 / 128 a day).\nNo daily logs in this mode.",
+  "message.basedefense.lumberjack.chop_on": "%s went to cut trees",
+  "message.basedefense.lumberjack.chop_off": "%s stopped cutting trees"
 }

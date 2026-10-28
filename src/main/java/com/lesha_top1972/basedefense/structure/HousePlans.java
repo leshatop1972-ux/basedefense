@@ -1,5 +1,7 @@
 package com.lesha_top1972.basedefense.structure;
 
+import com.lesha_top1972.basedefense.block.BaseLocationState;
+import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.entity.SettlerEntity;
 import net.minecraft.block.Block;
@@ -279,6 +281,97 @@ public final class HousePlans {
 
         h.settle(ModEntities.BLACKSMITH, h.chestPos(8, 1, 2));
         return p;
+    }
+
+    // =====================================================================
+    // База: самый большой дом 12×10 — склад из 10 сундуков, в центре блок «База»
+    // (переносится сюда со старого места, когда дом достроен), живёт курьер
+    // =====================================================================
+    /** Где внутри здания Базы встаёт блок «База» (локальные координаты). */
+    public static final BlockPos BASE_BLOCK_LOCAL = new BlockPos(5, 1, 5);
+
+    public static StructurePlan baseHouse(HouseDesign design) {
+        House h = new House(12, 10, 4, false, 5, design);
+        StructurePlan p = h.p;
+        // Склад: 5 двойных сундуков вдоль задней и левой стены
+        doubleChest(p, 2, 1, 8, 1, 1, 8, Direction.SOUTH);
+        doubleChest(p, 4, 1, 8, 3, 1, 8, Direction.SOUTH);
+        doubleChest(p, 8, 1, 8, 7, 1, 8, Direction.SOUTH);
+        doubleChest(p, 10, 1, 8, 9, 1, 8, Direction.SOUTH);
+        doubleChest(p, 1, 1, 5, 1, 1, 4, Direction.EAST);
+        // Место под блок «База» и ковёр вокруг
+        BlockPos b = BASE_BLOCK_LOCAL;
+        p.set(b.getX(), 1, b.getZ(), AIR);
+        for (int x = b.getX() - 1; x <= b.getX() + 1; x++) {
+            for (int z = b.getZ() - 1; z <= b.getZ() + 1; z++) {
+                if (x != b.getX() || z != b.getZ()) {
+                    p.late(x, 1, z, Blocks.RED_CARPET.getDefaultState());
+                }
+            }
+        }
+        // Комната курьера: кровать, стол, бочки
+        bed(p, 10, 1, Blocks.BLUE_BED);
+        table(p, 9, 5);
+        p.set(1, 1, 1, barrel());
+        p.set(2, 1, 1, barrel());
+        p.set(1, 1, 2, barrel());
+
+        // Флагшток с флагом поселения у входа — Базу видно издалека
+        for (int y = 1; y <= 7; y++) {
+            p.set(-1, y, -2, h.s.fence);
+        }
+        p.set(-2, 7, -2, Blocks.CYAN_WOOL.getDefaultState());
+        p.set(-2, 6, -2, Blocks.CYAN_WOOL.getDefaultState());
+        p.set(-2, 7, -3, Blocks.WHITE_WOOL.getDefaultState());
+        p.set(-2, 6, -3, Blocks.CYAN_WOOL.getDefaultState());
+        p.late(-1, 8, -2, Blocks.LANTERN.getDefaultState());
+
+        // Двор: площадка для повозок — бочки, сено, ящики
+        h.yardGround(Blocks.DIRT_PATH.getDefaultState());
+        p.set(1, 1, h.yardStart + 2, barrel());
+        p.set(1, 1, h.yardStart + 3, barrel());
+        p.set(2, 1, h.yardStart + 3, Blocks.HAY_BLOCK.getDefaultState());
+        p.set(9, 1, h.yardStart + 2, Blocks.HAY_BLOCK.getDefaultState());
+        p.set(10, 1, h.yardStart + 2, barrel());
+        p.set(10, 2, h.yardStart + 2, barrel());
+        h.yardFence();
+
+        h.settle(ModEntities.COURIER, h.chestPos(2, 1, 8));
+        StructurePlan.FinishAction settle = p.getFinishAction();
+        p.onFinish(task -> {
+            settle.run(task);
+            moveBaseBlock(task, task.toWorld(b.getX(), b.getY(), b.getZ()));
+        });
+        return p;
+    }
+
+    /**
+     * Переносит блок «База» внутрь здания Базы. Все данные поселения (еда, жители, исследования)
+     * хранятся не в блоке, а в мире — поэтому при переносе ничего не теряется.
+     */
+    private static void moveBaseBlock(BuildTask task, BlockPos target) {
+        net.minecraft.server.world.ServerWorld world = task.getWorld();
+        net.minecraft.server.MinecraftServer server = world.getServer();
+        BaseLocationState base = BaseLocationState.get(server);
+        if (base.hasBase()) {
+            net.minecraft.server.world.ServerWorld old = server.getWorld(base.getDimension());
+            BlockPos oldPos = base.getPos();
+            if (old == world && target.equals(oldPos)) {
+                return;
+            }
+            if (old != null && oldPos != null && old.getBlockState(oldPos).isOf(ModBlocks.BASE)) {
+                old.setBlockState(oldPos, AIR);      // старое место освобождается (Base убирает запись о себе)
+                old.spawnParticles(net.minecraft.particle.ParticleTypes.PORTAL, oldPos.getX() + 0.5, oldPos.getY() + 0.5,
+                        oldPos.getZ() + 0.5, 40, 0.4, 0.6, 0.4, 0.2);
+            }
+            base.clear();
+        }
+        world.setBlockState(target, ModBlocks.BASE.getDefaultState());
+        base.set(world, target);
+        world.spawnParticles(net.minecraft.particle.ParticleTypes.PORTAL, target.getX() + 0.5, target.getY() + 0.5,
+                target.getZ() + 0.5, 60, 0.4, 0.8, 0.4, 0.3);
+        server.getPlayerManager().broadcast(net.minecraft.text.Text.translatable("message.basedefense.base.moved",
+                target.getX(), target.getY(), target.getZ()).formatted(net.minecraft.util.Formatting.GOLD), false);
     }
 
     // =====================================================================

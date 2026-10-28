@@ -170,6 +170,25 @@ ICONS = {
         "KwwdwwwdwwdwK...",
         "KKKKKKKKKKKKK...",
     ],
+    # База: сундук-склад с бирюзовым флагом
+    "base_house": [
+        "..K.............",
+        "..KbbbbK........",
+        "..KBbbbbK.......",
+        "..KbBbbK........",
+        "..KbbK..........",
+        "..K.............",
+        "..K.............",
+        ".KKKKKKKKKKKKK..",
+        ".KWWWWWWWWWWWK..",
+        ".KwwwwwKKwwwwK..",
+        ".KKKKKKyyKKKKK..",
+        ".KwwwwwKKwwwwK..",
+        ".KwdwwwwwwwwdK..",
+        ".KwwdwwwwwwdwK..",
+        ".KKKKKKKKKKKKK..",
+        "................",
+    ],
     # Площадь: колокол
     "town_square": [
         "................",

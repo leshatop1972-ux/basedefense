@@ -8,7 +8,9 @@ import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
 import com.lesha_top1972.basedefense.structure.HousePlans;
 import com.lesha_top1972.basedefense.structure.TownState;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -134,6 +136,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new FleeHomeGoal(this));     // рядом враг — бежит домой и закрывает дверь
+        this.goalSelector.add(1, new SleepGoal(this));        // ночью спит в своей кровати
         this.goalSelector.add(1, new StandStillGoal(this));   // нет запасов или открыто меню — стоит
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(1, new LongDoorInteractGoal(this, true));   // открывает и закрывает двери
@@ -260,6 +263,31 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return chestPos != null;
     }
 
+    @Nullable
+    public BlockPos getChestPos() {
+        return chestPos;
+    }
+
+    /** Инвентарь сундука дома (для курьера) или null. */
+    @Nullable
+    public Inventory getHomeChest(ServerWorld world) {
+        return getChestInventory(world);
+    }
+
+    // ---------- Переключатель работы в меню (у лесоруба — «Рубка деревьев») ----------
+
+    /** Есть ли у жителя переключатель в меню. */
+    public boolean hasWorkToggle() {
+        return false;
+    }
+
+    public boolean isWorkToggleOn() {
+        return false;
+    }
+
+    public void flipWorkToggle(PlayerEntity player) {
+    }
+
     /** Сколько предметов ждёт у жителя (сундука нет или он полон). */
     public int getStoredCount() {
         int count = 0;
@@ -349,6 +377,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
     }
 
+    /** Положить готовый предмет в запас жителя (потом он уйдёт в сундук дома). */
+    protected void storeItem(ItemStack stack) {
+        storage.addStack(stack);
+    }
+
     /** Положить добычу в запас жителя (потом она уйдёт в сундук; если запас полон — лишнее пропадает). */
     protected void addLoot(WorkLoot pick) {
         int count = pick.rollCount(this.random);
@@ -434,7 +467,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
     }
 
     /** Кладёт предметы в инвентарь: сначала докладывает в такие же стопки, потом в пустые ячейки. */
-    private static ItemStack insertInto(Inventory inventory, ItemStack stack) {
+    public static ItemStack insertInto(Inventory inventory, ItemStack stack) {
         int maxPerSlot = Math.min(stack.getMaxCount(), inventory.getMaxCountPerStack());
         for (int i = 0; i < inventory.size() && !stack.isEmpty(); i++) {
             ItemStack slot = inventory.getStack(i);
@@ -868,6 +901,121 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 }
             }
             return found.isEmpty() ? null : found.get(settler.getRandom().nextInt(found.size()));
+        }
+    }
+
+    // =====================================================================
+    // Сон
+    // =====================================================================
+
+    /** Ночь (как у обычных жителей: с вечера до рассвета). */
+    public boolean isNightTime() {
+        long t = this.getWorld().getTimeOfDay() % 24000L;
+        return t >= 12600L && t < 23300L;
+    }
+
+    @Nullable
+    private BlockPos bedPos;
+    private int bedSearchCooldown;
+
+    /** Изголовье свободной кровати возле дома (ищется раз в 10 секунд, пока не найдена). */
+    @Nullable
+    public BlockPos findBed() {
+        World world = this.getWorld();
+        if (bedPos != null) {
+            BlockState state = world.getBlockState(bedPos);
+            if (state.getBlock() instanceof BedBlock && state.get(BedBlock.PART) == BedPart.HEAD
+                    && (!state.get(BedBlock.OCCUPIED) || this.isSleeping())) {
+                return bedPos;
+            }
+            bedPos = null;
+        }
+        BlockPos home = homePos;
+        if (home == null || --bedSearchCooldown > 0) {
+            return null;
+        }
+        bedSearchCooldown = 200;
+        double best = Double.MAX_VALUE;
+        for (BlockPos pos : BlockPos.iterate(home.add(-8, -2, -8), home.add(8, 3, 8))) {
+            BlockState state = world.getBlockState(pos);
+            if (state.getBlock() instanceof BedBlock && state.get(BedBlock.PART) == BedPart.HEAD
+                    && !state.get(BedBlock.OCCUPIED)) {
+                double d = pos.getSquaredDistance(home);
+                if (d < best) {
+                    best = d;
+                    bedPos = pos.toImmutable();
+                }
+            }
+        }
+        return bedPos;
+    }
+
+    /** Житель спит или вот-вот пойдёт спать — работу (стройку, разноску, рубку) не начинает. */
+    public boolean isResting() {
+        return this.isSleeping() || (isNightTime() && bedPos != null);
+    }
+
+    /** Ночью житель идёт к своей кровати и спит до утра. Утром просыпается сам. */
+    static class SleepGoal extends Goal {
+
+        private final SettlerEntity settler;
+        @Nullable
+        private BlockPos bed;
+        private int walkTicks;
+
+        SleepGoal(SettlerEntity settler) {
+            this.settler = settler;
+            this.setControls(EnumSet.of(Control.MOVE, Control.LOOK, Control.JUMP));
+        }
+
+        @Override
+        public boolean canStart() {
+            if (!settler.isNightTime() || settler.getInteractingPlayer() != null || settler.age % 10 != 0) {
+                return false;
+            }
+            bed = settler.findBed();
+            return bed != null;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return settler.isNightTime() && bed != null && settler.getWorld().getBlockState(bed).getBlock() instanceof BedBlock
+                    && settler.getInteractingPlayer() == null;
+        }
+
+        @Override
+        public void start() {
+            walkTicks = 0;
+        }
+
+        @Override
+        public void stop() {
+            if (settler.isSleeping()) {
+                settler.wakeUp();
+            }
+            settler.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            if (bed == null || settler.isSleeping()) {
+                return;
+            }
+            double dist = settler.squaredDistanceTo(Vec3d.ofBottomCenter(bed));
+            if (dist <= 2.2 * 2.2) {
+                settler.getNavigation().stop();
+                settler.sleep(bed);
+                return;
+            }
+            walkTicks++;
+            if (settler.getNavigation().isIdle() || walkTicks % 40 == 0) {
+                settler.getNavigation().startMovingTo(bed.getX() + 0.5, bed.getY(), bed.getZ() + 0.5, 0.7);
+            }
+            // Не дойти (застрял, дверь) — через 30 секунд просто ложится
+            if (walkTicks > 600) {
+                settler.getNavigation().stop();
+                settler.sleep(bed);
+            }
         }
     }
 

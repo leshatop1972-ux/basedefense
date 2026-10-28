@@ -5,6 +5,7 @@ import com.lesha_top1972.basedefense.structure.BuildManager;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
 import com.lesha_top1972.basedefense.structure.HouseDesign;
 import com.lesha_top1972.basedefense.structure.HouseType;
+import com.lesha_top1972.basedefense.structure.TownState;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -71,10 +72,12 @@ public class HouseBlock extends Block {
         // Творческий режим: любой дом встаёт сразу целиком, без строителя и материалов
         if (player != null && player.isCreative()) {
             BuildManager.startInstant(world, type.getPlan(design), pos, facing);
+            TownState.get(world.getServer()).addBuilding(type, design, pos, facing, dimensionId(world));
             return;
         }
         if (type.isSelfBuilt()) {
             BuildManager.start(world, type.getPlan(design), pos, facing);
+            TownState.get(world.getServer()).addBuilding(type, design, pos, facing, dimensionId(world));
             return;
         }
         ConstructionState construction = ConstructionState.get(world.getServer());

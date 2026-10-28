@@ -19,7 +19,9 @@ public enum HouseType {
     MINER("miner_house", HousePlans::miner, false),
     BLACKSMITH("blacksmith_house", HousePlans::blacksmith, false),
     LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false),
-    TOWN_SQUARE("town_square", HousePlans::townSquare, false);
+    TOWN_SQUARE("town_square", HousePlans::townSquare, false),
+    /** Здание Базы: склад, блок «База» переносится внутрь, живёт курьер. */
+    BASE("base_house", HousePlans::baseHouse, false);
 
     // Размер массивов — HouseDesign.values().length прямо в полях: в enum нельзя ссылаться
     // на свою статическую константу из инициализаторов полей.

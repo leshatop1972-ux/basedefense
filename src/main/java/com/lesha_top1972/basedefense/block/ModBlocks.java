@@ -45,6 +45,8 @@ public final class ModBlocks {
     public static final Block LUMBERJACK_HOUSE = house("lumberjack_house", HouseType.LUMBERJACK);
     /** Центральная площадь (колокол; сюда ходят жители, к ней ведут тропинки). */
     public static final Block TOWN_SQUARE = house("town_square", HouseType.TOWN_SQUARE);
+    /** Здание Базы (склад, сюда переносится блок «База», живёт курьер). */
+    public static final Block BASE_HOUSE = house("base_house", HouseType.BASE);
 
     /** Кровавая лужа вокруг яиц кровожада: 0.5 урона в секунду, ничего не выпадает. */
     public static final Block BLOOD_POOL = register("blood_pool", new BloodPoolBlock(FabricBlockSettings.create()
@@ -81,6 +83,6 @@ public final class ModBlocks {
         // Блоки домов не крафтятся (их ставит строительный планшет), здесь они для творческого режима
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
-                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE));
+                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE, BASE_HOUSE));
     }
 }

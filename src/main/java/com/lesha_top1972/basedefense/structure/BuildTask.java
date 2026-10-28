@@ -145,6 +145,16 @@ public class BuildTask {
         return toWorld(p.local().getX(), p.local().getY(), p.local().getZ());
     }
 
+    /** Блок, который должен стоять по чертежу (уже повёрнутый). */
+    public BlockState targetState(StructurePlan.Placement p) {
+        return p.state().rotate(rotation);
+    }
+
+    /** Поставить один блок чертежа (ремонт). @return true, если что-то изменилось */
+    public boolean placeSingle(StructurePlan.Placement p) {
+        return place(p);
+    }
+
     private boolean place(StructurePlan.Placement p) {
         BlockPos pos = worldPos(p);
         BlockState current = world.getBlockState(pos);

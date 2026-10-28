@@ -64,6 +64,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MINER, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.BLACKSMITH, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.LUMBERJACK, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.COURIER, SettlerEntityRenderer::new);
 
         // Враги: модели и анимации из Blockbench (assets/basedefense/geo и animations)
         EntityModelLayerRegistry.registerModelLayer(IronZombieRenderer.LAYER, () -> BedrockModelLoader.load("iron_zombie"));

@@ -62,6 +62,14 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
+    /** Курьер (живёт в здании Базы, разносит ресурсы). */
+    public static final EntityType<CourierEntity> COURIER = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "courier"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, CourierEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
     /** Железный зомби (враг). */
     public static final EntityType<IronZombieEntity> IRON_ZOMBIE = Registry.register(
             Registries.ENTITY_TYPE,
@@ -354,6 +362,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(MINER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(COURIER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());

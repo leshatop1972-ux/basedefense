@@ -189,11 +189,24 @@ public class HouseScreenHandler extends ScreenHandler {
 
         // Что лежит в сундуках строителя
         Map<Item, Integer> stock = info != null
-                ? BuilderEntity.countItems(world, BuilderEntity.findChests(world, info.home())) : Map.of();
+                ? BuilderEntity.countItems(world, withBaseStorage(BuilderEntity.findChests(world, info.home()))) : Map.of();
         for (int i = 0; i < MAX_ITEMS; i++) {
             values[PROP_AVAILABLE + i] = i < items.size()
                     ? Math.min(Short.MAX_VALUE, stock.getOrDefault(items.get(i), 0)) : 0;
         }
+    }
+
+    /** Сундуки строителя + склад Базы (строитель берёт материалы и оттуда). */
+    private List<BlockPos> withBaseStorage(List<BlockPos> chests) {
+        List<BlockPos> all = new ArrayList<>(chests);
+        if (world != null) {
+            for (BlockPos pos : com.lesha_top1972.basedefense.block.BaseStorage.chests(world)) {
+                if (!all.contains(pos)) {
+                    all.add(pos);
+                }
+            }
+        }
+        return all;
     }
 
     /** Сколько ещё нужно каждого материала, если стройка дошла до шага step (работает и на клиенте). */
