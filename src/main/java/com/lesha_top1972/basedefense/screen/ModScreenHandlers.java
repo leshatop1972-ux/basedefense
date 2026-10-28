@@ -39,6 +39,18 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "recruit"),
             new ScreenHandlerType<>(RecruitScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
 
+    /** Меню стражника (снаряжение). Клиенту передаётся номер сущности. */
+    public static final ScreenHandlerType<GuardScreenHandler> GUARD = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "guard"),
+            new ExtendedScreenHandlerType<>(GuardScreenHandler::new));
+
+    /** Меню Повестки (отряды стражников). Клиенту передаётся список стражников и отрядов. */
+    public static final ScreenHandlerType<SquadScreenHandler> SQUAD = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "squad"),
+            new ExtendedScreenHandlerType<>(SquadScreenHandler::new));
+
     private ModScreenHandlers() {
     }
 

@@ -34,6 +34,7 @@ import com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity;
 import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
 import com.lesha_top1972.basedefense.entity.settler.CookEntity;
 import com.lesha_top1972.basedefense.entity.settler.CourierEntity;
+import com.lesha_top1972.basedefense.entity.settler.GuardArrowEntity;
 import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
 import com.lesha_top1972.basedefense.entity.settler.FarmerEntity;
 import com.lesha_top1972.basedefense.entity.settler.LumberjackEntity;
@@ -116,6 +117,15 @@ public final class ModEntities {
             new Identifier(Basedefense.MOD_ID, "guard"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, GuardEntity::new)
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
+    /** Стрела стражника (пролетает сквозь жителей и игроков). */
+    public static final EntityType<GuardArrowEntity> GUARD_ARROW = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "guard_arrow"),
+            FabricEntityTypeBuilder.<GuardArrowEntity>create(SpawnGroup.MISC, GuardArrowEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
+                    .trackRangeBlocks(64).trackedUpdateRate(1).forceTrackedVelocityUpdates(true)
                     .build());
 
     /** Железный зомби (враг). */
@@ -411,7 +421,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(COURIER, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(GUARD, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(GUARD, GuardEntity.createGuardAttributes());
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());

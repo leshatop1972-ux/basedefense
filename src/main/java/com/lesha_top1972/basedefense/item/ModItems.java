@@ -23,6 +23,9 @@ public final class ModItems {
     public static final Item BUILDING_TABLET = register("building_tablet",
             new BuildingTabletItem(new Item.Settings().maxCount(1)));
 
+    /** Повестка: отряды стражников (ПКМ — меню, ЛКМ по блоку — точка обороны выбранного отряда). */
+    public static final Item SUMMONS = register("summons", new SummonsItem(new Item.Settings().maxCount(1)));
+
     /** Меч кровожада: урон 8, скорость 1.4; держать ЛКМ — замах двумя руками и удар сверху. */
     public static final Item BLOODTHIRSTER_SWORD = register("bloodthirster_sword",
             new BloodthirsterSwordItem(new Item.Settings().rarity(Rarity.EPIC)));
@@ -163,7 +166,10 @@ public final class ModItems {
 
     public static void init() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BUILDING_TABLET));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
+            entries.add(BUILDING_TABLET);
+            entries.add(SUMMONS);
+        });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);

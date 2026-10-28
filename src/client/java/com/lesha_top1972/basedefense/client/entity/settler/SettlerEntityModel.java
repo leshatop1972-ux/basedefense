@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.entity.settler;
 
+import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
 import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
 import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelData;
@@ -244,6 +245,12 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
         ponytail.pitch = 0.55f + MathHelper.sin(phase) * 0.18f * walk + breath * 0.02f;
         ponytail.roll = MathHelper.cos(phase) * 0.12f * walk;
 
+        // Стражник: боевая стойка, удары, стрельба, еда — свои анимации поверх шага
+        if (entity instanceof GuardEntity guard) {
+            GuardAnimations.apply(this, guard, animationProgress, walk, swing);
+            return;
+        }
+
         // Держит инструмент — рука немного вперёд
         if (!entity.getMainHandStack().isEmpty()) {
             rightArm.pitch = rightArm.pitch * 0.5f - 0.31f;
@@ -268,6 +275,35 @@ public class SettlerEntityModel extends SinglePartEntityModel<SettlerEntity> imp
             rightArm.yaw += body.yaw * 2.0f;
             rightArm.roll += MathHelper.sin(p * MathHelper.PI) * -0.4f;
         }
+    }
+
+    // ---------- Части для анимаций стражника и брони ----------
+    public ModelPart head() {
+        return head;
+    }
+
+    public ModelPart body() {
+        return body;
+    }
+
+    public ModelPart rightArm() {
+        return rightArm;
+    }
+
+    public ModelPart leftArm() {
+        return leftArm;
+    }
+
+    public ModelPart rightLeg() {
+        return rightLeg;
+    }
+
+    public ModelPart leftLeg() {
+        return leftLeg;
+    }
+
+    public boolean isFemaleLook() {
+        return look.female();
     }
 
     /** Возвращает части в исходное положение (setAngles вызывается каждый кадр). */
