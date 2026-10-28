@@ -31,11 +31,11 @@ public final class BloodSwordFx {
     private static final DustParticleEffect EMBER = new DustParticleEffect(new Vector3f(0.9f, 0.08f, 0.1f), 0.7f);
     private static final DustParticleEffect CLOT = new DustParticleEffect(new Vector3f(0.35f, 0.0f, 0.04f), 2.0f);
     private static final DustColorTransitionParticleEffect TRAIL = new DustColorTransitionParticleEffect(
-            new Vector3f(1.0f, 0.22f, 0.2f), new Vector3f(0.28f, 0.0f, 0.05f), 1.3f);
+            new Vector3f(1.0f, 0.22f, 0.2f), new Vector3f(0.28f, 0.0f, 0.05f), 0.9f);
     private static final DustColorTransitionParticleEffect TRAIL_TIP = new DustColorTransitionParticleEffect(
             new Vector3f(1.0f, 0.62f, 0.55f), new Vector3f(0.5f, 0.02f, 0.06f), 1.0f);
     private static final DustColorTransitionParticleEffect ARC = new DustColorTransitionParticleEffect(
-            new Vector3f(1.0f, 0.18f, 0.16f), new Vector3f(0.22f, 0.0f, 0.04f), 1.7f);
+            new Vector3f(1.0f, 0.18f, 0.16f), new Vector3f(0.22f, 0.0f, 0.04f), 1.0f);
     private static final BlockStateParticleEffect DROPS =
             new BlockStateParticleEffect(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.getDefaultState());
     private static final BlockStateParticleEffect GORE =
@@ -89,6 +89,9 @@ public final class BloodSwordFx {
         }
         Random r = w.random;
         boolean firstPerson = e == client.player && client.options.getPerspective().isFirstPerson();
+        if (firstPerson) {
+            return;     // у самой камеры частицы огромные и закрывают обзор — от 1‑го лица хватает свечения клинка
+        }
         if (a.phase == BloodSwordAnim.CHARGE) {
             float p = a.charge(now);
             int n = r.nextFloat() < 0.3f + 0.7f * p ? 1 : 0;
@@ -171,7 +174,7 @@ public final class BloodSwordFx {
         // след удара в воздухе: дуга сверху‑сзади до земли впереди
         double cy = y + 1.45;
         for (int i = 0; i <= 26; i++) {
-            double ang = (105 - 145 * i / 26.0) * DEG;
+            double ang = (70 - 110 * i / 26.0) * DEG;
             double up = Math.sin(ang) * 2.1;
             double fw = Math.cos(ang) * 2.1;
             if (cy + up < y + 0.05) {

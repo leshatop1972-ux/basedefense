@@ -221,6 +221,8 @@ final class BloodSwordPose {
         final Vector3f dirO = new Vector3f();
     }
 
+    private static final FP FP_TMP = new FP();
+
     static FP solveFirstPerson(float[] v, int m, FP o) {
         Vector3f g = new Vector3f(v[0] * m, v[1], v[2]);
         Vector3f b = new Vector3f(v[3] * m, v[4], v[5]).normalize();
@@ -250,6 +252,18 @@ final class BloodSwordPose {
      * с рукоятью в пикселе (2.5, 2.5) и клинком по диагонали; наш стоит вдоль +y — поэтому ещё поворот на −45°.
      */
     static Frame rest(boolean firstPerson, boolean leftHanded, Frame out) {
+        if (firstPerson) {
+            // от 1‑го лица — своя поза (ключ FP_REST): ближе к центру, кромкой к себе;
+            // относительно точки, куда ваниль ставит предмет в руке (0.56, −0.52, −0.72)
+            int m = leftHanded ? -1 : 1;
+            float[] k = BloodSwordKeys.FP_REST[0];
+            float[] v = new float[13];
+            System.arraycopy(k, 1, v, 0, 13);
+            solveFirstPerson(v, m, FP_TMP);
+            out.q.set(FP_TMP.sword.q);
+            out.p.set(FP_TMP.sword.p).sub(m * 0.56f, -0.52f, -0.72f);
+            return out;
+        }
         float tx = firstPerson ? 1.13f : 0f;
         float ty = firstPerson ? 3.2f : 4f;
         float tz = firstPerson ? 1.13f : 0.5f;
