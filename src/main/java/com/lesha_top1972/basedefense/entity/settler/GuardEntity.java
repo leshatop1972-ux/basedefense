@@ -585,6 +585,18 @@ public class GuardEntity extends SettlerEntity {
     // Враги
     // =====================================================================
 
+    /** Ударил моб мода — стражник сразу отвечает ему (если не занят более близким врагом). */
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        boolean hurt = super.damage(source, amount);
+        if (hurt && !this.getWorld().isClient && source.getAttacker() instanceof LivingEntity attacker
+                && isEnemy(attacker) && (enemy == null || !enemy.isAlive()
+                || this.squaredDistanceTo(attacker) <= this.squaredDistanceTo(enemy) + 16)) {
+            enemy = attacker;
+        }
+        return hurt;
+    }
+
     /** Враг стражника: любой живой видимый моб мода, кроме жителей. */
     public static boolean isEnemy(Entity e) {
         if (e instanceof com.lesha_top1972.basedefense.entity.enemy.sapper.SapperEntity sapper && sapper.isUnder()) {

@@ -493,9 +493,28 @@ public class SiegeBeetleEntity extends HostileEntity {
                     }
                 }
             }
+            // Кто бьёт жука (стражник, игрок) — тот и враг
+            LivingEntity rev = com.lesha_top1972.basedefense.entity.settler.SettlerThreats.revengeTarget(m);
+            if (rev != null && valid(rev) && rev != this.foe) {
+                this.foe = rev;
+                this.farTicks = 0;
+            }
             if (this.foe == null && m.age % 5 == 0) {
                 double r = base != null ? 4.0 + FRONT : 48.0;
-                PlayerEntity p = m.getWorld().getClosestPlayer(m.getX(), m.getY(), m.getZ(), r, e -> valid((LivingEntity) e));
+                LivingEntity p = m.getWorld().getClosestPlayer(m.getX(), m.getY(), m.getZ(), r, e -> valid((LivingEntity) e));
+                if (p == null) {
+                    // рядом с жуком стражник или житель — тоже враг
+                    double best = r * r;
+                    for (com.lesha_top1972.basedefense.entity.settler.SettlerEntity s : m.getWorld().getEntitiesByClass(
+                            com.lesha_top1972.basedefense.entity.settler.SettlerEntity.class,
+                            m.getBoundingBox().expand(r), e -> valid(e))) {
+                        double d2 = m.squaredDistanceTo(s);
+                        if (d2 < best) {
+                            best = d2;
+                            p = s;
+                        }
+                    }
+                }
                 if (p != null) {
                     this.foe = p;
                     this.farTicks = 0;

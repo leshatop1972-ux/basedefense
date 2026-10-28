@@ -695,7 +695,8 @@ public class SapperEntity extends HostileEntity {
                 this.targetTicks = 0;
                 return;
             }
-            if (target != null && ++this.targetTicks > MAX_TARGET_TICKS) {
+            if (target != null && ++this.targetTicks > MAX_TARGET_TICKS
+                    && com.lesha_top1972.basedefense.entity.settler.SettlerThreats.revengeTarget(this.mob) == null) {
                 this.targetTicks = 0;
                 PlayerEntity other = this.mob.getWorld().getClosestPlayer(this.mob.getX(), this.mob.getY(), this.mob.getZ(), 40,
                         p -> p != target && valid((LivingEntity) p));

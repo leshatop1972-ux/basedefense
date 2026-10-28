@@ -281,6 +281,9 @@ public class CurbEntity extends AbstractCurbEntity {
 
     /** На другого игрока (не текущего и не exclude); возвращает, нашёлся ли. */
     boolean switchTarget(LivingEntity exclude) {
+        if (com.lesha_top1972.basedefense.entity.settler.SettlerThreats.revengeTarget(this) != null) {
+            return false;   // отвечает тому, кто его бьёт
+        }
         LivingEntity current = this.getTarget();
         List<PlayerEntity> others = new ArrayList<>();
         for (PlayerEntity p : this.getWorld().getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(32.0),

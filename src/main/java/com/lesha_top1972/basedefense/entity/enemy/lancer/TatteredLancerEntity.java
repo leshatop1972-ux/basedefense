@@ -193,6 +193,9 @@ public class TatteredLancerEntity extends HostileEntity {
 
     /** Раз в 20 секунд — переключиться на другого игрока поблизости (если он есть). */
     private void switchTarget() {
+        if (com.lesha_top1972.basedefense.entity.settler.SettlerThreats.revengeTarget(this) != null) {
+            return;   // отвечает тому, кто его бьёт
+        }
         LivingEntity current = this.getTarget();
         List<PlayerEntity> others = new ArrayList<>();
         for (PlayerEntity p : this.getWorld().getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(32.0),

@@ -58,6 +58,24 @@ public final class SettlerThreats {
                 && !(entity instanceof CreeperEntity);
     }
 
+    /**
+     * Обидчик, которому моб сейчас отвечает (null — нет). Мобы со своим выбором цели (улан, Бордюр,
+     * кровопускатель, жук, подкопщик) не переключаются на игроков, пока он есть.
+     */
+    @org.jetbrains.annotations.Nullable
+    public static LivingEntity revengeTarget(MobEntity mob) {
+        Revenge r = REVENGE.get(mob);
+        if (r == null) {
+            return null;
+        }
+        LivingEntity t = r.target();
+        if (!t.isAlive() || t.isRemoved() || mob.getWorld().getTime() - r.lastHit() >= FORGET_TICKS
+                || mob.squaredDistanceTo(t) > 40 * 40) {
+            return null;
+        }
+        return t;
+    }
+
     /** Вызывается после каждого прошедшего урона (LivingEntityCombatMixin). */
     public static void onDamaged(LivingEntity victim, DamageSource source) {
         if (!(victim instanceof MobEntity mob) || !isThreat(mob) || !mob.isAlive()) {

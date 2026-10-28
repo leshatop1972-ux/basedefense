@@ -448,6 +448,14 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
                 m.setTarget(null);
                 t = null;
             }
+            // Кто бьёт (стражник, игрок) — тому и отвечает, на игроков не переключается
+            LivingEntity rev = com.lesha_top1972.basedefense.entity.settler.SettlerThreats.revengeTarget(m);
+            if (rev != null && valid(rev)) {
+                if (t != rev) {
+                    m.setTarget(rev);
+                }
+                return;
+            }
             if (t == null && m.getAttacker() instanceof PlayerEntity a && valid(a)) {
                 m.setTarget(a);                        // ударили издалека — разворачивается к обидчику
                 t = a;
@@ -484,10 +492,21 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
             return this.targetSpeed > 0.245;
         }
 
-        private PlayerEntity closePlayer() {
+        /** Кто стоит вплотную (игрок, стражник, житель) — для «Кровавого вихря». */
+        private LivingEntity closePlayer() {
             BloodletterEntity m = this.mob;
-            return m.getWorld().getClosestPlayer(m.getX(), m.getY(), m.getZ(), WHIRL_RADIUS + 0.4,
-                    e -> valid((LivingEntity) e) && Math.abs(e.getY() - m.getY()) < 2.5);
+            LivingEntity best = null;
+            double bestD = (WHIRL_RADIUS + 0.4) * (WHIRL_RADIUS + 0.4);
+            for (LivingEntity e : m.getWorld().getEntitiesByClass(LivingEntity.class,
+                    m.getBoundingBox().expand(WHIRL_RADIUS + 0.4, 2.5, WHIRL_RADIUS + 0.4),
+                    e -> e != m && valid(e) && hurtable(e) && Math.abs(e.getY() - m.getY()) < 2.5)) {
+                double d = m.squaredDistanceTo(e);
+                if (d < bestD) {
+                    bestD = d;
+                    best = e;
+                }
+            }
+            return best;
         }
 
         private Vec3d targetAim(LivingEntity t) {
