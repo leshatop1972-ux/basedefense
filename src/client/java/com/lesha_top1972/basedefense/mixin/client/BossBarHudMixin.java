@@ -1,6 +1,6 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
-import com.lesha_top1972.basedefense.client.render.BossEffectsHud;
+import com.lesha_top1972.basedefense.client.effect.BossEffectsHud;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.BossBarHud;
 import net.minecraft.entity.boss.BossBar;

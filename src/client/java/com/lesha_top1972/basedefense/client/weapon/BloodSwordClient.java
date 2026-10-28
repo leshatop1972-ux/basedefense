@@ -1,6 +1,6 @@
 package com.lesha_top1972.basedefense.client.weapon;
 
-import com.lesha_top1972.basedefense.combat.BloodSwordCombat;
+import com.lesha_top1972.basedefense.weapon.BloodSwordCombat;
 import com.lesha_top1972.basedefense.item.ModItems;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;

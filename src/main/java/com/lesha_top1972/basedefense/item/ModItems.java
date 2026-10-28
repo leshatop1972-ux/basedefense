@@ -1,5 +1,7 @@
 package com.lesha_top1972.basedefense.item;
 
+import com.lesha_top1972.basedefense.weapon.BloodthirsterSwordItem;
+import com.lesha_top1972.basedefense.weapon.KatanaItem;
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;

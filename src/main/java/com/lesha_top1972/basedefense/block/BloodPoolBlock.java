@@ -1,6 +1,6 @@
 package com.lesha_top1972.basedefense.block;
 
-import com.lesha_top1972.basedefense.entity.BloodKin;
+import com.lesha_top1972.basedefense.entity.enemy.bloodthirster.BloodKin;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;

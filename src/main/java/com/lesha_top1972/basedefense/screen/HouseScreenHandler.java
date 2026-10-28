@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.screen;
 
 import com.lesha_top1972.basedefense.block.HouseBlock;
-import com.lesha_top1972.basedefense.entity.BuilderEntity;
+import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
 import com.lesha_top1972.basedefense.structure.BuildCost;
 import com.lesha_top1972.basedefense.structure.ConstructionState;
 import com.lesha_top1972.basedefense.structure.HouseDesign;

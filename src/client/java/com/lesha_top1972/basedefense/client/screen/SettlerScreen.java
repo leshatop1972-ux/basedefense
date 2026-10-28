@@ -1,8 +1,8 @@
 package com.lesha_top1972.basedefense.client.screen;
 
-import com.lesha_top1972.basedefense.entity.BuilderEntity;
-import com.lesha_top1972.basedefense.entity.CourierEntity;
-import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
+import com.lesha_top1972.basedefense.entity.settler.CourierEntity;
+import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.SettlerScreenHandler;

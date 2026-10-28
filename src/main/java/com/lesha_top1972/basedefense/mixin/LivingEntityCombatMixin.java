@@ -2,7 +2,7 @@ package com.lesha_top1972.basedefense.mixin;
 
 import com.lesha_top1972.basedefense.combat.ShieldBlocker;
 import com.lesha_top1972.basedefense.effect.ModEffects;
-import com.lesha_top1972.basedefense.entity.NabatHooks;
+import com.lesha_top1972.basedefense.entity.enemy.nabat.NabatHooks;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.registry.tag.DamageTypeTags;

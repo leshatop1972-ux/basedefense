@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.client.screen;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.entity.BuilderEntity;
+import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
 import com.lesha_top1972.basedefense.screen.HouseScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;

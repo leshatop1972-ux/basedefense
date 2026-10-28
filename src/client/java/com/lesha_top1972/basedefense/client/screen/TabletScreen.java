@@ -1,7 +1,7 @@
 package com.lesha_top1972.basedefense.client.screen;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.client.render.StructurePreview;
+import com.lesha_top1972.basedefense.client.structure.StructurePreview;
 import com.lesha_top1972.basedefense.item.BuildingTabletItem;
 import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.screen.TabletScreenHandler;

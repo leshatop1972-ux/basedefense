@@ -1,8 +1,8 @@
 package com.lesha_top1972.basedefense.screen;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.entity.BuilderEntity;
-import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
+import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -87,7 +87,7 @@ public class SettlerScreenHandler extends ScreenHandler {
                     case PROP_BUILD_PROGRESS -> settler instanceof BuilderEntity b ? b.getBuildProgress() : 0;
                     case PROP_PROFESSION -> Registries.ENTITY_TYPE.getRawId(settler.getType());
                     case PROP_TOGGLE -> settler.hasWorkToggle() ? (settler.isWorkToggleOn() ? 1 : 0) : -1;
-                    case PROP_COURIER -> settler instanceof com.lesha_top1972.basedefense.entity.CourierEntity c
+                    case PROP_COURIER -> settler instanceof com.lesha_top1972.basedefense.entity.settler.CourierEntity c
                             ? c.getCourierStatus() : 0;
                     case PROP_ENTITY_LO -> (short) (settler.getId() & 0xFFFF);
                     case PROP_ENTITY_HI -> (short) ((settler.getId() >>> 16) & 0xFFFF);

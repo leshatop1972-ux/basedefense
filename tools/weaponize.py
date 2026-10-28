@@ -10,7 +10,7 @@
   * анимации дочерних костей оружия (тетива, стрела, вымпел…) — в animations/<оружие>.animation.json
     (те же имена клипов), в анимации моба их больше нет.
 
-Клиент: WeaponTrack / WeaponFeature / WeaponHolder (client/entity/nabat), подсветка и текстура — моба.
+Клиент: WeaponTrack / WeaponFeature / WeaponHolder (client/entity/bedrock), подсветка и текстура — моба.
 """
 import copy
 import json

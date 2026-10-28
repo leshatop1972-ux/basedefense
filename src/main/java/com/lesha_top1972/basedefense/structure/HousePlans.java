@@ -3,7 +3,7 @@ package com.lesha_top1972.basedefense.structure;
 import com.lesha_top1972.basedefense.block.BaseLocationState;
 import com.lesha_top1972.basedefense.block.ModBlocks;
 import com.lesha_top1972.basedefense.entity.ModEntities;
-import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;

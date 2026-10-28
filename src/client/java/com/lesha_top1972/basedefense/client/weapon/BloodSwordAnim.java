@@ -1,6 +1,6 @@
 package com.lesha_top1972.basedefense.client.weapon;
 
-import com.lesha_top1972.basedefense.combat.BloodSwordCombat;
+import com.lesha_top1972.basedefense.weapon.BloodSwordCombat;
 import net.minecraft.util.math.MathHelper;
 
 /**
