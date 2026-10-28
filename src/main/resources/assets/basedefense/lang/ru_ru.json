@@ -340,7 +340,7 @@
   "message.basedefense.lumberjack.chop_off": "%s больше не рубит деревья",
   "item.basedefense.bloodthirster_sword": "Меч кровожада",
   "item.basedefense.bloodthirster_sword.tip1": "Держи ЛКМ — замах двумя руками (1.5 с)",
-  "item.basedefense.bloodthirster_sword.tip2": "Отпусти — удар сверху: %s урона на 3 блока вперёд",
+  "item.basedefense.bloodthirster_sword.tip2": "Отпусти — удар сверху: %s урона на 4 блока вперёд",
   "item.basedefense.bloodthirster_sword.tip3": "Замедляет врагов, за каждого моба +2 ❤",
   "subtitles.basedefense.bloodthirster_sword.charge": "Меч кровожада: замах",
   "subtitles.basedefense.bloodthirster_sword.ready": "Меч кровожада жаждет крови",

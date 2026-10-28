@@ -228,10 +228,10 @@ public final class BloodSwordFx {
             });
         }
         // края удара: по блоку в стороны
-        for (int k = 1; k <= 3; k++) {
+        for (int k = 1; k <= 4; k++) {
             for (int sgn = -1; sgn <= 1; sgn += 2) {
-                double px = ox + ux * k + sx * 1.4 * sgn;
-                double pz = oz + uz * k + sz * 1.4 * sgn;
+                double px = ox + ux * k + sx * 1.9 * sgn;
+                double pz = oz + uz * k + sz * 1.9 * sgn;
                 later(k, () -> w.addParticle(EMBER, px, y + 0.15, pz, 0, 0.03, 0));
             }
         }

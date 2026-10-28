@@ -44,7 +44,7 @@ import java.util.UUID;
  * <p>
  * Клиент держит ЛКМ → шлёт CHARGE (сервер запоминает начало замаха, замедляет игрока, рассылает анимацию
  * остальным). Отпустил после полного замаха (1.5 с) → SLAM: через 3 тика (момент удара в анимации) урон по
- * прямоугольнику 3 блока вперёд × 3 в ширину (по блоку в стороны), «Замедление I» на 2 с, +2 HP владельцу
+ * прямоугольнику 4 блока вперёд × 4 в ширину (по 1.5 блока в стороны), «Замедление I» на 2 с, +2 HP владельцу
  * за каждого задетого моба (не больше 3). Отпустил раньше → CANCEL.
  */
 public final class BloodSwordCombat {
@@ -68,8 +68,8 @@ public final class BloodSwordCombat {
     public static final int COOLDOWN = 20;
 
     public static final float SLAM_DAMAGE = 15.0f;
-    public static final double REACH = 3.0;
-    public static final double HALF_WIDTH = 1.5;
+    public static final double REACH = 4.0;
+    public static final double HALF_WIDTH = 2.0;
     private static final int SLOW_TICKS = 40;
     private static final float HEAL_PER_MOB = 2.0f;
     private static final int HEAL_MAX_MOBS = 3;
@@ -184,7 +184,7 @@ public final class BloodSwordCombat {
         }
     }
 
-    /** Удар: прямоугольник перед игроком 3 × 3 блока. */
+    /** Удар: прямоугольник перед игроком 4 × 4 блока. */
     private static void impact(ServerPlayerEntity player) {
         ServerWorld w = player.getServerWorld();
         double rad = Math.toRadians(player.getYaw());

@@ -340,7 +340,7 @@
   "message.basedefense.lumberjack.chop_off": "%s stopped cutting trees",
   "item.basedefense.bloodthirster_sword": "Bloodthirster's Sword",
   "item.basedefense.bloodthirster_sword.tip1": "Hold LMB to raise it with both hands (1.5 s)",
-  "item.basedefense.bloodthirster_sword.tip2": "Release: overhead strike, %s damage 3 blocks ahead",
+  "item.basedefense.bloodthirster_sword.tip2": "Release: overhead strike, %s damage 4 blocks ahead",
   "item.basedefense.bloodthirster_sword.tip3": "Slows enemies, +2 ❤ per mob hit",
   "subtitles.basedefense.bloodthirster_sword.charge": "Bloodthirster's Sword raised",
   "subtitles.basedefense.bloodthirster_sword.ready": "Bloodthirster's Sword thirsts",
