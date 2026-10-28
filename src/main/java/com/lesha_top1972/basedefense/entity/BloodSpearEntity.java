@@ -56,6 +56,8 @@ public class BloodSpearEntity extends ProjectileEntity {
     private static final DustParticleEffect GLOW = new DustParticleEffect(new Vector3f(1.0f, 0.18f, 0.12f), 0.7f);
 
     private LivingEntity homing;
+    /** Осада: блок постройки, в который брошено копьё (преграды на пути ломаются любые, сама цель — рядом с ударом). */
+    BlockPos siege;
     private int ignoreId = -1;
     private int stateTicks;
     /** Клиент: когда сменилось состояние (для отвода назад и угасания) и направление острия (сглаженное). */
@@ -292,14 +294,22 @@ public class BloodSpearEntity extends ProjectileEntity {
         }
     }
 
-    /** Ломает блок попадания и с шансом 50% — один соседний (только слабые блоки построек, по mobGriefing). */
+    /**
+     * Ломает блок попадания и с шансом 50% — один соседний (по mobGriefing). При осаде — любую преграду и саму
+     * цель, если удар пришёлся рядом с ней (факелы и лестницы копьё не задевает — ломает их у стены).
+     */
     private void breakBlocks(ServerWorld s, BlockPos p, Direction side) {
         if (!SapperBlast.griefing(s)) {
             return;
         }
         Entity owner = this.getOwner();
-        if (BloodletterEntity.spearBreakable(s, p)) {
+        boolean siege = this.siege != null;
+        if (BloodletterEntity.spearBreakable(s, p, siege)) {
             s.breakBlock(p, false, owner);
+        }
+        if (siege && this.siege.getSquaredDistance(Vec3d.ofCenter(p)) <= 2.6 * 2.6
+                && BloodletterEntity.spearBreakable(s, this.siege, true)) {
+            s.breakBlock(this.siege, false, owner);
         }
         if (this.random.nextBoolean()) {
             Direction d = Direction.random(this.random);
@@ -307,7 +317,7 @@ public class BloodSpearEntity extends ProjectileEntity {
                 d = side.getOpposite();
             }
             BlockPos q = p.offset(d);
-            if (BloodletterEntity.spearBreakable(s, q)) {
+            if (BloodletterEntity.spearBreakable(s, q, false)) {
                 s.breakBlock(q, false, owner);
             }
         }

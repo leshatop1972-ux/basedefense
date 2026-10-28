@@ -187,11 +187,11 @@ public class SiegeBeetleEntity extends HostileEntity {
                 && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator()));
     }
 
-    /** Таран ломает всё, кроме обсидиана (и неразрушимого: бедрок, блок «База»), жидкости не трогает. */
+    /** Таран ломает любые блоки (кроме неразрушимых: бедрок, блок «База»), жидкости не трогает. */
     boolean rammable(BlockPos p) {
         World w = this.getWorld();
         BlockState st = w.getBlockState(p);
-        return !st.isAir() && st.getFluidState().isEmpty() && !BuiltBlocks.isObsidian(st) && st.getHardness(w, p) >= 0;
+        return !st.isAir() && st.getFluidState().isEmpty() && st.getHardness(w, p) >= 0;
     }
 
     /** Ближайшая постройка в 200 блоках (раз в секунду), см. {@link BuildTargets}. */
@@ -529,7 +529,7 @@ public class SiegeBeetleEntity extends HostileEntity {
         }
 
         /**
-         * К ближайшей постройке (заборы, стекло, печки, доски, булыжник, обсидиан, кирпичи — 200 блоков),
+         * К постройке (200 блоков; двери, стекло и функциональные блоки — в первую очередь, см. {@link BuiltBlocks}),
          * без построек — к базе; упёрся в стену или застрял — «Таран». Нет ни того, ни другого — стоит.
          */
         private void march() {

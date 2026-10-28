@@ -232,18 +232,30 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
                 && !(e instanceof PlayerEntity p && (p.isCreative() || p.isSpectator()));
     }
 
-    /** Ломается ли блок от копья: не природный грунт и не листва, твёрдость ≤ 3, без блок‑сущности, не обсидиан. */
-    static boolean spearBreakable(World w, BlockPos p) {
+    /**
+     * Ломается ли блок от копья. Блок постройки ({@link BuiltBlocks}) — всегда; при осаде постройки (siege) — любая
+     * преграда на пути к ней ({@link BuiltBlocks#obstacle}); иначе (бросок в игрока) — только слабые не природные
+     * блоки: твёрдость ≤ 3, без блок‑сущности, не листва.
+     */
+    static boolean spearBreakable(World w, BlockPos p, boolean siege) {
         BlockState st = w.getBlockState(p);
-        if (st.isAir() || !st.getFluidState().isEmpty() || BuiltBlocks.isObsidian(st) || w.getBlockEntity(p) != null) {
-            return false;
-        }
-        if (SiegeBeetleEntity.natural(st) || st.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)
-                || st.isOf(com.lesha_top1972.basedefense.block.ModBlocks.BLOOD_POOL)) {
+        if (st.isAir() || !st.getFluidState().isEmpty() || st.isOf(com.lesha_top1972.basedefense.block.ModBlocks.BLOOD_POOL)) {
             return false;
         }
         float h = st.getHardness(w, p);
-        return h >= 0 && h <= 3.0f;
+        if (h < 0) {
+            return false;
+        }
+        if (BuiltBlocks.isTarget(st)) {
+            return true;
+        }
+        if (siege) {
+            return BuiltBlocks.obstacle(w, p);
+        }
+        if (w.getBlockEntity(p) != null || SiegeBeetleEntity.natural(st) || st.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)) {
+            return false;
+        }
+        return h <= 3.0f;
     }
 
     // =====================================================================
@@ -664,6 +676,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
             }
             Vec3d p = m.build != null ? Vec3d.ofCenter(m.build) : this.lastAim;
             s.fly(null, p != null ? p : m.getPos().add(m.forward().multiply(10)), -1);
+            s.siege = m.build;          // осада: копьё пробивает любую преграду на пути к постройке
         }
     }
 

@@ -234,8 +234,9 @@ public class SapperEntity extends HostileEntity {
     }
 
     /**
-     * Раз в секунду — ближайший блок постройки в 200 блоках (заборы, стекло, печки, доски, булыжник, а также обсидиан
-     * и кирпичи, которые он сломать не может), только у поверхности. Только при mobGriefing (без него ломать нечем).
+     * Раз в секунду — блок постройки в 200 блоках (двери, стекло, функциональные блоки — в первую очередь; доски,
+     * заборы, ступеньки, лестницы, факелы), только у поверхности. Преграды на пути взрывает зарядом.
+     * Только при mobGriefing (без него ломать нечем).
      */
     void scanBuild() {
         World w = this.getWorld();
@@ -845,6 +846,13 @@ public class SapperEntity extends HostileEntity {
                 }
             } else {
                 m.getNavigation().stop();
+                // факел, лестница, открытая дверь — заряд не повесить: сбивает киркой
+                World w = m.getWorld();
+                if (passable(w, b) && Math.abs(b.getY() - m.getBlockY()) <= 2 && m.age % 10 == 0) {
+                    w.breakBlock(b, false, m);
+                    m.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                    m.playSound(ModSounds.SAPPER_DIG, 0.8f, 1.1f);
+                }
             }
         }
 
@@ -870,7 +878,9 @@ public class SapperEntity extends HostileEntity {
             Direction dir = Direction.getFacing(to.x, 0, to.z);
             for (int dy = 0; dy <= 1; dy++) {
                 BlockPos p = m.getBlockPos().offset(dir).up(dy);
-                if (BuiltBlocks.isTarget(w.getBlockState(p)) && !passable(w, p)) {
+                // блок постройки — или любая преграда, если к постройке не пройти
+                if ((BuiltBlocks.isTarget(w.getBlockState(p)) || this.walled) && !passable(w, p)
+                        && SapperBlast.breakable(w, p, Float.MAX_VALUE)) {
                     this.wall = p.toImmutable();
                     this.wallFace = dir.getOpposite();
                     return true;

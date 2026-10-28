@@ -18,6 +18,7 @@ import java.util.Map;
 
 /**
  * Поиск блоков построек ({@link BuiltBlocks}) вокруг моба в радиусе до 200 блоков — общий кеш по чанкам на мир.
+ * Главные цели (двери, стекло, функциональные блоки) выбираются в первую очередь (см. {@link #PRIORITY_BONUS}).
  * Чанк сканируется только у поверхности (не глубже 10 блоков от верха столбца — в пещеры и шахты не лезут),
  * секции без нужных блоков пропускаются по палитре ({@code hasAny}), поэтому дёшево. Кеш чанка живёт 60 с;
  * за один запрос сканируется не больше {@code budget} новых чанков (ближние — первыми).
@@ -58,7 +59,13 @@ public final class BuildTargets {
         return offsets;
     }
 
-    /** Ближайший блок постройки в радиусе radius от from (или null). */
+    /**
+     * Бонус главных целей (двери, стекло, функциональные блоки): они выбираются, даже если обычная цель
+     * (доски, заборы, ступеньки, лестницы, факелы) ближе — пока до главной не больше чем на PRIORITY_BONUS дальше.
+     */
+    public static final double PRIORITY_BONUS = 40.0;
+
+    /** Блок постройки для атаки в радиусе radius от from (или null): главные цели в приоритете. */
     public static synchronized BlockPos nearest(ServerWorld w, BlockPos from, int radius, int budget) {
         Map<Long, Entry> cache = CACHE.computeIfAbsent(w.getRegistryKey(), k -> new HashMap<>());
         if (cache.size() > 6000) {
@@ -68,10 +75,11 @@ public final class BuildTargets {
         int cx = from.getX() >> 4;
         int cz = from.getZ() >> 4;
         BlockPos best = null;
-        double bestD = (double) radius * radius;
+        // сравнение по «эффективному» расстоянию: у главных целей оно меньше на PRIORITY_BONUS
+        double bestD = radius + PRIORITY_BONUS;
         for (int[] o : offsets(radius / 16 + 1)) {
             double minD = Math.max(0, Math.sqrt(o[2]) - 1.5) * 16;
-            if (minD * minD > bestD) {
+            if (minD - PRIORITY_BONUS > bestD) {
                 break;
             }
             int x = cx + o[0];
@@ -95,15 +103,20 @@ public final class BuildTargets {
                     continue;
                 }
                 BlockPos p = BlockPos.fromLong(l);
-                double d = p.getSquaredDistance(from);
-                if (d < bestD) {
-                    BlockState st = w.getBlockState(p);
-                    if (BuiltBlocks.isTarget(st)) {
-                        best = p;
-                        bestD = d;
-                    } else {
-                        dirty = true;
-                    }
+                double d = Math.sqrt(p.getSquaredDistance(from));
+                if (d > radius || d - PRIORITY_BONUS >= bestD) {
+                    continue;
+                }
+                BlockState st = w.getBlockState(p);
+                int k = BuiltBlocks.kind(st.getBlock());
+                if (k == BuiltBlocks.NONE) {
+                    dirty = true;
+                    continue;
+                }
+                double eff = k == BuiltBlocks.PRIORITY ? d - PRIORITY_BONUS : d;
+                if (eff < bestD) {
+                    best = p;
+                    bestD = eff;
                 }
             }
             if (dirty) {
@@ -148,10 +161,12 @@ public final class BuildTargets {
                 maxTop = Math.max(maxTop, t);
             }
         }
-        List<Long> out = new ArrayList<>();
+        // главные цели собираются отдельно, чтобы их не вытеснили сотни досок и заборов
+        List<Long> prio = new ArrayList<>();
+        List<Long> norm = new ArrayList<>();
         ChunkSection[] secs = ch.getSectionArray();
         int bottom = ch.getBottomSectionCoord();
-        for (int i = 0; i < secs.length && out.size() < MAX_PER_CHUNK; i++) {
+        for (int i = 0; i < secs.length && prio.size() < MAX_PER_CHUNK; i++) {
             ChunkSection s = secs[i];
             int sy = (bottom + i) << 4;
             if (s == null || s.isEmpty() || sy + 15 < minTop - DEPTH || sy > maxTop + 1
@@ -165,15 +180,19 @@ public final class BuildTargets {
                         if (y < top[lx * 16 + lz] - DEPTH) {
                             continue;
                         }
-                        if (BuiltBlocks.isTarget(s.getBlockState(lx, ly, lz))) {
-                            out.add(BlockPos.asLong(bx + lx, y, bz + lz));
-                            if (out.size() >= MAX_PER_CHUNK) {
-                                break;
-                            }
+                        int k = BuiltBlocks.kind(s.getBlockState(lx, ly, lz).getBlock());
+                        if (k == BuiltBlocks.PRIORITY && prio.size() < MAX_PER_CHUNK) {
+                            prio.add(BlockPos.asLong(bx + lx, y, bz + lz));
+                        } else if (k == BuiltBlocks.TARGET && norm.size() < MAX_PER_CHUNK) {
+                            norm.add(BlockPos.asLong(bx + lx, y, bz + lz));
                         }
                     }
                 }
             }
+        }
+        List<Long> out = new ArrayList<>(prio);
+        for (int k = 0; k < norm.size() && out.size() < MAX_PER_CHUNK; k++) {
+            out.add(norm.get(k));
         }
         long[] arr = new long[out.size()];
         for (int k = 0; k < arr.length; k++) {

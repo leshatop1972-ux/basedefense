@@ -31,19 +31,16 @@ public final class SapperBlast {
     }
 
     /**
-     * Можно ли подкопщику сломать блок. Блоки построек ({@link BuiltBlocks}: заборы, стекло, печки, доски, булыжник) —
-     * всегда; обсидиан и кирпичи — никогда; остальное — не воздух, не жидкость, без блок‑сущности, твёрдость ≤ maxHardness.
+     * Можно ли подкопщику сломать блок. Блоки построек ({@link BuiltBlocks}: двери, стекло, функциональные блоки,
+     * доски, заборы, ступеньки, лестницы, факелы) — всегда; остальное — не воздух, не жидкость, без блок‑сущности,
+     * твёрдость ≤ maxHardness (неразрушимые — никогда).
      */
     public static boolean breakable(World w, BlockPos p, float maxHardness) {
         BlockState st = w.getBlockState(p);
         if (st.isAir() || !st.getFluidState().isEmpty()) {
             return false;
         }
-        int k = BuiltBlocks.kind(st.getBlock());
-        if (k == BuiltBlocks.HARD) {
-            return false;
-        }
-        if (k == BuiltBlocks.TARGET) {
+        if (BuiltBlocks.isTarget(st)) {
             return st.getHardness(w, p) >= 0;
         }
         if (st.hasBlockEntity()) {
@@ -104,7 +101,7 @@ public final class SapperBlast {
                 for (int v = -1; v <= 1; v++) {
                     for (int depth = 0; depth <= (u == 0 && v == 0 ? 1 : 0); depth++) {
                         BlockPos p = wall.offset(a, u).up(v).offset(face.getOpposite(), depth);
-                        if (breakable(w, p, 5f)) {
+                        if (breakable(w, p, Float.MAX_VALUE)) {      // заряд пробивает любую преграду
                             w.breakBlock(p, false, owner);
                         }
                     }
