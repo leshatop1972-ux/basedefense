@@ -267,7 +267,7 @@ public class SiegeBeetleEntity extends HostileEntity {
     }
 
     /** Природный грунт (земля, камень, песок, гравий) — не постройка. */
-    static boolean natural(BlockState st) {
+    public static boolean natural(BlockState st) {
         return st.isIn(net.minecraft.registry.tag.BlockTags.DIRT) || st.isIn(net.minecraft.registry.tag.BlockTags.SAND)
                 || st.isIn(net.minecraft.registry.tag.BlockTags.BASE_STONE_OVERWORLD)
                 || st.isOf(net.minecraft.block.Blocks.GRAVEL) || st.isOf(net.minecraft.block.Blocks.DIRT_PATH)
