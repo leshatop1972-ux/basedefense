@@ -33,6 +33,12 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "tablet"),
             new ScreenHandlerType<>(TabletScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
 
+    /** Меню военкомата (вербовка стражников). */
+    public static final ScreenHandlerType<RecruitScreenHandler> RECRUIT = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "recruit"),
+            new ScreenHandlerType<>(RecruitScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
+
     private ModScreenHandlers() {
     }
 

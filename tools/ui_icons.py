@@ -189,6 +189,25 @@ ICONS = {
         ".KKKKKKKKKKKKK..",
         "................",
     ],
+    # Казарма: красный щит и скрещённые мечи
+    "barracks": [
+        "SK............KS",
+        "KSK..........KSK",
+        ".KSK........KSK.",
+        "..KSKKKKKKKKKSK.",
+        "...KSyyyyyySK...",
+        "...KrSrrrrSrK...",
+        "...KrrSrrSrrK...",
+        "...KrrrSSrrrK...",
+        "...KrrrSSrrrK...",
+        "...KrrSrrSrrK...",
+        "..KoKrrrrrrKoK..",
+        ".KoK.KrrrrK.KoK.",
+        "KdK...KrrK...KdK",
+        "dK.....KK.....Kd",
+        "................",
+        "................",
+    ],
     # Площадь: колокол
     "town_square": [
         "................",

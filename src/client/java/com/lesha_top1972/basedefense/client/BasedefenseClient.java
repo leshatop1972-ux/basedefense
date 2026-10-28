@@ -33,6 +33,7 @@ import com.lesha_top1972.basedefense.client.effect.RatOverlay;
 import com.lesha_top1972.basedefense.client.structure.TabletPreview;
 import com.lesha_top1972.basedefense.client.screen.BaseScreen;
 import com.lesha_top1972.basedefense.client.screen.HouseScreen;
+import com.lesha_top1972.basedefense.client.screen.RecruitScreen;
 import com.lesha_top1972.basedefense.client.screen.SettlerScreen;
 import com.lesha_top1972.basedefense.client.screen.TabletScreen;
 import com.lesha_top1972.basedefense.entity.ModEntities;
@@ -51,6 +52,7 @@ public class BasedefenseClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.SETTLER, SettlerScreen::new);
         HandledScreens.register(ModScreenHandlers.HOUSE, HouseScreen::new);
         HandledScreens.register(ModScreenHandlers.TABLET, TabletScreen::new);
+        HandledScreens.register(ModScreenHandlers.RECRUIT, RecruitScreen::new);
 
         // Рамка места постройки, пока в руке планшет с выбранной постройкой
         TabletPreview.init();
@@ -65,6 +67,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.BLACKSMITH, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.LUMBERJACK, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.COURIER, SettlerEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.GUARD, SettlerEntityRenderer::new);
 
         // Враги: модели и анимации из Blockbench (assets/basedefense/geo и animations)
         EntityModelLayerRegistry.registerModelLayer(IronZombieRenderer.LAYER, () -> BedrockModelLoader.load("iron_zombie"));

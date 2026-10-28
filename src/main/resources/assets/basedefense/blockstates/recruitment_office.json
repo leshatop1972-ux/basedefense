@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "basedefense:block/recruitment_office"
+    },
+    "facing=east": {
+      "model": "basedefense:block/recruitment_office",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "basedefense:block/recruitment_office",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "basedefense:block/recruitment_office",
+      "y": 270
+    }
+  }
+}

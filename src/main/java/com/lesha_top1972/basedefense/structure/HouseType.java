@@ -21,7 +21,9 @@ public enum HouseType {
     LUMBERJACK("lumberjack_house", HousePlans::lumberjack, false),
     TOWN_SQUARE("town_square", HousePlans::townSquare, false),
     /** Здание Базы: склад, блок «База» переносится внутрь, живёт курьер. */
-    BASE("base_house", HousePlans::baseHouse, false);
+    BASE("base_house", HousePlans::baseHouse, false),
+    /** Казарма: койки стражников, военкомат (вербовка стражников за монеты), плац во дворе. */
+    BARRACKS("barracks", HousePlans::barracks, false);
 
     // Размер массивов — HouseDesign.values().length прямо в полях: в enum нельзя ссылаться
     // на свою статическую константу из инициализаторов полей.

@@ -345,6 +345,72 @@ public final class HousePlans {
         return p;
     }
 
+    // =====================================================================
+    // Казарма: большой дом 12×10 — 6 коек для стражников, в центре военкомат
+    // (вербовка стражников за монеты), сундук-оружейная; во дворе — плац
+    // с чучелами для рубки и мишенями для стрельбы.
+    // Жителя казарма не даёт: стражников вербуют в военкомате.
+    // =====================================================================
+    /** Где внутри казармы стоит военкомат (локальные координаты). */
+    public static final BlockPos OFFICE_LOCAL = new BlockPos(5, 1, 5);
+    /** Сколько коек (= сколько стражников можно завербовать в одной казарме). */
+    public static final int BARRACKS_BEDS = 6;
+
+    public static StructurePlan barracks(HouseDesign design) {
+        House h = new House(12, 10, 4, false, 8, design);
+        StructurePlan p = h.p;
+        // Койки вдоль боковых стен изголовьем к стене (3 слева, 3 справа), между ними тумбочки-бочки
+        for (int z : new int[]{2, 4, 6}) {
+            sideBed(p, 2, z, 1, Direction.WEST, Blocks.RED_BED);
+            sideBed(p, 9, z, 10, Direction.EAST, Blocks.RED_BED);
+        }
+        for (int z : new int[]{3, 5, 7}) {
+            p.set(1, 1, z, barrel());
+            p.set(10, 1, z, barrel());
+        }
+        // Военкомат: стол вербовщика лицом ко входу, за ним стул
+        BlockPos o = OFFICE_LOCAL;
+        p.set(o.getX(), o.getY(), o.getZ(), ModBlocks.RECRUITMENT_OFFICE.getDefaultState()
+                .with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
+        p.set(o.getX(), o.getY(), o.getZ() + 1, h.stairs(Direction.NORTH));
+        // Красная дорожка от двери к столу
+        carpet(p, h.doorX, 1, h.doorX, o.getZ() - 1, Blocks.RED_CARPET);
+        // Оружейная: двойной сундук и точило у задней стены
+        doubleChest(p, 2, 1, 8, 1, 1, 8, Direction.SOUTH);
+        p.set(9, 1, 8, Blocks.GRINDSTONE.getDefaultState()
+                .with(Properties.WALL_MOUNT_LOCATION, WallMountLocation.FLOOR));
+        p.set(10, 1, 8, barrel());
+        // Знамёна поселения на задней стене
+        BlockState banner = Blocks.RED_WALL_BANNER.getDefaultState()
+                .with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
+        p.late(3, 3, 8, banner);
+        p.late(8, 3, 8, banner);
+        // Знамёна у входа снаружи (у каменной заставы над дверью козырёк — там без них)
+        if (design != HouseDesign.STONE) {
+            p.late(h.doorX - 1, 3, -1, banner);
+            p.late(h.doorX + 1, 3, -1, banner);
+        }
+
+        // Двор-плац: чучела для рубки и мишени для стрельбы
+        h.yardGround(Blocks.DIRT_PATH.getDefaultState());
+        int z0 = h.yardStart;
+        for (int x : new int[]{2, 4}) {
+            p.set(x, 1, z0 + 3, h.s.fence);
+            p.set(x, 2, z0 + 3, Blocks.HAY_BLOCK.getDefaultState());
+            p.set(x, 3, z0 + 3, Blocks.CARVED_PUMPKIN.getDefaultState()
+                    .with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
+        }
+        p.set(8, 1, h.yardEnd - 1, Blocks.HAY_BLOCK.getDefaultState());
+        p.set(9, 1, h.yardEnd - 1, Blocks.HAY_BLOCK.getDefaultState());
+        p.set(8, 2, h.yardEnd - 1, Blocks.TARGET.getDefaultState());
+        p.set(9, 2, h.yardEnd - 1, Blocks.TARGET.getDefaultState());
+        p.set(1, 1, h.yardEnd - 1, barrel());
+        h.yardFence();
+
+        h.settle(null, null);   // жителя нет — только вход для тропинок
+        return p;
+    }
+
     /**
      * Переносит блок «База» внутрь здания Базы. Все данные поселения (еда, жители, исследования)
      * хранятся не в блоке, а в мире — поэтому при переносе ничего не теряется.
@@ -851,7 +917,7 @@ public final class HousePlans {
         }
 
         /** Когда дом готов — в нём появляется житель и запоминает сундук дома. */
-        void settle(EntityType<? extends SettlerEntity> type, @Nullable BlockPos chestLocal) {
+        void settle(@Nullable EntityType<? extends SettlerEntity> type, @Nullable BlockPos chestLocal) {
             int sx = doorX;
             int sz = 2;
             int dx = doorX;
@@ -859,6 +925,9 @@ public final class HousePlans {
                 // Запоминаем вход в дом — к нему строитель проложит тропинку
                 TownState.get(task.getWorld().getServer()).addEntrance(task.toWorld(dx, 0, -1),
                         task.getFacing().getOpposite(), dimensionOf(task));
+                if (type == null) {
+                    return;   // здание без своего жителя (казарма)
+                }
                 SettlerEntity settler = type.create(task.getWorld());
                 if (settler == null) {
                     return;
@@ -1122,6 +1191,13 @@ public final class HousePlans {
         BlockState bed = bedBlock.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
         p.lateDouble(x, 1, z, bed.with(Properties.BED_PART, BedPart.FOOT),
                 x, 1, z + 1, bed.with(Properties.BED_PART, BedPart.HEAD));
+    }
+
+    /** Кровать вдоль оси x: ножки (footX, z), изголовье (headX, z); facing — куда смотрит изголовье от ножек. */
+    private static void sideBed(StructurePlan p, int footX, int z, int headX, Direction facing, Block bedBlock) {
+        BlockState bed = bedBlock.getDefaultState().with(Properties.HORIZONTAL_FACING, facing);
+        p.lateDouble(footX, 1, z, bed.with(Properties.BED_PART, BedPart.FOOT),
+                headX, 1, z, bed.with(Properties.BED_PART, BedPart.HEAD));
     }
 
     /** Стол (столбик забора + нажимная плита) и два стула по бокам. */

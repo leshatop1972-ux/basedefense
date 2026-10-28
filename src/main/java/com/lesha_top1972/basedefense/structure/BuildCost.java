@@ -52,6 +52,9 @@ public final class BuildCost {
         if (block == Blocks.BELL) {
             return null;   // колокол поселению выдаёт мод (в обычном Minecraft его не скрафтить)
         }
+        if (block == com.lesha_top1972.basedefense.block.ModBlocks.RECRUITMENT_OFFICE) {
+            return null;   // военкомат тоже выдаёт мод (его не скрафтить)
+        }
         if (block instanceof FlowerPotBlock) {
             return Items.FLOWER_POT;
         }

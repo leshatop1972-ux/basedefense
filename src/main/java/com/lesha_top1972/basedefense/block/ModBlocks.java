@@ -47,6 +47,12 @@ public final class ModBlocks {
     public static final Block TOWN_SQUARE = house("town_square", HouseType.TOWN_SQUARE);
     /** Здание Базы (склад, сюда переносится блок «База», живёт курьер). */
     public static final Block BASE_HOUSE = house("base_house", HouseType.BASE);
+    /** Казарма (койки стражников, военкомат, плац). */
+    public static final Block BARRACKS = house("barracks", HouseType.BARRACKS);
+
+    /** Военкомат: стол вербовщика в казарме. ПКМ — вербовка стражников. Не крафтится, ничего не выпадает. */
+    public static final Block RECRUITMENT_OFFICE = register("recruitment_office", new RecruitmentOfficeBlock(
+            FabricBlockSettings.copyOf(Blocks.SPRUCE_PLANKS).strength(2.5f, 6.0f).nonOpaque().dropsNothing()));
 
     /** Кровавая лужа вокруг яиц кровожада: 0.5 урона в секунду, ничего не выпадает. */
     public static final Block BLOOD_POOL = register("blood_pool", new BloodPoolBlock(FabricBlockSettings.create()
@@ -83,6 +89,7 @@ public final class ModBlocks {
         // Блоки домов не крафтятся (их ставит строительный планшет), здесь они для творческого режима
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
-                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE, BASE_HOUSE));
+                COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE, BASE_HOUSE, BARRACKS,
+                RECRUITMENT_OFFICE));
     }
 }

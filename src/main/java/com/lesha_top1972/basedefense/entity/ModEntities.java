@@ -34,6 +34,7 @@ import com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity;
 import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
 import com.lesha_top1972.basedefense.entity.settler.CookEntity;
 import com.lesha_top1972.basedefense.entity.settler.CourierEntity;
+import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
 import com.lesha_top1972.basedefense.entity.settler.FarmerEntity;
 import com.lesha_top1972.basedefense.entity.settler.LumberjackEntity;
 import com.lesha_top1972.basedefense.entity.settler.MinerEntity;
@@ -106,6 +107,14 @@ public final class ModEntities {
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "courier"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, CourierEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
+                    .build());
+
+    /** Стражник (военный поселенец; вербуется в военкомате казармы). */
+    public static final EntityType<GuardEntity> GUARD = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "guard"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, GuardEntity::new)
                     .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                     .build());
 
@@ -402,6 +411,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(COURIER, SettlerEntity.createSettlerAttributes());
+        FabricDefaultAttributeRegistry.register(GUARD, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FROST_ARCHER, FrostArcherEntity.createAttributes());
