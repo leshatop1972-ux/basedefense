@@ -1094,7 +1094,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
         @Override
         public boolean canStart() {
             if (!(settler.getWorld() instanceof ServerWorld world) || !world.isDay()
-                    || settler.getRandom().nextInt(2400) != 0 || settler.isSettlementFrozen()) {
+                    || settler.getRandom().nextInt(2400) != 0 || settler.isSettlementFrozen()
+                    || settler.isAwayOnDuty()) {   // занят делом (стройка, ремонт, разноска, рубка) — не до площади
                 return false;
             }
             TownState.Square found = TownState.get(world.getServer())

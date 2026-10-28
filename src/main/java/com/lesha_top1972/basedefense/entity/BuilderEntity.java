@@ -102,6 +102,9 @@ public class BuilderEntity extends SettlerEntity {
     private int repairScanCooldown;
     private int repairBuildingIndex;
     private int repairStuck;
+    /** Где встать, чтобы дотянуться до места ремонта (клетка на земле рядом). */
+    @Nullable
+    private BlockPos repairStand;
 
     public BuilderEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -328,6 +331,7 @@ public class BuilderEntity extends SettlerEntity {
             if (repairTarget == null) {
                 return false;
             }
+            repairStand = findStandSpot(world, repairTarget.pos());
         }
         RepairJob job = repairTarget;
         if (!isDamaged(world, job)) {
@@ -369,10 +373,33 @@ public class BuilderEntity extends SettlerEntity {
                 this.swingHand(Hand.MAIN_HAND);
                 repairTarget = null;
             }
-        } else if (++repairStuck > 500) {
-            repairTarget = null;   // не подойти — пропускаем
+        } else if (++repairStuck > 300) {
+            // Не дойти 15 секунд — переносимся к месту ремонта (как на стройку)
+            BlockPos stand = repairStand != null ? repairStand : job.pos();
+            this.getNavigation().stop();
+            this.requestTeleport(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+            repairStuck = 0;
         }
         return true;
+    }
+
+    /** Ближайшая к месту ремонта клетка, где можно стоять: под ногами твёрдый блок, сверху 2 блока воздуха. */
+    @Nullable
+    private static BlockPos findStandSpot(ServerWorld world, BlockPos target) {
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (BlockPos p : BlockPos.iterate(target.add(-3, -6, -3), target.add(3, 2, 3))) {
+            if (world.getBlockState(p.down()).isSolidBlock(world, p.down())
+                    && world.getBlockState(p).getCollisionShape(world, p).isEmpty()
+                    && world.getBlockState(p.up()).getCollisionShape(world, p.up()).isEmpty()) {
+                double d = p.getSquaredDistance(target);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = p.toImmutable();
+                }
+            }
+        }
+        return best;
     }
 
     /** Найти повреждённые места здания (не больше 64 за раз). */
@@ -426,7 +453,7 @@ public class BuilderEntity extends SettlerEntity {
     @Nullable
     private BlockPos walkTarget() {
         if (repairTarget != null) {
-            return repairTarget.pos();
+            return repairStand != null ? repairStand : repairTarget.pos();
         }
         return pathTarget == null ? null : pathTarget.up();
     }
@@ -784,8 +811,11 @@ public class BuilderEntity extends SettlerEntity {
             double dz = builder.getZ() - (target.getZ() + 0.5);
             if (dx * dx + dz * dz > 2.5 * 2.5) {
                 if (builder.getNavigation().isIdle() || builder.age % 40 == 0) {
-                    builder.getNavigation().startMovingTo(target.getX() + 0.5, target.getY(),
-                            target.getZ() + 0.5, 0.7);
+                    // Подойти хотя бы на 2 блока (точно в клетку может не быть дороги)
+                    net.minecraft.entity.ai.pathing.Path path = builder.getNavigation().findPathTo(target, 2);
+                    if (path != null) {
+                        builder.getNavigation().startMovingAlong(path, 0.7);
+                    }
                 }
             } else {
                 builder.getNavigation().stop();
