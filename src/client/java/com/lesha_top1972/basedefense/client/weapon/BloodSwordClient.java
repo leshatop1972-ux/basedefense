@@ -72,6 +72,7 @@ public final class BloodSwordClient {
         model.head.pivotZ = 0f;
         model.body.pivotX = 0f;
         model.body.pivotZ = 0f;
+        model.body.roll = 0f;
         BloodSwordAnim a = anim(entity.getId());
         if (a == null) {
             return;

@@ -33,6 +33,11 @@ public final class ModItems {
             new com.lesha_top1972.basedefense.artifact.ArtifactItem(new Item.Settings().rarity(Rarity.RARE),
                     "item.basedefense.dash_amulet.tip"));
 
+    /** Артефакт «Амулет взлёта»: Y — подброс на 3.5 блока, 3 раза подряд, потом перезарядка 6 с. */
+    public static final Item LEAP_AMULET = register("leap_amulet",
+            new com.lesha_top1972.basedefense.artifact.ArtifactItem(new Item.Settings().rarity(Rarity.RARE),
+                    "item.basedefense.leap_amulet.tip"));
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -126,6 +131,7 @@ public final class ModItems {
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);
             entries.add(DASH_AMULET);
+            entries.add(LEAP_AMULET);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);

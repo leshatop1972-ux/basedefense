@@ -353,5 +353,8 @@
   "item.basedefense.artifact": "Артефакт — положи в слот артефактов",
   "gui.basedefense.artifacts": "Артефакты",
   "key.basedefense.dash": "Рывок (амулет)",
-  "category.basedefense": "Basedefense"
+  "category.basedefense": "Basedefense",
+  "item.basedefense.leap_amulet": "Амулет взлёта",
+  "item.basedefense.leap_amulet.tip": "Y — подброс вверх на 3.5 блока, до 3 раз подряд, потом перезарядка 6 с",
+  "key.basedefense.leap": "Взлёт (амулет)"
 }

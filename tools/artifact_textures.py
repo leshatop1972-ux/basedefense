@@ -1,5 +1,5 @@
 """
-Текстуры артефактов: иконка «Амулета рывка» и кнопка вкладки артефактов в инвентаре.
+Текстуры артефактов: иконки «Амулета рывка» и «Амулета взлёта» и кнопка вкладки артефактов в инвентаре.
 Запуск: python tools/artifact_textures.py
   → textures/item/dash_amulet.png (16×16), textures/gui/artifact_button.png (20×36: обычная и под мышью)
 """
@@ -11,7 +11,7 @@ from PIL import Image
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense", "textures")
 
 
-def amulet():
+def amulet(name="dash_amulet", gem=((40, 150, 200), (60, 80, 50)), glyph=((6, 9), (7, 9), (8, 10), (7, 11), (9, 9))):
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     px = img.load()
     # цепочка: дуга сверху, звенья через пиксель
@@ -37,12 +37,13 @@ def amulet():
                     px[x, y] = (236, 196, 88, 255) if t > 0.5 else (176, 130, 46, 255)   # золото
                 else:
                     k = max(0.0, 1 - d / (r - 2))
-                    px[x, y] = (int(40 + 60 * k), int(150 + 80 * k), int(200 + 50 * k), 255)  # бирюзовый камень
+                    (r0, g0, b0), (dr, dg, db) = gem
+                    px[x, y] = (int(r0 + dr * k), int(g0 + dg * k), int(b0 + db * k), 255)  # камень
     # завиток ветра и блик
-    for x, y in ((6, 9), (7, 9), (8, 10), (7, 11), (9, 9)):
+    for x, y in glyph:
         px[x, y] = (236, 252, 255, 255)
     px[6, 8] = (255, 255, 255, 255)
-    img.save(os.path.join(ROOT, "item", "dash_amulet.png"))
+    img.save(os.path.join(ROOT, "item", name + ".png"))
 
 
 def button():
@@ -78,6 +79,8 @@ def button():
 
 
 if __name__ == "__main__":
-    amulet()
+    amulet()                                                     # рывок: бирюзовый камень, завиток ветра
+    amulet("leap_amulet", ((70, 150, 40), (90, 90, 40)),         # взлёт: зелёный камень, стрелка вверх
+           ((8, 8), (7, 9), (8, 9), (9, 9), (8, 10), (8, 11), (8, 12)))
     button()
     print("ok")
