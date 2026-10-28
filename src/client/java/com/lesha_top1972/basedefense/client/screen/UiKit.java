@@ -5,8 +5,9 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 /**
- * Общий стиль всех меню мода: «тёмное стекло» — полупрозрачные чёрно-серые панели,
- * тонкие серые рамки и бирюзовые акценты (уголки, подсветка, линии), в духе меню MineColonies.
+ * Общий стиль всех меню мода: «стекло» в духе MineColonies — полупрозрачные серо-чёрные панели,
+ * сквозь которые виден мир, тонкие светлые рамки и блики. Цветной акцент (приглушённая бирюза)
+ * — только у выбранного/важного, всё остальное — оттенки белого и серого.
  * Здесь палитра и готовые элементы: панель, заголовок, углубление, карточка, кнопка,
  * полоска прогресса, разделитель, ячейка слота, значок-«пилюля», замок, галочка.
  * Меняешь цвет здесь — он меняется во всех меню сразу.
@@ -16,27 +17,30 @@ import net.minecraft.text.Text;
 public final class UiKit {
 
     // ---------- Палитра: стекло и рамки ----------
-    public static final int GLASS_TOP    = 0xE6181C21;   // фон окна (градиент сверху вниз)
-    public static final int GLASS_BOTTOM = 0xEE0D1013;
-    public static final int FRAME_OUT    = 0xFF050607;   // самый внешний тёмный край
-    public static final int FRAME        = 0xFF3B434C;   // серая рамка
-    public static final int FRAME_LIGHT  = 0xFF5A646F;   // светлая грань рамки
-    public static final int HEADER_TOP   = 0xD0262D35;
-    public static final int HEADER_BOTTOM = 0xD01A1F25;
-    public static final int CONTENT      = 0x8C000000;   // утопленная область (полупрозрачная чернота)
-    public static final int CONTENT_ALT  = 0x66060809;
-    public static final int CARD         = 0xB01F252C;   // карточка
-    public static final int CARD_HOVER   = 0xC82A333C;
-    public static final int INSET_DARK   = 0xFF030405;
-    public static final int INSET_LIGHT  = 0x553F4A55;
-    public static final int RULE         = 0xFF2C333A;
+    public static final int GLASS_TOP    = 0xB42A2E33;   // фон окна: полупрозрачное стекло (градиент сверху вниз)
+    public static final int GLASS_BOTTOM = 0xC4181A1E;
+    public static final int FRAME_OUT    = 0x90000000;   // тень-край снаружи
+    public static final int FRAME        = 0x50FFFFFF;   // светлая стеклянная кромка
+    public static final int FRAME_LIGHT  = 0x80FFFFFF;   // блик по верхней кромке
+    public static final int HEADER_TOP   = 0x28FFFFFF;
+    public static final int HEADER_BOTTOM = 0x0AFFFFFF;
+    public static final int CONTENT      = 0x50000000;   // утопленная область (чуть темнее стекла)
+    public static final int CONTENT_ALT  = 0x38000000;
+    public static final int CARD         = 0x1EFFFFFF;   // карточка — светлее стекла
+    public static final int CARD_HOVER   = 0x34FFFFFF;
+    public static final int INSET_DARK   = 0x60000000;
+    public static final int INSET_LIGHT  = 0x26FFFFFF;
+    public static final int RULE         = 0x30FFFFFF;
 
-    // ---------- Бирюза (акцент) ----------
-    public static final int TEAL         = 0xFF33C9BE;
-    public static final int TEAL_LIGHT   = 0xFF9BF5EC;
-    public static final int TEAL_DARK    = 0xFF167A73;
-    public static final int TEAL_GLOW    = 0x4033C9BE;   // мягкое свечение
-    public static final int TEAL_FAINT   = 0x1F33C9BE;
+    // ---------- Акцент: приглушённая бирюза (только выбранное и важное) ----------
+    public static final int TEAL         = 0xFF7FC4BC;
+    public static final int TEAL_LIGHT   = 0xFFD4EEEA;
+    public static final int TEAL_DARK    = 0xFF4E7F7A;
+    public static final int TEAL_GLOW    = 0x30FFFFFF;   // мягкое свечение — белое
+    public static final int TEAL_FAINT   = 0x18FFFFFF;
+    // Белые блики стекла
+    public static final int SHINE        = 0x60FFFFFF;
+    public static final int SHINE_SOFT   = 0x20FFFFFF;
 
     // Старые имена (раньше — золото и дерево) ведут на новые цвета, чтобы весь код работал как раньше
     public static final int GOLD         = TEAL;
@@ -49,10 +53,10 @@ public final class UiKit {
     public static final int PARCH_BOTTOM = GLASS_BOTTOM;
 
     // ---------- Текст ----------
-    public static final int TEXT_DARK    = 0xFFECF2F4;   // главный текст (светлый на тёмном)
-    public static final int TEXT_BODY    = 0xFFB9C3CB;
-    public static final int TEXT_MUTED   = 0xFF78848F;
-    public static final int TEXT_EMBOSS  = 0xAA000000;   // тень под текстом
+    public static final int TEXT_DARK    = 0xFFFFFFFF;   // главный текст (белый на стекле)
+    public static final int TEXT_BODY    = 0xFFD6DADE;
+    public static final int TEXT_MUTED   = 0xFF9EA6AD;
+    public static final int TEXT_EMBOSS  = 0x90000000;   // тень под текстом
     public static final int GOOD         = 0xFF5AD68C;
     public static final int GOOD_LIGHT   = 0xFF9CF2BD;
     public static final int BAD          = 0xFFFF6A5C;
@@ -66,27 +70,21 @@ public final class UiKit {
     // Панель окна
     // =====================================================================
 
-    /** Окно: тень, тёмное стекло с градиентом, серая рамка с фаской и бирюзовые уголки. */
+    /** Окно: мягкая тень, полупрозрачное стекло, светлая кромка с бликом сверху. */
     public static void panel(DrawContext c, int l, int t, int r, int b) {
-        // Мягкая тень
-        c.fill(l + 4, t + 5, r + 5, b + 5, 0x30000000);
-        c.fill(l + 2, t + 3, r + 3, b + 3, 0x40000000);
-        // Рамка: чёрный край, серая полоса, светлая грань сверху-слева
-        outline(c, l, t, r, b, FRAME_OUT);
-        outline(c, l + 1, t + 1, r - 1, b - 1, FRAME);
-        c.fill(l + 1, t + 1, r - 1, t + 2, FRAME_LIGHT);
-        c.fill(l + 1, t + 2, l + 2, b - 1, 0xFF4B545E);
-        outline(c, l + 2, t + 2, r - 2, b - 2, FRAME_OUT);
-        // Стекло
-        c.fillGradient(l + 3, t + 3, r - 3, b - 3, GLASS_TOP, GLASS_BOTTOM);
-        // Еле заметные горизонтальные «сканлайны» — фактура стекла
-        for (int y = t + 5; y < b - 4; y += 3) {
-            c.fill(l + 3, y, r - 3, y + 1, 0x08FFFFFF);
-        }
-        // Бирюзовые уголки
-        corners(c, l, t, r, b, 7, TEAL);
-        // Бирюзовая «подсветка» у верхнего края стекла
-        c.fill(l + 10, t + 3, r - 10, t + 4, TEAL_GLOW);
+        // Тень
+        c.fill(l + 2, t + 3, r + 3, b + 4, 0x30000000);
+        // Стекло со скруглёнными (срезанными) углами
+        c.fillGradient(l + 1, t, r - 1, b, GLASS_TOP, GLASS_BOTTOM);
+        c.fillGradient(l, t + 1, l + 1, b - 1, GLASS_TOP, GLASS_BOTTOM);
+        c.fillGradient(r - 1, t + 1, r, b - 1, GLASS_TOP, GLASS_BOTTOM);
+        // Кромка: светлая, сверху ярче (блик), снизу темнее
+        c.fill(l + 1, t, r - 1, t + 1, FRAME_LIGHT);
+        c.fill(l, t + 1, l + 1, b - 1, FRAME);
+        c.fill(r - 1, t + 1, r, b - 1, 0x30FFFFFF);
+        c.fill(l + 1, b - 1, r - 1, b, 0x24FFFFFF);
+        // Блик в верхней части стекла
+        c.fillGradient(l + 1, t + 1, r - 1, t + 14, 0x14FFFFFF, 0x00FFFFFF);
     }
 
     /** Г-образные уголки длиной len по четырём углам прямоугольника. */
@@ -101,32 +99,26 @@ public final class UiKit {
         c.fill(r - 2, b - len, r, b, color);
     }
 
-    /** Маленький бирюзовый «огонёк» 3×3 (раньше — латунная заклёпка). */
+    /** Маленькая светлая точка 3×3 (раньше — латунная заклёпка). */
     public static void rivet(DrawContext c, int x, int y) {
-        c.fill(x, y, x + 3, y + 3, TEAL_DARK);
-        c.fill(x + 1, y + 1, x + 2, y + 2, TEAL_LIGHT);
+        c.fill(x, y, x + 3, y + 3, 0x40FFFFFF);
+        c.fill(x + 1, y + 1, x + 2, y + 2, SHINE);
     }
 
-    /** Полоса заголовка внутри панели (от l до r, высота h): тёмная, снизу бирюзовая линия со свечением. */
+    /** Полоса заголовка: чуть светлее стекла, снизу тонкая светлая линия, гаснущая к краям. */
     public static void header(DrawContext c, int l, int t, int r, int h) {
         c.fillGradient(l, t, r, t + h, HEADER_TOP, HEADER_BOTTOM);
-        c.fill(l, t, r, t + 1, 0x14FFFFFF);
-        // Бирюзовая линия: яркая в центре, темнее к краям
         int mid = (l + r) / 2;
         int half = (r - l) / 2;
-        c.fill(l, t + h, r, t + h + 1, TEAL_DARK);
-        c.fill(mid - half * 2 / 3, t + h, mid + half * 2 / 3, t + h + 1, TEAL);
-        c.fill(mid - half / 3, t + h, mid + half / 3, t + h + 1, TEAL_LIGHT);
-        c.fill(l, t + h + 1, r, t + h + 3, TEAL_FAINT);
-        diamond(c, l + 3, t + h, TEAL);
-        diamond(c, r - 4, t + h, TEAL);
+        c.fill(l + 4, t + h, r - 4, t + h + 1, 0x18FFFFFF);
+        c.fill(mid - half * 2 / 3, t + h, mid + half * 2 / 3, t + h + 1, 0x30FFFFFF);
+        c.fill(mid - half / 3, t + h, mid + half / 3, t + h + 1, 0x50FFFFFF);
     }
 
     /** Ромбик 5×5 (центр в x+1, y). */
     public static void diamond(DrawContext c, int x, int y, int color) {
         c.fill(x + 1, y - 2, x + 2, y + 3, color);
         c.fill(x, y - 1, x + 3, y + 2, color);
-        c.fill(x + 1, y - 1, x + 2, y, 0xCCFFFFFF);
     }
 
     // =====================================================================
@@ -144,7 +136,7 @@ public final class UiKit {
         c.fill(l, b, r + 1, b + 1, INSET_LIGHT);
         c.fill(r, t, r + 1, b, INSET_LIGHT);
         c.fill(l, t, r, b, fill);
-        c.fill(l, t, r, t + 1, 0x30000000);   // внутренняя тень сверху
+        c.fill(l, t, r, t + 1, 0x20000000);   // внутренняя тень сверху
     }
 
     /**
@@ -152,16 +144,9 @@ public final class UiKit {
      * fill — цвет фона (обычно CARD / CARD_HOVER или свой полупрозрачный).
      */
     public static void card(DrawContext c, int l, int t, int r, int b, int fill, boolean hover) {
-        c.fill(l + 1, b, r + 1, b + 1, 0x50000000);
-        if (hover) {
-            outline(c, l - 1, t - 1, r + 1, b + 1, TEAL_GLOW);
-        }
-        outline(c, l, t, r, b, hover ? TEAL : 0xFF323A42);
-        c.fill(l + 1, t + 1, r - 1, b - 1, fill);
-        c.fill(l + 1, t + 1, r - 1, t + 2, 0x18FFFFFF);
-        if (hover) {
-            c.fill(l + 1, t + 1, l + 3, b - 1, TEAL);
-        }
+        c.fill(l, t, r, b, fill);
+        outline(c, l, t, r, b, hover ? 0x90FFFFFF : 0x30FFFFFF);
+        c.fill(l + 1, t + 1, r - 1, t + 2, hover ? 0x30FFFFFF : 0x14FFFFFF);
     }
 
     /** Рамка в 1 пиксель. */
@@ -172,45 +157,37 @@ public final class UiKit {
         c.fill(r - 1, t + 1, r, b - 1, color);
     }
 
-    /** Разделитель: тонкая серая линия, бирюзовая в середине, с ромбиком. */
+    /** Разделитель: тонкая светлая линия, гаснущая к краям. */
     public static void divider(DrawContext c, int l, int r, int y) {
-        c.fill(l, y, r, y + 1, RULE);
         int mid = (l + r) / 2;
         int q = (r - l) / 4;
-        c.fill(mid - q, y, mid + q, y + 1, TEAL_DARK);
-        c.fill(l, y + 1, r, y + 2, 0x10FFFFFF);
-        diamond(c, mid - 1, y, TEAL);
+        c.fill(l, y, r, y + 1, 0x14FFFFFF);
+        c.fill(mid - 2 * q, y, mid + 2 * q, y + 1, 0x24FFFFFF);
+        c.fill(mid - q, y, mid + q, y + 1, 0x3CFFFFFF);
     }
 
     /** Ячейка слота: тёмная утопленная клетка; подсвеченная — с бирюзовой рамкой. */
     public static void slot(DrawContext c, int x, int y, boolean highlight) {
-        c.fill(x - 1, y - 1, x + 17, y, highlight ? TEAL : INSET_DARK);
-        c.fill(x - 1, y, x, y + 17, highlight ? TEAL : INSET_DARK);
-        c.fill(x, y + 16, x + 17, y + 17, highlight ? TEAL_DARK : 0xFF414A54);
-        c.fill(x + 16, y, x + 17, y + 16, highlight ? TEAL_DARK : 0xFF414A54);
-        c.fill(x, y, x + 16, y + 16, highlight ? 0xB0123A38 : 0xB0111418);
+        c.fill(x - 1, y - 1, x + 17, y + 17, highlight ? 0x60FFFFFF : 0x28FFFFFF);
+        c.fill(x, y, x + 16, y + 16, highlight ? 0x50303A40 : 0x60000000);
     }
 
     // =====================================================================
     // Кнопка, полоска, значки
     // =====================================================================
 
-    /** Кнопка. state: 0 — обычная, 1 — наведена, 2 — выключена, 3 — «готово» (зелёная). */
+    /** Кнопка-стекло. state: 0 — обычная, 1 — наведена, 2 — выключена, 3 — «готово» (зелёная). */
     public static void button(DrawContext c, TextRenderer tr, int l, int t, int r, int b, Text label, int state) {
         int edge, top, bottom, textColor;
         switch (state) {
-            case 1 -> { edge = TEAL_LIGHT; top = 0xE0237A74; bottom = 0xE0175651; textColor = 0xFFFFFFFF; }
-            case 2 -> { edge = 0xFF33393F; top = 0xA0262A2F; bottom = 0xA01C1F23; textColor = TEXT_MUTED; }
-            case 3 -> { edge = 0xFF3D9A62; top = 0xC0234A33; bottom = 0xC0183625; textColor = GOOD_LIGHT; }
-            default -> { edge = TEAL; top = 0xD0193F3D; bottom = 0xD0102B2A; textColor = TEXT_DARK; }
+            case 1 -> { edge = 0xC0FFFFFF; top = 0x50FFFFFF; bottom = 0x30FFFFFF; textColor = 0xFFFFFFFF; }
+            case 2 -> { edge = 0x24FFFFFF; top = 0x14FFFFFF; bottom = 0x0AFFFFFF; textColor = TEXT_MUTED; }
+            case 3 -> { edge = 0xA05AD68C; top = 0x405AD68C; bottom = 0x205AD68C; textColor = GOOD_LIGHT; }
+            default -> { edge = 0x60FFFFFF; top = 0x30FFFFFF; bottom = 0x18FFFFFF; textColor = TEXT_DARK; }
         }
-        c.fill(l + 1, b, r + 1, b + 1, 0x60000000);
-        if (state == 1) {
-            outline(c, l - 1, t - 1, r + 1, b + 1, TEAL_GLOW);
-        }
-        outline(c, l, t, r, b, edge);
         c.fillGradient(l + 1, t + 1, r - 1, b - 1, top, bottom);
-        c.fill(l + 1, t + 1, r - 1, t + 2, 0x22FFFFFF);
+        outline(c, l, t, r, b, edge);
+        c.fill(l + 1, t + 1, r - 1, t + 2, 0x28FFFFFF);
         int tx = (l + r - tr.getWidth(label)) / 2;
         int ty = (t + b - 8) / 2;
         embossed(c, tr, label, tx, ty, textColor);
@@ -218,7 +195,7 @@ public final class UiKit {
 
     /** Полоска прогресса в тёмном жёлобе, с бликом, ярким краем и делениями через 10 %. */
     public static void progress(DrawContext c, int l, int t, int r, int b, float fraction, int top, int bottom) {
-        inset(c, l, t, r, b, 0xA0000000);
+        inset(c, l, t, r, b, 0x70000000);
         int w = Math.round((r - l) * Math.max(0.0f, Math.min(1.0f, fraction)));
         if (w > 0) {
             c.fillGradient(l, t, l + w, b, top, bottom);
@@ -244,8 +221,8 @@ public final class UiKit {
     /** Стандартная «пилюля»: полупрозрачная, с бирюзовой рамкой. @return ширина */
     public static int pill(DrawContext c, TextRenderer tr, int x, int y, Text text, int textColor) {
         int w = tr.getWidth(text) + 8;
-        outline(c, x, y, x + w, y + 11, TEAL_DARK);
-        c.fill(x + 1, y + 1, x + w - 1, y + 10, 0xA0102624);
+        outline(c, x, y, x + w, y + 11, 0x50FFFFFF);
+        c.fill(x + 1, y + 1, x + w - 1, y + 10, 0x40000000);
         c.drawText(tr, text, x + 4, y + 2, textColor, false);
         return w;
     }

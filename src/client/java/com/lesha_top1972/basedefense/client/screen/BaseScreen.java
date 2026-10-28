@@ -31,7 +31,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
 
     // ---------- Палитра (тёмное стекло + бирюза, основа — UiKit) ----------
     private static final int CONTENT       = UiKit.CONTENT;
-    private static final int GRID_DOT      = 0x1433C9BE;
+    private static final int GRID_DOT      = 0x14DCE6EA;
     private static final int TEXT_DARK     = UiKit.TEXT_DARK;
     private static final int TEXT_BODY     = UiKit.TEXT_BODY;
     private static final int TEXT_MUTED    = UiKit.TEXT_MUTED;
@@ -143,14 +143,14 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         if (selected) {
             // Выбранная вкладка «сливается» с областью контента
             context.fill(tabLeft - 1, top - 1, tabRight + 1, bottom, UiKit.INSET_DARK);
-            context.fillGradient(tabLeft, top, tabRight, bottom, 0x6033C9BE, 0x18167A73);
-            context.fill(tabLeft, top, tabRight, top + 2, UiKit.TEAL);
-            context.fill(tabLeft, top, tabRight, top + 1, UiKit.TEAL_LIGHT);
+            context.fillGradient(tabLeft, top, tabRight, bottom, 0x60DCE6EA, 0x187C8A92);
+            context.fill(tabLeft, top, tabRight, top + 2, 0x60FFFFFF);
+            context.fill(tabLeft, top, tabRight, top + 1, 0xA0FFFFFF);
         } else {
             context.fill(tabLeft - 1, top - 1, tabRight + 1, bottom - 1, UiKit.INSET_DARK);
             context.fillGradient(tabLeft, top, tabRight, bottom - 1,
                     hovered ? 0xD0323C46 : UiKit.HEADER_TOP, hovered ? 0xD0242B32 : UiKit.HEADER_BOTTOM);
-            context.fill(tabLeft, top, tabRight, top + 1, hovered ? UiKit.TEAL_DARK : 0x14FFFFFF);
+            context.fill(tabLeft, top, tabRight, top + 1, hovered ? 0x50FFFFFF : 0x14FFFFFF);
         }
 
         Text label = TABS[index];
@@ -163,7 +163,7 @@ public class BaseScreen extends HandledScreen<BaseScreenHandler> {
         for (int gx = contentLeft + 8; gx < contentRight - 2; gx += 12) {
             for (int gy = contentTop + 8; gy < contentBottom - 2; gy += 12) {
                 context.fill(gx, gy, gx + 1, gy + 1, ((gx - contentLeft) / 12 + (gy - contentTop) / 12) % 4 == 0
-                        ? 0x3033C9BE : GRID_DOT);
+                        ? 0x30DCE6EA : GRID_DOT);
             }
         }
     }

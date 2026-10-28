@@ -197,12 +197,12 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         HouseDesign design = designOf(type);
 
         if (isFocused) {
-            c.fillGradient(rl, rt, rr, rb, 0x7033C9BE, 0x30167A73);
+            c.fillGradient(rl, rt, rr, rb, 0x70DCE6EA, 0x307C8A92);
             c.fill(rl, rt, rl + 2, rb, TEAL_LIGHT);
-            outline(c, rl, rt, rr, rb, 0x8033C9BE);
+            outline(c, rl, rt, rr, rb, 0x80DCE6EA);
         } else if (hover) {
             c.fill(rl, rt, rr, rb, 0x28FFFFFF);
-            c.fill(rl, rt, rl + 2, rb, TEAL);
+            c.fill(rl, rt, rl + 2, rb, 0x80FFFFFF);
         } else {
             c.fill(rl, rt, rr, rb, 0x30222830);
         }
@@ -210,8 +210,8 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         // Значок: тёмное гнездо с бирюзовой подсветкой
         int ix = rl + 4;
         int iy = rt + 2;
-        c.fill(ix, iy, ix + 19, iy + 19, isFocused ? 0xC0123A38 : 0xB0101318);
-        outline(c, ix, iy, ix + 19, iy + 19, isFocused ? TEAL : 0xFF2C343C);
+        c.fill(ix, iy, ix + 19, iy + 19, isFocused ? 0x50000000 : 0x50000000);
+        outline(c, ix, iy, ix + 19, iy + 19, isFocused ? 0x90FFFFFF : 0x30FFFFFF);
         c.drawTexture(icon(type), ix + 2, iy + 2, 0, 0, 16, 16, 16, 16);
 
         int tx = rl + 28;
@@ -236,15 +236,15 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
         // Предпросмотр: тёмная «сцена» с бирюзовым полом
         int pt = dt;
         int pb = dt + PREVIEW_H;
-        inset(c, dl, pt, dr, pb, 0xC0080A0D);
-        c.fillGradient(dl, pb - 40, dr, pb, 0x00000000, 0x4033C9BE);
+        inset(c, dl, pt, dr, pb, 0x60000000);
+        c.fillGradient(dl, pb - 40, dr, pb, 0x00000000, 0x40DCE6EA);
         for (int gx = dl + 8; gx < dr - 4; gx += 12) {          // сетка-«чертёж»
-            c.fill(gx, pt + 1, gx + 1, pb, 0x0C33C9BE);
+            c.fill(gx, pt + 1, gx + 1, pb, 0x0CDCE6EA);
         }
         for (int gy = pt + 8; gy < pb - 2; gy += 12) {
-            c.fill(dl + 1, gy, dr, gy + 1, 0x0C33C9BE);
+            c.fill(dl + 1, gy, dr, gy + 1, 0x0CDCE6EA);
         }
-        corners(c, dl - 1, pt - 1, dr + 1, pb + 1, 5, TEAL);
+        outline(c, dl - 1, pt - 1, dr + 1, pb + 1, 0x30FFFFFF);
         if (!designWindow) {
             StructurePreview.draw(c, focused.getPlan(design), dl + 2, pt + 14, dr - 2, pb - 2, yaw(0), 28.0f);
         }
@@ -325,7 +325,7 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
     private void drawDesignWindow(DrawContext c, int mouseX, int mouseY) {
         c.getMatrices().push();
         c.getMatrices().translate(0, 0, 300);
-        c.fill(0, 0, this.width, this.height, 0xB0000000);
+        c.fill(0, 0, this.width, this.height, 0x80000000);
         int wl = windowLeft(), wt = windowTop(), wr = wl + windowWidth(), wb = wt + windowHeight();
         panel(c, wl, wt, wr, wb);
         header(c, wl + 4, wt + 4, wr - 4, HEADER_H);
@@ -353,13 +353,13 @@ public class TabletScreen extends HandledScreen<TabletScreenHandler> {
                 outline(c, cl - 2, ct - 2, cr + 2, cb + 2, TEAL_GLOW);
             }
             c.fill(cl, ct, cr, cb, hov ? CARD_HOVER : CARD);
-            outline(c, cl, ct, cr, cb, sel ? TEAL : (hov ? TEAL_DARK : 0xFF323A42));
+            outline(c, cl, ct, cr, cb, sel ? TEAL : (hov ? 0x90FFFFFF : 0x30FFFFFF));
             c.fill(cl + 1, ct + 1, cr - 1, ct + 3, d.getColor());
             // Сцена предпросмотра
             int pl = cl + 4, pt = ct + 6, pr = cr - 4, pb = ct + 6 + CARD_PREVIEW_H;
-            c.fill(pl, pt, pr, pb, 0xD0080A0D);
-            c.fillGradient(pl, pb - 26, pr, pb, 0x00000000, 0x4033C9BE);
-            outline(c, pl - 1, pt - 1, pr + 1, pb + 1, 0xFF1C2228);
+            c.fill(pl, pt, pr, pb, 0x70000000);
+            c.fillGradient(pl, pb - 26, pr, pb, 0x00000000, 0x40DCE6EA);
+            outline(c, pl - 1, pt - 1, pr + 1, pb + 1, 0x30FFFFFF);
             c.getMatrices().pop();
 
             c.getMatrices().push();

@@ -116,7 +116,7 @@ public class HouseScreen extends HandledScreen<HouseScreenHandler> {
         Text pct = Text.translatable("screen.basedefense.house.progress", percent);
         int pillW = this.textRenderer.getWidth(pct) + 8;
         pill(context, this.textRenderer, right - 12 - pillW, top + 9, pct,
-                percent >= 100 ? 0xC0234A33 : 0xC0123A38, percent >= 100 ? GOOD_LIGHT : TEAL_LIGHT);
+                percent >= 100 ? 0xC0234A33 : 0x50000000, percent >= 100 ? GOOD_LIGHT : TEAL_LIGHT);
 
         // Состояние стройки: значок + текст
         int statusY = top + HEADER_H + 11;

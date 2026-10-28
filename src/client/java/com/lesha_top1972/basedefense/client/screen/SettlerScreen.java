@@ -117,7 +117,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         context.drawText(this.textRenderer, profession, left + 11, top + 21, UiKit.TEXT_MUTED, false);
         for (int i = 0; i < SettlerEntity.MAX_LEVEL; i++) {
             int dx = right - 14 - (SettlerEntity.MAX_LEVEL - 1 - i) * 8;
-            UiKit.diamond(context, dx, top + 13, i < level ? UiKit.TEAL : 0xFF3A424A);
+            UiKit.diamond(context, dx, top + 13, i < level ? UiKit.TEAL : 0x50FFFFFF);
         }
         Text lv = Text.translatable("screen.basedefense.settler.level_short", level);
         context.drawText(this.textRenderer, lv, right - 10 - this.textRenderer.getWidth(lv), top + 21, UiKit.TEXT_MUTED, false);
@@ -162,13 +162,13 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         UiKit.panel(context, l, t, r, b);
         UiKit.inset(context, l + 6, t + 6, r - 6, b - 6, 0x70000000);
         // Бирюзовый градиент снизу — как подсветка сцены
-        context.fillGradient(l + 6, b - 46, r - 6, b - 6, 0x00000000, 0x4033C9BE);
+        context.fillGradient(l + 6, b - 46, r - 6, b - 6, 0x00000000, 0x40DCE6EA);
         int cx = (l + r) / 2;
         int feet = b - 16;
         // Светящийся «постамент» под ногами (эллипс из полосок)
-        context.fill(cx - 22, feet + 1, cx + 22, feet + 2, 0x6033C9BE);
-        context.fill(cx - 17, feet, cx + 17, feet + 3, 0x5033C9BE);
-        context.fill(cx - 11, feet - 1, cx + 11, feet + 4, 0x4033C9BE);
+        context.fill(cx - 22, feet + 1, cx + 22, feet + 2, 0x60DCE6EA);
+        context.fill(cx - 17, feet, cx + 17, feet + 3, 0x50DCE6EA);
+        context.fill(cx - 11, feet - 1, cx + 11, feet + 4, 0x40DCE6EA);
         context.fill(cx - 22, feet + 1, cx + 22, feet + 2, 0x509BF5EC);
 
         LivingEntity settler = findSettler();
