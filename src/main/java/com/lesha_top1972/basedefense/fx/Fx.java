@@ -51,6 +51,9 @@ public final class Fx {
     public static final int IMPACT = 12;
     /** Разрыв кровавого кокона кровожада: вспышка, лепестки‑ошмётки веером, брызги, ударная волна по земле (a — радиус). */
     public static final int COCOON_BURST = 13;
+    /** «Кровавый разруб» меча кровожада: разлом по земле вперёд (x2, z2 — направление), кровавые всплески,
+     *  вертикальный след удара; a — длина, b — сколько задето. */
+    public static final int BLOOD_CLEAVE = 14;
 
     // --- флаги ---
     public static final int F_BLOCK = 1;
@@ -152,6 +155,11 @@ public final class Fx {
     /** Кровожад вырывается из кокона (центр — у ног), волна радиусом r. */
     public static void cocoonBurst(ServerWorld w, Vec3d c, double r) {
         send(w, COCOON_BURST, c, Vec3d.ZERO, (float) r, 0f, 0, groundId(w, c), F_BLOOD);
+    }
+
+    /** Удар меча кровожада: c — точка удара на земле, fwd — направление удара. */
+    public static void cleave(ServerWorld w, Vec3d c, Vec3d fwd, double reach, int hits) {
+        send(w, BLOOD_CLEAVE, c, fwd, (float) reach, hits, 0, groundId(w, c), F_BLOOD);
     }
 
     public static void quakeFront(ServerWorld w, Vec3d c, double r) {

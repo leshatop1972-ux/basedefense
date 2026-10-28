@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense;
 
 import com.lesha_top1972.basedefense.block.ModBlocks;
+import com.lesha_top1972.basedefense.combat.BloodSwordCombat;
 import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.entity.SettlerThreats;
@@ -31,6 +32,7 @@ public class Basedefense implements ModInitializer {
         ResearchManager.init();
         SettlementManager.init();
         SettlerThreats.init();
+        BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         // «Шум» игроков в бою с Набатом
         ServerTickEvents.END_SERVER_TICK.register(NabatNoise::tick);
     }

@@ -9,6 +9,7 @@ import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Rarity;
 
 /** Все предметы мода (кроме предметов-блоков, они в ModBlocks). */
 public final class ModItems {
@@ -19,6 +20,10 @@ public final class ModItems {
     /** Строительный планшет: выбор и установка построек (крафт: верстак + бумага + чернильный мешок). */
     public static final Item BUILDING_TABLET = register("building_tablet",
             new BuildingTabletItem(new Item.Settings().maxCount(1)));
+
+    /** Меч кровожада: урон 8, скорость 1.4; держать ЛКМ — замах двумя руками и удар сверху. */
+    public static final Item BLOODTHIRSTER_SWORD = register("bloodthirster_sword",
+            new BloodthirsterSwordItem(new Item.Settings().rarity(Rarity.EPIC)));
 
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
@@ -109,6 +114,7 @@ public final class ModItems {
     public static void init() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BUILDING_TABLET));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(BLOODTHIRSTER_SWORD));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);
             entries.add(FARMER_SPAWN_EGG);

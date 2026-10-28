@@ -135,6 +135,10 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.bloodletter.BloodSpearRenderer.LAYER, () -> BedrockModelLoader.load("bloodletter_spear"));
         EntityRendererRegistry.register(ModEntities.BLOODLETTER, com.lesha_top1972.basedefense.client.entity.bloodletter.BloodletterRenderer::new);
         EntityRendererRegistry.register(ModEntities.BLOOD_SPEAR, com.lesha_top1972.basedefense.client.entity.bloodletter.BloodSpearRenderer::new);
+        // меч кровожада: модель в руке, замах и удар (1‑е и 3‑е лицо), частицы
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.BloodSwordRender.LAYER,
+                () -> BedrockModelLoader.load("blood_greatsword"));
+        com.lesha_top1972.basedefense.client.weapon.BloodSwordClient.init();
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

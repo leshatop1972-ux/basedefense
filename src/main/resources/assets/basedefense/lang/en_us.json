@@ -337,5 +337,12 @@
   "screen.basedefense.settler.chop.off": "Tree cutting: OFF",
   "screen.basedefense.settler.tip.chop": "During the day cuts the nearest wild trees\nwithin 100 blocks of home and replants saplings.\nLogs go to the house chest (up to 32 / 64 / 128 a day).\nNo daily logs in this mode.",
   "message.basedefense.lumberjack.chop_on": "%s went to cut trees",
-  "message.basedefense.lumberjack.chop_off": "%s stopped cutting trees"
+  "message.basedefense.lumberjack.chop_off": "%s stopped cutting trees",
+  "item.basedefense.bloodthirster_sword": "Bloodthirster's Sword",
+  "item.basedefense.bloodthirster_sword.tip1": "Hold LMB to raise it with both hands (1.5 s)",
+  "item.basedefense.bloodthirster_sword.tip2": "Release: overhead strike, %s damage 3 blocks ahead",
+  "item.basedefense.bloodthirster_sword.tip3": "Slows enemies, +2 ❤ per mob hit",
+  "subtitles.basedefense.bloodthirster_sword.charge": "Bloodthirster's Sword raised",
+  "subtitles.basedefense.bloodthirster_sword.ready": "Bloodthirster's Sword thirsts",
+  "subtitles.basedefense.bloodthirster_sword.cleave": "Blood cleave"
 }

@@ -143,6 +143,11 @@ public final class ModSounds {
     public static final SoundEvent SETTLER_FEMALE_HURT = register("entity.settler.female.hurt");
     public static final SoundEvent SETTLER_FEMALE_DEATH = register("entity.settler.female.death");
 
+    // Меч кровожада (tools/bt_sword_sounds.py): замах, заряжен, удар
+    public static final SoundEvent SWORD_CHARGE = register("item.bloodthirster_sword.charge");
+    public static final SoundEvent SWORD_READY = register("item.bloodthirster_sword.ready");
+    public static final SoundEvent SWORD_CLEAVE = register("item.bloodthirster_sword.cleave");
+
     private ModSounds() {
     }
 

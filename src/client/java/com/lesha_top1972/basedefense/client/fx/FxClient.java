@@ -312,6 +312,8 @@ public final class FxClient {
             }
             case Fx.BLAST -> blast(w, x, y, z, a, (flags & Fx.F_LOUD) != 0, blockFx);
             case Fx.COCOON_BURST -> cocoonBurst(w, x, y, z, a, blockFx);
+            case Fx.BLOOD_CLEAVE -> com.lesha_top1972.basedefense.client.weapon.BloodSwordFx.cleave(w, x, y, z, x2, z2, a,
+                    (int) b, blockFx);
             case Fx.IMPACT -> {
                 Random r = w.random;
                 boolean big = (flags & Fx.F_LOUD) != 0;

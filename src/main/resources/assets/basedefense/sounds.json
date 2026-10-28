@@ -1467,5 +1467,36 @@
         "attenuation_distance": 16
       }
     ]
+  },
+  "item.bloodthirster_sword.charge": {
+    "subtitle": "subtitles.basedefense.bloodthirster_sword.charge",
+    "sounds": [
+      {
+        "name": "basedefense:item/bt_sword_charge",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "item.bloodthirster_sword.ready": {
+    "subtitle": "subtitles.basedefense.bloodthirster_sword.ready",
+    "sounds": [
+      {
+        "name": "basedefense:item/bt_sword_ready",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "item.bloodthirster_sword.cleave": {
+    "subtitle": "subtitles.basedefense.bloodthirster_sword.cleave",
+    "sounds": [
+      {
+        "name": "basedefense:item/bt_sword_cleave0",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "basedefense:item/bt_sword_cleave1",
+        "attenuation_distance": 32
+      }
+    ]
   }
 }
