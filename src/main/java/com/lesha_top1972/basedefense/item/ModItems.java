@@ -53,6 +53,17 @@ public final class ModItems {
     public static final Item LIFE_AMULET_2 = amulet("life_amulet_2", Rarity.RARE);
     public static final Item LIFE_AMULET_3 = amulet("life_amulet_3", Rarity.EPIC);
 
+    /** Амулеты уворота I–III: 7/10/13% не получить урон от атаки моба. Складываются (максимум 50%). */
+    public static final Item DODGE_AMULET_1 = amulet("dodge_amulet_1", Rarity.UNCOMMON);
+    public static final Item DODGE_AMULET_2 = amulet("dodge_amulet_2", Rarity.RARE);
+    public static final Item DODGE_AMULET_3 = amulet("dodge_amulet_3", Rarity.EPIC);
+
+    /** Плащ вампиризма: 25% шанс — союзники в 25 блоках лечатся на 25% нанесённого урона. */
+    public static final Item VAMPIRE_CLOAK = amulet("vampire_cloak", Rarity.EPIC);
+
+    /** Амулет мудрости: удар тратит 1/4 уровня опыта — Скорость I на 5 с и +1 HP. */
+    public static final Item WISDOM_AMULET = amulet("wisdom_amulet", Rarity.RARE);
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -161,6 +172,11 @@ public final class ModItems {
             entries.add(LIFE_AMULET_1);
             entries.add(LIFE_AMULET_2);
             entries.add(LIFE_AMULET_3);
+            entries.add(DODGE_AMULET_1);
+            entries.add(DODGE_AMULET_2);
+            entries.add(DODGE_AMULET_3);
+            entries.add(VAMPIRE_CLOAK);
+            entries.add(WISDOM_AMULET);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);

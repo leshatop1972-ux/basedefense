@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 /** 5 слотов артефактов у игрока; сохраняются в NBT игрока («basedefense:artifacts»). */
 @Mixin(PlayerEntity.class)
@@ -56,6 +59,15 @@ public abstract class PlayerEntityArtifactsMixin implements ArtifactHolder {
                     inv.setStack(slot, ItemStack.fromNbt(c));
                 }
             }
+        }
+    }
+
+    /** Амулеты уворота: атака моба может не пройти (до щита, брони и отбрасывания). */
+    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void basedefense$dodge(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof ServerPlayerEntity && amount > 0
+                && Artifacts.tryDodge((ServerPlayerEntity) (Object) this, source)) {
+            cir.setReturnValue(false);
         }
     }
 }

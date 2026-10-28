@@ -374,5 +374,16 @@
   "item.basedefense.speed_amulet_3": "Амулет скорости III",
   "item.basedefense.speed_amulet_3.tip": "+25% к скорости. Не складывается с другими амулетами скорости",
   "item.basedefense.life_amulet_3": "Амулет жизни III",
-  "item.basedefense.life_amulet_3.tip": "+13 HP к здоровью. Складывается с другими амулетами жизни"
+  "item.basedefense.life_amulet_3.tip": "+13 HP к здоровью. Складывается с другими амулетами жизни",
+  "message.basedefense.dodge": "Уворот!",
+  "item.basedefense.vampire_cloak": "Плащ вампиризма",
+  "item.basedefense.vampire_cloak.tip": "С шансом 25% все союзники в 25 блоках (и ты) лечатся на 25% урона, нанесённого тобой мобу",
+  "item.basedefense.wisdom_amulet": "Амулет мудрости",
+  "item.basedefense.wisdom_amulet.tip": "Каждый удар по мобу тратит 1/4 уровня опыта: Скорость I на 5 с и +1 HP",
+  "item.basedefense.dodge_amulet_1": "Амулет уворота I",
+  "item.basedefense.dodge_amulet_1.tip": "7% шанс не получить урон от атаки моба. Складывается с другими амулетами уворота (до 50%)",
+  "item.basedefense.dodge_amulet_2": "Амулет уворота II",
+  "item.basedefense.dodge_amulet_2.tip": "10% шанс не получить урон от атаки моба. Складывается с другими амулетами уворота (до 50%)",
+  "item.basedefense.dodge_amulet_3": "Амулет уворота III",
+  "item.basedefense.dodge_amulet_3.tip": "13% шанс не получить урон от атаки моба. Складывается с другими амулетами уворота (до 50%)"
 }

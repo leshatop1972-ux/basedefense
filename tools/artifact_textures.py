@@ -11,7 +11,7 @@ from PIL import Image
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense", "textures")
 
 
-def amulet(name="dash_amulet", gem=((40, 150, 200), (60, 80, 50)), glyph=((6, 9), (7, 9), (8, 10), (7, 11), (9, 9))):
+def amulet(name="dash_amulet", gem=((40, 150, 200), (60, 80, 50)), glyph=((6, 9), (7, 9), (8, 10), (7, 11), (9, 9)), ink=(236, 252, 255, 255)):
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     px = img.load()
     # цепочка: дуга сверху, звенья через пиксель
@@ -40,9 +40,49 @@ def amulet(name="dash_amulet", gem=((40, 150, 200), (60, 80, 50)), glyph=((6, 9)
                     (r0, g0, b0), (dr, dg, db) = gem
                     px[x, y] = (int(r0 + dr * k), int(g0 + dg * k), int(b0 + db * k), 255)  # камень
     # завиток ветра и блик
-    for x, y in glyph:
-        px[x, y] = (236, 252, 255, 255)
     px[6, 8] = (255, 255, 255, 255)
+    for x, y in glyph:
+        px[x, y] = ink
+    img.save(os.path.join(ROOT, "item", name + ".png"))
+
+
+def cloak(name="vampire_cloak"):
+    """Плащ вампиризма: тёмный плащ‑накидка с алой подкладкой и золотой застёжкой с камнем."""
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    px = img.load()
+    outline = (24, 10, 14, 255)
+    for y in range(2, 16):
+        half = 2 + (y - 2) * 0.48            # расширяется книзу
+        for x in range(16):
+            dx = x + 0.5 - 8
+            if abs(dx) <= half:
+                edge = abs(dx) > half - 1 or y == 15
+                hem = y == 15 and int(x) % 3 == 0     # зубчатый низ
+                if hem:
+                    continue
+                if edge:
+                    px[x, y] = outline
+                elif abs(dx) < 1.0 and y > 4:
+                    px[x, y] = (150, 18, 30, 255)               # алая подкладка в разрезе
+                else:
+                    t = 0.5 + 0.5 * math.sin(dx * 1.3)          # складки
+                    k = 1 - (y - 2) / 20
+                    base = (58 + 30 * t * k, 14 + 6 * t, 24 + 8 * t)
+                    if dx < 0:
+                        base = tuple(c * 1.15 for c in base)    # свет слева
+                    px[x, y] = tuple(int(min(255, c)) for c in base) + (255,)
+    # воротник
+    for x in range(4, 12):
+        px[x, 2] = (40, 14, 18, 255) if x in (4, 11) else (96, 22, 34, 255)
+        px[x, 1] = outline if x in (4, 11) else (120, 28, 40, 255)
+    # застёжка: золото + алый камень
+    for x, y in ((7, 3), (8, 3), (7, 4), (8, 4)):
+        px[x, y] = (236, 196, 88, 255)
+    px[6, 3] = (176, 130, 46, 255)
+    px[9, 3] = (176, 130, 46, 255)
+    px[7, 4] = (210, 30, 40, 255)
+    px[8, 4] = (160, 10, 20, 255)
+    px[7, 3] = (255, 230, 160, 255)
     img.save(os.path.join(ROOT, "item", name + ".png"))
 
 
@@ -89,5 +129,13 @@ if __name__ == "__main__":
                       ("life", ((200, 60, 120), (55, 80, 60)))):      # розовый
         for lvl, xs in numerals.items():
             amulet(f"{kind}_amulet_{lvl}", gem, tuple((x, y) for x in xs for y in (9, 10, 11)))
+    # уворот: серебристо‑лиловый камень, римская цифра
+    for lvl, xs in numerals.items():
+        amulet(f"dodge_amulet_{lvl}", ((150, 150, 200), (70, 70, 50)), tuple((x, y) for x in xs for y in (9, 10, 11)),
+               (52, 40, 96, 255))
+    # мудрость: глубокий синий камень с «глазом»
+    amulet("wisdom_amulet", ((30, 40, 150), (60, 90, 90)),
+           ((6, 10), (7, 9), (8, 9), (9, 10), (7, 11), (8, 11), (5, 10), (10, 10)))
+    cloak()
     button()
     print("ok")

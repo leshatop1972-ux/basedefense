@@ -14,7 +14,15 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import com.lesha_top1972.basedefense.entity.SettlerEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.Box;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
@@ -43,6 +51,9 @@ import java.util.UUID;
  *   <li>Вампиризм I/II/III — убийство моба лечит на 4/6/8 HP, у III ещё 1 HP за каждое попадание;</li>
  *   <li>Скорость I/II/III — +8/+16/+25% к скорости;</li>
  *   <li>Жизнь I/II/III — +5/+9/+13 к максимальному здоровью.</li>
+ *   <li>Уворот I/II/III — 7/10/13% не получить урон от атаки моба (складываются, максимум 50%);</li>
+ *   <li>Плащ вампиризма — 25% шанс: союзники в 25 блоках лечатся на 25% нанесённого урона;</li>
+ *   <li>Амулет мудрости — каждый удар по мобу тратит 1/4 уровня опыта: Скорость I на 5 с и +1 HP.</li>
  * Вампиризм и скорость не складываются (действует самый сильный надетый), жизнь складывается.
  * Артефакты не выпадают при смерти — остаются в слотах.
  */
@@ -74,6 +85,13 @@ public final class Artifacts {
     private static final float[] VAMP_KILL = {0f, 4f, 6f, 8f};
     private static final float VAMP_HIT = 1f;
     private static final double[] SPEED = {0, 0.08, 0.16, 0.25};
+    private static final float DODGE_MAX = 0.5f;
+    private static final float CLOAK_CHANCE = 0.25f;
+    private static final float CLOAK_SHARE = 0.25f;
+    private static final double CLOAK_RADIUS = 25.0;
+    private static final float WISDOM_COST = 0.25f;
+    private static final int WISDOM_SPEED_TICKS = 100;
+    private static final float WISDOM_HEAL = 1f;
 
     private Artifacts() {
     }
@@ -177,9 +195,9 @@ public final class Artifacts {
         }
     }
 
-    /** Вызывается после урона по существу (LivingEntityCombatMixin): вампиризм атакующего игрока. */
+    /** Вызывается после урона по существу (LivingEntityCombatMixin): вампиризм, плащ вампиризма, мудрость. */
     public static void onDamaged(LivingEntity target, DamageSource source, float dealt) {
-        if (dealt <= 0 || target instanceof PlayerEntity || target instanceof ArmorStandEntity
+        if (dealt <= 0 || !(target instanceof MobEntity) || target instanceof SettlerEntity
                 || !(source.getAttacker() instanceof ServerPlayerEntity)) {
             return;
         }
@@ -187,17 +205,89 @@ public final class Artifacts {
         if (!p.isAlive()) {
             return;
         }
+        float heal = 0f;
         int lvl = level(p, ModItems.VAMPIRE_AMULET_1, ModItems.VAMPIRE_AMULET_2, ModItems.VAMPIRE_AMULET_3);
-        if (lvl == 0) {
-            return;
+        if (lvl > 0) {
+            heal += lvl == 3 ? VAMP_HIT : 0f;
+            if (target.isDead()) {
+                heal += VAMP_KILL[lvl];
+            }
         }
-        float heal = lvl == 3 ? VAMP_HIT : 0f;
-        if (target.isDead()) {
-            heal += VAMP_KILL[lvl];
+        // Мудрость: только удар рукой/оружием (не стрела). 1/4 уровня опыта → Скорость I на 5 с и +1 HP.
+        if (source.getSource() == p && has(p, ModItems.WISDOM_AMULET) && spendQuarterLevel(p)) {
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, WISDOM_SPEED_TICKS, 0, false, true, true));
+            heal += WISDOM_HEAL;
         }
         if (heal > 0) {
             p.heal(heal);
         }
+        // Плащ вампиризма: с шансом 25% все союзники в 25 блоках (игроки и жители, вместе с носителем)
+        // лечатся на 25% прошедшего урона.
+        if (has(p, ModItems.VAMPIRE_CLOAK) && p.getRandom().nextFloat() < CLOAK_CHANCE) {
+            float amount = dealt * CLOAK_SHARE;
+            Box box = p.getBoundingBox().expand(CLOAK_RADIUS);
+            double r2 = CLOAK_RADIUS * CLOAK_RADIUS;
+            for (LivingEntity ally : p.getWorld().getEntitiesByClass(LivingEntity.class, box,
+                    e -> e.isAlive() && (e instanceof PlayerEntity || e instanceof SettlerEntity))) {
+                if (ally.squaredDistanceTo(p) <= r2 && !(ally instanceof PlayerEntity pl && pl.isSpectator())) {
+                    ally.heal(amount);
+                    ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.HEART,
+                            ally.getX(), ally.getBodyY(1.0) + 0.4, ally.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+                }
+            }
+        }
+    }
+
+    /** Списать 1/4 уровня опыта; false — опыта не хватает (ничего не списано). */
+    private static boolean spendQuarterLevel(ServerPlayerEntity p) {
+        int level = p.experienceLevel;
+        float progress = p.experienceProgress - WISDOM_COST;
+        if (progress < 0f) {
+            if (level <= 0) {
+                return false;
+            }
+            level--;
+            progress += 1f;
+        }
+        int points = Math.max(1, Math.round(p.getNextLevelExperience() * WISDOM_COST));
+        p.totalExperience = Math.max(0, p.totalExperience - points);
+        p.experienceProgress = progress;
+        p.setExperienceLevel(level);   // заодно отправляет полоску опыта клиенту
+        return true;
+    }
+
+    /** Шанс уворота от атаки моба: сумма всех амулетов уворота (складываются), не больше 50%. */
+    public static float dodgeChance(PlayerEntity p) {
+        SimpleInventory inv = of(p);
+        float c = 0f;
+        for (int i = 0; i < inv.size(); i++) {
+            Item it = inv.getStack(i).getItem();
+            if (it == ModItems.DODGE_AMULET_1) {
+                c += 0.07f;
+            } else if (it == ModItems.DODGE_AMULET_2) {
+                c += 0.10f;
+            } else if (it == ModItems.DODGE_AMULET_3) {
+                c += 0.13f;
+            }
+        }
+        return Math.min(c, DODGE_MAX);
+    }
+
+    /** Из миксина урона игрока: true — увернулся (урон отменяется). */
+    public static boolean tryDodge(ServerPlayerEntity p, DamageSource source) {
+        if (!(source.getAttacker() instanceof MobEntity) || p.timeUntilRegen > 10) {
+            return false;
+        }
+        float c = dodgeChance(p);
+        if (c <= 0f || p.getRandom().nextFloat() >= c) {
+            return false;
+        }
+        ServerWorld w = (ServerWorld) p.getWorld();
+        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE,
+                SoundCategory.PLAYERS, 0.8f, 1.6f);
+        w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getBodyY(0.5), p.getZ(), 6, 0.3, 0.4, 0.3, 0.02);
+        p.sendMessage(Text.translatable("message.basedefense.dodge").formatted(Formatting.AQUA), true);
+        return true;
     }
 
     private static void leap(ServerPlayerEntity player, int now) {

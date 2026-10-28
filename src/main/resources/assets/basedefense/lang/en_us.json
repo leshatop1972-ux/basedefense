@@ -374,5 +374,16 @@
   "item.basedefense.speed_amulet_3": "Amulet of Speed III",
   "item.basedefense.speed_amulet_3.tip": "+25% movement speed. Does not stack with other speed amulets",
   "item.basedefense.life_amulet_3": "Amulet of Life III",
-  "item.basedefense.life_amulet_3.tip": "+13 max health. Stacks with other life amulets"
+  "item.basedefense.life_amulet_3.tip": "+13 max health. Stacks with other life amulets",
+  "message.basedefense.dodge": "Dodged!",
+  "item.basedefense.vampire_cloak": "Vampiric Cloak",
+  "item.basedefense.vampire_cloak.tip": "25% chance: all allies within 25 blocks (you too) heal 25% of the damage you dealt to a mob",
+  "item.basedefense.wisdom_amulet": "Amulet of Wisdom",
+  "item.basedefense.wisdom_amulet.tip": "Each hit on a mob costs 1/4 XP level: Speed I for 5 s and +1 HP",
+  "item.basedefense.dodge_amulet_1": "Amulet of Evasion I",
+  "item.basedefense.dodge_amulet_1.tip": "7% chance to take no damage from a mob attack. Stacks with other evasion amulets (up to 50%)",
+  "item.basedefense.dodge_amulet_2": "Amulet of Evasion II",
+  "item.basedefense.dodge_amulet_2.tip": "10% chance to take no damage from a mob attack. Stacks with other evasion amulets (up to 50%)",
+  "item.basedefense.dodge_amulet_3": "Amulet of Evasion III",
+  "item.basedefense.dodge_amulet_3.tip": "13% chance to take no damage from a mob attack. Stacks with other evasion amulets (up to 50%)"
 }
