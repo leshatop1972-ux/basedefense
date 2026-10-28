@@ -21,8 +21,8 @@ import net.minecraft.util.math.RotationAxis;
 public class NabatSpearRenderer extends EntityRenderer<NabatSpearEntity> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat_spear"), "main");
-    static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_spear.png");
-    static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_spear_glowmask.png");
+    static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_spear.png"));
+    static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_spear_glowmask.png"));
 
     private final ModelPart spear;
 

@@ -16,13 +16,13 @@ public class SapperRenderer extends MobEntityRenderer<SapperEntity, SapperModel>
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "sapper"), "main");
     public static final EntityModelLayer PICK = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "sapper_pick"), "main");
     public static final float SCALE = 0.85f;
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/sapper.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("sapper.png"));
 
     public SapperRenderer(EntityRendererFactory.Context context) {
         super(context, new SapperModel(context.getPart(LAYER)), 0.4f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/sapper_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("sapper_glowmask.png"))));
         this.addFeature(new WeaponFeature<>(this, context.getPart(PICK),
-                new Identifier(Basedefense.MOD_ID, "textures/entity/sapper_pick.png"), null));
+                new Identifier(Basedefense.MOD_ID, AssetGroups.texture("sapper_pick.png")), null));
     }
 
     @Override

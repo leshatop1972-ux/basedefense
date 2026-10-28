@@ -22,7 +22,7 @@ import org.joml.Matrix4f;
  */
 public class FallingLanceRenderer extends EntityRenderer<FallingLanceEntity> {
 
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/falling_lance.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("falling_lance.png"));
 
     public FallingLanceRenderer(EntityRendererFactory.Context context) {
         super(context);

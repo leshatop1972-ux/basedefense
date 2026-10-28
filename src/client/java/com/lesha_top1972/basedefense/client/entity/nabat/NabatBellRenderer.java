@@ -16,8 +16,8 @@ import net.minecraft.world.Heightmap;
 public class NabatBellRenderer extends MobEntityRenderer<NabatBellEntity, NabatBellModel<NabatBellEntity>> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat_bell"), "main");
-    static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_bell.png");
-    static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_bell_glowmask.png");
+    static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_bell.png"));
+    static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_bell_glowmask.png"));
 
     public NabatBellRenderer(EntityRendererFactory.Context context) {
         super(context, new NabatBellModel<>(context.getPart(LAYER)), 0.7f);

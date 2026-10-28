@@ -16,6 +16,7 @@ import math
 import os
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, ease, ease_in, ease_out, faces, lerp, lerp3, look_R,
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, ry_m, rz_m, scl, sub, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -894,7 +895,7 @@ def falling_lance_texture():
             if x in (1, 3) or y in (6, 8):
                 p[x, y] = (110, 170, 250, 255)
     p[2, 7] = (240, 250, 255, 255)
-    a.save(os.path.join(ROOT, "textures", "entity", "falling_lance.png"))
+    a.save(asset_groups.tex("falling_lance.png", ROOT))
 
 
 def duelist_icon():
@@ -976,6 +977,6 @@ if __name__ == "__main__":
     # копьё — отдельной моделью (tattered_lancer_lance) с дорожкой поворота: не «прокручивается» на переходах
     import weaponize
     write_anims(ROOT, NAME, weaponize.export(ROOT, M, animations, CLIPS, "lance", NAME + "_lance"))
-    PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(NAME + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(NAME + "_glowmask.png", ROOT))
     print("готово:", NAME, "кубов:", len(M.cubes()))

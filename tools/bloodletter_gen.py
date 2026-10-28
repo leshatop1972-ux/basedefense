@@ -29,6 +29,7 @@ from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, cross, dot, ea
                     length, lerp, mix, mm, mul, mv, norm, rx_m, scl, sub, write_anims)
 
 from PIL import Image  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 NAME = "bloodletter"
@@ -799,12 +800,12 @@ def clip(fn, length_s, fps, loop):
 
 def main():
     PT = make_painter(M, 23)
-    PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(NAME + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(NAME + "_glowmask.png", ROOT))
     M.write_geo(ROOT)
     SP = make_painter(S, 7)
-    SP.img.save(os.path.join(ROOT, "textures", "entity", NAME + "_spear.png"))
-    SP.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_spear_glowmask.png"))
+    SP.img.save(asset_groups.tex(NAME + "_spear.png", ROOT))
+    SP.glow.save(asset_groups.tex(NAME + "_spear_glowmask.png", ROOT))
     S.write_geo(ROOT)
     trail_textures()
 

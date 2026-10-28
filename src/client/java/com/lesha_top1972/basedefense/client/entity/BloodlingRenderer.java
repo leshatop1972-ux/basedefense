@@ -12,8 +12,8 @@ public class BloodlingRenderer extends MobEntityRenderer<BloodlingEntity, Bloodl
 
     public static final EntityModelLayer LAYER =
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "bloodling"), "main");
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/bloodling.png");
-    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/bloodling_glowmask.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodling.png"));
+    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodling_glowmask.png"));
 
     public BloodlingRenderer(EntityRendererFactory.Context context) {
         super(context, new BloodlingModel(context.getPart(LAYER)), 0.4f);

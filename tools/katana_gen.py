@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import Model, Painter, faces, mix, mul  # noqa: E402
 import bt_sword_gen as G  # noqa: E402  (растеризатор превью)
 import bt_sword_anim as A  # noqa: E402  (векторы, сплайн, руки)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = G.ROOT
 JAVA = os.path.join(os.path.dirname(__file__), "..", "src", "client", "java", "com", "lesha_top1972", "basedefense",
@@ -380,8 +381,8 @@ def main():
     ts = paint(S)
     K.write_geo(ROOT)
     S.write_geo(ROOT)
-    tk.img.save(os.path.join(ROOT, "textures", "entity", "katana.png"))
-    ts.img.save(os.path.join(ROOT, "textures", "entity", "katana_saya.png"))
+    tk.img.save(asset_groups.tex("katana.png", ROOT))
+    ts.img.save(asset_groups.tex("katana_saya.png", ROOT))
     make_icon().save(os.path.join(ROOT, "textures", "item", "katana.png"))
     write_java()
     if "--preview" in sys.argv:

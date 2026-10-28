@@ -1,6 +1,6 @@
 """
 Звуки «Набата» и мечника «Отзвук» — синтез (numpy + scipy, ffmpeg с libvorbis).
-Запуск: python tools/nabat_sounds.py      → assets/basedefense/sounds/nabat/*.ogg (моно) и записи в sounds.json
+Запуск: python tools/nabat_sounds.py      → assets/basedefense/sounds/mob/nabat/*.ogg (моно) и записи в sounds.json
 
 Колокол звучит как колокол, а не как «писк», из‑за НЕровных обертонов. Здесь — модальный синтез с обертонами
 настоящего литого колокола (относительно основного тона «прайм»): хум 0.5, прайм 1, терция 1.2,
@@ -19,7 +19,7 @@ from scipy.signal import butter, lfilter, sosfilt
 
 SR = 44100
 BASE = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
-OUT = os.path.join(BASE, "sounds", "nabat")
+OUT = os.path.join(BASE, "sounds", "mob", "nabat")
 rng = np.random.default_rng(1972)
 
 # обертоны колокола: (отношение к прайму, громкость, время затухания (с) при прайме 200 Гц)
@@ -469,7 +469,7 @@ def write_json():
         data = json.load(f)
     for ev, (files, dist) in EVENTS.items():
         data[ev] = {"subtitle": "subtitles.basedefense." + ev.split(".", 1)[1],
-                    "sounds": [{"name": "basedefense:nabat/" + n, "attenuation_distance": dist} for n in files]}
+                    "sounds": [{"name": "basedefense:mob/nabat/" + n, "attenuation_distance": dist} for n in files]}
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")

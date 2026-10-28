@@ -12,8 +12,8 @@ public class CurbMinionRenderer extends MobEntityRenderer<CurbMinionEntity, Curb
 
     public static final EntityModelLayer LAYER =
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "curb_minion"), "main");
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/curb_minion.png");
-    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/curb_minion_glowmask.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("curb_minion.png"));
+    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("curb_minion_glowmask.png"));
 
     public CurbMinionRenderer(EntityRendererFactory.Context context) {
         super(context, new CurbModel<>(context.getPart(LAYER), "curb_minion"), 0.5f);

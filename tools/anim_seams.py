@@ -6,6 +6,7 @@
 import json
 import os
 import sys
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 
@@ -26,7 +27,7 @@ def frame(anims, name, clip, last):
 
 def main():
     name = sys.argv[1]
-    with open(os.path.join(ROOT, "animations", name + ".animation.json"), encoding="utf-8") as f:
+    with open(asset_groups.anim(name + ".animation.json", ROOT), encoding="utf-8") as f:
         anims = json.load(f)["animations"]
     bad = 0
     for spec in sys.argv[2:]:

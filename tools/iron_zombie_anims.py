@@ -12,7 +12,7 @@ import json
 import os
 
 PATH = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense",
-                    "animations", "iron_zombie.animation.json")
+                    "animations", "iron_zombie", "iron_zombie.animation.json")
 
 
 def ch(*keys):

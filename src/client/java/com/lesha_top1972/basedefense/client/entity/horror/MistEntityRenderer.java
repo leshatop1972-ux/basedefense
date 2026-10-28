@@ -12,7 +12,7 @@ import net.minecraft.util.Identifier;
 public class MistEntityRenderer extends MobEntityRenderer<MistEntity, HorrorModel<MistEntity>> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "mist_entity"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/mist_entity.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("mist_entity.png"));
 
     public MistEntityRenderer(EntityRendererFactory.Context context) {
         super(context, new HorrorModel<>(context.getPart(LAYER), "mist_entity", 0.106f), 0.35f);

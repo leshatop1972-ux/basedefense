@@ -23,6 +23,7 @@ import os
 from PIL import Image
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, cross, dot, ease, ease_in, ease_out, faces, length,
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     lerp, look_R, mix, mm, mul, mv, norm, rx_m, ry_m, scl, sub, tr, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -1683,27 +1684,27 @@ if __name__ == "__main__":
     write_anims(ROOT, NAME, animations)
     SWORD.write_geo(ROOT)
     SP = make_painter(SWORD, 2, 71)
-    SP.img.save(os.path.join(ROOT, "textures", "entity", SWN + ".png"))
-    SP.glow.save(os.path.join(ROOT, "textures", "entity", SWN + "_glowmask.png"))
+    SP.img.save(asset_groups.tex(SWN + ".png", ROOT))
+    SP.glow.save(asset_groups.tex(SWN + "_glowmask.png", ROOT))
     import json
     for b, hand, side in (("sword_r", "right_hand", "r"), ("sword_l", "left_hand", "l")):
         hp, bp = M.by_name[hand]["pivot"], M.by_name[b]["pivot"]
         # точка хвата от запястья (система кисти, Java: y вниз)
         off = [bp[0] - hp[0], -(bp[1] - hp[1]), bp[2] - hp[2]]
-        with open(os.path.join(ROOT, "animations", "%s_%s.weapon.json" % (NAME, side)), "w", encoding="utf-8") as f:
+        with open(asset_groups.anim("%s_%s.weapon.json" % (NAME, side), ROOT), "w", encoding="utf-8") as f:
             json.dump({"weapon": SWN, "hand": hand, "hand_offset": [round(v, 4) for v in off],
                        "grip_offset": [0.0, 0.0, 0.0], "clips": W_TRACKS[b]}, f, separators=(",", ":"))
-    P1.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
-    P1.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
-    P2.img.save(os.path.join(ROOT, "textures", "entity", NAME + "_p2.png"))
-    P2.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_p2_glowmask.png"))
+    P1.img.save(asset_groups.tex(NAME + ".png", ROOT))
+    P1.glow.save(asset_groups.tex(NAME + "_glowmask.png", ROOT))
+    P2.img.save(asset_groups.tex(NAME + "_p2.png", ROOT))
+    P2.glow.save(asset_groups.tex(NAME + "_p2_glowmask.png", ROOT))
     L.write_geo(ROOT)
     write_anims(ROOT, LN, l_animations)
-    LP.img.save(os.path.join(ROOT, "textures", "entity", LN + ".png"))
-    LP.glow.save(os.path.join(ROOT, "textures", "entity", LN + "_glowmask.png"))
+    LP.img.save(asset_groups.tex(LN + ".png", ROOT))
+    LP.glow.save(asset_groups.tex(LN + "_glowmask.png", ROOT))
     E.write_geo(ROOT)
     write_anims(ROOT, EN, e_animations)
-    EP.img.save(os.path.join(ROOT, "textures", "entity", EN + ".png"))
-    EP.glow.save(os.path.join(ROOT, "textures", "entity", EN + "_glowmask.png"))
+    EP.img.save(asset_groups.tex(EN + ".png", ROOT))
+    EP.glow.save(asset_groups.tex(EN + "_glowmask.png", ROOT))
     pool_texture()
     print("готово:", NAME, len(M.cubes()), "кубов;", LN, len(L.cubes()), ";", EN, len(E.cubes()))

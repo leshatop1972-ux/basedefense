@@ -18,7 +18,7 @@ import org.joml.Matrix4f;
 /** Душа «Реквиема»: мягкий огонёк (янтарный, у улана — бирюзовый), дышит; в рывке вытягивается. */
 public class NabatSoulRenderer extends EntityRenderer<NabatSoulEntity> {
 
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_soul.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_soul.png"));
 
     public NabatSoulRenderer(EntityRendererFactory.Context context) {
         super(context);

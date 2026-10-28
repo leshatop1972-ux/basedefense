@@ -34,8 +34,8 @@ public final class KatanaRender {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "katana"), "main");
     public static final EntityModelLayer SAYA = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "katana_saya"), "main");
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/katana.png");
-    private static final Identifier SAYA_TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/katana_saya.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("katana.png"));
+    private static final Identifier SAYA_TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("katana_saya.png"));
 
     private static ModelPart katana;
     private static ModelPart saya;

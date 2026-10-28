@@ -21,9 +21,9 @@ public class FrostArcherRenderer extends MobEntityRenderer<FrostArcherEntity, Fr
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "frost_archer_bow"), "main");
 
     private static final Identifier TEXTURE =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/frost_archer.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("frost_archer.png"));
     private static final Identifier GLOW =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/frost_archer_glowmask.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("frost_archer_glowmask.png"));
 
     public FrostArcherRenderer(EntityRendererFactory.Context context) {
         super(context, new FrostArcherModel(context.getPart(LAYER)), 0.45f);

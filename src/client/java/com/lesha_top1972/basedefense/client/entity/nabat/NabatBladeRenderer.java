@@ -13,14 +13,14 @@ public class NabatBladeRenderer extends MobEntityRenderer<NabatBladeEntity, Naba
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat_blade"), "main");
     public static final EntityModelLayer SWORD = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat_sword"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_blade.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_blade.png"));
 
     public NabatBladeRenderer(EntityRendererFactory.Context context) {
         super(context, new NabatBladeModel(context.getPart(LAYER)), 0.5f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_blade_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_blade_glowmask.png"))));
         this.addFeature(new WeaponFeature<>(this, context.getPart(SWORD),
-                new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_sword.png"),
-                new Identifier(Basedefense.MOD_ID, "textures/entity/nabat_sword_glowmask.png")));
+                new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_sword.png")),
+                new Identifier(Basedefense.MOD_ID, AssetGroups.texture("nabat_sword_glowmask.png"))));
     }
 
     @Override

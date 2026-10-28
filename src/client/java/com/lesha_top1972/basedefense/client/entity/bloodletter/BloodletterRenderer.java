@@ -26,7 +26,7 @@ import org.joml.Matrix4f;
 public class BloodletterRenderer extends MobEntityRenderer<BloodletterEntity, BloodletterModel> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "bloodletter"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/bloodletter.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodletter.png"));
     private static final Identifier TRAIL = new Identifier(Basedefense.MOD_ID, "textures/fx/blood_trail.png");
     private static final Identifier TRAIL_GLOW = new Identifier(Basedefense.MOD_ID, "textures/fx/blood_trail_glow.png");
     /** Длина следа (градусы) и число сегментов ленты. */
@@ -35,7 +35,7 @@ public class BloodletterRenderer extends MobEntityRenderer<BloodletterEntity, Bl
 
     public BloodletterRenderer(EntityRendererFactory.Context context) {
         super(context, new BloodletterModel(context.getPart(LAYER)), 0.55f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/bloodletter_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodletter_glowmask.png"))));
     }
 
     @Override

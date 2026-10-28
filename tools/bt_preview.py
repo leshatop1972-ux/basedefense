@@ -13,6 +13,7 @@ import mob_preview as mp  # noqa: E402
 import nabat_gen as ng  # noqa: E402
 import settler_preview as sp  # noqa: E402
 from PIL import Image, ImageChops, ImageDraw, ImageFilter  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = ng.ROOT
 MOB, SW = "bloodthirster", "bloodthirster_sword"
@@ -20,8 +21,8 @@ MOB, SW = "bloodthirster", "bloodthirster_sword"
 
 def tex(name, glow):
     suf = "_glowmask" if glow else ""
-    a = Image.open(os.path.join(ROOT, "textures", "entity", name + suf + ".png")).convert("RGBA")
-    w = Image.open(os.path.join(ROOT, "textures", "entity", SW + suf + ".png")).convert("RGBA")
+    a = Image.open(asset_groups.tex(name + suf + ".png", ROOT)).convert("RGBA")
+    w = Image.open(asset_groups.tex(SW + suf + ".png", ROOT)).convert("RGBA")
     out = Image.new("RGBA", (max(a.width, w.width), a.height + w.height), (0, 0, 0, 0))
     out.paste(a, (0, 0))
     out.paste(w, (0, a.height))
@@ -34,7 +35,7 @@ def parts_at(clip, t):
     mp.apply_anim(parts, mp.load_anims(MOB)[clip], t)
     th = geo["description"]["texture_height"]
     for side in ("r", "l"):
-        with open(os.path.join(ROOT, "animations", "%s_%s.weapon.json" % (MOB, side)), encoding="utf-8") as f:
+        with open(asset_groups.anim("%s_%s.weapon.json" % (MOB, side), ROOT), encoding="utf-8") as f:
             wj = json.load(f)
         tr = wj["clips"][clip]
         R = ng.q_to_R(ng.track_q(tr, t))

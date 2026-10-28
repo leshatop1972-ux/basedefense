@@ -25,8 +25,8 @@ import net.minecraft.util.math.Vec3d;
 public class BloodSpearRenderer extends EntityRenderer<BloodSpearEntity> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "bloodletter_spear"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/bloodletter_spear.png");
-    private static final RenderLayer GLOW = RenderLayer.getEyes(new Identifier(Basedefense.MOD_ID, "textures/entity/bloodletter_spear_glowmask.png"));
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodletter_spear.png"));
+    private static final RenderLayer GLOW = RenderLayer.getEyes(new Identifier(Basedefense.MOD_ID, AssetGroups.texture("bloodletter_spear_glowmask.png")));
     private static final float SCALE = 0.8f;
 
     private final ModelPart model;

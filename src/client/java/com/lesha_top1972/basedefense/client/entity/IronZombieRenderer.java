@@ -14,9 +14,9 @@ public class IronZombieRenderer extends MobEntityRenderer<IronZombieEntity, Iron
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "iron_zombie"), "main");
 
     private static final Identifier TEXTURE =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/iron_zombie.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("iron_zombie.png"));
     private static final Identifier GLOW =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/iron_zombie_glowmask.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("iron_zombie_glowmask.png"));
 
     public IronZombieRenderer(EntityRendererFactory.Context context) {
         super(context, new IronZombieModel(context.getPart(LAYER)), 0.5f);

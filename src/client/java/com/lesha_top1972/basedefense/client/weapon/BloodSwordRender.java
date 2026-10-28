@@ -42,8 +42,8 @@ public final class BloodSwordRender {
 
     public static final EntityModelLayer LAYER =
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "blood_greatsword"), "main");
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/blood_greatsword.png");
-    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/blood_greatsword_glowmask.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("blood_greatsword.png"));
+    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("blood_greatsword_glowmask.png"));
     private static final float REST_GLOW = 0.5f;
 
     private static ModelPart model;

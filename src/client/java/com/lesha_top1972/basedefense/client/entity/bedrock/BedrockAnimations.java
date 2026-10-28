@@ -40,7 +40,7 @@ public final class BedrockAnimations {
 
     /** То же, но только кости, прошедшие фильтр (имена как в Java-модели). */
     public static Map<String, Clip> load(String name, Predicate<String> boneFilter) {
-        JsonObject anims = BedrockModelLoader.readJson("animations/" + name + ".animation.json")
+        JsonObject anims = BedrockModelLoader.readJson(AssetGroups.path("animations", name, ".animation.json"))
                 .getAsJsonObject("animations");
         Map<String, Clip> out = new HashMap<>();
         for (Map.Entry<String, JsonElement> e : anims.entrySet()) {

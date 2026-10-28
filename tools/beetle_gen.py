@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, faces, length, lerp, mix, mm, mul, mv,  # noqa: E402
                     norm, rx_m, ry_m, rz_m, scl, sub, tr, write_anims)
 import nabat_gen as ng  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = ng.ROOT
 SCALE = 1.5
@@ -318,8 +319,8 @@ def paint(M, seed):
 
 
 def save_textures(M, PT):
-    PT.img.save(os.path.join(ROOT, "textures", "entity", M.name + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", M.name + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(M.name + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(M.name + "_glowmask.png", ROOT))
 
 
 # =====================================================================

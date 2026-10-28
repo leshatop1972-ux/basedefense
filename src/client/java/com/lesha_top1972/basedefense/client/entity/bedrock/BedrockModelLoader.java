@@ -58,7 +58,7 @@ public final class BedrockModelLoader {
 
     /** Модель assets/basedefense/geo/&lt;name&gt;.geo.json. */
     public static TexturedModelData load(String name) {
-        JsonObject geo = readJson("geo/" + name + ".geo.json")
+        JsonObject geo = readJson(AssetGroups.path("geo", name, ".geo.json"))
                 .getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject();
         JsonObject desc = geo.getAsJsonObject("description");
         int texW = desc.get("texture_width").getAsInt();

@@ -18,6 +18,7 @@ import random
 from PIL import Image
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, blend, bake, clamp, ease, ease_out, eulerR, faces,
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     lerp, lerp3, mix, mm, mul, rx_m, ry_m, rz_m, scl, sub, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -945,7 +946,7 @@ def arrow_texture():
             if x in (1, 3) or y in (6, 8):
                 p[x, y] = (90, 180, 235, 255)
     p[2, 7] = (220, 248, 255, 255)
-    a.save(os.path.join(ROOT, "textures", "entity", "frost_arrow.png"))
+    a.save(asset_groups.tex("frost_arrow.png", ROOT))
 
 
 def effect_icon():
@@ -1016,8 +1017,8 @@ if __name__ == "__main__":
     # лук (с тетивой и стрелами на нём) — отдельной моделью frost_archer_bow с дорожкой поворота
     import weaponize
     write_anims(ROOT, NAME, weaponize.export(ROOT, M, animations, CLIPS, "bow", NAME + "_bow"))
-    PT.img.save(os.path.join(ROOT, "textures", "entity", NAME + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", NAME + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(NAME + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(NAME + "_glowmask.png", ROOT))
     arrow_texture()
     effect_icon()
     print("готово:", NAME, "кубов:", len(M.cubes()))

@@ -1,6 +1,6 @@
 """
 Звуки «Туманной сущности» и «Кровавой сущности» — синтез (numpy + scipy, ffmpeg), по образцу nabat_sounds.py.
-Запуск: python tools/entity_sounds.py   → assets/basedefense/sounds/entity/*.ogg и записи в sounds.json
+Запуск: python tools/entity_sounds.py   → assets/basedefense/sounds/mob/horror/*.ogg и записи в sounds.json
 
 Туманная — резкие пугающие звуки в духе хоррор‑модов: искажённый визг, цифровые сбои и треск, обратный шёпот,
 внезапный низкий удар со звоном в ушах. Кровавая — менее резкие: мокрое рычание, хрип, шипение.
@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import nabat_sounds as ns  # noqa: E402
 from nabat_sounds import SR, T, bp, highp, lowp, noise, place, reverb  # noqa: E402
 
-ns.OUT = os.path.join(ns.BASE, "sounds", "entity")
+ns.OUT = os.path.join(ns.BASE, "sounds", "mob", "horror")
 rng = np.random.default_rng(666)
 
 
@@ -236,7 +236,7 @@ def write_json():
         data = json.load(f)
     for ev, (files, d) in EVENTS.items():
         data[ev] = {"subtitle": "subtitles.basedefense." + ev.split(".", 1)[1],
-                    "sounds": [{"name": "basedefense:entity/" + n, "attenuation_distance": d} for n in files]}
+                    "sounds": [{"name": "basedefense:mob/horror/" + n, "attenuation_distance": d} for n in files]}
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")

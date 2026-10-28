@@ -21,6 +21,7 @@ import math
 import os
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, ease, ease_in, ease_out, faces, length, lerp,
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, scl, sub, tr, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -1022,8 +1023,8 @@ def jet_nozzle_point(model, fn, t, side_name="right"):
 if __name__ == "__main__":
     for M_, PT in ((B, PB), (N, PN)):
         M_.write_geo(ROOT)
-        PT.img.save(os.path.join(ROOT, "textures", "entity", M_.name + ".png"))
-        PT.glow.save(os.path.join(ROOT, "textures", "entity", M_.name + "_glowmask.png"))
+        PT.img.save(asset_groups.tex(M_.name + ".png", ROOT))
+        PT.glow.save(asset_groups.tex(M_.name + "_glowmask.png", ROOT))
     write_anims(ROOT, B.name, bake_all(B, [c[0] for c in CLIPS]))
     write_anims(ROOT, N.name, bake_all(N, MINION_CLIPS + ["emerge"], extra=[("emerge", emerge, 1.6 + TAIL, 60, False)]))
     print("готово:", B.name, len(B.cubes()), "кубов;", N.name, len(N.cubes()), "кубов")

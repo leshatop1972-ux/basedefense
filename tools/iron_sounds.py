@@ -2,7 +2,7 @@
 Свои звуки железного зомби, Бордюра с прислужником и звук урона железного рыцаря — синтез (numpy + scipy, ffmpeg),
 по образцу nabat_sounds.py.
 Запуск: python tools/iron_sounds.py
-  → assets/basedefense/sounds/iron_zombie/*.ogg, sounds/curb/*.ogg (кроме струй — их пишет curb_sounds.py),
+  → assets/basedefense/sounds/mob/iron_zombie/*.ogg, sounds/mob/curb/*.ogg (кроме струй — их пишет curb_sounds.py),
     sounds/iron_knight/hurt*.ogg и записи в sounds.json
 """
 import json
@@ -20,7 +20,7 @@ EVENTS = {}
 
 
 def folder(name):
-    ns.OUT = os.path.join(ns.BASE, "sounds", name)
+    ns.OUT = os.path.join(ns.BASE, "sounds", "mob", name)
 
 
 def save(name, x, vol=0.9):
@@ -200,7 +200,7 @@ def write_json():
         data = json.load(f)
     for e, (fold, files, dist) in EVENTS.items():
         data[e] = {"subtitle": "subtitles.basedefense." + e.split(".", 1)[1],
-                   "sounds": [{"name": "basedefense:%s/%s" % (fold, n), "attenuation_distance": dist} for n in files]}
+                   "sounds": [{"name": "basedefense:mob/%s/%s" % (fold, n), "attenuation_distance": dist} for n in files]}
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")

@@ -31,6 +31,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, ease, euler, faces, length, lerp,  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, ry_m, rz_m, scl, sub, to_euler, tr, write_anims)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
@@ -601,8 +602,8 @@ def paint(M, seed, phase3=False):
 
 def save_textures(M, PT, name=None):
     name = name or M.name
-    PT.img.save(os.path.join(ROOT, "textures", "entity", name + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", name + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(name + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(name + "_glowmask.png", ROOT))
 
 
 # =====================================================================
@@ -1910,9 +1911,9 @@ def export(model, clips, weapon_name, air_names=()):
         print("  %-16s %.2f с" % (name, ln))
     if os.environ.get("ONLY"):        # частичное запекание — дописать к уже запечённым клипам
         try:
-            with open(os.path.join(ROOT, "animations", model.name + ".animation.json"), encoding="utf-8") as f:
+            with open(asset_groups.anim(model.name + ".animation.json", ROOT), encoding="utf-8") as f:
                 old = json.load(f)["animations"]
-            with open(os.path.join(ROOT, "animations", model.name + ".weapon.json"), encoding="utf-8") as f:
+            with open(asset_groups.anim(model.name + ".weapon.json", ROOT), encoding="utf-8") as f:
                 old_w = json.load(f)["clips"]
             old.update(anims)
             old_w.update(tracks)
@@ -1920,7 +1921,7 @@ def export(model, clips, weapon_name, air_names=()):
         except (OSError, KeyError, ValueError):
             pass
     write_anims(ROOT, model.name, anims)
-    with open(os.path.join(ROOT, "animations", model.name + ".weapon.json"), "w", encoding="utf-8") as f:
+    with open(asset_groups.anim(model.name + ".weapon.json", ROOT), "w", encoding="utf-8") as f:
         json.dump({"weapon": weapon_name, "hand": "right_hand",
                    "grip_offset": [round(v, 4) for v in GRIP_OFFSET], "clips": tracks}, f, separators=(",", ":"))
 
@@ -2003,7 +2004,7 @@ POSE_SRC = {}
 def preview_parts(mob, weapon, clip, t, hide=()):
     """Части модели в момент t клипа + оружие по дорожке (для mob_preview‑рендера)."""
     import mob_preview as mp
-    with open(os.path.join(ROOT, "animations", mob + ".weapon.json"), encoding="utf-8") as f:
+    with open(asset_groups.anim(mob + ".weapon.json", ROOT), encoding="utf-8") as f:
         wj = json.load(f)
     if POSE_SRC:
         model, fn, ln, loop = POSE_SRC["v"]
@@ -2034,8 +2035,8 @@ def preview_parts(mob, weapon, clip, t, hide=()):
 def atlas(mob, weapon, glow=False):
     from PIL import Image
     suf = "_glowmask" if glow else ""
-    a = Image.open(os.path.join(ROOT, "textures", "entity", mob + suf + ".png")).convert("RGBA")
-    w = Image.open(os.path.join(ROOT, "textures", "entity", weapon + suf + ".png")).convert("RGBA")
+    a = Image.open(asset_groups.tex(mob + suf + ".png", ROOT)).convert("RGBA")
+    w = Image.open(asset_groups.tex(weapon + suf + ".png", ROOT)).convert("RGBA")
     out = Image.new("RGBA", (max(a.width, w.width), a.height + w.height), (0, 0, 0, 0))
     out.paste(a, (0, 0))
     out.paste(w, (0, a.height))

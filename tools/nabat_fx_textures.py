@@ -3,7 +3,7 @@
   textures/mob_effect/noise.png, dome.png, requiem.png, crack.png, bell_mark.png  — значки 18×18
   textures/misc/nabat_ring.png     — кольцо‑тень под падающим колоколом (в игре окрашивается кодом)
   textures/misc/nabat_ripple.png   — рябь «Купола» в месте попадания
-  textures/entity/nabat_soul.png   — огонёк души (мягкое ядро)
+  textures/entity/nabat/nabat_soul.png   — огонёк души (мягкое ядро)
   textures/block/resonant_stone.png — «Гудящий камень» (тёмный камень с янтарными прожилками)
 """
 import math
@@ -145,7 +145,7 @@ def soul():
             core = max(0.0, 1.0 - r * 2.4)
             v = int(200 + 55 * core)
             p[x, y] = (v, v, v, int(255 * min(1.0, a + core)))
-    save(img, "entity", "nabat_soul.png")
+    save(img, "entity", "nabat", "nabat_soul.png")
 
 
 def resonant_stone():

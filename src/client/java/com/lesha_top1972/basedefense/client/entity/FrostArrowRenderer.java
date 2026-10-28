@@ -22,7 +22,7 @@ import org.joml.Matrix4f;
  */
 public class FrostArrowRenderer extends EntityRenderer<FrostArrowEntity> {
 
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/frost_arrow.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("frost_arrow.png"));
 
     public FrostArrowRenderer(EntityRendererFactory.Context context) {
         super(context);

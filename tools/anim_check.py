@@ -16,6 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import euler, mm, tr  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 
 def angle_between(r0, r1):
@@ -36,7 +37,7 @@ def val(v):
 def main():
     name = sys.argv[1]
     limit = float(sys.argv[2]) if len(sys.argv) > 2 else 40.0
-    with open(os.path.join(ROOT, "animations", name + ".animation.json"), encoding="utf-8") as f:
+    with open(asset_groups.anim(name + ".animation.json", ROOT), encoding="utf-8") as f:
         anims = json.load(f)["animations"]
     problems = 0
     for an, a in anims.items():

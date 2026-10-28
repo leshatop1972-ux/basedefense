@@ -16,6 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import FACE_LIGHT, Model, Painter, bake, faces, mix, mul, write_anims  # noqa: E402
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 
@@ -259,8 +260,8 @@ def main():
         M = build(name)
         M.write_geo(ROOT)
         PT = paint(M, kind, seed)
-        PT.img.save(os.path.join(ROOT, "textures", "entity", name + ".png"))
-        PT.glow.save(os.path.join(ROOT, "textures", "entity", name + "_glowmask.png"))
+        PT.img.save(asset_groups.tex(name + ".png", ROOT))
+        PT.glow.save(asset_groups.tex(name + "_glowmask.png", ROOT))
         anims = {}
         for cname, (fn, ln, fps, loop) in mk(kind).items():
             anims["animation.%s.%s" % (name, cname)] = bake(fn, ln, fps, loop, bones)

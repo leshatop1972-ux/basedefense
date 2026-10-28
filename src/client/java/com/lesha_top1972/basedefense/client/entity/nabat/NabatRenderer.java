@@ -30,12 +30,12 @@ public class NabatRenderer extends MobEntityRenderer<NabatEntity, NabatModel> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat"), "main");
     public static final EntityModelLayer MAUL = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "nabat_maul"), "main");
-    private static final Identifier TEX = id("textures/entity/nabat.png");
-    private static final Identifier TEX3 = id("textures/entity/nabat_p3.png");
-    private static final Identifier GLOW = id("textures/entity/nabat_glowmask.png");
-    private static final Identifier GLOW3 = id("textures/entity/nabat_p3_glowmask.png");
-    private static final Identifier MAUL_TEX = id("textures/entity/nabat_maul.png");
-    private static final Identifier MAUL_GLOW = id("textures/entity/nabat_maul_glowmask.png");
+    private static final Identifier TEX = id(AssetGroups.texture("nabat.png"));
+    private static final Identifier TEX3 = id(AssetGroups.texture("nabat_p3.png"));
+    private static final Identifier GLOW = id(AssetGroups.texture("nabat_glowmask.png"));
+    private static final Identifier GLOW3 = id(AssetGroups.texture("nabat_p3_glowmask.png"));
+    private static final Identifier MAUL_TEX = id(AssetGroups.texture("nabat_maul.png"));
+    private static final Identifier MAUL_GLOW = id(AssetGroups.texture("nabat_maul_glowmask.png"));
     private static final Identifier RIPPLE = id("textures/misc/nabat_ripple.png");
 
     /** Плавный крен по каждому Набату (клиент). */

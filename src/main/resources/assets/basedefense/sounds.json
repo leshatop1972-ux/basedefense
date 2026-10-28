@@ -3,7 +3,7 @@
     "subtitle": "subtitles.basedefense.curb.jet_charge",
     "sounds": [
       {
-        "name": "basedefense:curb/jet_charge",
+        "name": "basedefense:mob/curb/jet_charge",
         "attenuation_distance": 24
       }
     ]
@@ -12,7 +12,7 @@
     "subtitle": "subtitles.basedefense.curb.jet_burst",
     "sounds": [
       {
-        "name": "basedefense:curb/jet_burst",
+        "name": "basedefense:mob/curb/jet_burst",
         "attenuation_distance": 24
       }
     ]
@@ -21,11 +21,11 @@
     "subtitle": "subtitles.basedefense.nabat.toll",
     "sounds": [
       {
-        "name": "basedefense:nabat/toll0",
+        "name": "basedefense:mob/nabat/toll0",
         "attenuation_distance": 96
       },
       {
-        "name": "basedefense:nabat/toll1",
+        "name": "basedefense:mob/nabat/toll1",
         "attenuation_distance": 96
       }
     ]
@@ -34,7 +34,7 @@
     "subtitle": "subtitles.basedefense.nabat.gather",
     "sounds": [
       {
-        "name": "basedefense:nabat/gather",
+        "name": "basedefense:mob/nabat/gather",
         "attenuation_distance": 128
       }
     ]
@@ -43,15 +43,15 @@
     "subtitle": "subtitles.basedefense.nabat.chime",
     "sounds": [
       {
-        "name": "basedefense:nabat/chime0",
+        "name": "basedefense:mob/nabat/chime0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/chime1",
+        "name": "basedefense:mob/nabat/chime1",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/chime2",
+        "name": "basedefense:mob/nabat/chime2",
         "attenuation_distance": 48
       }
     ]
@@ -60,7 +60,7 @@
     "subtitle": "subtitles.basedefense.nabat.summon",
     "sounds": [
       {
-        "name": "basedefense:nabat/summon",
+        "name": "basedefense:mob/nabat/summon",
         "attenuation_distance": 64
       }
     ]
@@ -69,15 +69,15 @@
     "subtitle": "subtitles.basedefense.nabat.wing",
     "sounds": [
       {
-        "name": "basedefense:nabat/wing0",
+        "name": "basedefense:mob/nabat/wing0",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:nabat/wing1",
+        "name": "basedefense:mob/nabat/wing1",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:nabat/wing2",
+        "name": "basedefense:mob/nabat/wing2",
         "attenuation_distance": 64
       }
     ]
@@ -86,7 +86,7 @@
     "subtitle": "subtitles.basedefense.nabat.crash",
     "sounds": [
       {
-        "name": "basedefense:nabat/crash",
+        "name": "basedefense:mob/nabat/crash",
         "attenuation_distance": 96
       }
     ]
@@ -95,11 +95,11 @@
     "subtitle": "subtitles.basedefense.nabat.slam",
     "sounds": [
       {
-        "name": "basedefense:nabat/slam0",
+        "name": "basedefense:mob/nabat/slam0",
         "attenuation_distance": 96
       },
       {
-        "name": "basedefense:nabat/slam1",
+        "name": "basedefense:mob/nabat/slam1",
         "attenuation_distance": 96
       }
     ]
@@ -108,7 +108,7 @@
     "subtitle": "subtitles.basedefense.nabat.quake",
     "sounds": [
       {
-        "name": "basedefense:nabat/quake",
+        "name": "basedefense:mob/nabat/quake",
         "attenuation_distance": 96
       }
     ]
@@ -117,7 +117,7 @@
     "subtitle": "subtitles.basedefense.nabat.requiem",
     "sounds": [
       {
-        "name": "basedefense:nabat/requiem",
+        "name": "basedefense:mob/nabat/requiem",
         "attenuation_distance": 96
       }
     ]
@@ -126,7 +126,7 @@
     "subtitle": "subtitles.basedefense.nabat.requiem_break",
     "sounds": [
       {
-        "name": "basedefense:nabat/requiem_break",
+        "name": "basedefense:mob/nabat/requiem_break",
         "attenuation_distance": 96
       }
     ]
@@ -135,7 +135,7 @@
     "subtitle": "subtitles.basedefense.nabat.heal",
     "sounds": [
       {
-        "name": "basedefense:nabat/heal",
+        "name": "basedefense:mob/nabat/heal",
         "attenuation_distance": 64
       }
     ]
@@ -144,15 +144,15 @@
     "subtitle": "subtitles.basedefense.nabat.dome_hit",
     "sounds": [
       {
-        "name": "basedefense:nabat/dome_hit0",
+        "name": "basedefense:mob/nabat/dome_hit0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/dome_hit1",
+        "name": "basedefense:mob/nabat/dome_hit1",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/dome_hit2",
+        "name": "basedefense:mob/nabat/dome_hit2",
         "attenuation_distance": 48
       }
     ]
@@ -161,7 +161,7 @@
     "subtitle": "subtitles.basedefense.nabat.mark",
     "sounds": [
       {
-        "name": "basedefense:nabat/mark",
+        "name": "basedefense:mob/nabat/mark",
         "attenuation_distance": 32
       }
     ]
@@ -170,11 +170,11 @@
     "subtitle": "subtitles.basedefense.nabat.bell_land",
     "sounds": [
       {
-        "name": "basedefense:nabat/bell_land0",
+        "name": "basedefense:mob/nabat/bell_land0",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:nabat/bell_land1",
+        "name": "basedefense:mob/nabat/bell_land1",
         "attenuation_distance": 64
       }
     ]
@@ -183,7 +183,7 @@
     "subtitle": "subtitles.basedefense.nabat.bell_hum",
     "sounds": [
       {
-        "name": "basedefense:nabat/bell_hum",
+        "name": "basedefense:mob/nabat/bell_hum",
         "attenuation_distance": 24
       }
     ]
@@ -192,7 +192,7 @@
     "subtitle": "subtitles.basedefense.nabat.bell_break",
     "sounds": [
       {
-        "name": "basedefense:nabat/bell_break",
+        "name": "basedefense:mob/nabat/bell_break",
         "attenuation_distance": 64
       }
     ]
@@ -201,7 +201,7 @@
     "subtitle": "subtitles.basedefense.nabat.captive",
     "sounds": [
       {
-        "name": "basedefense:nabat/captive",
+        "name": "basedefense:mob/nabat/captive",
         "attenuation_distance": 64
       }
     ]
@@ -210,11 +210,11 @@
     "subtitle": "subtitles.basedefense.nabat.soul",
     "sounds": [
       {
-        "name": "basedefense:nabat/soul0",
+        "name": "basedefense:mob/nabat/soul0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:nabat/soul1",
+        "name": "basedefense:mob/nabat/soul1",
         "attenuation_distance": 16
       }
     ]
@@ -223,7 +223,7 @@
     "subtitle": "subtitles.basedefense.nabat.soul_dash",
     "sounds": [
       {
-        "name": "basedefense:nabat/soul_dash",
+        "name": "basedefense:mob/nabat/soul_dash",
         "attenuation_distance": 32
       }
     ]
@@ -232,7 +232,7 @@
     "subtitle": "subtitles.basedefense.nabat.soul_pop",
     "sounds": [
       {
-        "name": "basedefense:nabat/soul_pop",
+        "name": "basedefense:mob/nabat/soul_pop",
         "attenuation_distance": 24
       }
     ]
@@ -241,7 +241,7 @@
     "subtitle": "subtitles.basedefense.nabat.reliquary",
     "sounds": [
       {
-        "name": "basedefense:nabat/reliquary",
+        "name": "basedefense:mob/nabat/reliquary",
         "attenuation_distance": 64
       }
     ]
@@ -250,7 +250,7 @@
     "subtitle": "subtitles.basedefense.nabat.chain_break",
     "sounds": [
       {
-        "name": "basedefense:nabat/chain_break",
+        "name": "basedefense:mob/nabat/chain_break",
         "attenuation_distance": 64
       }
     ]
@@ -259,7 +259,7 @@
     "subtitle": "subtitles.basedefense.nabat.crack",
     "sounds": [
       {
-        "name": "basedefense:nabat/crack",
+        "name": "basedefense:mob/nabat/crack",
         "attenuation_distance": 128
       }
     ]
@@ -268,7 +268,7 @@
     "subtitle": "subtitles.basedefense.nabat.intro",
     "sounds": [
       {
-        "name": "basedefense:nabat/intro",
+        "name": "basedefense:mob/nabat/intro",
         "attenuation_distance": 160
       }
     ]
@@ -277,7 +277,7 @@
     "subtitle": "subtitles.basedefense.nabat.death",
     "sounds": [
       {
-        "name": "basedefense:nabat/death",
+        "name": "basedefense:mob/nabat/death",
         "attenuation_distance": 160
       }
     ]
@@ -286,11 +286,11 @@
     "subtitle": "subtitles.basedefense.nabat.ambient",
     "sounds": [
       {
-        "name": "basedefense:nabat/ambient0",
+        "name": "basedefense:mob/nabat/ambient0",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:nabat/ambient1",
+        "name": "basedefense:mob/nabat/ambient1",
         "attenuation_distance": 64
       }
     ]
@@ -299,15 +299,15 @@
     "subtitle": "subtitles.basedefense.nabat.hurt",
     "sounds": [
       {
-        "name": "basedefense:nabat/hurt0",
+        "name": "basedefense:mob/nabat/hurt0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/hurt1",
+        "name": "basedefense:mob/nabat/hurt1",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/hurt2",
+        "name": "basedefense:mob/nabat/hurt2",
         "attenuation_distance": 48
       }
     ]
@@ -316,11 +316,11 @@
     "subtitle": "subtitles.basedefense.nabat.swing",
     "sounds": [
       {
-        "name": "basedefense:nabat/swing0",
+        "name": "basedefense:mob/nabat/swing0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:nabat/swing1",
+        "name": "basedefense:mob/nabat/swing1",
         "attenuation_distance": 48
       }
     ]
@@ -329,15 +329,15 @@
     "subtitle": "subtitles.basedefense.nabat_blade.swing",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_swing0",
+        "name": "basedefense:mob/nabat/blade_swing0",
         "attenuation_distance": 20
       },
       {
-        "name": "basedefense:nabat/blade_swing1",
+        "name": "basedefense:mob/nabat/blade_swing1",
         "attenuation_distance": 20
       },
       {
-        "name": "basedefense:nabat/blade_swing2",
+        "name": "basedefense:mob/nabat/blade_swing2",
         "attenuation_distance": 20
       }
     ]
@@ -346,15 +346,15 @@
     "subtitle": "subtitles.basedefense.nabat_blade.parry",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_parry0",
+        "name": "basedefense:mob/nabat/blade_parry0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:nabat/blade_parry1",
+        "name": "basedefense:mob/nabat/blade_parry1",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:nabat/blade_parry2",
+        "name": "basedefense:mob/nabat/blade_parry2",
         "attenuation_distance": 24
       }
     ]
@@ -363,15 +363,15 @@
     "subtitle": "subtitles.basedefense.nabat_blade.step",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_step0",
+        "name": "basedefense:mob/nabat/blade_step0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:nabat/blade_step1",
+        "name": "basedefense:mob/nabat/blade_step1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:nabat/blade_step2",
+        "name": "basedefense:mob/nabat/blade_step2",
         "attenuation_distance": 16
       }
     ]
@@ -380,11 +380,11 @@
     "subtitle": "subtitles.basedefense.nabat_blade.hurt",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_hurt0",
+        "name": "basedefense:mob/nabat/blade_hurt0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:nabat/blade_hurt1",
+        "name": "basedefense:mob/nabat/blade_hurt1",
         "attenuation_distance": 16
       }
     ]
@@ -393,7 +393,7 @@
     "subtitle": "subtitles.basedefense.nabat_blade.death",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_death",
+        "name": "basedefense:mob/nabat/blade_death",
         "attenuation_distance": 24
       }
     ]
@@ -402,7 +402,7 @@
     "subtitle": "subtitles.basedefense.nabat_blade.assemble",
     "sounds": [
       {
-        "name": "basedefense:nabat/blade_assemble",
+        "name": "basedefense:mob/nabat/blade_assemble",
         "attenuation_distance": 24
       }
     ]
@@ -411,15 +411,15 @@
     "subtitle": "subtitles.basedefense.sapper.dig",
     "sounds": [
       {
-        "name": "basedefense:sapper/dig0",
+        "name": "basedefense:mob/sapper/dig0",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:sapper/dig1",
+        "name": "basedefense:mob/sapper/dig1",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:sapper/dig2",
+        "name": "basedefense:mob/sapper/dig2",
         "attenuation_distance": 12
       }
     ]
@@ -428,11 +428,11 @@
     "subtitle": "subtitles.basedefense.sapper.crumble",
     "sounds": [
       {
-        "name": "basedefense:sapper/crumble0",
+        "name": "basedefense:mob/sapper/crumble0",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:sapper/crumble1",
+        "name": "basedefense:mob/sapper/crumble1",
         "attenuation_distance": 12
       }
     ]
@@ -441,7 +441,7 @@
     "subtitle": "subtitles.basedefense.sapper.emerge",
     "sounds": [
       {
-        "name": "basedefense:sapper/emerge",
+        "name": "basedefense:mob/sapper/emerge",
         "attenuation_distance": 24
       }
     ]
@@ -450,7 +450,7 @@
     "subtitle": "subtitles.basedefense.sapper.light",
     "sounds": [
       {
-        "name": "basedefense:sapper/light",
+        "name": "basedefense:mob/sapper/light",
         "attenuation_distance": 16
       }
     ]
@@ -459,7 +459,7 @@
     "subtitle": "subtitles.basedefense.sapper.fuse",
     "sounds": [
       {
-        "name": "basedefense:sapper/fuse",
+        "name": "basedefense:mob/sapper/fuse",
         "attenuation_distance": 16
       }
     ]
@@ -468,11 +468,11 @@
     "subtitle": "subtitles.basedefense.sapper.bomb",
     "sounds": [
       {
-        "name": "basedefense:sapper/bomb0",
+        "name": "basedefense:mob/sapper/bomb0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:sapper/bomb1",
+        "name": "basedefense:mob/sapper/bomb1",
         "attenuation_distance": 48
       }
     ]
@@ -481,7 +481,7 @@
     "subtitle": "subtitles.basedefense.sapper.blast",
     "sounds": [
       {
-        "name": "basedefense:sapper/blast",
+        "name": "basedefense:mob/sapper/blast",
         "attenuation_distance": 64
       }
     ]
@@ -490,7 +490,7 @@
     "subtitle": "subtitles.basedefense.sapper.smoke",
     "sounds": [
       {
-        "name": "basedefense:sapper/smoke",
+        "name": "basedefense:mob/sapper/smoke",
         "attenuation_distance": 20
       }
     ]
@@ -499,15 +499,15 @@
     "subtitle": "subtitles.basedefense.sapper.ambient",
     "sounds": [
       {
-        "name": "basedefense:sapper/ambient0",
+        "name": "basedefense:mob/sapper/ambient0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:sapper/ambient1",
+        "name": "basedefense:mob/sapper/ambient1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:sapper/ambient2",
+        "name": "basedefense:mob/sapper/ambient2",
         "attenuation_distance": 16
       }
     ]
@@ -516,15 +516,15 @@
     "subtitle": "subtitles.basedefense.sapper.step",
     "sounds": [
       {
-        "name": "basedefense:sapper/step0",
+        "name": "basedefense:mob/sapper/step0",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:sapper/step1",
+        "name": "basedefense:mob/sapper/step1",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:sapper/step2",
+        "name": "basedefense:mob/sapper/step2",
         "attenuation_distance": 12
       }
     ]
@@ -533,11 +533,11 @@
     "subtitle": "subtitles.basedefense.sapper.jab",
     "sounds": [
       {
-        "name": "basedefense:sapper/jab0",
+        "name": "basedefense:mob/sapper/jab0",
         "attenuation_distance": 20
       },
       {
-        "name": "basedefense:sapper/jab1",
+        "name": "basedefense:mob/sapper/jab1",
         "attenuation_distance": 20
       }
     ]
@@ -546,7 +546,7 @@
     "subtitle": "subtitles.basedefense.sapper.snuff",
     "sounds": [
       {
-        "name": "basedefense:sapper/snuff",
+        "name": "basedefense:mob/sapper/snuff",
         "attenuation_distance": 10
       }
     ]
@@ -555,11 +555,11 @@
     "subtitle": "subtitles.basedefense.sapper.throw",
     "sounds": [
       {
-        "name": "basedefense:sapper/throw0",
+        "name": "basedefense:mob/sapper/throw0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:sapper/throw1",
+        "name": "basedefense:mob/sapper/throw1",
         "attenuation_distance": 16
       }
     ]
@@ -568,11 +568,11 @@
     "subtitle": "subtitles.basedefense.sapper.hurt",
     "sounds": [
       {
-        "name": "basedefense:sapper/hurt0",
+        "name": "basedefense:mob/sapper/hurt0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:sapper/hurt1",
+        "name": "basedefense:mob/sapper/hurt1",
         "attenuation_distance": 16
       }
     ]
@@ -581,7 +581,7 @@
     "subtitle": "subtitles.basedefense.sapper.death",
     "sounds": [
       {
-        "name": "basedefense:sapper/death",
+        "name": "basedefense:mob/sapper/death",
         "attenuation_distance": 24
       }
     ]
@@ -590,15 +590,15 @@
     "subtitle": "subtitles.basedefense.siege_beetle.step",
     "sounds": [
       {
-        "name": "basedefense:beetle/step0",
+        "name": "basedefense:mob/beetle/step0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:beetle/step1",
+        "name": "basedefense:mob/beetle/step1",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:beetle/step2",
+        "name": "basedefense:mob/beetle/step2",
         "attenuation_distance": 24
       }
     ]
@@ -607,7 +607,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.scrape",
     "sounds": [
       {
-        "name": "basedefense:beetle/scrape",
+        "name": "basedefense:mob/beetle/scrape",
         "attenuation_distance": 16
       }
     ]
@@ -616,11 +616,11 @@
     "subtitle": "subtitles.basedefense.siege_beetle.ambient",
     "sounds": [
       {
-        "name": "basedefense:beetle/ambient0",
+        "name": "basedefense:mob/beetle/ambient0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:beetle/ambient1",
+        "name": "basedefense:mob/beetle/ambient1",
         "attenuation_distance": 24
       }
     ]
@@ -629,7 +629,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.roar",
     "sounds": [
       {
-        "name": "basedefense:beetle/roar",
+        "name": "basedefense:mob/beetle/roar",
         "attenuation_distance": 40
       }
     ]
@@ -638,7 +638,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.ram",
     "sounds": [
       {
-        "name": "basedefense:beetle/ram",
+        "name": "basedefense:mob/beetle/ram",
         "attenuation_distance": 48
       }
     ]
@@ -647,11 +647,11 @@
     "subtitle": "subtitles.basedefense.siege_beetle.horn_swing",
     "sounds": [
       {
-        "name": "basedefense:beetle/horn_swing0",
+        "name": "basedefense:mob/beetle/horn_swing0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:beetle/horn_swing1",
+        "name": "basedefense:mob/beetle/horn_swing1",
         "attenuation_distance": 24
       }
     ]
@@ -660,7 +660,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.horn_hit",
     "sounds": [
       {
-        "name": "basedefense:beetle/horn_hit",
+        "name": "basedefense:mob/beetle/horn_hit",
         "attenuation_distance": 32
       }
     ]
@@ -669,15 +669,15 @@
     "subtitle": "subtitles.basedefense.siege_beetle.mandible",
     "sounds": [
       {
-        "name": "basedefense:beetle/mandible0",
+        "name": "basedefense:mob/beetle/mandible0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:beetle/mandible1",
+        "name": "basedefense:mob/beetle/mandible1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:beetle/mandible2",
+        "name": "basedefense:mob/beetle/mandible2",
         "attenuation_distance": 16
       }
     ]
@@ -686,7 +686,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.lay",
     "sounds": [
       {
-        "name": "basedefense:beetle/lay",
+        "name": "basedefense:mob/beetle/lay",
         "attenuation_distance": 20
       }
     ]
@@ -695,11 +695,11 @@
     "subtitle": "subtitles.basedefense.siege_beetle.hurt",
     "sounds": [
       {
-        "name": "basedefense:beetle/hurt0",
+        "name": "basedefense:mob/beetle/hurt0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:beetle/hurt1",
+        "name": "basedefense:mob/beetle/hurt1",
         "attenuation_distance": 24
       }
     ]
@@ -708,7 +708,7 @@
     "subtitle": "subtitles.basedefense.siege_beetle.death",
     "sounds": [
       {
-        "name": "basedefense:beetle/death",
+        "name": "basedefense:mob/beetle/death",
         "attenuation_distance": 40
       }
     ]
@@ -717,7 +717,7 @@
     "subtitle": "subtitles.basedefense.beetle_egg.hatch",
     "sounds": [
       {
-        "name": "basedefense:beetle/hatch",
+        "name": "basedefense:mob/beetle/hatch",
         "attenuation_distance": 24
       }
     ]
@@ -726,11 +726,11 @@
     "subtitle": "subtitles.basedefense.beetle_mite.ambient",
     "sounds": [
       {
-        "name": "basedefense:beetle/mite_chirp0",
+        "name": "basedefense:mob/beetle/mite_chirp0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:beetle/mite_chirp1",
+        "name": "basedefense:mob/beetle/mite_chirp1",
         "attenuation_distance": 16
       }
     ]
@@ -739,11 +739,11 @@
     "subtitle": "subtitles.basedefense.beetle_mite.step",
     "sounds": [
       {
-        "name": "basedefense:beetle/mite_step0",
+        "name": "basedefense:mob/beetle/mite_step0",
         "attenuation_distance": 10
       },
       {
-        "name": "basedefense:beetle/mite_step1",
+        "name": "basedefense:mob/beetle/mite_step1",
         "attenuation_distance": 10
       }
     ]
@@ -752,11 +752,11 @@
     "subtitle": "subtitles.basedefense.beetle_mite.bite",
     "sounds": [
       {
-        "name": "basedefense:beetle/mite_bite0",
+        "name": "basedefense:mob/beetle/mite_bite0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:beetle/mite_bite1",
+        "name": "basedefense:mob/beetle/mite_bite1",
         "attenuation_distance": 16
       }
     ]
@@ -765,7 +765,7 @@
     "subtitle": "subtitles.basedefense.beetle_mite.death",
     "sounds": [
       {
-        "name": "basedefense:beetle/mite_death",
+        "name": "basedefense:mob/beetle/mite_death",
         "attenuation_distance": 16
       }
     ]
@@ -774,15 +774,15 @@
     "subtitle": "subtitles.basedefense.iron_zombie.step",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/step0",
+        "name": "basedefense:mob/iron_zombie/step0",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:iron_zombie/step1",
+        "name": "basedefense:mob/iron_zombie/step1",
         "attenuation_distance": 12
       },
       {
-        "name": "basedefense:iron_zombie/step2",
+        "name": "basedefense:mob/iron_zombie/step2",
         "attenuation_distance": 12
       }
     ]
@@ -791,15 +791,15 @@
     "subtitle": "subtitles.basedefense.iron_zombie.ambient",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/ambient0",
+        "name": "basedefense:mob/iron_zombie/ambient0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/ambient1",
+        "name": "basedefense:mob/iron_zombie/ambient1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/ambient2",
+        "name": "basedefense:mob/iron_zombie/ambient2",
         "attenuation_distance": 16
       }
     ]
@@ -808,11 +808,11 @@
     "subtitle": "subtitles.basedefense.iron_zombie.scrape",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/scrape0",
+        "name": "basedefense:mob/iron_zombie/scrape0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/scrape1",
+        "name": "basedefense:mob/iron_zombie/scrape1",
         "attenuation_distance": 16
       }
     ]
@@ -821,15 +821,15 @@
     "subtitle": "subtitles.basedefense.iron_zombie.attack",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/attack0",
+        "name": "basedefense:mob/iron_zombie/attack0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/attack1",
+        "name": "basedefense:mob/iron_zombie/attack1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/attack2",
+        "name": "basedefense:mob/iron_zombie/attack2",
         "attenuation_distance": 16
       }
     ]
@@ -838,15 +838,15 @@
     "subtitle": "subtitles.basedefense.iron_zombie.hurt",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/hurt0",
+        "name": "basedefense:mob/iron_zombie/hurt0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/hurt1",
+        "name": "basedefense:mob/iron_zombie/hurt1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_zombie/hurt2",
+        "name": "basedefense:mob/iron_zombie/hurt2",
         "attenuation_distance": 16
       }
     ]
@@ -855,7 +855,7 @@
     "subtitle": "subtitles.basedefense.iron_zombie.death",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/death",
+        "name": "basedefense:mob/iron_zombie/death",
         "attenuation_distance": 20
       }
     ]
@@ -864,7 +864,7 @@
     "subtitle": "subtitles.basedefense.iron_zombie.grab",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/grab",
+        "name": "basedefense:mob/iron_zombie/grab",
         "attenuation_distance": 16
       }
     ]
@@ -873,7 +873,7 @@
     "subtitle": "subtitles.basedefense.iron_zombie.lunge",
     "sounds": [
       {
-        "name": "basedefense:iron_zombie/lunge",
+        "name": "basedefense:mob/iron_zombie/lunge",
         "attenuation_distance": 18
       }
     ]
@@ -882,15 +882,15 @@
     "subtitle": "subtitles.basedefense.iron_knight.hurt",
     "sounds": [
       {
-        "name": "basedefense:iron_knight/hurt0",
+        "name": "basedefense:mob/iron_knight/hurt0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_knight/hurt1",
+        "name": "basedefense:mob/iron_knight/hurt1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:iron_knight/hurt2",
+        "name": "basedefense:mob/iron_knight/hurt2",
         "attenuation_distance": 16
       }
     ]
@@ -899,15 +899,15 @@
     "subtitle": "subtitles.basedefense.curb.step",
     "sounds": [
       {
-        "name": "basedefense:curb/step0",
+        "name": "basedefense:mob/curb/step0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:curb/step1",
+        "name": "basedefense:mob/curb/step1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:curb/step2",
+        "name": "basedefense:mob/curb/step2",
         "attenuation_distance": 16
       }
     ]
@@ -916,15 +916,15 @@
     "subtitle": "subtitles.basedefense.curb.punch",
     "sounds": [
       {
-        "name": "basedefense:curb/punch0",
+        "name": "basedefense:mob/curb/punch0",
         "attenuation_distance": 18
       },
       {
-        "name": "basedefense:curb/punch1",
+        "name": "basedefense:mob/curb/punch1",
         "attenuation_distance": 18
       },
       {
-        "name": "basedefense:curb/punch2",
+        "name": "basedefense:mob/curb/punch2",
         "attenuation_distance": 18
       }
     ]
@@ -933,15 +933,15 @@
     "subtitle": "subtitles.basedefense.curb.servo",
     "sounds": [
       {
-        "name": "basedefense:curb/servo0",
+        "name": "basedefense:mob/curb/servo0",
         "attenuation_distance": 14
       },
       {
-        "name": "basedefense:curb/servo1",
+        "name": "basedefense:mob/curb/servo1",
         "attenuation_distance": 14
       },
       {
-        "name": "basedefense:curb/servo2",
+        "name": "basedefense:mob/curb/servo2",
         "attenuation_distance": 14
       }
     ]
@@ -950,15 +950,15 @@
     "subtitle": "subtitles.basedefense.curb.hurt",
     "sounds": [
       {
-        "name": "basedefense:curb/hurt0",
+        "name": "basedefense:mob/curb/hurt0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:curb/hurt1",
+        "name": "basedefense:mob/curb/hurt1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:curb/hurt2",
+        "name": "basedefense:mob/curb/hurt2",
         "attenuation_distance": 16
       }
     ]
@@ -967,7 +967,7 @@
     "subtitle": "subtitles.basedefense.curb.death",
     "sounds": [
       {
-        "name": "basedefense:curb/death",
+        "name": "basedefense:mob/curb/death",
         "attenuation_distance": 24
       }
     ]
@@ -976,15 +976,15 @@
     "subtitle": "subtitles.basedefense.curb_minion.step",
     "sounds": [
       {
-        "name": "basedefense:curb/minion_step0",
+        "name": "basedefense:mob/curb/minion_step0",
         "attenuation_distance": 10
       },
       {
-        "name": "basedefense:curb/minion_step1",
+        "name": "basedefense:mob/curb/minion_step1",
         "attenuation_distance": 10
       },
       {
-        "name": "basedefense:curb/minion_step2",
+        "name": "basedefense:mob/curb/minion_step2",
         "attenuation_distance": 10
       }
     ]
@@ -993,11 +993,11 @@
     "subtitle": "subtitles.basedefense.curb_minion.servo",
     "sounds": [
       {
-        "name": "basedefense:curb/minion_servo0",
+        "name": "basedefense:mob/curb/minion_servo0",
         "attenuation_distance": 10
       },
       {
-        "name": "basedefense:curb/minion_servo1",
+        "name": "basedefense:mob/curb/minion_servo1",
         "attenuation_distance": 10
       }
     ]
@@ -1006,11 +1006,11 @@
     "subtitle": "subtitles.basedefense.curb_minion.hurt",
     "sounds": [
       {
-        "name": "basedefense:curb/minion_hurt0",
+        "name": "basedefense:mob/curb/minion_hurt0",
         "attenuation_distance": 14
       },
       {
-        "name": "basedefense:curb/minion_hurt1",
+        "name": "basedefense:mob/curb/minion_hurt1",
         "attenuation_distance": 14
       }
     ]
@@ -1019,7 +1019,7 @@
     "subtitle": "subtitles.basedefense.curb_minion.death",
     "sounds": [
       {
-        "name": "basedefense:curb/minion_death",
+        "name": "basedefense:mob/curb/minion_death",
         "attenuation_distance": 16
       }
     ]
@@ -1028,15 +1028,15 @@
     "subtitle": "subtitles.basedefense.mist_entity.screech",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_screech0",
+        "name": "basedefense:mob/horror/mist_screech0",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:entity/mist_screech1",
+        "name": "basedefense:mob/horror/mist_screech1",
         "attenuation_distance": 64
       },
       {
-        "name": "basedefense:entity/mist_screech2",
+        "name": "basedefense:mob/horror/mist_screech2",
         "attenuation_distance": 64
       }
     ]
@@ -1045,15 +1045,15 @@
     "subtitle": "subtitles.basedefense.mist_entity.glitch",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_glitch0",
+        "name": "basedefense:mob/horror/mist_glitch0",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:entity/mist_glitch1",
+        "name": "basedefense:mob/horror/mist_glitch1",
         "attenuation_distance": 48
       },
       {
-        "name": "basedefense:entity/mist_glitch2",
+        "name": "basedefense:mob/horror/mist_glitch2",
         "attenuation_distance": 48
       }
     ]
@@ -1062,11 +1062,11 @@
     "subtitle": "subtitles.basedefense.mist_entity.whisper",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_whisper0",
+        "name": "basedefense:mob/horror/mist_whisper0",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:entity/mist_whisper1",
+        "name": "basedefense:mob/horror/mist_whisper1",
         "attenuation_distance": 40
       }
     ]
@@ -1075,7 +1075,7 @@
     "subtitle": "subtitles.basedefense.mist_entity.sting",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_sting",
+        "name": "basedefense:mob/horror/mist_sting",
         "attenuation_distance": 64
       }
     ]
@@ -1084,11 +1084,11 @@
     "subtitle": "subtitles.basedefense.mist_entity.hurt",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_hurt0",
+        "name": "basedefense:mob/horror/mist_hurt0",
         "attenuation_distance": 32
       },
       {
-        "name": "basedefense:entity/mist_hurt1",
+        "name": "basedefense:mob/horror/mist_hurt1",
         "attenuation_distance": 32
       }
     ]
@@ -1097,7 +1097,7 @@
     "subtitle": "subtitles.basedefense.mist_entity.death",
     "sounds": [
       {
-        "name": "basedefense:entity/mist_death",
+        "name": "basedefense:mob/horror/mist_death",
         "attenuation_distance": 48
       }
     ]
@@ -1106,11 +1106,11 @@
     "subtitle": "subtitles.basedefense.blood_entity.growl",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_growl0",
+        "name": "basedefense:mob/horror/blood_growl0",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:entity/blood_growl1",
+        "name": "basedefense:mob/horror/blood_growl1",
         "attenuation_distance": 40
       }
     ]
@@ -1119,15 +1119,15 @@
     "subtitle": "subtitles.basedefense.blood_entity.attack",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_attack0",
+        "name": "basedefense:mob/horror/blood_attack0",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:entity/blood_attack1",
+        "name": "basedefense:mob/horror/blood_attack1",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:entity/blood_attack2",
+        "name": "basedefense:mob/horror/blood_attack2",
         "attenuation_distance": 40
       }
     ]
@@ -1136,7 +1136,7 @@
     "subtitle": "subtitles.basedefense.blood_entity.hiss",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_hiss",
+        "name": "basedefense:mob/horror/blood_hiss",
         "attenuation_distance": 32
       }
     ]
@@ -1145,11 +1145,11 @@
     "subtitle": "subtitles.basedefense.blood_entity.hurt",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_hurt0",
+        "name": "basedefense:mob/horror/blood_hurt0",
         "attenuation_distance": 32
       },
       {
-        "name": "basedefense:entity/blood_hurt1",
+        "name": "basedefense:mob/horror/blood_hurt1",
         "attenuation_distance": 32
       }
     ]
@@ -1158,7 +1158,7 @@
     "subtitle": "subtitles.basedefense.blood_entity.death",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_death",
+        "name": "basedefense:mob/horror/blood_death",
         "attenuation_distance": 40
       }
     ]
@@ -1167,15 +1167,15 @@
     "subtitle": "subtitles.basedefense.blood_entity.step",
     "sounds": [
       {
-        "name": "basedefense:entity/blood_step0",
+        "name": "basedefense:mob/horror/blood_step0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:entity/blood_step1",
+        "name": "basedefense:mob/horror/blood_step1",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:entity/blood_step2",
+        "name": "basedefense:mob/horror/blood_step2",
         "attenuation_distance": 24
       }
     ]
@@ -1346,11 +1346,11 @@
     "subtitle": "subtitles.basedefense.bloodletter.ambient",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/ambient0",
+        "name": "basedefense:mob/bloodletter/ambient0",
         "attenuation_distance": 32
       },
       {
-        "name": "basedefense:bloodletter/ambient1",
+        "name": "basedefense:mob/bloodletter/ambient1",
         "attenuation_distance": 32
       }
     ]
@@ -1359,7 +1359,7 @@
     "subtitle": "subtitles.basedefense.bloodletter.summon",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/summon",
+        "name": "basedefense:mob/bloodletter/summon",
         "attenuation_distance": 40
       }
     ]
@@ -1368,11 +1368,11 @@
     "subtitle": "subtitles.basedefense.bloodletter.spear_form",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/spear_form0",
+        "name": "basedefense:mob/bloodletter/spear_form0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:bloodletter/spear_form1",
+        "name": "basedefense:mob/bloodletter/spear_form1",
         "attenuation_distance": 24
       }
     ]
@@ -1381,15 +1381,15 @@
     "subtitle": "subtitles.basedefense.bloodletter.spear_launch",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/spear_launch0",
+        "name": "basedefense:mob/bloodletter/spear_launch0",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:bloodletter/spear_launch1",
+        "name": "basedefense:mob/bloodletter/spear_launch1",
         "attenuation_distance": 40
       },
       {
-        "name": "basedefense:bloodletter/spear_launch2",
+        "name": "basedefense:mob/bloodletter/spear_launch2",
         "attenuation_distance": 40
       }
     ]
@@ -1398,15 +1398,15 @@
     "subtitle": "subtitles.basedefense.bloodletter.spear_hit",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/spear_hit0",
+        "name": "basedefense:mob/bloodletter/spear_hit0",
         "attenuation_distance": 32
       },
       {
-        "name": "basedefense:bloodletter/spear_hit1",
+        "name": "basedefense:mob/bloodletter/spear_hit1",
         "attenuation_distance": 32
       },
       {
-        "name": "basedefense:bloodletter/spear_hit2",
+        "name": "basedefense:mob/bloodletter/spear_hit2",
         "attenuation_distance": 32
       }
     ]
@@ -1415,7 +1415,7 @@
     "subtitle": "subtitles.basedefense.bloodletter.whirl",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/whirl",
+        "name": "basedefense:mob/bloodletter/whirl",
         "attenuation_distance": 32
       }
     ]
@@ -1424,7 +1424,7 @@
     "subtitle": "subtitles.basedefense.bloodletter.whirl_hit",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/whirl_hit",
+        "name": "basedefense:mob/bloodletter/whirl_hit",
         "attenuation_distance": 24
       }
     ]
@@ -1433,11 +1433,11 @@
     "subtitle": "subtitles.basedefense.bloodletter.hurt",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/hurt0",
+        "name": "basedefense:mob/bloodletter/hurt0",
         "attenuation_distance": 24
       },
       {
-        "name": "basedefense:bloodletter/hurt1",
+        "name": "basedefense:mob/bloodletter/hurt1",
         "attenuation_distance": 24
       }
     ]
@@ -1446,7 +1446,7 @@
     "subtitle": "subtitles.basedefense.bloodletter.death",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/death",
+        "name": "basedefense:mob/bloodletter/death",
         "attenuation_distance": 40
       }
     ]
@@ -1455,15 +1455,15 @@
     "subtitle": "subtitles.basedefense.bloodletter.step",
     "sounds": [
       {
-        "name": "basedefense:bloodletter/step0",
+        "name": "basedefense:mob/bloodletter/step0",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:bloodletter/step1",
+        "name": "basedefense:mob/bloodletter/step1",
         "attenuation_distance": 16
       },
       {
-        "name": "basedefense:bloodletter/step2",
+        "name": "basedefense:mob/bloodletter/step2",
         "attenuation_distance": 16
       }
     ]

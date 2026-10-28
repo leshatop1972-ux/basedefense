@@ -1,7 +1,7 @@
 """
 Звуки Бордюра: синтез реактивной струи (jet_charge, 1.6 с) и рывка (jet_burst, 0.7 с).
 Запуск: python tools/curb_sounds.py   (нужны numpy и ffmpeg с libvorbis в PATH)
-Пишет assets/basedefense/sounds/curb/*.ogg (моно — иначе звук не будет объёмным).
+Пишет assets/basedefense/sounds/mob/curb/*.ogg (моно — иначе звук не будет объёмным).
 """
 import os
 import subprocess
@@ -11,7 +11,7 @@ import wave
 import numpy as np
 
 SR = 44100
-OUT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense", "sounds", "curb")
+OUT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense", "sounds", "mob", "curb")
 rng = np.random.default_rng(7)
 
 

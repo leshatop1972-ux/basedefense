@@ -385,9 +385,9 @@ def sword_preview(tex, glow, icon):
 def main():
     PT = make_painter()
     M.write_geo(ROOT)
-    tex_dir = os.path.join(ROOT, "textures", "entity")
-    PT.img.save(os.path.join(tex_dir, NAME + ".png"))
-    PT.glow.save(os.path.join(tex_dir, NAME + "_glowmask.png"))
+    import asset_groups
+    PT.img.save(asset_groups.tex(NAME + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(NAME + "_glowmask.png", ROOT))
     icon = make_icon()
     icon.save(os.path.join(ROOT, "textures", "item", "bloodthirster_sword.png"))
     print("ok:", NAME, "кубов", len(M.cubes()))

@@ -14,9 +14,9 @@ public class IronKnightRenderer extends MobEntityRenderer<IronKnightEntity, Iron
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "iron_knight"), "main");
 
     private static final Identifier TEXTURE =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/iron_knight.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("iron_knight.png"));
     private static final Identifier GLOW =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/iron_knight_glowmask.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("iron_knight_glowmask.png"));
 
     public IronKnightRenderer(EntityRendererFactory.Context context) {
         super(context, new IronKnightModel(context.getPart(LAYER)), 0.6f);

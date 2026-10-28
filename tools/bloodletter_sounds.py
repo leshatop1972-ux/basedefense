@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import nabat_sounds as ns  # noqa: E402
 from nabat_sounds import SR, T, bp, choir, lowp, noise, place, reverb  # noqa: E402
 
-ns.OUT = os.path.join(ns.BASE, "sounds", "bloodletter")
+ns.OUT = os.path.join(ns.BASE, "sounds", "mob", "bloodletter")
 rng = np.random.default_rng(1313)
 
 
@@ -170,7 +170,7 @@ def write_json():
         data = json.load(f)
     for ev, (files, d) in EVENTS.items():
         data[ev] = {"subtitle": "subtitles.basedefense." + ev.split(".", 1)[1],
-                    "sounds": [{"name": "basedefense:bloodletter/" + n, "attenuation_distance": d} for n in files]}
+                    "sounds": [{"name": "basedefense:mob/bloodletter/" + n, "attenuation_distance": d} for n in files]}
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")

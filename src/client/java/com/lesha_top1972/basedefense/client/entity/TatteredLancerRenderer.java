@@ -18,9 +18,9 @@ public class TatteredLancerRenderer extends MobEntityRenderer<TatteredLancerEnti
             new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "tattered_lancer_lance"), "main");
 
     private static final Identifier TEXTURE =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/tattered_lancer.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("tattered_lancer.png"));
     private static final Identifier GLOW =
-            new Identifier(Basedefense.MOD_ID, "textures/entity/tattered_lancer_glowmask.png");
+            new Identifier(Basedefense.MOD_ID, AssetGroups.texture("tattered_lancer_glowmask.png"));
 
     public TatteredLancerRenderer(EntityRendererFactory.Context context) {
         super(context, new TatteredLancerModel(context.getPart(LAYER)), 0.6f);

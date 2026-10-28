@@ -39,7 +39,7 @@ public final class WeaponTrack {
     private float as;
 
     public WeaponTrack(String mob) {
-        JsonObject root = BedrockModelLoader.readJson("animations/" + mob + ".weapon.json");
+        JsonObject root = BedrockModelLoader.readJson(AssetGroups.path("animations", mob, ".weapon.json"));
         JsonArray g = root.getAsJsonArray("grip_offset");
         this.gripX = g.get(0).getAsFloat();
         this.gripY = g.get(1).getAsFloat();

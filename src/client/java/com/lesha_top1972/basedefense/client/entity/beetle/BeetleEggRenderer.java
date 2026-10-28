@@ -17,11 +17,11 @@ import java.util.Map;
 public class BeetleEggRenderer extends MobEntityRenderer<BeetleEggEntity, BeetleEggRenderer.Model> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "beetle_egg"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/beetle_egg.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("beetle_egg.png"));
 
     public BeetleEggRenderer(EntityRendererFactory.Context context) {
         super(context, new Model(context.getPart(LAYER)), 0.45f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/beetle_egg_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("beetle_egg_glowmask.png"))));
     }
 
     @Override

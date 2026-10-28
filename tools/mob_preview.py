@@ -20,6 +20,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
 import settler_preview as sp  # noqa: E402  (тот же 3D-рендер кубов, что у жителей)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 YAW = float(os.environ.get("PREVIEW_YAW", "0.6"))
 SCALE = float(os.environ.get("PREVIEW_SCALE", "6"))
@@ -30,7 +31,7 @@ DEG = math.pi / 180
 
 
 def load_geo(name):
-    with open(os.path.join(ASSETS, "geo", name + ".geo.json"), encoding="utf-8") as f:
+    with open(asset_groups.geo(name + ".geo.json", ASSETS), encoding="utf-8") as f:
         geo = json.load(f)["minecraft:geometry"][0]
     return geo
 
@@ -182,7 +183,7 @@ def sample(keys, t):
 
 
 def load_anims(name):
-    with open(os.path.join(ASSETS, "animations", name + ".animation.json"), encoding="utf-8") as f:
+    with open(asset_groups.anim(name + ".animation.json", ASSETS), encoding="utf-8") as f:
         data = json.load(f)["animations"]
     anims = {}
     for full, an in data.items():
@@ -226,7 +227,7 @@ def main():
     out = os.path.join(os.path.dirname(__file__), "mob_preview.png")
     geo = load_geo(name)
     tex_name = os.environ.get("PREVIEW_TEX", name)
-    tex = Image.open(os.path.join(ASSETS, "textures", "entity", tex_name + ".png")).convert("RGBA")
+    tex = Image.open(asset_groups.tex(tex_name + ".png", ASSETS)).convert("RGBA")
     scale = SCALE
     size = (int(260 * max(1.0, scale / 5)), int(300 * max(1.0, scale / 5)))
     if os.environ.get("PREVIEW_SIZE"):                 # «ширина,высота» кадра — для больших мобов

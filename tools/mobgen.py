@@ -15,6 +15,7 @@ import os
 import random
 
 from PIL import Image
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 
 # =====================================================================
@@ -158,7 +159,7 @@ class Model:
                             "texture_height": self.tex_h, "visible_bounds_width": 4, "visible_bounds_height": 4,
                             "visible_bounds_offset": [0, 1.5, 0]},
             "bones": out_bones}]}
-        with open(os.path.join(root, "geo", self.name + ".geo.json"), "w", encoding="utf-8") as f:
+        with open(asset_groups.geo(self.name + ".geo.json", root), "w", encoding="utf-8") as f:
             json.dump(geo, f, indent=1)
 
 
@@ -438,5 +439,5 @@ def bake(fn, length_s, fps, loop, bones, extra=None, unwrap=False):
 
 
 def write_anims(root, name, animations):
-    with open(os.path.join(root, "animations", name + ".animation.json"), "w", encoding="utf-8") as f:
+    with open(asset_groups.anim(name + ".animation.json", root), "w", encoding="utf-8") as f:
         json.dump({"format_version": "1.8.0", "animations": animations}, f, separators=(",", ":"))

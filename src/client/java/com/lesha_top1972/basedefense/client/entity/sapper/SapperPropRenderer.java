@@ -39,8 +39,8 @@ public class SapperPropRenderer<T extends Entity> extends EntityRenderer<T> {
     public SapperPropRenderer(EntityRendererFactory.Context context, EntityModelLayer layer, String name) {
         super(context);
         this.model = context.getPart(layer);
-        this.tex = new Identifier(Basedefense.MOD_ID, "textures/entity/" + name + ".png");
-        this.glow = RenderLayer.getEyes(new Identifier(Basedefense.MOD_ID, "textures/entity/" + name + "_glowmask.png"));
+        this.tex = new Identifier(Basedefense.MOD_ID, AssetGroups.texture(name + ".png"));
+        this.glow = RenderLayer.getEyes(new Identifier(Basedefense.MOD_ID, AssetGroups.texture(name + "_glowmask.png")));
     }
 
     public static EntityRendererFactory<SapperBombEntity> bomb() {

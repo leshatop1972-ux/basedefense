@@ -12,8 +12,8 @@ import net.minecraft.util.Identifier;
 public class CurbRenderer extends MobEntityRenderer<CurbEntity, CurbModel<CurbEntity>> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "curb"), "main");
-    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, "textures/entity/curb.png");
-    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, "textures/entity/curb_glowmask.png");
+    private static final Identifier TEXTURE = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("curb.png"));
+    private static final Identifier GLOW = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("curb_glowmask.png"));
 
     public CurbRenderer(EntityRendererFactory.Context context) {
         super(context, new CurbModel<>(context.getPart(LAYER), "curb"), 0.6f);

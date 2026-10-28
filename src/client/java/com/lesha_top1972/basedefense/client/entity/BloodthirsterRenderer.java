@@ -31,7 +31,7 @@ public class BloodthirsterRenderer extends MobEntityRenderer<BloodthirsterEntity
     private static final Identifier SWORD_GLOW = tex("bloodthirster_sword_glowmask");
 
     private static Identifier tex(String name) {
-        return new Identifier(Basedefense.MOD_ID, "textures/entity/" + name + ".png");
+        return new Identifier(Basedefense.MOD_ID, AssetGroups.texture(name + ".png"));
     }
 
     public BloodthirsterRenderer(EntityRendererFactory.Context context) {

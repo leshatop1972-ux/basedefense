@@ -14,11 +14,11 @@ public class SiegeBeetleRenderer extends MobEntityRenderer<SiegeBeetleEntity, Si
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "siege_beetle"), "main");
     public static final float SCALE = 1.3f;
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/siege_beetle.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("siege_beetle.png"));
 
     public SiegeBeetleRenderer(EntityRendererFactory.Context context) {
         super(context, new SiegeBeetleModel(context.getPart(LAYER)), 1.7f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/siege_beetle_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("siege_beetle_glowmask.png"))));
     }
 
     @Override

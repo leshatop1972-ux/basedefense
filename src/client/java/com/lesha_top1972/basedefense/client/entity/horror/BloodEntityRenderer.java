@@ -12,11 +12,11 @@ import net.minecraft.util.Identifier;
 public class BloodEntityRenderer extends MobEntityRenderer<BloodEntity, HorrorModel<BloodEntity>> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "blood_entity"), "main");
-    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, "textures/entity/blood_entity.png");
+    private static final Identifier TEX = new Identifier(Basedefense.MOD_ID, AssetGroups.texture("blood_entity.png"));
 
     public BloodEntityRenderer(EntityRendererFactory.Context context) {
         super(context, new HorrorModel<>(context.getPart(LAYER), "blood_entity", 0.085f), 0.4f);
-        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, "textures/entity/blood_entity_glowmask.png")));
+        this.addFeature(new GlowLayer<>(this, new Identifier(Basedefense.MOD_ID, AssetGroups.texture("blood_entity_glowmask.png"))));
     }
 
     @Override

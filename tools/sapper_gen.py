@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, ease, faces, length, lerp,  # noqa: E402
                     mix, mm, mul, mv, norm, rx_m, scl, sub, to_euler, tr, write_anims)
 import nabat_gen as ng  # noqa: E402  (IK, ключи поз, дорожки оружия, предпросмотр)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = ng.ROOT
 MODEL_SCALE = 0.85        # в игре (SapperRenderer.SCALE)
@@ -563,8 +564,8 @@ def paint(M, seed):
 
 
 def save_textures(M, PT):
-    PT.img.save(os.path.join(ROOT, "textures", "entity", M.name + ".png"))
-    PT.glow.save(os.path.join(ROOT, "textures", "entity", M.name + "_glowmask.png"))
+    PT.img.save(asset_groups.tex(M.name + ".png", ROOT))
+    PT.glow.save(asset_groups.tex(M.name + "_glowmask.png", ROOT))
 
 
 def build_all():
@@ -1030,7 +1031,7 @@ def export(model):
         tracks[name] = w
         print("  %-10s %.2f с" % (name, ln))
     write_anims(ROOT, "sapper", anims)
-    with open(os.path.join(ROOT, "animations", "sapper.weapon.json"), "w", encoding="utf-8") as f:
+    with open(asset_groups.anim("sapper.weapon.json", ROOT), "w", encoding="utf-8") as f:
         json.dump({"weapon": "sapper_pick", "hand": "right_hand",
                    "grip_offset": [round(v, 4) for v in GRIP_OFFSET], "clips": tracks}, f, separators=(",", ":"))
 

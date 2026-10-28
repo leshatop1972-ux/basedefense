@@ -17,6 +17,7 @@ import json
 import os
 
 from mobgen import Model, write_anims
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 
 def quat(R_):
@@ -100,7 +101,7 @@ def export(root, M, anims, clips, root_bone, weapon_name):
     main.write_geo(root)
     W.write_geo(root)
     tracks = {name: track(M, fn, ln, fps, loop, root_bone) for name, fn, ln, fps, loop in clips}
-    with open(os.path.join(root, "animations", weapon_name + ".weapon.json"), "w", encoding="utf-8") as f:
+    with open(asset_groups.anim(weapon_name + ".weapon.json", root), "w", encoding="utf-8") as f:
         json.dump({"weapon": weapon_name, "hand": hand, "hand_offset": off, "grip_offset": [0.0, 0.0, 0.0],
                    "clips": tracks}, f, separators=(",", ":"))
     main_anims, weap = {}, {}
@@ -119,7 +120,7 @@ def export(root, M, anims, clips, root_bone, weapon_name):
     if weap:
         write_anims(root, weapon_name, weap)
     else:
-        p = os.path.join(root, "animations", weapon_name + ".animation.json")
+        p = asset_groups.anim(weapon_name + ".animation.json", root)
         if os.path.exists(p):
             os.remove(p)
     return main_anims
