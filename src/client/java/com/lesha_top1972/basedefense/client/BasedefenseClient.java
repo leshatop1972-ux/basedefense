@@ -145,6 +145,8 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.KatanaRender.SAYA,
                 () -> BedrockModelLoader.load("katana_saya"));
         com.lesha_top1972.basedefense.client.weapon.KatanaClient.init();
+        // артефакты: вкладка с 5 слотами в инвентаре, рывок на R
+        com.lesha_top1972.basedefense.client.artifact.ArtifactClient.init();
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)

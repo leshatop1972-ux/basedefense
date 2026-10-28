@@ -1,6 +1,8 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
+import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordRender;
+import net.minecraft.util.math.RotationAxis;
 import com.lesha_top1972.basedefense.client.weapon.KatanaRender;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -27,6 +29,11 @@ public abstract class HeldItemRendererMixin {
                                                    Hand hand, float swingProgress, ItemStack item, float equipProgress,
                                                    MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                                    int light, CallbackInfo ci) {
+        float dash = ArtifactClient.localWeight();         // рывок: предмет в руке уходит вниз и назад
+        if (dash > 0f) {
+            matrices.translate(0f, -0.12f * dash, 0.12f * dash);
+            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-12f * dash));
+        }
         if (KatanaRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)
                 || BloodSwordRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)) {
             ci.cancel();

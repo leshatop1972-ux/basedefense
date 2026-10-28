@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
+import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordClient;
 import com.lesha_top1972.basedefense.effect.ModEffects;
 import net.minecraft.client.MinecraftClient;
@@ -18,6 +19,12 @@ public abstract class AbstractClientPlayerEntityMixin {
         AbstractClientPlayerEntity self = (AbstractClientPlayerEntity) (Object) this;
         if (ModEffects.isFrozen(self) || self == MinecraftClient.getInstance().player && BloodSwordClient.localBusy()) {
             cir.setReturnValue(1.0f);
+        }
+        if (self == MinecraftClient.getInstance().player) {            // рывок артефакта — обзор чуть шире
+            float w = ArtifactClient.localWeight();
+            if (w > 0f) {
+                cir.setReturnValue(cir.getReturnValueF() * (1f + 0.1f * w));
+            }
         }
     }
 }

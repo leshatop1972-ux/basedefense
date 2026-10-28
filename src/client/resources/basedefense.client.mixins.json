@@ -9,6 +9,7 @@
     "BossBarHudMixin",
     "HeldItemFeatureRendererMixin",
     "HeldItemRendererMixin",
+    "InventoryScreenMixin",
     "MinecraftClientMixin"
   ],
   "injectors": {
