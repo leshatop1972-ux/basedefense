@@ -347,5 +347,11 @@
   "subtitles.basedefense.bloodthirster_sword.cleave": "Кровавый разруб",
   "item.basedefense.katana": "Катана",
   "item.basedefense.katana.tip1": "Серия из 3 ударов: сбоку, с другой стороны, сверху",
-  "item.basedefense.katana.tip2": "Каждый удар — рывок вперёд, урон 5; после серии отдых 1 с"
+  "item.basedefense.katana.tip2": "Каждый удар — рывок вперёд, урон 5; после серии отдых 1 с",
+  "item.basedefense.dash_amulet": "Амулет рывка",
+  "item.basedefense.dash_amulet.tip": "R — рывок на 4 блока в сторону движения, перезарядка 2 с",
+  "item.basedefense.artifact": "Артефакт — положи в слот артефактов",
+  "gui.basedefense.artifacts": "Артефакты",
+  "key.basedefense.dash": "Рывок (амулет)",
+  "category.basedefense": "Basedefense"
 }

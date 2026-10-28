@@ -28,6 +28,11 @@ public final class ModItems {
     /** Катана: серия из трёх ударов с рывком (урон 5 каждый), в покое — в ножнах у бедра. */
     public static final Item KATANA = register("katana", new KatanaItem(new Item.Settings()));
 
+    /** Артефакт «Амулет рывка»: R — рывок на 4 блока, перезарядка 2 с. */
+    public static final Item DASH_AMULET = register("dash_amulet",
+            new com.lesha_top1972.basedefense.artifact.ArtifactItem(new Item.Settings().rarity(Rarity.RARE),
+                    "item.basedefense.dash_amulet.tip"));
+
     /** Яйцо призыва строителя. */
     public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
             new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
@@ -120,6 +125,7 @@ public final class ModItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);
+            entries.add(DASH_AMULET);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);

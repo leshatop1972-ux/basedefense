@@ -1,0 +1,83 @@
+"""
+Текстуры артефактов: иконка «Амулета рывка» и кнопка вкладки артефактов в инвентаре.
+Запуск: python tools/artifact_textures.py
+  → textures/item/dash_amulet.png (16×16), textures/gui/artifact_button.png (20×36: обычная и под мышью)
+"""
+import math
+import os
+
+from PIL import Image
+
+ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense", "textures")
+
+
+def amulet():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    px = img.load()
+    # цепочка: дуга сверху, звенья через пиксель
+    seen = []
+    for i in range(60):
+        a = math.pi * i / 59
+        x = int(round(7.5 + 4.6 * math.cos(a)))
+        y = int(round(1.0 + 4.6 * (1 - math.sin(a))))
+        if (x, y) not in seen:
+            seen.append((x, y))
+    for k, (x, y) in enumerate(seen):
+        px[x, y] = (226, 186, 80, 255) if k % 2 else (140, 104, 36, 255)
+    # оправа и камень
+    cx, cy, r = 7.5, 10.0, 4.6
+    for y in range(16):
+        for x in range(16):
+            d = math.hypot(x + 0.5 - cx - 0.5, y + 0.5 - cy)
+            if d <= r:
+                if d > r - 1.0:
+                    px[x, y] = (40, 34, 30, 255)                      # контур
+                elif d > r - 2.0:
+                    t = (x - y + 8) / 16
+                    px[x, y] = (236, 196, 88, 255) if t > 0.5 else (176, 130, 46, 255)   # золото
+                else:
+                    k = max(0.0, 1 - d / (r - 2))
+                    px[x, y] = (int(40 + 60 * k), int(150 + 80 * k), int(200 + 50 * k), 255)  # бирюзовый камень
+    # завиток ветра и блик
+    for x, y in ((6, 9), (7, 9), (8, 10), (7, 11), (9, 9)):
+        px[x, y] = (236, 252, 255, 255)
+    px[6, 8] = (255, 255, 255, 255)
+    img.save(os.path.join(ROOT, "item", "dash_amulet.png"))
+
+
+def button():
+    img = Image.new("RGBA", (20, 36), (0, 0, 0, 0))
+    px = img.load()
+    for row, hover in ((0, False), (18, True)):
+        for y in range(18):
+            for x in range(20):
+                edge = x in (0, 19) or y in (0, 17)
+                if edge:
+                    c = (255, 255, 255) if hover else (0, 0, 0)
+                elif x == 1 or y == 1:
+                    c = (255, 255, 255) if not hover else (230, 230, 255)
+                elif x == 18 or y == 16:
+                    c = (85, 85, 85)
+                else:
+                    c = (198, 198, 198) if not hover else (214, 214, 236)
+                px[x, row + y] = c + (255,)
+        # ромб‑артефакт в центре
+        for y in range(-4, 5):
+            for x in range(-4, 5):
+                d = abs(x) + abs(y)
+                if d <= 4:
+                    if d == 4:
+                        c = (40, 20, 60)
+                    elif x + y < -1:
+                        c = (236, 190, 255)
+                    else:
+                        c = (150, 70, 210) if d > 1 else (200, 120, 250)
+                    px[10 + x, row + 9 + y] = c + (255,)
+    os.makedirs(os.path.join(ROOT, "gui"), exist_ok=True)
+    img.save(os.path.join(ROOT, "gui", "artifact_button.png"))
+
+
+if __name__ == "__main__":
+    amulet()
+    button()
+    print("ok")

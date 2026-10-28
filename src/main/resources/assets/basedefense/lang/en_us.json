@@ -347,5 +347,11 @@
   "subtitles.basedefense.bloodthirster_sword.cleave": "Blood cleave",
   "item.basedefense.katana": "Katana",
   "item.basedefense.katana.tip1": "3-hit combo: side, other side, overhead",
-  "item.basedefense.katana.tip2": "Each hit dashes forward, 5 damage; 1 s rest after the combo"
+  "item.basedefense.katana.tip2": "Each hit dashes forward, 5 damage; 1 s rest after the combo",
+  "item.basedefense.dash_amulet": "Dash Amulet",
+  "item.basedefense.dash_amulet.tip": "R — dash 4 blocks in the movement direction, 2 s cooldown",
+  "item.basedefense.artifact": "Artifact — put it into an artifact slot",
+  "gui.basedefense.artifacts": "Artifacts",
+  "key.basedefense.dash": "Dash (amulet)",
+  "category.basedefense": "Basedefense"
 }
