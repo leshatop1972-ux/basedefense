@@ -42,6 +42,8 @@ public class DirectorState extends PersistentState {
     DirectorEvent waveEvent = DirectorEvent.WAVE;
     /** Сколько частей уже вышло. */
     int waveNext;
+    /** Время мира (getTime, не время суток) начала волны — от него считаются части. */
+    long waveStart;
     int waveTotal;
     boolean waveOver = true;
     boolean bossDefeated;
@@ -113,6 +115,7 @@ public class DirectorState extends PersistentState {
         nbt.putLong("WaveDay", waveDay);
         nbt.putString("WaveEvent", waveEvent.id);
         nbt.putInt("WaveNext", waveNext);
+        nbt.putLong("WaveStart", waveStart);
         nbt.putInt("WaveTotal", waveTotal);
         nbt.putBoolean("WaveOver", waveOver);
         nbt.putBoolean("BossDefeated", bossDefeated);
@@ -161,6 +164,7 @@ public class DirectorState extends PersistentState {
         DirectorEvent we = DirectorEvent.byId(nbt.getString("WaveEvent"));
         s.waveEvent = we == null ? DirectorEvent.WAVE : we;
         s.waveNext = nbt.getInt("WaveNext");
+        s.waveStart = nbt.getLong("WaveStart");
         s.waveTotal = nbt.getInt("WaveTotal");
         s.waveOver = !nbt.contains("WaveOver") || nbt.getBoolean("WaveOver");
         s.bossDefeated = nbt.getBoolean("BossDefeated");

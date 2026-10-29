@@ -52,6 +52,7 @@ public final class Director {
                         .then(CommandManager.literal("director")
                                 .executes(Director::cmdInfo)
                                 .then(CommandManager.literal("roll").executes(Director::cmdRoll))
+                                .then(CommandManager.literal("wave").executes(Director::cmdWave))
                                 .then(CommandManager.literal("show").executes(Director::cmdShow))
                                 .then(CommandManager.literal("set")
                                         .then(CommandManager.argument("event", StringArgumentType.word())
@@ -238,6 +239,18 @@ public final class Director {
                 + ", шкала " + s.points + "/" + DirectorTables.SCALE_MAX + ", событие: ")
                 .append(Text.translatable(s.today.key()))
                 .append(isActive(server) ? "" : " (режиссёр начнёт с " + DirectorTables.START_DAY + "-го дня)"), false);
+        return 1;
+    }
+
+    /** Начать волну сейчас: если сегодня событие без волны — ставится обычная волна. */
+    private static int cmdWave(CommandContext<ServerCommandSource> ctx) {
+        MinecraftServer server = ctx.getSource().getServer();
+        DirectorState s = DirectorState.get(server);
+        long day = day(server);
+        if (!s.today.hasNightWave() || s.todayDay != day) {
+            setToday(server, s, day, DirectorEvent.WAVE, false);
+        }
+        WaveManager.startNow(server);
         return 1;
     }
 

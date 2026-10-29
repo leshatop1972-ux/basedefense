@@ -123,7 +123,7 @@ public final class WaveManager {
             begin(server, s, day);
         }
         if (s.waveDay == day && !s.waveOver) {
-            if (s.waveNext < PARTS && t >= START + (long) s.waveNext * GAP) {
+            if (s.waveNext < PARTS && server.getOverworld().getTime() >= s.waveStart + (long) s.waveNext * GAP) {
                 spawnPart(server, s);
             }
             if (server.getTicks() % 40 == 0) {
@@ -134,6 +134,12 @@ public final class WaveManager {
             }
         }
         updateBar(server, s);
+    }
+
+    /** Команда: начать волну сегодняшнего события прямо сейчас (в любое время суток). */
+    static void startNow(MinecraftServer server) {
+        DirectorState s = DirectorState.get(server);
+        begin(server, s, Director.day(server));
     }
 
     /** Этой ночью волна (ещё не отбита) — спать нельзя. */
@@ -155,6 +161,7 @@ public final class WaveManager {
         s.waveDay = day;
         s.waveEvent = e;
         s.waveNext = 0;
+        s.waveStart = server.getOverworld().getTime();
         s.waveOver = false;
         s.bossDefeated = false;
         s.waveMobs.clear();
