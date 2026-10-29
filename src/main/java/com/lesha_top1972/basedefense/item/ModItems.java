@@ -68,6 +68,13 @@ public final class ModItems {
     public static final Item GREED_RING_1 = amulet("greed_ring_1", Rarity.RARE);
     public static final Item GREED_RING_2 = amulet("greed_ring_2", Rarity.EPIC);
 
+    /** Третья партия: дробитель, меч богов, плащи, летопись призывателя (см. ArtifactPowers). */
+    public static final Item CRUSHER = amulet("crusher", Rarity.RARE);
+    public static final Item GOD_SWORD = amulet("god_sword", Rarity.EPIC);
+    public static final Item ICE_CLOAK = amulet("ice_cloak", Rarity.RARE);
+    public static final Item HOLY_CLOAK = amulet("holy_cloak", Rarity.EPIC);
+    public static final Item SUMMONER_CHRONICLE = amulet("summoner_chronicle", Rarity.EPIC);
+
     /** Пустой кулон: делает кузнец (3 железа, 1 золото, 5 редстоуна, 3 минуты); нужен для стола амулетов. */
     public static final Item EMPTY_PENDANT = register("empty_pendant", new Item(new Item.Settings().maxCount(16)));
 
@@ -210,6 +217,11 @@ public final class ModItems {
             entries.add(PURITY_AMULET_2);
             entries.add(GREED_RING_1);
             entries.add(GREED_RING_2);
+            entries.add(CRUSHER);
+            entries.add(GOD_SWORD);
+            entries.add(ICE_CLOAK);
+            entries.add(HOLY_CLOAK);
+            entries.add(SUMMONER_CHRONICLE);
             entries.add(EMPTY_PENDANT);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {

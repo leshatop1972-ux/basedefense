@@ -70,4 +70,14 @@ public abstract class PlayerEntityArtifactsMixin implements ArtifactHolder {
             cir.setReturnValue(false);
         }
     }
+
+    /** Смерть: артефакты выпадают вместе с инвентарём (если не включён keepInventory). */
+    @Inject(method = "dropInventory", at = @At("TAIL"))
+    private void basedefense$dropArtifacts(CallbackInfo ci) {
+        PlayerEntity self = (PlayerEntity) (Object) this;
+        if (!self.getWorld().isClient
+                && !self.getWorld().getGameRules().getBoolean(net.minecraft.world.GameRules.KEEP_INVENTORY)) {
+            Artifacts.dropOnDeath(self);
+        }
+    }
 }

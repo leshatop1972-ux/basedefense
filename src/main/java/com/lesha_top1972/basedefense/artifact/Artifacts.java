@@ -26,6 +26,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -57,7 +58,7 @@ import java.util.UUID;
  *   <li>Плащ вампиризма — 25% шанс: союзники в 25 блоках лечатся на 25% нанесённого урона;</li>
  *   <li>Амулет мудрости — каждый удар по мобу тратит 1/4 уровня опыта: Скорость I на 5 с и +1 HP.</li>
  * Вампиризм и скорость не складываются (действует самый сильный надетый), жизнь складывается.
- * Артефакты не выпадают при смерти — остаются в слотах.
+ * При смерти артефакты выпадают (с keepInventory остаются); меч богов исчезает при любой смерти.
  */
 public final class Artifacts {
 
@@ -84,6 +85,7 @@ public final class Artifacts {
 
     private static final UUID SPEED_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e01");
     private static final UUID LIFE_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e02");
+    private static final UUID DAMAGE_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e04");
     private static final float[] VAMP_KILL = {0f, 4f, 6f, 8f};
     private static final float VAMP_HIT = 1f;
     private static final double[] SPEED = {0, 0.08, 0.16, 0.25};
@@ -115,11 +117,17 @@ public final class Artifacts {
     public static void init() {
         // после смерти и возвращения из Энда артефакты остаются
         ArtifactPowers.init();
+        // Возвращение из Энда — артефакты остаются. Смерть: выпадают (PlayerEntityArtifactsMixin.dropInventory);
+        // при keepInventory остаются, кроме меча богов — он исчезает при любой смерти.
         ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
             SimpleInventory from = of(oldPlayer);
             SimpleInventory to = of(newPlayer);
             for (int i = 0; i < from.size(); i++) {
-                to.setStack(i, from.getStack(i).copy());
+                ItemStack stack = from.getStack(i);
+                if (!alive && stack.isOf(ModItems.GOD_SWORD)) {
+                    continue;
+                }
+                to.setStack(i, stack.copy());
             }
         });
         ServerPlayNetworking.registerGlobalReceiver(DASH_C2S, (server, player, handler, buf, sender) -> {
@@ -176,9 +184,23 @@ public final class Artifacts {
         ArtifactPowers.tickPlayer(p);
         setModifier(p, EntityAttributes.GENERIC_MAX_HEALTH, LIFE_ID, "basedefense life amulet", life,
                 EntityAttributeModifier.Operation.ADDITION);
+        setModifier(p, EntityAttributes.GENERIC_ATTACK_DAMAGE, DAMAGE_ID, "basedefense damage artifact",
+                ArtifactPowers.extraDamage(p), EntityAttributeModifier.Operation.ADDITION);
         if (p.getHealth() > p.getMaxHealth()) {
             p.setHealth(p.getMaxHealth());
         }
+    }
+
+    /** Смерть без keepInventory: артефакты выпадают, меч богов исчезает. */
+    public static void dropOnDeath(PlayerEntity p) {
+        SimpleInventory inv = of(p);
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack stack = inv.getStack(i);
+            if (!stack.isEmpty() && !stack.isOf(ModItems.GOD_SWORD)) {
+                p.dropItem(stack.copy(), true, false);
+            }
+        }
+        inv.clear();
     }
 
     private static void setModifier(PlayerEntity p, EntityAttribute attr, UUID id, String name, double value,

@@ -267,6 +267,9 @@ public class GuardEntity extends SettlerEntity {
         if (hand != Hand.MAIN_HAND) {
             return ActionResult.PASS;
         }
+        if (isSummoned()) {
+            return ActionResult.PASS;   // у призванного нет меню и отряда
+        }
         ItemStack held = player.getStackInHand(hand);
         // С Повесткой в руке — записать в выбранный отряд (или выписать из него)
         if (held.getItem() instanceof SummonsItem) {
@@ -311,6 +314,12 @@ public class GuardEntity extends SettlerEntity {
             prevCombatBlend = combatBlend;
             float goal = this.dataTracker.get(COMBAT) ? 1.0f : 0.0f;
             combatBlend += MathHelper.clamp(goal - combatBlend, -0.12f, 0.12f);
+            return;
+        }
+        if (summonLeft >= 0 && --summonLeft <= 0 && this.getWorld() instanceof ServerWorld sw0) {
+            sw0.spawnParticles(net.minecraft.particle.ParticleTypes.POOF, this.getX(), this.getBodyY(0.5), this.getZ(),
+                    15, 0.3, 0.6, 0.3, 0.02);
+            this.discard();
             return;
         }
         if (menuPlayer != null && (!menuPlayer.isAlive()
@@ -663,8 +672,39 @@ public class GuardEntity extends SettlerEntity {
         return barracks;
     }
 
+    // ---------- Призванный стражник (летопись призывателя) ----------
+
+    /** Сколько тиков осталось жить призванному стражнику; -1 — обычный стражник. */
+    private int summonLeft = -1;
+
+    /** Сделать временным: железная броня и меч, через ticks исчезнет; не житель поселения, ничего не роняет. */
+    public void makeSummoned(int ticks) {
+        summonLeft = ticks;
+        this.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        this.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+        this.equipStack(EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
+        this.equipStack(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            this.setEquipmentDropChance(slot, 0.0f);
+        }
+        this.setHome(this.getBlockPos());
+    }
+
+    public boolean isSummoned() {
+        return summonLeft >= 0;
+    }
+
+    @Override
+    protected boolean isTemporary() {
+        return isSummoned();
+    }
+
     @Override
     protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
+        if (isSummoned()) {
+            return;   // призванный ничего не роняет
+        }
         super.dropEquipment(source, lootingMultiplier, allowDrops);
         for (int i = 0; i < ARTIFACT_START; i++) {
             ItemStack stack = bag.getStack(i);
@@ -690,12 +730,16 @@ public class GuardEntity extends SettlerEntity {
             nbt.put("Barracks", NbtHelper.fromBlockPos(barracks));
         }
         nbt.put("GuardBag", bag.toNbtList());
+        if (summonLeft >= 0) {
+            nbt.putInt("SummonLeft", summonLeft);
+        }
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         barracks = nbt.contains("Barracks") ? NbtHelper.toBlockPos(nbt.getCompound("Barracks")) : null;
+        summonLeft = nbt.contains("SummonLeft") ? nbt.getInt("SummonLeft") : -1;
         if (nbt.contains("GuardBag")) {
             bag.readNbtList(nbt.getList("GuardBag", NbtElement.COMPOUND_TYPE));
         }
