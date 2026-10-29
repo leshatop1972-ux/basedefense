@@ -63,6 +63,13 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
         }
         if (source.getAttacker() instanceof LivingEntity attacker) {
             amount *= com.lesha_top1972.basedefense.director.WaveManager.damageMul(attacker);   // усиление волн по акту
+            // все мобы мода (кроме жителей и стражников) бьют на 25% слабее
+            if (!(attacker instanceof com.lesha_top1972.basedefense.entity.settler.SettlerEntity)
+                    && !(attacker instanceof net.minecraft.entity.player.PlayerEntity)
+                    && com.lesha_top1972.basedefense.Basedefense.MOD_ID.equals(
+                    net.minecraft.registry.Registries.ENTITY_TYPE.getId(attacker.getType()).getNamespace())) {
+                amount *= 0.75f;
+            }
         }
         this.basedefense$partial = false;
         if (self.getWorld().isClient || amount <= 0 || !this.blockedByShield(source)) {

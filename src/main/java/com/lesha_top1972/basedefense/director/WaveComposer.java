@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Состав волны (акт I) по правилам пользователя. Количество — на одного игрока, игроков N — всё ×N.
+ * Состав волны (акт I) по правилам пользователя; раскладка — на WaveManager.PARTS частей. Количество — на одного игрока, игроков N — всё ×N.
  * Шкала 250–500: +4 случайных моба из списка волны, 500–750: +7, 750–1000: +10 (добавка не умножается на игроков).
  * Усиленная волна — мобов на 35% больше.
  */
@@ -66,7 +66,7 @@ public final class WaveComposer {
         return 0;
     }
 
-    /** Три части волны (по очереди, через минуту). */
+    /** Части волны (по очереди, каждая со своей стороны). */
     public static List<List<EntityType<?>>> compose(DirectorEvent e, int points, int players, Random random) {
         List<Row> rows = rows(e);
         List<EntityType<?>> all = new ArrayList<>();
@@ -88,7 +88,7 @@ public final class WaveComposer {
                 all.add(all.get(random.nextInt(base)));
             }
         }
-        // перемешать и разложить по трём частям поровну (тяжёлые мобы не скапливаются в одной части)
+        // перемешать и разложить по частям поровну (тяжёлые мобы не скапливаются в одной части)
         for (int i = all.size() - 1; i > 0; i--) {
             int j = random.nextInt(i + 1);
             EntityType<?> t = all.get(i);

@@ -390,6 +390,8 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
         private int retarget;
         private int launched;
         private boolean nextRight = true;
+        /** Этот бросок — по постройке (а не по существу). */
+        private boolean siegeBarrage;
         private Vec3d lastAim;
         private Vec3d lastTargetPos;
         private LivingEntity tracked;
@@ -513,7 +515,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
             if (valid(t) && this.mob.squaredDistanceTo(t) < 30 * 30) {
                 return t.getPos().add(0, t.getHeight() * 0.55, 0);
             }
-            if (this.mob.build != null) {
+            if (this.siegeBarrage && this.mob.build != null) {
                 return Vec3d.ofCenter(this.mob.build);
             }
             return this.lastAim;
@@ -566,6 +568,12 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
                 this.fight(t);
             } else if (m.build != null) {
                 this.siege(m.build);
+            } else if (m.getCommandTags().contains(com.lesha_top1972.basedefense.director.WaveManager.TAG)) {
+                // моб волны без цели — идёт к Базе (своя цель MOVE у него всегда занята)
+                if (--this.pathDelay <= 0) {
+                    this.pathDelay = 40;
+                    com.lesha_top1972.basedefense.director.WaveMarchGoal.step(m, 1.0);
+                }
             } else {
                 m.getNavigation().stop();
             }
@@ -580,6 +588,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
             if (this.barrageCd <= 0 && this.rest <= 0 && see && d <= BARRAGE_RANGE) {
                 this.lastAim = t.getPos().add(0, t.getHeight() * 0.55, 0);
                 m.setAim(this.lastAim);
+                this.siegeBarrage = false;
                 this.begin(BARRAGE);
                 return;
             }
@@ -611,6 +620,7 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
             if (this.barrageCd <= 0 && this.rest <= 0 && d <= BARRAGE_RANGE - 2) {
                 this.lastAim = c;
                 m.setAim(c);
+                this.siegeBarrage = true;
                 this.begin(BARRAGE);
                 return;
             }
@@ -698,9 +708,12 @@ public class BloodletterEntity extends HostileEntity implements BloodKin {
                 }
                 return;
             }
-            Vec3d p = m.build != null ? Vec3d.ofCenter(m.build) : this.lastAim;
-            s.fly(null, p != null ? p : m.getPos().add(m.forward().multiply(10)), -1);
-            s.siege = m.build;          // осада: копьё пробивает любую преграду на пути к постройке
+            if (this.siegeBarrage && m.build != null) {
+                s.fly(null, Vec3d.ofCenter(m.build), -1);
+                s.siege = m.build;      // осада: копьё пробивает любую преграду на пути к постройке
+                return;
+            }
+            s.shatter();                // цель пропала (умерла, ушла дальше 30 бл) — копьё рассыпается, а не летит наугад
         }
     }
 

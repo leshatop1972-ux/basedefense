@@ -46,10 +46,16 @@ public class WaveMarchGoal extends Goal {
     @Override
     public void start() {
         ticks = 0;
-        Vec3d goal = goal();
+        if (!step(mob, speed)) {
+            cooldown = 20 + mob.getRandom().nextInt(20);
+        }
+    }
+
+    /** Один отрезок пути к Базе (или к игроку). false — идти некуда или путь не нашёлся. */
+    public static boolean step(MobEntity mob, double speed) {
+        Vec3d goal = goal(mob);
         if (goal == null) {
-            cooldown = 40;
-            return;
+            return false;
         }
         Vec3d here = mob.getPos();
         Vec3d to = new Vec3d(goal.x - here.x, 0, goal.z - here.z);
@@ -70,9 +76,7 @@ public class WaveMarchGoal extends Goal {
         int x = MathHelper.floor(point.x);
         int z = MathHelper.floor(point.z);
         int y = mob.getWorld().getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-        if (!mob.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, speed)) {
-            cooldown = 20 + mob.getRandom().nextInt(20);
-        }
+        return mob.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, speed);
     }
 
     @Override
@@ -86,7 +90,7 @@ public class WaveMarchGoal extends Goal {
     }
 
     /** Куда идти: База в том же мире, иначе ближайший игрок. */
-    private Vec3d goal() {
+    private static Vec3d goal(MobEntity mob) {
         ServerWorld w = (ServerWorld) mob.getWorld();
         BlockPos base = WaveManager.basePos(w);
         if (base != null) {

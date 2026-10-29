@@ -597,13 +597,22 @@ public class GuardEntity extends SettlerEntity {
         return hurt;
     }
 
-    /** Враг стражника: любой живой видимый моб мода, кроме жителей. */
+    /** Враг стражника: любой живой видимый моб мода (кроме жителей) и ванильный враждебный моб. */
     public static boolean isEnemy(Entity e) {
         if (e instanceof com.lesha_top1972.basedefense.entity.enemy.sapper.SapperEntity sapper && sapper.isUnder()) {
             return false;   // подкопщик под землёй — его не достать
         }
-        return e instanceof MobEntity mob && mob.isAlive() && !(e instanceof SettlerEntity) && !mob.isInvisible()
-                && Basedefense.MOD_ID.equals(Registries.ENTITY_TYPE.getId(e.getType()).getNamespace());
+        if (!(e instanceof MobEntity mob) || !mob.isAlive() || e instanceof SettlerEntity || mob.isInvisible()) {
+            return false;
+        }
+        if (Basedefense.MOD_ID.equals(Registries.ENTITY_TYPE.getId(e.getType()).getNamespace())) {
+            return true;
+        }
+        // ванильные враждебные мобы; нейтральные (эндермен, зомби-пиглин) — только когда разозлены
+        if (e instanceof net.minecraft.entity.mob.Monster) {
+            return !(e instanceof net.minecraft.entity.mob.Angerable a) || a.hasAngerTime();
+        }
+        return false;
     }
 
     @Nullable
@@ -615,6 +624,10 @@ public class GuardEntity extends SettlerEntity {
         for (MobEntity mob : list) {
             double d2 = this.squaredDistanceTo(mob);
             if (d2 > AGGRO * AGGRO) {
+                continue;
+            }
+            // крипера мечник не трогает (взорвётся у домов), лучник — стреляет
+            if (weapon != Weapon.BOW && mob instanceof net.minecraft.entity.mob.CreeperEntity) {
                 continue;
             }
             // На точке обороны мечник не гонится за теми, кто далеко от точки

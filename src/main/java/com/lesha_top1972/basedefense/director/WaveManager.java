@@ -55,9 +55,10 @@ import java.util.UUID;
  */
 public final class WaveManager {
 
-    public static final int PARTS = 3;
+    /** Волна идёт 8 частями через 20 с, каждая — со своей стороны вокруг Базы (по кругу через 45°). */
+    public static final int PARTS = 8;
     public static final int START = 13000;
-    public static final int GAP = 1200;                  // минута между частями
+    public static final int GAP = 400;                   // 20 с между частями
     public static final String TAG = "basedefense.wave";
     public static final String BOSS_TAG = "basedefense.wave_boss";
     /** Яйца волны: не считаются во «врагах», но на рассвете тоже исчезают. */
@@ -195,13 +196,13 @@ public final class WaveManager {
         s.waveNext++;
         s.markDirty();
         List<String> ids = index < s.waveParts.size() ? s.waveParts.get(index) : List.of();
-        BlockPos center = spawnPoint(w);
+        BlockPos center = spawnPoint(w, partAngle(s, index));
         if (center == null) {
             return;
         }
         for (String id : ids) {
             EntityType<?> type = Registries.ENTITY_TYPE.get(new Identifier(id));
-            spawnMob(w, s, type, center, 5, false);
+            spawnMob(w, s, type, center, 7, false);
         }
         if (index == PARTS - 1 && s.waveEvent == DirectorEvent.BOSS_WAVE) {
             EntityType<?> boss = Registries.ENTITY_TYPE.get(new Identifier(Basedefense.MOD_ID, DirectorTables.boss(s.act)));
@@ -417,20 +418,30 @@ public final class WaveManager {
         return b.hasBase() && w.getRegistryKey().equals(b.getDimension()) ? b.getPos() : null;
     }
 
-    /** Точка появления части: ~150 блоков от Базы там, где мир «живёт»; иначе у случайного игрока. */
+    /**
+     * Сторона части: 8 направлений через 45° с общим сдвигом (от дня волны), порядок перемешан так,
+     * что соседние части приходят с разных сторон (через 135°).
+     */
+    private static double partAngle(DirectorState s, int index) {
+        double offset = Math.floorMod(s.waveDay * 2654435761L, 360L);
+        int slot = (index * 3) % PARTS;
+        return Math.toRadians(offset + slot * (360.0 / PARTS));
+    }
+
+    /** Точка появления части: ~150 блоков от Базы в своей стороне там, где мир «живёт»; иначе у случайного игрока. */
     @Nullable
-    private static BlockPos spawnPoint(ServerWorld w) {
+    private static BlockPos spawnPoint(ServerWorld w, double angle) {
         Random r = w.getRandom();
         BlockPos base = basePos(w);
         if (base != null) {
-            BlockPos p = ringPoint(w, base, r);
+            BlockPos p = ringPoint(w, base, r, angle);
             if (p != null) {
                 return p;
             }
         }
         List<ServerPlayerEntity> players = w.getPlayers(p -> !p.isSpectator());
         if (!players.isEmpty()) {
-            BlockPos p = ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r);
+            BlockPos p = ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r, angle);
             if (p != null) {
                 return p;
             }
@@ -439,10 +450,11 @@ public final class WaveManager {
     }
 
     @Nullable
-    private static BlockPos ringPoint(ServerWorld w, BlockPos center, Random r) {
+    private static BlockPos ringPoint(ServerWorld w, BlockPos center, Random r, double angle) {
         for (double dist : DISTANCES) {
             for (int attempt = 0; attempt < 6; attempt++) {
-                double a = r.nextDouble() * Math.PI * 2;
+                // сначала — своя сторона (±15°), потом — любая
+                double a = attempt < 4 ? angle + (r.nextDouble() - 0.5) * Math.toRadians(30) : r.nextDouble() * Math.PI * 2;
                 int x = MathHelper.floor(center.getX() + Math.cos(a) * dist);
                 int z = MathHelper.floor(center.getZ() + Math.sin(a) * dist);
                 BlockPos probe = new BlockPos(x, center.getY(), z);
