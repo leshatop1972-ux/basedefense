@@ -17,7 +17,7 @@ import java.util.EnumSet;
  */
 public class WaveMarchGoal extends Goal {
 
-    private static final double STEP = 24.0;
+    private static final double STEP = 20.0;
     private static final double NEAR = 10.0;
 
     private final MobEntity mob;
@@ -76,7 +76,11 @@ public class WaveMarchGoal extends Goal {
         int x = MathHelper.floor(point.x);
         int z = MathHelper.floor(point.z);
         int y = mob.getWorld().getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-        return mob.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, speed);
+        if (mob.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, speed)) {
+            return true;
+        }
+        // отрезок не построился (лес, обрыв) — путь прямо к Базе: поиск даст хотя бы часть пути
+        return mob.getNavigation().startMovingTo(goal.x, goal.y, goal.z, speed);
     }
 
     @Override

@@ -34,20 +34,24 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * Волны «Режиссёра мира». В ночь события с волной (с 13 000 тиков) — три части через минуту, каждая из своей
- * точки примерно в 150 блоках от Базы (если там мир не «живёт» — ближе, вплоть до 50; совсем нигде — у игрока).
+ * Волны «Режиссёра мира». В ночь события с волной (с 13 000 тиков) — части на всю ночь, каждая со своей стороны
+ * за краем поселения (40–72 бл от Базы, не вплотную к домам, жителям и игрокам; совсем нигде — у игрока).
+ * Застрявших и «уснувших» (чанк не тикает) мобов слежка переставляет ближе к Базе.
  * Мобы помечены тегом, не исчезают, идут к Базе ({@link WaveMarchGoal}), на них действует усиление акта.
  * Полоска сверху: часть и сколько врагов осталось. Все убиты — волна отбита (боссовая — следующий акт).
  * Рассвет — оставшиеся отступают (исчезают). В ночь волны спать нельзя. Из ванильных враждебных мобов
@@ -69,7 +73,20 @@ public final class WaveManager {
     /** Яйца волны: не считаются во «врагах», но на рассвете тоже исчезают. */
     public static final String EXTRA_TAG = "basedefense.wave_extra";
     private static final String DRAWN_TAG = "basedefense.drawn";
-    private static final double[] DISTANCES = {150, 130, 110, 90, 70, 50};
+    /** Точка появления: за краем поселения на столько блоков (но в пределах MIN_R…MAX_R от Базы). */
+    private static final int TOWN_GAP = 26;
+    private static final int MIN_R = 40;
+    private static final int MAX_R = 72;
+    /** Не ближе стольких блоков к жителям/стражникам и игрокам. */
+    private static final double SAFE_SETTLER = 20;
+    private static final double SAFE_PLAYER = 16;
+    /** Не ближе стольких блоков к угловой точке здания (здания до ~12×10). */
+    private static final double SAFE_BUILDING = 26;
+    static final double MARCH_SPEED = 1.1;
+    /** Слежка за мобами волны: застрял/выпал из «живой» зоны — переставить ближе. */
+    private static final Map<UUID, Long> MISSING = new HashMap<>();
+    private static final Map<UUID, Vec3d> LAST_POS = new HashMap<>();
+    private static final Map<UUID, Long> LAST_MOVE = new HashMap<>();
     private static final UUID HP_ID = UUID.fromString("4b0f0d3c-6a8e-4c1e-9a52-0d1a7c3e5b11");
     private static final UUID RANGE_ID = UUID.fromString("9d2c7e41-1f3b-4a6d-8c25-6e0b4f9a2c77");
 
@@ -103,6 +120,9 @@ public final class WaveManager {
             boolean stale = s.waveOver || (tags.contains(TAG) && !s.waveMobs.contains(entity.getUuid()));
             if (stale) {
                 world.getServer().execute(entity::discard);   // не посреди загрузки чанка
+            } else if (tags.contains(TAG) && entity instanceof MobEntity mob) {
+                // цели мобов не сохраняются — «идти к Базе» навешиваем при каждой загрузке (и при появлении)
+                ((MobEntityAccessor) mob).basedefense$getGoalSelector().add(5, new WaveMarchGoal(mob, MARCH_SPEED));
             }
         });
         EntitySleepEvents.ALLOW_SLEEPING.register((player, pos) -> {
@@ -134,6 +154,9 @@ public final class WaveManager {
             }
             if (server.getTicks() % 40 == 0) {
                 drawVanilla(server);
+            }
+            if (server.getTicks() % 100 == 0) {
+                watchdog(server, s);
             }
             if (s.waveNext >= PARTS && s.waveMobs.isEmpty()) {
                 finish(server, s);
@@ -211,20 +234,7 @@ public final class WaveManager {
         }
         if (index == BOSS_PART && s.waveEvent == DirectorEvent.BOSS_WAVE) {
             EntityType<?> boss = Registries.ENTITY_TYPE.get(new Identifier(Basedefense.MOD_ID, DirectorTables.boss(s.act)));
-            // босс выходит ближе к Базе (на пути этой части), чтобы точно дошёл
-            BlockPos base = basePos(w);
-            BlockPos at = center;
-            if (base != null) {
-                double dx = center.getX() - base.getX();
-                double dz = center.getZ() - base.getZ();
-                double len = Math.max(1, Math.sqrt(dx * dx + dz * dz));
-                double d = Math.min(45, len);
-                BlockPos near = new BlockPos(MathHelper.floor(base.getX() + dx / len * d), base.getY(),
-                        MathHelper.floor(base.getZ() + dz / len * d));
-                if (w.shouldTickEntity(near)) {
-                    at = near;
-                }
-            }
+            BlockPos at = center;                       // точка части уже за краем поселения, недалеко
             spawnMob(w, s, boss, at, 1, true);
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 p.sendMessage(Text.translatable("director.basedefense.msg.boss_arrives",
@@ -249,6 +259,10 @@ public final class WaveManager {
         for (int i = 0; i < 6; i++) {
             int x = center.getX() + r.nextInt(spread * 2 + 1) - spread;
             int z = center.getZ() + r.nextInt(spread * 2 + 1) - spread;
+            BlockPos probe = new BlockPos(x, center.getY(), z);
+            if (!w.shouldTickEntity(probe)) {
+                continue;                              // незагруженный/«спящий» чанк — моб бы там замер
+            }
             int y = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos p = new BlockPos(x, y, z);
             if (w.getFluidState(p.down()).isEmpty() && w.getFluidState(p).isEmpty()) {
@@ -261,9 +275,6 @@ public final class WaveManager {
         if (entity instanceof MobEntity mob) {
             mob.initialize(w, w.getLocalDifficulty(pos), SpawnReason.EVENT, null, null);
             mob.setPersistent();
-            if (!egg) {
-                ((MobEntityAccessor) mob).basedefense$getGoalSelector().add(5, new WaveMarchGoal(mob, 1.0));
-            }
         }
         if (entity instanceof LivingEntity living) {
             float hp = DirectorTables.hpBonus(s.act);
@@ -451,20 +462,21 @@ public final class WaveManager {
         return Math.toRadians(offset + slot * (360.0 / PARTS));
     }
 
-    /** Точка появления части: ~150 блоков от Базы в своей стороне там, где мир «живёт»; иначе у случайного игрока. */
+    /** Точка появления части: за краем поселения (40–72 бл от Базы) в своей стороне; иначе у игрока. */
     @Nullable
     private static BlockPos spawnPoint(ServerWorld w, double angle) {
         Random r = w.getRandom();
         BlockPos base = basePos(w);
         if (base != null) {
-            BlockPos p = ringPoint(w, base, r, angle);
+            int ring = MathHelper.clamp(townRadius(w, base) + TOWN_GAP, MIN_R, MAX_R);
+            BlockPos p = ringPoint(w, base, r, angle, ring);
             if (p != null) {
                 return p;
             }
         }
         List<ServerPlayerEntity> players = w.getPlayers(p -> !p.isSpectator());
         if (!players.isEmpty()) {
-            BlockPos p = ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r, angle);
+            BlockPos p = ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r, angle, MIN_R);
             if (p != null) {
                 return p;
             }
@@ -472,26 +484,126 @@ public final class WaveManager {
         return base;
     }
 
+    /** Радиус поселения от Базы: самые дальние здания и жители (не больше 64). */
+    private static int townRadius(ServerWorld w, BlockPos base) {
+        double max = 0;
+        String dim = w.getRegistryKey().getValue().toString();
+        for (com.lesha_top1972.basedefense.structure.TownState.Building b
+                : com.lesha_top1972.basedefense.structure.TownState.get(w.getServer()).getBuildings(dim)) {
+            double d = Math.sqrt(b.pos().getSquaredDistance(base.getX(), b.pos().getY(), base.getZ())) + 10;
+            if (d < 128) {
+                max = Math.max(max, d);
+            }
+        }
+        for (com.lesha_top1972.basedefense.entity.settler.SettlerEntity e : w.getEntitiesByClass(
+                com.lesha_top1972.basedefense.entity.settler.SettlerEntity.class, new Box(base).expand(96, 32, 96), x -> true)) {
+            max = Math.max(max, Math.sqrt(e.squaredDistanceTo(base.getX(), e.getY(), base.getZ())));
+        }
+        return (int) Math.min(64, max);
+    }
+
+    /** Точка у земли в своей стороне (±40°) на расстоянии ring…ring+24, вдали от домов, жителей и игроков. */
     @Nullable
-    private static BlockPos ringPoint(ServerWorld w, BlockPos center, Random r, double angle) {
-        for (double dist : DISTANCES) {
-            for (int attempt = 0; attempt < 6; attempt++) {
-                // сначала — своя сторона (±15°), потом — любая
-                double a = attempt < 4 ? angle + (r.nextDouble() - 0.5) * Math.toRadians(30) : r.nextDouble() * Math.PI * 2;
-                int x = MathHelper.floor(center.getX() + Math.cos(a) * dist);
-                int z = MathHelper.floor(center.getZ() + Math.sin(a) * dist);
-                BlockPos probe = new BlockPos(x, center.getY(), z);
-                if (!w.shouldTickEntity(probe)) {
-                    continue;
-                }
-                int y = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-                BlockPos p = new BlockPos(x, y, z);
-                if (y > w.getBottomY() + 1 && w.getFluidState(p.down()).isEmpty()) {
-                    return p;
-                }
+    private static BlockPos ringPoint(ServerWorld w, BlockPos center, Random r, double angle, int ring) {
+        for (int attempt = 0; attempt < 24; attempt++) {
+            double spreadDeg = attempt < 12 ? 40 : 180;   // сначала своя сторона, потом любая
+            double a = angle + Math.toRadians((r.nextDouble() - 0.5) * 2 * spreadDeg);
+            double dist = ring + r.nextDouble() * 24;
+            int x = MathHelper.floor(center.getX() + Math.cos(a) * dist);
+            int z = MathHelper.floor(center.getZ() + Math.sin(a) * dist);
+            BlockPos probe = new BlockPos(x, center.getY(), z);
+            if (!w.shouldTickEntity(probe)) {
+                continue;
+            }
+            int y = w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos p = new BlockPos(x, y, z);
+            if (y > w.getBottomY() + 1 && w.getFluidState(p.down()).isEmpty() && w.getFluidState(p).isEmpty()
+                    && safeSpot(w, p)) {
+                return p;
             }
         }
         return null;
+    }
+
+    /** Не вплотную к домам, жителям/стражникам и игрокам. */
+    private static boolean safeSpot(ServerWorld w, BlockPos p) {
+        if (!w.getEntitiesByClass(com.lesha_top1972.basedefense.entity.settler.SettlerEntity.class,
+                new Box(p).expand(SAFE_SETTLER), e -> e.squaredDistanceTo(Vec3d.ofCenter(p)) < SAFE_SETTLER * SAFE_SETTLER).isEmpty()) {
+            return false;
+        }
+        for (ServerPlayerEntity pl : w.getPlayers()) {
+            if (!pl.isSpectator() && pl.squaredDistanceTo(Vec3d.ofCenter(p)) < SAFE_PLAYER * SAFE_PLAYER) {
+                return false;
+            }
+        }
+        String dim = w.getRegistryKey().getValue().toString();
+        for (com.lesha_top1972.basedefense.structure.TownState.Building b
+                : com.lesha_top1972.basedefense.structure.TownState.get(w.getServer()).getBuildings(dim)) {
+            if (b.pos().getSquaredDistance(p.getX(), b.pos().getY(), p.getZ()) < SAFE_BUILDING * SAFE_BUILDING) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // =====================================================================
+    // Слежка: моб волны застрял или ушёл туда, где мир «спит» — переставить ближе к Базе
+    // =====================================================================
+
+    private static void watchdog(MinecraftServer server, DirectorState s) {
+        ServerWorld w = waveWorld(server);
+        BlockPos base = basePos(w);
+        long now = w.getTime();
+        boolean changed = false;
+        for (UUID id : new ArrayList<>(s.waveMobs)) {
+            Entity e = w.getEntity(id);
+            if (!(e instanceof MobEntity mob)) {
+                // не загружен: больше минуты — не считаем (при загрузке он исчезнет сам)
+                long since = MISSING.computeIfAbsent(id, k -> now);
+                if (now - since > 1200) {
+                    s.waveMobs.remove(id);
+                    MISSING.remove(id);
+                    changed = true;
+                }
+                continue;
+            }
+            MISSING.remove(id);
+            if (base == null) {
+                continue;
+            }
+            boolean sleeping = !w.shouldTickEntity(mob.getBlockPos());
+            Vec3d pos = mob.getPos();
+            Vec3d last = LAST_POS.get(id);
+            if (last == null || last.squaredDistanceTo(pos) > 2.5 * 2.5 || mob.getTarget() != null) {
+                LAST_POS.put(id, pos);
+                LAST_MOVE.put(id, now);
+            }
+            double toBase = Math.sqrt(mob.squaredDistanceTo(base.getX() + 0.5, mob.getY(), base.getZ() + 0.5));
+            boolean stuck = now - LAST_MOVE.getOrDefault(id, now) > 400 && toBase > 18;   // 20 с на месте
+            if (!sleeping && !stuck) {
+                continue;
+            }
+            // при игроке рядом не телепортируем (было бы видно) — кроме «спящих»
+            if (!sleeping && w.getClosestPlayer(mob, 24) != null) {
+                continue;
+            }
+            double angle = Math.atan2(mob.getZ() - base.getZ(), mob.getX() - base.getX());
+            BlockPos to = spawnPoint(w, angle);
+            if (to != null && to.getSquaredDistance(base) < mob.getBlockPos().getSquaredDistance(base)) {
+                w.spawnParticles(ParticleTypes.LARGE_SMOKE, mob.getX(), mob.getY() + 0.5, mob.getZ(), 6, 0.4, 0.5, 0.4, 0.02);
+                mob.refreshPositionAfterTeleport(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
+                mob.getNavigation().stop();
+                w.spawnParticles(ParticleTypes.LARGE_SMOKE, mob.getX(), mob.getY() + 0.5, mob.getZ(), 6, 0.4, 0.5, 0.4, 0.02);
+                LAST_POS.put(id, mob.getPos());
+                LAST_MOVE.put(id, now);
+            }
+        }
+        if (changed) {
+            s.markDirty();
+        }
+        LAST_POS.keySet().retainAll(s.waveMobs);
+        LAST_MOVE.keySet().retainAll(s.waveMobs);
+        MISSING.keySet().retainAll(s.waveMobs);
     }
 
     /** Сторона света от Базы (для подсказки «враги с севера»). */
