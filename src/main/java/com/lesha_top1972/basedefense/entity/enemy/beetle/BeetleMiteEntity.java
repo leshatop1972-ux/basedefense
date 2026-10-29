@@ -29,7 +29,7 @@ public class BeetleMiteEntity extends HostileEntity {
     static final int BITE_TICKS = 14;
     static final int BITE_HIT = 6;
     static final int BITE_CD = 40;
-    static final float BITE_DMG = 7f;
+    static final float BITE_DMG = 3.5f;          // было 7 — пользователь снизил вдвое
 
     public int clientBiteAge = -1000;
 
@@ -40,10 +40,10 @@ public class BeetleMiteEntity extends HostileEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 30.0)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 22.0)   // было 30
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.32)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 7.0);
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 3.5);
     }
 
     @Override

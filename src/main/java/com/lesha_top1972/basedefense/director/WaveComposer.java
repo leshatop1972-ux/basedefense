@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Состав волны (акт I) по правилам пользователя; раскладка — на WaveManager.PARTS частей. Количество — на одного игрока, игроков N — всё ×N.
- * Шкала 250–500: +4 случайных моба из списка волны, 500–750: +7, 750–1000: +10 (добавка не умножается на игроков).
+ * Добавки мобов от шкалы НЕТ (пользователь убрал).
  * Усиленная волна — мобов на 35% больше.
  */
 public final class WaveComposer {
@@ -52,20 +52,6 @@ public final class WaveComposer {
         };
     }
 
-    /** Добавка мобов по шкале. */
-    public static int scaleExtra(int points) {
-        if (points >= 750) {
-            return 10;
-        }
-        if (points >= 500) {
-            return 7;
-        }
-        if (points >= 250) {
-            return 4;
-        }
-        return 0;
-    }
-
     /** Части волны (по очереди, каждая со своей стороны). */
     public static List<List<EntityType<?>>> compose(DirectorEvent e, int points, int players, Random random) {
         List<Row> rows = rows(e);
@@ -76,10 +62,6 @@ public final class WaveComposer {
             for (int i = 0; i < count; i++) {
                 all.add(r.type());
             }
-        }
-        int extra = scaleExtra(points);
-        for (int i = 0; i < extra; i++) {
-            all.add(rows.get(random.nextInt(rows.size())).type());
         }
         if (e == DirectorEvent.STRONG_WAVE) {
             int more = Math.round(all.size() * 0.35f);
