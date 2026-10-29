@@ -10,6 +10,7 @@ public enum DirectorEvent {
     NONE("none", Kind.CALM, When.DAY),
     METEOR("meteor", Kind.CALM, When.DAY),
     CARAVAN("caravan", Kind.CALM, When.DAY),
+    /** Наводнение — убрано из игры (не выпадает); константа оставлена, чтобы не сбить номера. */
     FLOOD("flood", Kind.WORLD, When.ALL_DAY),
     SNOWFALL("snowfall", Kind.WORLD, When.DAY),
     HEATWAVE("heatwave", Kind.WORLD, When.DAY),

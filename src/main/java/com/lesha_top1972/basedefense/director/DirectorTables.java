@@ -21,14 +21,16 @@ public final class DirectorTables {
     public static final int POINTS_XP = 2;           // за каждое получение опыта любым игроком
     public static final int POINTS_SETTLER = 50;     // за каждого нового жителя поселения
 
-    /** Шансы акта I (‰). 1% из суммы процентов пользователя (99%) отдан «ничего не произойдёт». */
+    /**
+     * Шансы акта I (‰). 1% из суммы процентов пользователя (99%) отдан «ничего не произойдёт».
+     * Наводнение убрано (решение пользователя) — его 7% тоже отданы «ничего».
+     */
     private static final Map<DirectorEvent, Integer> ACT1 = new EnumMap<>(DirectorEvent.class);
 
     static {
-        ACT1.put(DirectorEvent.NONE, 160);
+        ACT1.put(DirectorEvent.NONE, 230);
         ACT1.put(DirectorEvent.METEOR, 50);
         ACT1.put(DirectorEvent.CARAVAN, 50);
-        ACT1.put(DirectorEvent.FLOOD, 70);
         ACT1.put(DirectorEvent.SNOWFALL, 70);
         ACT1.put(DirectorEvent.HEATWAVE, 70);
         ACT1.put(DirectorEvent.STORM, 70);

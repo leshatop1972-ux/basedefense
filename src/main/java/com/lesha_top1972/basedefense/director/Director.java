@@ -59,7 +59,9 @@ public final class Director {
                                         .then(CommandManager.argument("event", StringArgumentType.word())
                                                 .suggests((ctx, b) -> {
                                                     for (DirectorEvent e : DirectorEvent.values()) {
-                                                        b.suggest(e.id);
+                                                        if (e != DirectorEvent.FLOOD) {
+                                                            b.suggest(e.id);
+                                                        }
                                                     }
                                                     return b.buildFuture();
                                                 })
@@ -282,7 +284,7 @@ public final class Director {
 
     private static int cmdSet(CommandContext<ServerCommandSource> ctx) {
         DirectorEvent e = DirectorEvent.byId(StringArgumentType.getString(ctx, "event"));
-        if (e == null) {
+        if (e == null || e == DirectorEvent.FLOOD) {
             ctx.getSource().sendError(Text.literal("Нет такого события"));
             return 0;
         }

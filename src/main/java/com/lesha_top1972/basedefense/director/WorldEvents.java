@@ -71,9 +71,7 @@ public final class WorldEvents {
             applyWeather(w, e, t);
         }
         switch (e) {
-            case FLOOD -> flood.tickRise(w, Flood.rise(e, t));
             case STORM -> {
-                flood.tickRise(w, Flood.rise(e, t));
                 if (ticks % 20 == 0) {
                     lightning(w);
                 }
@@ -110,9 +108,7 @@ public final class WorldEvents {
     static void endDay(MinecraftServer server, DirectorState s) {
         DirectorEvent e = s.today;
         ServerWorld w = server.getOverworld();
-        if (e == DirectorEvent.FLOOD || e == DirectorEvent.STORM) {
-            Flood.get(server).startRecede();
-        }
+        Flood.get(server).startRecede();              // остатки воды старого наводнения (если были) уходят
         if (e == DirectorEvent.SNOWFALL || e == DirectorEvent.STORM || e == DirectorEvent.HEATWAVE) {
             w.setWeather(12000, 0, false, false);
         }
