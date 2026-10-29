@@ -61,6 +61,9 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
         if (source.getAttacker() instanceof LivingEntity attacker && attacker.hasStatusEffect(ModEffects.SNEAKY_RAT)) {
             amount *= 0.8f;                                      // «Подлая крыса»: −20% урона
         }
+        if (source.getAttacker() instanceof LivingEntity attacker) {
+            amount *= com.lesha_top1972.basedefense.director.WaveManager.damageMul(attacker);   // усиление волн по акту
+        }
         this.basedefense$partial = false;
         if (self.getWorld().isClient || amount <= 0 || !this.blockedByShield(source)) {
             return amount;

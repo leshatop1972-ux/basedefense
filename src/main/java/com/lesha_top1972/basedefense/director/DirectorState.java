@@ -36,6 +36,24 @@ public class DirectorState extends PersistentState {
     /** Игрок → последний день, за который ему показали утреннюю заставку. */
     final Map<UUID, Long> shown = new HashMap<>();
 
+    // ---------- Волна (WaveManager) ----------
+    /** День текущей/последней волны (-1 — не было). */
+    long waveDay = -1;
+    DirectorEvent waveEvent = DirectorEvent.WAVE;
+    /** Сколько частей уже вышло. */
+    int waveNext;
+    int waveTotal;
+    boolean waveOver = true;
+    boolean bossDefeated;
+    /** Ещё не вышедшие части: id сущностей. */
+    final List<List<String>> waveParts = new ArrayList<>();
+    /** Живые мобы волны (по ним — «осталось врагов» и победа). */
+    final java.util.Set<UUID> waveMobs = new java.util.HashSet<>();
+
+    // ---------- События мира (WorldEvents) ----------
+    /** День, когда уже упал метеорит. */
+    long meteorDay = -1;
+
     public static DirectorState get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager()
                 .getOrCreate(DirectorState::fromNbt, DirectorState::new, SAVE_ID);
@@ -92,6 +110,27 @@ public class DirectorState extends PersistentState {
             seen.add(c);
         }
         nbt.put("Shown", seen);
+        nbt.putLong("WaveDay", waveDay);
+        nbt.putString("WaveEvent", waveEvent.id);
+        nbt.putInt("WaveNext", waveNext);
+        nbt.putInt("WaveTotal", waveTotal);
+        nbt.putBoolean("WaveOver", waveOver);
+        nbt.putBoolean("BossDefeated", bossDefeated);
+        NbtList parts = new NbtList();
+        for (List<String> part : waveParts) {
+            NbtList one = new NbtList();
+            for (String id : part) {
+                one.add(net.minecraft.nbt.NbtString.of(id));
+            }
+            parts.add(one);
+        }
+        nbt.put("WaveParts", parts);
+        NbtList mobs = new NbtList();
+        for (UUID id : waveMobs) {
+            mobs.add(net.minecraft.nbt.NbtHelper.fromUuid(id));
+        }
+        nbt.put("WaveMobs", mobs);
+        nbt.putLong("MeteorDay", meteorDay);
         return nbt;
     }
 
@@ -118,6 +157,27 @@ public class DirectorState extends PersistentState {
                 s.shown.put(c.getUuid("Id"), c.getLong("Day"));
             }
         }
+        s.waveDay = nbt.contains("WaveDay") ? nbt.getLong("WaveDay") : -1;
+        DirectorEvent we = DirectorEvent.byId(nbt.getString("WaveEvent"));
+        s.waveEvent = we == null ? DirectorEvent.WAVE : we;
+        s.waveNext = nbt.getInt("WaveNext");
+        s.waveTotal = nbt.getInt("WaveTotal");
+        s.waveOver = !nbt.contains("WaveOver") || nbt.getBoolean("WaveOver");
+        s.bossDefeated = nbt.getBoolean("BossDefeated");
+        NbtList parts = nbt.getList("WaveParts", NbtElement.LIST_TYPE);
+        for (int i = 0; i < parts.size(); i++) {
+            NbtList one = parts.getList(i);
+            List<String> part = new ArrayList<>();
+            for (int k = 0; k < one.size(); k++) {
+                part.add(one.getString(k));
+            }
+            s.waveParts.add(part);
+        }
+        NbtList mobs = nbt.getList("WaveMobs", NbtElement.INT_ARRAY_TYPE);
+        for (int i = 0; i < mobs.size(); i++) {
+            s.waveMobs.add(net.minecraft.nbt.NbtHelper.toUuid(mobs.get(i)));
+        }
+        s.meteorDay = nbt.contains("MeteorDay") ? nbt.getLong("MeteorDay") : -1;
         return s;
     }
 }

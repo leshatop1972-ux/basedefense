@@ -54,6 +54,7 @@ public final class SettlerThreats {
     /** Этот моб нападает на жителей (и жители от него убегают). */
     public static boolean isThreat(Entity entity) {
         return entity instanceof HostileEntity
+                && !entity.getCommandTags().contains(com.lesha_top1972.basedefense.director.WorldEvents.FOG_TAG)
                 && !(entity instanceof Angerable)
                 && !(entity instanceof CreeperEntity);
     }

@@ -5,10 +5,13 @@ import net.minecraft.entity.mob.MobEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** Даёт доступ к целям выбора жертвы у мобов (поле targetSelector закрыто). */
+/** Даёт доступ к целям мобов (поля targetSelector и goalSelector закрыты). */
 @Mixin(MobEntity.class)
 public interface MobEntityAccessor {
 
     @Accessor("targetSelector")
     GoalSelector basedefense$getTargetSelector();
+
+    @Accessor("goalSelector")
+    GoalSelector basedefense$getGoalSelector();
 }

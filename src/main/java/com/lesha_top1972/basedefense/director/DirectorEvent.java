@@ -45,6 +45,11 @@ public enum DirectorEvent {
         return "director.basedefense." + id;
     }
 
+    /** Этой ночью идёт волна на Базу (и спать нельзя). */
+    public boolean hasNightWave() {
+        return kind == Kind.BOSS || (kind == Kind.WAVE && this != ETERNAL_FOG);
+    }
+
     public boolean isSpecialWave() {
         return this == BLOOD_MOON || this == IRON_MARCH || this == UNDERMINING || this == FROST_NIGHT;
     }

@@ -38,6 +38,8 @@ public final class Director {
 
     public static void init() {
         ServerTickEvents.END_SERVER_TICK.register(Director::tick);
+        WaveManager.init();
+        WorldEvents.init();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             DirectorState s = DirectorState.get(server);
             ServerPlayerEntity p = handler.player;
@@ -107,6 +109,9 @@ public final class Director {
             }
             s.lastDay = day;
             s.markDirty();
+            // конец прошлого дня: волна отступает, события мира заканчиваются
+            WaveManager.dawn(server, s);
+            WorldEvents.endDay(server, s);
             if (survived > 0) {
                 addPointsRaw(server, s, survived * DirectorTables.POINTS_DAY);
             }
@@ -139,6 +144,12 @@ public final class Director {
     }
 
     private static void setToday(MinecraftServer server, DirectorState s, long day, DirectorEvent e, boolean show) {
+        if (s.todayDay == day && s.today != e) {
+            // событие дня сменили командой — прошлое заканчивается сразу
+            WaveManager.dawn(server, s);
+            WorldEvents.endDay(server, s);
+            s.waveDay = -1;
+        }
         s.today = e;
         s.todayDay = day;
         s.addHistory((int) day, e);
@@ -172,6 +183,21 @@ public final class Director {
         syncDirty = true;
         if (s.points >= DirectorTables.SCALE_MAX) {
             broadcast(server, Text.translatable("director.basedefense.msg.boss_soon").formatted(Formatting.RED));
+        }
+    }
+
+    /** Босс акта повержен: следующий акт, шкала с нуля. */
+    static void nextAct(MinecraftServer server) {
+        DirectorState s = DirectorState.get(server);
+        s.act = Math.min(DirectorTables.MAX_ACT, s.act + 1);
+        s.points = 0;
+        s.markDirty();
+        syncDirty = true;
+        broadcast(server, Text.translatable("director.basedefense.msg.act", DirectorTables.roman(s.act))
+                .formatted(Formatting.GOLD, Formatting.BOLD));
+        for (ServerPlayerEntity p : PlayerLookup.all(server)) {
+            p.playSound(net.minecraft.sound.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
+                    net.minecraft.sound.SoundCategory.MASTER, 1.0f, 0.8f);
         }
     }
 

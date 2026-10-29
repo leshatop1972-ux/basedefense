@@ -1,6 +1,5 @@
 package com.lesha_top1972.basedefense.client.director;
 
-import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.artifact.ArtifactPanelHost;
 import com.lesha_top1972.basedefense.client.screen.UiKit;
 import com.lesha_top1972.basedefense.director.Director;
@@ -45,9 +44,9 @@ public final class DirectorClient {
     static long todayDay;
     static final List<Entry> HISTORY = new ArrayList<>();
 
-    /** Вкладка: ширина и высота. */
-    static final int TAB_W = 24;
-    static final int TAB_H = 24;
+    /** Кнопка «Летописи»: как кнопка амулетов. */
+    static final int TAB_W = 20;
+    static final int TAB_H = 18;
 
     private DirectorClient() {
     }
@@ -86,6 +85,8 @@ public final class DirectorClient {
             MorningOverlay.stop();
         });
         ClientTickEvents.END_CLIENT_TICK.register(MorningOverlay::tick);
+        DirectorVisuals.init();
+        ClientTickEvents.END_CLIENT_TICK.register(DirectorVisuals::tick);
         HudRenderCallback.EVENT.register(MorningOverlay::render);
 
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
@@ -97,11 +98,9 @@ public final class DirectorClient {
             Screens.getButtons(screen).add(tab);
             ScreenEvents.beforeRender(screen).register((s, ctx, mx, my, d) -> {
                 ArtifactPanelHost host = (ArtifactPanelHost) s;
-                tab.visible = active && !host.basedefense$recipeBookOpen();
-                int left = host.basedefense$left();
-                // вкладка у левого края окна, напротив шлема; открыты артефакты — левее их панели
-                int x = ArtifactClient.panelVisible() ? left + ArtifactClient.PANEL_X - TAB_W + 3 : left - TAB_W + 3;
-                tab.setPosition(x, (s.height - 166) / 2 + 6);
+                tab.visible = active;
+                // справа от кнопки амулетов (она — на left + 126, 20×18)
+                tab.setPosition(host.basedefense$left() + 148, s.height / 2 - 22);
             });
         });
     }
@@ -154,7 +153,17 @@ public final class DirectorClient {
         return Text.translatable("director.basedefense.when." + e.when.name().toLowerCase());
     }
 
-    /** Кнопка-вкладка: стеклянный «язычок» с часами. */
+    /** Цвет акта (рамки и цифра в «Летописи»). */
+    static int actColor(int act) {
+        return switch (act) {
+            case 2 -> 0xFF7FB8E6;
+            case 3 -> 0xFFE06A5A;
+            case 4 -> 0xFFB892F0;
+            default -> 0xFFE3AE55;
+        };
+    }
+
+    /** Кнопка: стеклянная плашка с часами. */
     static final class Tab extends ButtonWidget {
 
         private static final ItemStack CLOCK = new ItemStack(Items.CLOCK);
@@ -171,15 +180,15 @@ public final class DirectorClient {
             int b = t + height;
             boolean hover = isHovered();
             c.fill(l, t, r, b, UiKit.FRAME_OUT);
-            c.fillGradient(l + 1, t + 1, r, b - 1, UiKit.GLASS_TOP, UiKit.GLASS_BOTTOM);
-            c.fill(l + 1, t + 1, r, t + 2, UiKit.FRAME_LIGHT);
-            c.fill(l + 1, t + 1, l + 2, b - 1, UiKit.FRAME);
+            c.fillGradient(l + 1, t + 1, r - 1, b - 1, UiKit.GLASS_TOP, UiKit.GLASS_BOTTOM);
+            c.fill(l + 1, t + 1, r - 1, t + 2, UiKit.FRAME_LIGHT);
+            c.fill(l + 1, b - 2, r - 1, b - 1, actColor(act) & 0x90FFFFFF);
             if (hover) {
-                c.fill(l + 2, t + 2, r, b - 1, UiKit.CARD_HOVER);
+                c.fill(l + 1, t + 2, r - 1, b - 2, UiKit.CARD_HOVER);
             }
-            c.drawItem(CLOCK, l + 5, t + 4);
+            c.drawItem(CLOCK, l + 2, t + 1);
             if (today.kind == DirectorEvent.Kind.WAVE || today.kind == DirectorEvent.Kind.BOSS) {
-                c.fill(l + 3, b - 5, l + 6, b - 2, UiKit.BAD);    // красная точка — сегодня волна
+                c.fill(r - 5, t + 2, r - 2, t + 5, UiKit.BAD);    // красная точка — сегодня волна
             }
         }
     }
