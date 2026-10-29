@@ -9,8 +9,9 @@ import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.RotationAxis;
 
-/** Отрисовка босса «Бордюр»: модель ×1.12 + светящаяся маска (визор, ядро, полосы, струи). */
+/** Отрисовка босса «Боря228»: модель ×1.12 + светящаяся маска (фиолетовый визор, ядро, полосы, струи). */
 public class CurbRenderer extends MobEntityRenderer<CurbEntity, CurbModel<CurbEntity>> {
 
     public static final EntityModelLayer LAYER = new EntityModelLayer(new Identifier(Basedefense.MOD_ID, "curb"), "main");
@@ -26,6 +27,17 @@ public class CurbRenderer extends MobEntityRenderer<CurbEntity, CurbModel<CurbEn
     protected void scale(CurbEntity entity, MatrixStack matrices, float amount) {
         float k = CurbEntity.MODEL_SCALE;
         matrices.scale(k, k, k);
+    }
+
+    /** Без ванильного падения на бок: смерть — своя анимация (на колено), тело держится, пока играет звук. */
+    @Override
+    protected void setupTransforms(CurbEntity entity, MatrixStack matrices, float animationProgress, float bodyYaw,
+                                   float tickDelta) {
+        if (entity.deathTime > 0) {
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - bodyYaw));
+            return;
+        }
+        super.setupTransforms(entity, matrices, animationProgress, bodyYaw, tickDelta);
     }
 
     @Override

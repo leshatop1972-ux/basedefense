@@ -15,7 +15,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.network.packet.s2c.play.StopSoundS2CPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -55,6 +58,9 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     public static final int DIVE = 11;
     public static final int DIVE_LAND = 12;
     public static final int YIELD = 13;
+    public static final int TAIL = 14;
+    public static final int BEAM = 15;
+    public static final int EJECT = 16;
     public static final byte STATUS_BASE = 70;
 
     /** «Серия»: удары рукой / ногой / рукой на 13, 23, 33 тике, всего 46 тиков (2.3 с). */
@@ -120,7 +126,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
     @Override
     public void handleStatus(byte status) {
         int a = status - STATUS_BASE;
-        if (a >= COMBO && a <= YIELD) {
+        if (a >= COMBO && a <= EJECT) {
             this.clientAction = a;
             this.clientActionAge = this.age;
         } else {
@@ -145,6 +151,9 @@ public abstract class AbstractCurbEntity extends HostileEntity {
      * Сила струи 0..1 (клиент, и для модели): 0 — правый локоть, 1 — левый локоть, 2 — правая нога, 3 — левая нога.
      */
     public float jetPower(int side, float tickDelta) {
+        if (this.deathTime > 0) {
+            return 0f;
+        }
         float t = this.age + tickDelta - this.clientActionAge;
         if (this.clientAction == YIELD) {
             // «Я не сдамся»: оба локтя на развороте и перед двойным ударом, ноги — в прыжке
@@ -383,8 +392,39 @@ public abstract class AbstractCurbEntity extends HostileEntity {
         return 200;
     }
 
+    /** Звуки текущей атаки: когда атака кончается (или прерывается), они обрываются у всех игроков рядом. */
+    private final Set<Identifier> actionSounds = new HashSet<>();
+    boolean trackSounds;
+
     void sound(SoundEvent s, float vol, float pitch) {
         this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), s, SoundCategory.HOSTILE, vol, pitch);
+        if (this.trackSounds) {
+            this.actionSounds.add(s.getId());
+        }
+    }
+
+    /** Оборвать звуки атаки (чтобы не звучали дольше самой атаки). */
+    void stopActionSounds() {
+        this.trackSounds = false;
+        if (this.actionSounds.isEmpty()) {
+            return;
+        }
+        if (this.getWorld() instanceof ServerWorld s) {
+            for (ServerPlayerEntity p : s.getPlayers(pl -> pl.squaredDistanceTo(this) < 80 * 80)) {
+                for (Identifier id : this.actionSounds) {
+                    p.networkHandler.sendPacket(new StopSoundS2CPacket(id, SoundCategory.HOSTILE));
+                }
+            }
+        }
+        this.actionSounds.clear();
+    }
+
+    @Override
+    public void onDeath(DamageSource source) {
+        if (!this.getWorld().isClient) {
+            this.stopActionSounds();
+        }
+        super.onDeath(source);
     }
 
     ServerWorld sw() {
@@ -497,7 +537,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
         /** После каких действий можно отскочить. */
         protected boolean canDodgeAfter(int a) {
-            return a == COMBO || a == JET || a == SLAM || a == SPIN || a == DIVE_LAND || a == YIELD;
+            return a == COMBO || a == JET || a == SLAM || a == DIVE_LAND || a == TAIL || a == BEAM;
         }
 
         protected void tickCooldowns() {
@@ -531,10 +571,13 @@ public abstract class AbstractCurbEntity extends HostileEntity {
             this.mob.setAttacking(false);
             this.mob.getNavigation().stop();
             this.mob.setNoGravity(false);
+            this.mob.stopActionSounds();
             this.action = NONE;
         }
 
         protected void begin(int a) {
+            this.mob.stopActionSounds();                 // звуки прошлой атаки обрываются
+            this.mob.trackSounds = true;
             this.action = a;
             this.tick = 0;
             this.hitIds.clear();
@@ -549,6 +592,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
 
         protected void finish() {
             int done = this.action;
+            this.mob.stopActionSounds();
             this.lastAction = done;
             this.cooldown = this.restTicks(done);
             this.action = NONE;
@@ -780,6 +824,7 @@ public abstract class AbstractCurbEntity extends HostileEntity {
                         this.dash(0.5);                 // упёрся при отскоке — перескакивает
                     }
                     if (t >= DODGE_TICKS) {
+                        m.stopActionSounds();
                         this.action = NONE;
                         this.lastAction = DODGE_BACK;
                     }

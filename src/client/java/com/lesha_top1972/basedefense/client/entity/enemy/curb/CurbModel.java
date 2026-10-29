@@ -13,7 +13,8 @@ import java.util.Map;
 
 /**
  * Модель «Бордюра» и его прислужника (geo/curb*.geo.json, создаёт tools/curb_gen.py).
- * idle / walk / run — по скорости; атаки — по статусу с сервера (combo, jet, slam, spin, summon),
+ * idle / walk / run — по скорости; атаки — по статусу с сервера (combo, jet, slam, summon, tail, beam, eject…),
+ * у босса после смерти — death,
  * у призванного прислужника — emerge (выход из‑под земли). Реактивные струи из локтей (кости jet_r/jet_l,
  * только светящаяся маска) — длина и мерцание задаются кодом по силе струи.
  */
@@ -26,6 +27,8 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
     private final BedrockAnimations.Clip[] actions;
     /** «Пике»: присед → взлёт → замах → удар вниз; последняя поза держится до сигнала приземления. */
     private final BedrockAnimations.Clip dive;
+    /** Смерть (только у босса): последняя поза держится, пока тело не исчезнет. */
+    private final BedrockAnimations.Clip death;
 
     private final ModelPart head;
     private final ModelPart[] jets;
@@ -37,9 +40,10 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
         this.walk = c.get("walk");
         this.run = c.get("run");
         this.emerge = c.get("emerge");
-        this.actions = new BedrockAnimations.Clip[]{c.get("combo"), c.get("jet"), c.get("slam"), c.get("spin"),
+        this.actions = new BedrockAnimations.Clip[]{c.get("combo"), c.get("jet"), c.get("slam"), null,
                 c.get("summon"), null, c.get("dodge_back"), c.get("dodge_left"), c.get("dodge_right"), c.get("pillar"),
-                c.get("guard"), null, c.get("dive_land"), c.get("yield")};
+                c.get("guard"), null, c.get("dive_land"), c.get("yield"), c.get("tail"), c.get("beam"), c.get("eject")};
+        this.death = c.get("death");
         this.dive = c.get("dive");
         this.head = this.bone("head");
         this.jets = new ModelPart[]{this.bone("jet_r"), this.bone("jet_l"), this.bone("jet_rf"), this.bone("jet_lf")};
@@ -54,7 +58,12 @@ public class CurbModel<T extends AbstractCurbEntity> extends BedrockEntityModel<
         float w = 0f;
         int a = entity.clientAction;
         float t = (animationProgress - entity.clientActionAge) / 20f;
-        if (entity instanceof CurbMinionEntity m && m.isEmerging() && this.emerge != null) {
+        if (entity.deathTime > 0 && this.death != null) {
+            clip = this.death;
+            float tickDelta = MinecraftClient.getInstance().getTickDelta();
+            ct = Math.min((entity.deathTime + tickDelta) / 20f, this.death.length() - 0.01f);
+            w = 1f;
+        } else if (entity instanceof CurbMinionEntity m && m.isEmerging() && this.emerge != null) {
             clip = this.emerge;
             ct = animationProgress / 20f;
             w = 1f;

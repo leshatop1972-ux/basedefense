@@ -8,6 +8,7 @@ import com.lesha_top1972.basedefense.entity.enemy.bloodletter.BloodletterEntity;
 import com.lesha_top1972.basedefense.entity.enemy.bloodthirster.BloodEggEntity;
 import com.lesha_top1972.basedefense.entity.enemy.bloodthirster.BloodlingEntity;
 import com.lesha_top1972.basedefense.entity.enemy.bloodthirster.BloodthirsterEntity;
+import com.lesha_top1972.basedefense.entity.enemy.curb.CurbCaseEntity;
 import com.lesha_top1972.basedefense.entity.enemy.curb.CurbEntity;
 import com.lesha_top1972.basedefense.entity.enemy.curb.CurbMinionEntity;
 import com.lesha_top1972.basedefense.entity.enemy.curb.CurbPillarEntity;
@@ -206,7 +207,7 @@ public final class ModEntities {
                     .dimensions(EntityDimensions.fixed(1.0f, 1.4f))
                     .build());
 
-    /** Босс «Бордюр» (модель ×1.12). */
+    /** Босс «Боря228» (бывший «Бордюр», модель ×1.12). */
     public static final EntityType<CurbEntity> CURB = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "curb"),
@@ -231,6 +232,17 @@ public final class ModEntities {
             FabricEntityTypeBuilder.<CurbPillarEntity>create(SpawnGroup.MISC, CurbPillarEntity::new)
                     .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
                     .trackRangeBlocks(32)
+                    .build());
+
+    /** Чёрный чемодан, вылетающий из‑за спины Бори228 после «Я не сдамся» (украшение). */
+    public static final EntityType<CurbCaseEntity> CURB_CASE = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(Basedefense.MOD_ID, "curb_case"),
+            FabricEntityTypeBuilder.<CurbCaseEntity>create(SpawnGroup.MISC, CurbCaseEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.6f, 0.3f))
+                    .trackRangeBlocks(48)
+                    .trackedUpdateRate(2)
+                    .forceTrackedVelocityUpdates(true)
                     .build());
 
     /** Босс «Набат» (модель ×1.6, хитбокс без крыльев). */

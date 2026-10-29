@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.client;
 import com.lesha_top1972.basedefense.client.entity.enemy.bloodthirster.BloodEggRenderer;
 import com.lesha_top1972.basedefense.client.entity.enemy.bloodthirster.BloodlingRenderer;
 import com.lesha_top1972.basedefense.client.entity.enemy.bloodthirster.BloodthirsterRenderer;
+import com.lesha_top1972.basedefense.client.entity.enemy.curb.CurbCaseRenderer;
 import com.lesha_top1972.basedefense.client.entity.enemy.curb.CurbMinionRenderer;
 import com.lesha_top1972.basedefense.client.entity.enemy.curb.CurbRenderer;
 import com.lesha_top1972.basedefense.client.entity.enemy.frost_archer.FrostArcherRenderer;
@@ -102,6 +103,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.CURB, CurbRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURB_MINION, CurbMinionRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURB_PILLAR, EmptyEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURB_CASE, CurbCaseRenderer::new);
         // Босс «Набат», его мечники, колокола, якорь улана, души (оружие — отдельные модели)
         EntityModelLayerRegistry.registerModelLayer(NabatRenderer.LAYER, () -> BedrockModelLoader.load("nabat"));
         EntityModelLayerRegistry.registerModelLayer(NabatRenderer.MAUL, () -> BedrockModelLoader.load("nabat_maul"));

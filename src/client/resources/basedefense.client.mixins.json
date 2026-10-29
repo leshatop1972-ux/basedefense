@@ -12,6 +12,7 @@
     "HeldItemFeatureRendererMixin",
     "HeldItemRendererMixin",
     "InventoryScreenMixin",
+    "LivingEntityRendererMixin",
     "MinecraftClientMixin"
   ],
   "injectors": {

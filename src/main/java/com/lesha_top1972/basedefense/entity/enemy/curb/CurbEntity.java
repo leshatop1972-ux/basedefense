@@ -48,8 +48,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Босс «Бордюр» — боец в чёрной броне с реактивными соплами в локтях. 500 HP, стрелы −55%,
- * раз в 25 с переключается на другого игрока.
+ * Босс «Боря228» (id curb, бывший «Бордюр») — боец в чёрной броне с реактивными соплами в локтях, фиолетовой
+ * щелью визора и массивным чёрным хвостом. 500 HP, стрелы −55%, раз в 25 с переключается на другого игрока.
+ * Урон атак (+1 к прежнему): серия 5, реактивный 13, таран 7 + топот 5, пике 14, «Я не сдамся» 8/9/8×0.75/15.
+ * Новое: TAIL «Хвост» (быстрая, 5, до 3 бл, откидывает ~4 бл), BEAM «Импульс» (луч из маски, 10; стоишь/идёшь —
+ * попадает с шансом 75%, бежишь вбок от него — 25%), EJECT — после «Я не сдамся» из‑за спины вылетает чемодан.
+ * «Вихрь» убран. Начинает с 1 картриджем. После смерти ещё ~14 с стоит на колене, пока играет звук смерти.
  * <ul>
  *   <li>COMBO «Серия» — прямой правой, удар ногой, прямой правой (по 3, с рывками вперёд, доворот на цель), 2.3 с;</li>
  *   <li>JET «Реактивный удар» — замах 1.5 с, из локтя бьёт струя; рывок на 7 блоков, 11 урона (можно увернуться);</li>
@@ -62,8 +66,8 @@ import java.util.List;
  *   <li>после атак иногда отскакивает назад или вбок;</li>
  *   <li>«Картридж»: убил моба — +1, игрока — +3; сразу после получения и потом раз в 1.5 мин тратит один на
  *       YIELD «Я не сдамся» (6 с серия необычных ударов по большому радиусу, всего 30 урона, в конце +20% HP);</li>
- *   <li>после потери 25% здоровья: SPIN «Вихрь» (нога вперёд, обороты, 5 всем вокруг, 2 с) и
- *       SUMMON «Подмога» (раз в 2 минуты — двое прислужников из‑под земли); старые атаки — реже.</li>
+ *   <li>после потери 25% здоровья: SUMMON «Подмога» (раз в 2 минуты — двое прислужников из‑под земли);
+ *       старые атаки — реже.</li>
  * </ul>
  */
 public class CurbEntity extends AbstractCurbEntity {
@@ -77,10 +81,28 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double SLAM_SPEED = 0.67;
     static final int SLAM_COOLDOWN = 600;
 
-    public static final int SPIN_TICKS = 40;
-    static final int SPIN_FROM = 9;
-    static final int SPIN_TO = 30;
-    static final double SPIN_RADIUS = 4.0;
+    /** «Хвост»: оборот 0.85 с, хвост проходит перед ним на 4–9 тике (анимация tail). */
+    public static final int TAIL_TICKS = 17;
+    static final int TAIL_HIT_FROM = 4;
+    static final int TAIL_HIT_TO = 9;
+    static final double TAIL_REACH = 3.0;
+    static final float TAIL_DAMAGE = 5f;
+    static final double TAIL_KNOCK = 0.35;          // + обычное отбрасывание от удара ≈ 4 блока
+    static final int TAIL_COOLDOWN = 70;
+    /** «Импульс»: заряд 0–22 т, выстрел на 22 т (анимация beam: 1.1 с), всего 40 т. */
+    public static final int BEAM_TICKS = 40;
+    static final int BEAM_FIRE = 22;
+    static final int BEAM_SAMPLE = 5;               // за сколько тиков до выстрела замеряется движение цели
+    static final float BEAM_DAMAGE = 10f;
+    static final float BEAM_HIT = 0.75f;
+    static final float BEAM_HIT_RUNNING = 0.25f;
+    static final double BEAM_RANGE = 24.0;
+    static final int BEAM_COOLDOWN = 200;
+    /** Чемодан из‑за спины после «Я не сдамся»: вылетает на 7 т, анимация eject 1.3 с. */
+    public static final int EJECT_TICKS = 26;
+    static final int EJECT_LAUNCH = 7;
+    /** После смерти стоит на колене, пока играет звук смерти (13.8 с). */
+    public static final int DEATH_TICKS = 276;
     static final double SLAM_REACH = 3.9;
     static final double STOMP_RADIUS = 5.0;
 
@@ -111,9 +133,9 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double DIVE_HEIGHT = 8.0;
     static final double DIVE_FALL_SPEED = 1.6;
     static final double DIVE_RADIUS = 5.0;
-    static final float DIVE_DAMAGE = 13f;
+    static final float DIVE_DAMAGE = 14f;
     static final int DIVE_STUN_TICKS = 60;
-    static final int DIVE_COOLDOWN = 360;
+    static final int DIVE_COOLDOWN = 900;           // «Пике» — реже (раз в 45 с)
 
     /** «Я не сдамся»: 120 т (6 с). Тики ударов совпадают с анимацией yield (tools/curb_gen.py). */
     public static final int YIELD_TICKS = 120;
@@ -130,32 +152,31 @@ public class CurbEntity extends AbstractCurbEntity {
     static final double YIELD_AXE_R = 6.0;
     static final double YIELD_FLURRY_REACH = 6.0;
     static final double YIELD_HAMMER_R = 9.0;
-    /** Урон по частям (+1 к исходным: каждой части, шквал — +1 на все 8 ударов): 7 + 8 + 8×0.625 + 14 = 34. */
-    static final float YIELD_WAVE_DMG = 7f;
-    static final float YIELD_AXE_DMG = 8f;
-    static final float YIELD_FLURRY_DMG = 0.625f;
-    static final float YIELD_HAMMER_DMG = 14f;
+    /** Урон по частям (ещё +1 каждой части, шквал — +1 на все 8 ударов): 8 + 9 + 8×0.75 + 15 = 38. */
+    static final float YIELD_WAVE_DMG = 8f;
+    static final float YIELD_AXE_DMG = 9f;
+    static final float YIELD_FLURRY_DMG = 0.75f;
+    static final float YIELD_HAMMER_DMG = 15f;
     static final float YIELD_HEAL_PART = 0.2f;
     static final int MAX_CARTRIDGES = 99;
 
-    static final float COMBO_DAMAGE = 4f;
-    static final float JET_DAMAGE = 12f;
-    static final float SLAM_DAMAGE = 6f;
-    static final float STOMP_DAMAGE = 4f;
-    static final float SPIN_DAMAGE = 6f;
+    static final float COMBO_DAMAGE = 5f;
+    static final float JET_DAMAGE = 13f;
+    static final float SLAM_DAMAGE = 7f;
+    static final float STOMP_DAMAGE = 5f;
     static final float ARROW_FACTOR = 0.45f;
     static final int RETARGET_TICKS = 500;
 
-    private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.PINK,
+    private final ServerBossBar bossBar = new ServerBossBar(this.getDisplayName(), BossBar.Color.PURPLE,
             BossBar.Style.NOTCHED_10);
     private static final TrackedData<Boolean> SPIKED =
             DataTracker.registerData(CurbEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final DustParticleEffect SPIKE_DUST = new DustParticleEffect(new Vector3f(0.72f, 0.88f, 1.0f), 0.8f);
     private boolean phase2;
     /** Число картриджей (видно эффектом «Картридж»), флаг «только что получил» и перезарядка атаки. */
-    private int cartridges;
+    private int cartridges = 1;                     // изначально 1 картридж
     private boolean yieldNow;
-    private int yieldCooldown;
+    private int yieldCooldown = 600;                // первый «Я не сдамся» — не раньше чем через 30 с
     private int retargetTimer = RETARGET_TICKS;
 
     public CurbEntity(EntityType<? extends HostileEntity> type, World world) {
@@ -205,9 +226,13 @@ public class CurbEntity extends AbstractCurbEntity {
         return this.dataTracker.get(SPIKED);
     }
 
-    /** Пока действуют «Шипы» — вокруг кружат бело‑синие искры. */
+    /** Пока действуют «Шипы» — вокруг кружат бело‑синие искры. После смерти — искры и дым из брони. */
     @Override
     protected void clientEffects() {
+        if (this.deathTime > 0) {
+            this.deathFx();
+            return;
+        }
         super.clientEffects();
         if (!this.isSpiked()) {
             return;
@@ -240,7 +265,50 @@ public class CurbEntity extends AbstractCurbEntity {
     @Override
     public void onStartedTrackingBy(ServerPlayerEntity player) {
         super.onStartedTrackingBy(player);
-        this.bossBar.addPlayer(player);
+        if (this.isAlive()) {
+            this.bossBar.addPlayer(player);
+        }
+    }
+
+    // --- смерть: стоит на колене, пока играет звук смерти ---
+    @Override
+    public void onDeath(DamageSource source) {
+        super.onDeath(source);
+        if (!this.getWorld().isClient) {
+            this.bossBar.setPercent(0f);
+            this.bossBar.clearPlayers();
+        }
+    }
+
+    @Override
+    protected void updatePostDeath() {
+        this.deathTime++;
+        if (this.deathTime >= DEATH_TICKS && !this.getWorld().isClient && !this.isRemoved()) {
+            this.getWorld().sendEntityStatus(this, net.minecraft.entity.EntityStatuses.ADD_DEATH_PARTICLES);
+            this.remove(RemovalReason.KILLED);
+        }
+    }
+
+    /** Клиент: после смерти из брони сыплются искры и дым, визор мерцает фиолетовым и гаснет. */
+    private void deathFx() {
+        World w = this.getWorld();
+        int t = this.deathTime;
+        if (t % 3 == 0 && this.random.nextFloat() < 0.6f) {
+            double x = this.getX() + (this.random.nextDouble() - 0.5) * 0.9;
+            double y = this.getY() + 0.4 + this.random.nextDouble() * 1.4;
+            double z = this.getZ() + (this.random.nextDouble() - 0.5) * 0.9;
+            w.addParticle(ParticleTypes.ELECTRIC_SPARK, x, y, z, (this.random.nextDouble() - 0.5) * 0.3, 0.15,
+                    (this.random.nextDouble() - 0.5) * 0.3);
+        }
+        if (t % 5 == 0) {
+            w.addParticle(ParticleTypes.SMOKE, this.getX() + (this.random.nextDouble() - 0.5) * 0.6,
+                    this.getY() + 1.0 + this.random.nextDouble() * 0.6, this.getZ() + (this.random.nextDouble() - 0.5) * 0.6,
+                    0, 0.03, 0);
+        }
+        if (t < DEATH_TICKS - 60 && t % 7 == 0 && this.random.nextFloat() < 0.7f) {
+            Vec3d v = this.visorPos();
+            w.addParticle(BEAM_CORE, v.x, v.y - 0.4, v.z, 0, 0, 0);
+        }
     }
 
     @Override
@@ -320,8 +388,10 @@ public class CurbEntity extends AbstractCurbEntity {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.phase2 = nbt.getBoolean("Phase2");
-        this.cartridges = nbt.getInt("Cartridges");
-        this.yieldCooldown = nbt.getInt("YieldCooldown");
+        if (nbt.contains("Cartridges")) {
+            this.cartridges = nbt.getInt("Cartridges");
+            this.yieldCooldown = nbt.getInt("YieldCooldown");
+        }
         if (this.hasCustomName()) {
             this.bossBar.setName(this.getDisplayName());
         }
@@ -531,23 +601,124 @@ public class CurbEntity extends AbstractCurbEntity {
         this.sound(SoundEvents.ENTITY_RAVAGER_STEP, 1.4f, 0.6f);
     }
 
-    void spinHits(java.util.Set<Integer> hitIds) {
-        if (this.radiusHit(SPIN_RADIUS, 1.2, SPIN_DAMAGE, 0.9, 0.25, hitIds) > 0) {
-            this.sound(ModSounds.CURB_PUNCH, 1.0f, 0.85f);
-        }
-    }
-
-    void spinFx() {
+    // --- «Хвост» ---
+    void tailFx() {
         ServerWorld s = this.sw();
         if (s == null) {
             return;
         }
-        double a = this.random.nextDouble() * Math.PI * 2;
-        for (int i = 0; i < 3; i++) {
-            double b = a + i * Math.PI * 2 / 3;
-            s.spawnParticles(ParticleTypes.SWEEP_ATTACK, this.getX() + Math.cos(b) * 2.4, this.getY() + 0.9,
-                    this.getZ() + Math.sin(b) * 2.4, 1, 0, 0, 0, 0);
+        Vec3d f = this.forward();
+        Vec3d side = new Vec3d(-f.z, 0, f.x);
+        for (int k = -1; k <= 1; k++) {
+            Vec3d p = this.getPos().add(f.multiply(1.8)).add(side.multiply(k * 1.1)).add(0, 0.8, 0);
+            s.spawnParticles(ParticleTypes.SWEEP_ATTACK, p.x, p.y, p.z, 1, 0, 0, 0, 0);
         }
+    }
+
+    // --- «Импульс»: фиолетовый луч из маски ---
+    static final DustParticleEffect BEAM_DUST = new DustParticleEffect(new Vector3f(0.62f, 0.22f, 1.0f), 1.8f);
+    static final DustParticleEffect BEAM_CORE = new DustParticleEffect(new Vector3f(0.9f, 0.75f, 1.0f), 0.9f);
+
+    /** Щель визора в мире (примерно, голова в позе выстрела). */
+    Vec3d visorPos() {
+        return this.getPos().add(this.forward().multiply(0.35)).add(0, 2.05 * MODEL_SCALE, 0);
+    }
+
+    void beamChargeFx(int t) {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        Vec3d v = this.visorPos().add(0, -0.25, 0);          // голова опущена во время заряда
+        double r = 0.9 - t * 0.03;
+        s.spawnParticles(BEAM_DUST, v.x, v.y, v.z, 3, r * 0.4, r * 0.4, r * 0.4, 0);
+        s.spawnParticles(ParticleTypes.REVERSE_PORTAL, v.x, v.y, v.z, 2, 0.15, 0.15, 0.15, 0.02);
+    }
+
+    /**
+     * Выстрел: стоит или идёт — попадает с шансом 75%, бежит вбок от босса — 25%. Промах — луч проходит в 1.4–2.2
+     * блоках сбоку. Луч упирается в блоки (за стеной не попадает).
+     * @param sample где была цель за BEAM_SAMPLE тиков до выстрела (для скорости), может быть null
+     */
+    void fireBeam(LivingEntity target, Vec3d sample) {
+        ServerWorld s = this.sw();
+        if (s == null) {
+            return;
+        }
+        Vec3d eye = this.visorPos();
+        Vec3d end;
+        boolean hit = false;
+        if (target != null) {
+            Vec3d aim = new Vec3d(target.getX(), target.getBodyY(0.55), target.getZ());
+            float chance = BEAM_HIT;
+            Vec3d to = new Vec3d(target.getX() - this.getX(), 0, target.getZ() - this.getZ());
+            if (sample != null && to.lengthSquared() > 0.01) {
+                to = to.normalize();
+                double vx = (target.getX() - sample.x) / BEAM_SAMPLE;
+                double vz = (target.getZ() - sample.z) / BEAM_SAMPLE;
+                double speed = Math.sqrt(vx * vx + vz * vz);
+                double lateral = Math.abs(vx * to.z - vz * to.x);
+                boolean running = target.isSprinting() || speed > 0.24;
+                if (running && lateral > 0.14 && lateral > speed * 0.55) {
+                    chance = BEAM_HIT_RUNNING;
+                }
+            }
+            hit = this.random.nextFloat() < chance;
+            if (hit) {
+                end = aim;
+            } else {
+                Vec3d side = new Vec3d(-to.z, 0, to.x).multiply((this.random.nextBoolean() ? 1 : -1)
+                        * (1.4 + this.random.nextDouble() * 0.8));
+                end = aim.add(side).add(0, (this.random.nextDouble() - 0.3) * 0.8, 0);
+            }
+        } else {
+            end = eye.add(this.forward().multiply(10));
+        }
+        Vec3d dir = end.subtract(eye).normalize();
+        Vec3d far = eye.add(dir.multiply(BEAM_RANGE));
+        net.minecraft.util.hit.BlockHitResult bh = this.getWorld().raycast(new net.minecraft.world.RaycastContext(
+                eye, far, net.minecraft.world.RaycastContext.ShapeType.COLLIDER,
+                net.minecraft.world.RaycastContext.FluidHandling.NONE, this));
+        Vec3d stop = bh.getType() == net.minecraft.util.hit.HitResult.Type.MISS ? far : bh.getPos();
+        if (hit) {
+            if (eye.distanceTo(end) <= eye.distanceTo(stop) + 0.3) {
+                stop = end;
+                this.strike(target, BEAM_DAMAGE, 0.4, 0.1);
+            } else {
+                hit = false;                                  // луч упёрся в стену
+            }
+        }
+        int pts = Math.max(4, (int) (eye.distanceTo(stop) * 5));
+        com.lesha_top1972.basedefense.fx.Fx.line(s, eye, stop, pts, com.lesha_top1972.basedefense.fx.Fx.dust(0x9E38FF, 1.8f),
+                0, com.lesha_top1972.basedefense.fx.Fx.F_DUST);
+        com.lesha_top1972.basedefense.fx.Fx.line(s, eye, stop, pts, com.lesha_top1972.basedefense.fx.Fx.dust(0xE6C8FF, 0.8f),
+                0, com.lesha_top1972.basedefense.fx.Fx.F_DUST);
+        s.spawnParticles(BEAM_DUST, stop.x, stop.y, stop.z, hit ? 18 : 10, 0.25, 0.25, 0.25, 0);
+        s.spawnParticles(ParticleTypes.WITCH, stop.x, stop.y, stop.z, hit ? 14 : 6, 0.2, 0.2, 0.2, 0.2);
+        s.spawnParticles(ParticleTypes.REVERSE_PORTAL, eye.x, eye.y, eye.z, 12, 0.1, 0.1, 0.1, 0.15);
+        this.sound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 1.6f);
+        this.sound(ModSounds.CURB_JET_BURST, 1.0f, 1.7f);
+        if (hit) {
+            this.sound(SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, 1.4f, 0.6f);
+        }
+    }
+
+    // --- чемодан из‑за спины ---
+    void ejectCase() {
+        if (!(this.getWorld() instanceof ServerWorld s)) {
+            return;
+        }
+        Vec3d back = this.forward().multiply(-1);
+        Vec3d p = this.getPos().add(back.multiply(0.45 * MODEL_SCALE)).add(0, 1.75 * MODEL_SCALE, 0);
+        CurbCaseEntity c = ModEntities.CURB_CASE.create(s);
+        if (c != null) {
+            c.refreshPositionAndAngles(p.x, p.y, p.z, this.getYaw(), 0f);
+            c.setVelocity(back.x * 0.17, 0.32, back.z * 0.17);   // ≈3 блока назад
+            s.spawnEntity(c);
+        }
+        s.spawnParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y, p.z, 6, 0.15, 0.15, 0.15, 0.03);
+        this.sound(SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN, 1.2f, 1.3f);
+        this.sound(ModSounds.CURB_JET_BURST, 0.5f, 1.9f);
     }
 
     int minionsAround() {
@@ -688,7 +859,10 @@ public class CurbEntity extends AbstractCurbEntity {
         private int summonCooldown = 0;
         private int pillarCooldown = 200;
         private int guardCooldown = 260;
-        private int diveCooldown = 140;
+        private int diveCooldown = 400;
+        private int tailCooldown = 40;
+        private int beamCooldown = 160;
+        private Vec3d beamSample;
         private BlockPos pillarAt;
         private Vec3d diveAim = Vec3d.ZERO;
 
@@ -729,6 +903,12 @@ public class CurbEntity extends AbstractCurbEntity {
             if (this.diveCooldown > 0) {
                 this.diveCooldown--;
             }
+            if (this.tailCooldown > 0) {
+                this.tailCooldown--;
+            }
+            if (this.beamCooldown > 0) {
+                this.beamCooldown--;
+            }
         }
 
         @Override
@@ -747,13 +927,16 @@ public class CurbEntity extends AbstractCurbEntity {
                 out.add(new int[]{GUARD, 30});
             }
             if (this.diveCooldown <= 0 && dist > 3.0 && dist < 16) {
-                out.add(new int[]{DIVE, 35});
+                out.add(new int[]{DIVE, 20});
+            }
+            if (this.tailCooldown <= 0 && dist < 3.8) {
+                out.add(new int[]{TAIL, 50});
+            }
+            if (this.beamCooldown <= 0 && dist > 3.5 && dist < 20) {
+                out.add(new int[]{BEAM, 40});
             }
             if (!this.mob.isPhase2()) {
                 return;
-            }
-            if (dist < 4.6) {
-                out.add(new int[]{SPIN, 40});
             }
             if (this.summonCooldown <= 0 && dist < 16 && this.mob.minionsAround() < MAX_MINIONS) {
                 out.add(new int[]{SUMMON, 45});
@@ -800,6 +983,11 @@ public class CurbEntity extends AbstractCurbEntity {
                 this.guardCooldown = GUARD_COOLDOWN;
             } else if (a == DIVE) {
                 this.diveCooldown = DIVE_COOLDOWN;
+            } else if (a == TAIL) {
+                this.tailCooldown = TAIL_COOLDOWN;
+            } else if (a == BEAM) {
+                this.beamCooldown = BEAM_COOLDOWN;
+                this.beamSample = null;
             }
         }
 
@@ -840,20 +1028,54 @@ public class CurbEntity extends AbstractCurbEntity {
                         this.finish();
                     }
                 }
-                case SPIN -> {
-                    if (t == SPIN_FROM) {
-                        m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.6f);
+                case TAIL -> {
+                    if (target != null && t < TAIL_HIT_FROM) {
+                        m.turnToward(target, 45f);
                     }
-                    if (t >= SPIN_FROM && t <= SPIN_TO) {
-                        m.spinHits(this.hitIds);
-                        if (t % 3 == 0) {
-                            m.spinFx();
-                        }
-                        if (t % 6 == 0) {
-                            m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 0.8f + t * 0.01f);
+                    if (t == 2) {
+                        m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.55f);
+                    }
+                    if (t >= TAIL_HIT_FROM && t <= TAIL_HIT_TO) {
+                        if (m.coneHit(TAIL_REACH, 80, TAIL_DAMAGE, TAIL_KNOCK, 0.1, this.hitIds) > 0) {
+                            m.sound(ModSounds.CURB_PUNCH, 1.0f, 0.7f);
+                            m.sound(SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0f, 0.8f);
                         }
                     }
-                    if (t >= SPIN_TICKS) {
+                    if (t == TAIL_HIT_FROM + 1) {
+                        m.tailFx();
+                    }
+                    if (t >= TAIL_TICKS) {
+                        this.finish();
+                    }
+                }
+                case BEAM -> {
+                    if (target != null && t < BEAM_FIRE) {
+                        m.turnToward(target, 25f);
+                    }
+                    if (t == 2) {
+                        m.sound(SoundEvents.ENTITY_WARDEN_SONIC_CHARGE, 1.3f, 1.5f);
+                    }
+                    if (t >= 4 && t < BEAM_FIRE && t % 2 == 0) {
+                        m.beamChargeFx(t);
+                    }
+                    if (t == BEAM_FIRE - BEAM_SAMPLE && target != null) {
+                        this.beamSample = target.getPos();
+                    }
+                    if (t == BEAM_FIRE) {
+                        m.fireBeam(target, this.beamSample);
+                    }
+                    if (t >= BEAM_TICKS) {
+                        this.finish();
+                    }
+                }
+                case EJECT -> {
+                    if (t == 3) {
+                        m.sound(SoundEvents.BLOCK_PISTON_EXTEND, 0.7f, 1.6f);
+                    }
+                    if (t == EJECT_LAUNCH) {
+                        m.ejectCase();
+                    }
+                    if (t >= EJECT_TICKS) {
                         this.finish();
                     }
                 }
@@ -1033,7 +1255,7 @@ public class CurbEntity extends AbstractCurbEntity {
                 m.yieldHealFx();
             }
             if (t >= YIELD_TICKS) {
-                this.finish();
+                this.begin(EJECT);                          // картридж израсходован — чемодан из‑за спины
             }
         }
 

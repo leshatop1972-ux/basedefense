@@ -21,8 +21,8 @@ import math
 import os
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, ease, ease_in, ease_out, faces, length, lerp,
-import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, scl, sub, tr, write_anims)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 
@@ -45,6 +45,14 @@ CORE = (250, 246, 255)
 BLUE = (64, 140, 255)
 BLUE_HI = (186, 228, 255)
 BLUE_D = (30, 70, 190)
+VIOLET = (168, 64, 255)                                    # щель визора (фиолетовая)
+VIOLET_HI = (226, 176, 255)
+# хвост: чёрная чешуя
+SCALE = (22, 22, 27)
+SCALE_D = (11, 11, 14)
+SCALE_HI = (40, 36, 50)
+BELLY = (46, 44, 50)
+BELLY_D = (32, 31, 36)
 
 COAT = (96, 100, 102)
 COAT_L = (122, 126, 128)
@@ -100,6 +108,21 @@ def skeleton(M, minion):
     M.mirror_x("right_shin", "left_shin", parent="left_leg")
     M.mirror_x("right_foot", "left_foot", parent="left_shin")
     M.mirror_x("jet_rf", "jet_lf", parent="left_foot")
+
+    if not minion:
+        # массивный рептильный хвост: 4 сегмента от таза назад, по верху — пластины гребня
+        segs = [  # опора z, (x0, y0, z0, w, h, d) кость, гребень [(z0, d)], толщина гребня
+            ("tail1", "body", 1.6, (-2.9, 11.0, 1.2, 5.8, 5.2, 7.2), [(2.4, 2.0), (5.4, 2.0)], (1.6, 1.0)),
+            ("tail2", "tail1", 8.0, (-2.3, 11.6, 7.6, 4.6, 4.2, 6.6), [(8.6, 1.8), (11.2, 1.8)], (1.4, 0.9)),
+            ("tail3", "tail2", 14.0, (-1.7, 12.1, 13.6, 3.4, 3.2, 6.4), [(15.0, 1.6), (17.4, 1.6)], (1.2, 0.8)),
+            ("tail4", "tail3", 19.8, (-1.1, 12.6, 19.4, 2.2, 2.2, 5.6), [(20.6, 1.4), (22.8, 1.2)], (0.9, 0.7)),
+        ]
+        for name, parent, pz, (x0, y0, z0, w, h, d), plates, (pw, ph) in segs:
+            bone(name, parent, (0, 13.6, pz))
+            cube(name, (x0, y0, z0), (w, h, d), "scale", face=name)
+            for zz, dd in plates:
+                cube(name, (-pw / 2, y0 + h, zz), (pw, ph, dd), "tail_plate", face="tail_plate")
+        cube("tail4", (-0.6, 12.9, 24.8), (1.2, 1.4, 2.4), "scale", face="tail_tip")
 
     # корпус
     bone("torso", "body", (0, 16.5, 0))
@@ -220,7 +243,7 @@ def paint(M, minion, seed):
                         if fname == "top":
                             return lit(fname, ARM_L if (i + j) % 5 == 0 else ARM)
                         if side(fname) and j == 6:
-                            return ("glow", PINK) if fname in ("left", "right") and i in (2, 3, 4, 5) else lit(fname, ARM_D)
+                            return ("glow", VIOLET) if fname in ("left", "right") and i in (2, 3, 4, 5) else lit(fname, ARM_D)
                     if face == "segment":
                         return lit(fname, ARM_HI if j == 0 else ARM_L)
                     if face == "kneepad" and fname == "front" and j == 1 and i in (1, w - 2):
@@ -247,9 +270,9 @@ def paint(M, minion, seed):
                     return lit(fname, ARM_L)
                 if mat == "visor":
                     if fname == "front":
-                        return ("glow", PINK_HI if j % 6 else PINK) if True else None
+                        return ("glow", VIOLET_HI if j % 6 else VIOLET)
                     if fname in ("left", "right"):
-                        return ("glow", PINK)
+                        return ("glow", VIOLET)
                     return lit(fname, ARM_D)
                 if mat == "suit":
                     col = SUIT if (i + j * 2) % 6 else SUIT_D
@@ -293,6 +316,22 @@ def paint(M, minion, seed):
                     if face == "vent" and side(fname) and j % 2 == 1:
                         return ("glow", mix(BLUE, ARM_D, 0.55))
                     return lit(fname, ARM_L if j == 0 else ARM_D)
+                if mat == "scale":
+                    # чёрная чешуя: ряды со сдвигом, снизу — светлее поперечные пластины брюха
+                    if fname == "bottom":
+                        return lit(fname, BELLY if j % 2 == 0 else BELLY_D)
+                    if fname in ("front", "back"):
+                        return lit(fname, SCALE_D if (i + j) % 3 == 0 else SCALE)
+                    row = j // 2
+                    hi = j % 2 == 0 and (i + row) % 2 == 0
+                    col = SCALE_HI if hi else (SCALE_D if (i * 3 + j * 5) % 11 == 0 else SCALE)
+                    if fname in ("left", "right") and j >= h - 1:
+                        col = mix(col, BELLY_D, 0.6)
+                    return lit(fname, col)
+                if mat == "tail_plate":
+                    if fname == "top":
+                        return lit(fname, ARM_L if i in (0, w - 1) else ARM)
+                    return lit(fname, ARM_HI if j == 0 else ARM_D)
                 # --- прислужник ---
                 if mat in ("coat", "cape"):
                     col = COAT if (i * 2 + j) % 9 else COAT_D
@@ -382,6 +421,7 @@ DEFAULT = dict(
     head=(0, 0, 0), rf=(-2.1, 22.5, 0), lf=(2.1, 22.5, 0), toe_r=0.0, toe_l=0.0,
     rh=(-6.3, -0.2, -0.8), lh=(6.3, -0.2, -0.8), r_pole=(0.2, -0.1, 1), l_pole=(-0.2, -0.1, 1),
     rhand=(0, 0, 0), lhand=(0, 0, 0), coat=0.0, cape=0.0,
+    tail=0.0, tail_up=0.0, tail_sway=5.0,
 )
 SHOULDER = {"rh": (-5.6, -11.0, 0.0), "lh": (5.6, -11.0, 0.0)}
 DIRS = ("r_pole", "l_pole")
@@ -453,7 +493,8 @@ def keyed(keys, t, base=DEFAULT):
 
 
 # Небольшое запаздывание: кулаки чуть догоняют корпус (удар «хлёсткий»), ткань — сильнее.
-LAG = {"head": -0.02, "rh": 0.03, "lh": 0.03, "r_pole": 0.03, "l_pole": 0.03, "coat": 0.12, "cape": 0.16}
+LAG = {"head": -0.02, "rh": 0.03, "lh": 0.03, "r_pole": 0.03, "l_pole": 0.03, "coat": 0.12, "cape": 0.16,
+       "tail": 0.08, "tail_up": 0.08}
 TAIL = 0.12
 
 
@@ -538,6 +579,8 @@ def resolve(pr, model):
         limb_ik(model, pose, s + "_arm", s + "_fore", tgt, mv(Rt, list(pr[pole])), UPPER, FORE, 1, out)
     pose["right_hand"] = {"rot": pr["rhand"]}
     pose["left_hand"] = {"rot": pr["lhand"]}
+    if "tail1" in model.by_name:
+        tail_pose(pr, pose)
     if "coat_fr" in model.by_name:
         # полы и плащ висят вниз, следуют за бёдрами и отстают при движении
         rl = pose["right_leg"]["rot"][0]
@@ -549,6 +592,25 @@ def resolve(pr, model):
         lean = pr["body"][0] + pr["torso"][0]
         pose["cape"] = {"rot": (-lean * 0.9 + 5 + pr["cape"], 0, 0)}
     return pose
+
+
+TAIL_BONES = ("tail1", "tail2", "tail3", "tail4")
+TAIL_DROOP = (-26.0, 7.0, 7.0, 6.0)          # тяжёлый хвост свисает к земле, к концу чуть загибается
+
+
+def tail_pose(pr, pose):
+    """Хвост: свисает, волна покачивания от основания к кончику, отстаёт при поворотах корпуса (_turn)."""
+    t = pr.get("_t", 0.0)
+    per = pr.get("_per", 2.0)
+    lag = max(-45.0, min(45.0, -pr.get("_turn", 0.0) * 0.8))
+    for i, name in enumerate(TAIL_BONES):
+        w = 2 * math.pi * t / per - i * 0.85
+        k = 0.4 + 0.2 * i
+        yaw = pr["tail_sway"] * (0.5 + 0.25 * i) * math.sin(w) + pr["tail"] * k + lag * k
+        pitch = TAIL_DROOP[i] + pr["tail_up"] * (0.6 if i == 0 else 0.2) + 1.2 * math.sin(w + 1.3)
+        if i == 0:
+            pitch -= pr["body"][0] * 0.6                      # корпус наклонился — хвост остаётся над землёй
+        pose[name] = {"rot": (pitch, yaw, 0.0)}
 
 
 def canonical(r):
@@ -621,6 +683,7 @@ def idle(t):
     pr["rh"] = (-4.2, -7.4 + 0.5 * math.sin(w + 0.7), -5.4)
     pr["lh"] = (3.2, -8.2 + 0.5 * math.sin(w + 1.0), -7.0 - 0.6 * math.sin(w * 0.5))
     pr["cape"] = 2 * math.sin(w - 0.6)
+    pr["tail_sway"] = 6.0
     return pr
 
 
@@ -638,6 +701,8 @@ def walk(t):
     pr["toe_l"] = -10 * max(0.0, -math.sin(w))
     pr["coat"] = 3 + 3 * math.sin(2 * w)
     pr["cape"] = 4 + 3 * math.sin(2 * w)
+    pr["tail_sway"] = 9.0
+    pr["tail_up"] = 4.0
     return pr
 
 
@@ -656,6 +721,8 @@ def run(t):
     pr["toe_l"] = -20 * max(0.0, -math.sin(w))
     pr["coat"] = 16 + 4 * math.sin(2 * w)
     pr["cape"] = 22 + 5 * math.sin(2 * w)
+    pr["tail_sway"] = 7.0
+    pr["tail_up"] = 14.0                                     # на бегу хвост вытянут назад — противовес
     return pr
 
 
@@ -741,25 +808,11 @@ def slam(t):
     return layered(SLAM, t)
 
 
-# --- атака 4 «Вихрь» (2‑я фаза): нога вперёд, два оборота вокруг себя ---
+# «Вихрь» убран (по просьбе пользователя); поза ног осталась для волны «Я не сдамся»
 SPIN_POSE = dict(body=(-10, 0, 0), torso=(-2, 0, 0), head=(6, 0, 0), body_pos=(0, 0.8, 0),
                  rf=(-1.8, 11.6, -13.0), toe_r=-20.0, lf=(0.4, 22.5, 0.4),
                  rh=(-16.4, -9.6, 0.6), lh=(16.4, -9.6, 0.6), r_pole=(0, 1, 0.4), l_pole=(0, 1, 0.4),
                  coat=20.0, cape=36.0)
-SPIN_START, SPIN_END = 0.40, 1.50
-
-
-def spin(t):
-    keys = [(0.0, {}, "lin"), (0.38, SPIN_POSE, "out"), (1.5, dict(SPIN_POSE), "lin"),
-            (2.0, dict(DEFAULT), "ease")]
-    pr = layered(keys, t)
-    x = max(0.0, min(1.0, (t - SPIN_START) / (SPIN_END - SPIN_START)))
-    f = x * x * (3 - 2 * x) * 0.35 + x * 0.65                # почти равномерно, мягкий старт/стоп
-    pr["root_y"] = -720.0 * f
-    if SPIN_START < t < SPIN_END:
-        pr["coat"] = 34.0
-        pr["cape"] = 60.0
-    return pr
 
 
 # --- атака 5 «Призыв» (2‑я фаза): кулак вверх, удар кулаком в землю на колене, из земли встают двое ---
@@ -974,6 +1027,108 @@ def yield_(t):
     return pr
 
 
+# --- «Хвост» (быстрая, 0.85 с): короткий замах в другую сторону, резкий оборот — хвост проходит перед ним
+#     на высоте пояса (удар на 0.3–0.45 с), возврат в стойку ---
+WHIP_COCK = dict(STANCE, body_pos=(0, 2.6, 0), body=(8, 0, 0), torso=(10, 14, 0), head=(-10, -14, 0),
+                 rf=(-3.2, 22.5, 2.0), lf=(3.0, 22.5, -2.4), rh=(-6.6, -7.0, -3.0), lh=(4.0, -7.6, -6.0),
+                 tail=-30.0, tail_up=8.0)
+WHIP = dict(STANCE, body_pos=(0, 3.2, 0), body=(12, 0, 0), torso=(12, -10, 0), head=(-12, 10, 0),
+            rf=(-3.4, 22.5, 1.6), lf=(3.4, 22.5, -1.6), rh=(-9.4, -6.0, 1.0), lh=(9.4, -6.0, 1.0),
+            r_pole=(-0.2, 1, 0.6), l_pole=(0.2, 1, 0.6), tail=10.0, tail_up=34.0, coat=10.0, cape=20.0)
+WHIP_KEYS = [
+    (0.00, {}, "lin"),
+    (0.12, WHIP_COCK, "out"),
+    (0.30, WHIP, "in3"),
+    (0.50, dict(WHIP, tail_up=26.0), "lin"),
+    (0.85, dict(STANCE), "ease"),
+]
+WHIP_FROM, WHIP_TO = 0.12, 0.62
+
+
+def tail_whip(t):
+    pr = layered(WHIP_KEYS, t)
+    x = max(0.0, min(1.0, (t - WHIP_FROM) / (WHIP_TO - WHIP_FROM)))
+    f = 1 - (1 - x) ** 2.2                                  # резкий старт, мягкое торможение
+    a = min(1.0, t / WHIP_FROM)
+    pr["root_y"] = 25.0 * ease(a) * (1 - x) - 360.0 * f
+    return pr
+
+
+# --- «Импульс» (2.0 с): стойка, голова опущена — визор копит заряд (дрожь), на 1.1 с голова рывком вперёд —
+#     из маски бьёт фиолетовый луч, корпус откидывает отдачей ---
+BEAM_BRACE = dict(STANCE, body_pos=(0, 2.6, 0), body=(4, 0, 0), torso=(8, 0, 0), head=(-6, 0, 0),
+                  rf=(-3.4, 22.5, 2.8), lf=(3.0, 22.5, -2.6), rh=(-7.6, -3.0, -1.6), lh=(7.6, -3.0, -1.6),
+                  r_pole=(-0.2, 0, 1), l_pole=(0.2, 0, 1), rhand=(-12, 0, 0), lhand=(-12, 0, 0), tail_up=6.0)
+BEAM_CHARGE = dict(BEAM_BRACE, body_pos=(0, 3.4, 0), torso=(20, 0, 0), head=(12, 0, 0),
+                   rh=(-8.4, -1.6, 2.2), lh=(8.4, -1.6, 2.2), tail=0.0, tail_up=-4.0, coat=4.0)
+BEAM_FIRE = dict(BEAM_BRACE, body_pos=(0, 2.0, 0), root_pos=(0, 0, 1.6), body=(-8, 0, 0), torso=(-10, 0, 0),
+                 head=(-10, 0, 0), rh=(-9.6, -3.4, 4.2), lh=(9.6, -3.4, 4.2), tail_up=22.0, coat=-10.0, cape=-14.0)
+BEAM_KEYS = [
+    (0.00, {}, "lin"),
+    (0.25, BEAM_BRACE, "out"),
+    (0.85, BEAM_CHARGE, "ease"),
+    (1.05, dict(BEAM_CHARGE, head=(16, 0, 0), torso=(22, 0, 0)), "lin"),
+    (1.10, BEAM_FIRE, "in3"),
+    (1.35, dict(BEAM_FIRE, root_pos=(0, 0, 1.2), torso=(-6, 0, 0)), "out"),
+    (2.00, dict(STANCE), "ease"),
+]
+
+
+def beam(t):
+    pr = layered(BEAM_KEYS, t)
+    if 0.3 < t < 1.08:                                       # дрожь — заряд копится
+        k = min(1.0, (t - 0.3) / 0.5)
+        pr["body_pos"] = add(list(pr["body_pos"]), [0.1 * math.sin(t * 97) * k, 0.09 * math.sin(t * 73) * k, 0])
+        pr["head"] = add(list(pr["head"]), [1.5 * math.sin(t * 89) * k, 1.2 * math.sin(t * 61) * k, 0])
+    return pr
+
+
+# --- после «Я не сдамся»: передёргивает плечами — из‑за спины вылетает чёрный чемодан (на 0.35 с) ---
+EJ_HUNCH = dict(STANCE, body_pos=(0, 3.0, 0), body=(10, 0, 0), torso=(26, 0, 0), head=(-4, 0, 0),
+                rh=(-5.0, -6.4, -4.0), lh=(5.0, -6.4, -4.0), r_pole=(-0.6, 1, 0.2), l_pole=(0.6, 1, 0.2),
+                tail_up=-6.0)
+EJ_POP = dict(STANCE, body_pos=(0, 1.6, 0), root_pos=(0, 0, -1.0), body=(-6, 0, 0), torso=(-14, 0, 0),
+              head=(-22, 0, 0), rh=(-9.0, -5.0, 1.6), lh=(9.0, -5.0, 1.6), r_pole=(0, 0.4, 1), l_pole=(0, 0.4, 1),
+              tail_up=24.0, coat=-8.0, cape=-20.0)
+EJ_ROLL = dict(STANCE, torso=(6, 14, 0), head=(-8, -10, 0), rh=(-4.0, -8.6, -5.0), lh=(5.0, -6.4, -2.4))
+EJECT_KEYS = [
+    (0.00, {}, "lin"),
+    (0.22, EJ_HUNCH, "out"),
+    (0.34, EJ_POP, "in3"),
+    (0.65, dict(EJ_POP, head=(-16, 0, 0), torso=(-10, 0, 0)), "out"),
+    (0.95, EJ_ROLL, "ease"),
+    (1.30, dict(STANCE), "ease"),
+]
+
+
+def eject(t):
+    return layered(EJECT_KEYS, t)
+
+
+# --- смерть (держит последнюю позу, пока играет звук): отшатнулся → на колено → поник ---
+D_STAGGER = dict(body=(-14, 0, 0), torso=(-12, 0, 0), head=(-28, 0, 0), body_pos=(0, 0.8, 0), root_pos=(0, 0, 1.6),
+                 rf=(-2.6, 22.5, 3.4), lf=(2.6, 22.5, 0.4), rh=(-9.0, -2.0, 1.0), lh=(9.0, -2.0, 1.0),
+                 r_pole=(0, 0, 1), l_pole=(0, 0, 1), tail_up=10.0, coat=-8.0, cape=-12.0)
+D_KNEE = dict(KNEEL, root_pos=(0, 0, 1.6), torso=(24, 0, 0), head=(10, 0, 0), rh=(-7.0, 3.0, -2.0), lh=(7.4, 1.0, -1.0),
+              r_pole=(0, 0, 1), l_pole=(0, 0, 1), tail_up=-12.0, coat=10.0, cape=10.0)
+D_SLUMP = dict(D_KNEE, body=(24, 0, 0), torso=(40, 0, 0), head=(34, 0, 0), body_pos=(0, 8.4, 0),
+               rh=(-6.4, 6.6, -3.0), lh=(6.6, 6.0, -2.0), rhand=(20, 0, 0), lhand=(20, 0, 0), tail_up=-18.0, tail=14.0)
+DEATH_KEYS = [
+    (0.00, {}, "lin"),
+    (0.30, D_STAGGER, "out"),
+    (0.85, D_KNEE, "in"),
+    (1.00, dict(D_KNEE, body_pos=(0, 7.9, 0)), "out"),
+    (2.20, D_SLUMP, "ease"),
+    (2.40, dict(D_SLUMP), "lin"),
+]
+
+
+def death(t):
+    pr = layered(DEATH_KEYS, t)
+    pr["tail_sway"] = 3.0 * max(0.0, 1 - t / 2.0)
+    return pr
+
+
 CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("idle", idle, 2.4, 20, True),
     ("walk", walk, 1.0, 24, True),
@@ -981,7 +1136,6 @@ CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("combo", combo, COMBO[-1][0] + TAIL, 60, False),
     ("jet", jet, JET[-1][0] + TAIL, 60, False),
     ("slam", slam, SLAM[-1][0] + TAIL, 60, False),
-    ("spin", spin, 2.0 + TAIL, 60, False),
     ("summon", summon, SUMMON[-1][0] + TAIL, 60, False),
     ("dodge_back", dodge_back, 0.70, 60, False),
     ("dodge_left", dodge_left, 0.70, 60, False),
@@ -991,8 +1145,27 @@ CLIPS = [  # имя, функция, длина, кадров/с, цикл
     ("dive", dive, DIVE[-1][0], 60, False),
     ("dive_land", dive_land, DIVE_LAND_KEYS[-1][0] + TAIL, 60, False),
     ("yield", yield_, YIELD[-1][0] + TAIL, 60, False),
+    ("tail", tail_whip, WHIP_KEYS[-1][0] + TAIL, 60, False),
+    ("beam", beam, BEAM_KEYS[-1][0] + TAIL, 60, False),
+    ("eject", eject, EJECT_KEYS[-1][0] + TAIL, 60, False),
+    ("death", death, DEATH_KEYS[-1][0], 60, False),
 ]
 MINION_CLIPS = ["idle", "walk", "run", "combo", "jet", "dodge_back", "dodge_left", "dodge_right"]
+
+
+def with_tail(fn, t, ln, loop):
+    """Поза + время для хвоста: период волны и скорость поворота корпуса (для отставания)."""
+    pr = fn(t)
+    dt = 0.08
+    t0 = t - dt
+    if t0 < 0:
+        t0 = t0 % ln if loop else 0.0
+    p0 = fn(t0)
+    turn = (pr["root_y"] - p0["root_y"]) + (pr["body"][1] - p0["body"][1]) + 0.5 * (pr["torso"][1] - p0["torso"][1])
+    pr["_t"] = t
+    pr["_per"] = ln if loop else 2.0
+    pr["_turn"] = turn
+    return pr
 
 
 def bake_all(model, names, extra=()):
@@ -1002,7 +1175,8 @@ def bake_all(model, names, extra=()):
         if name not in names:
             continue
         PREV_PN.clear()
-        anim = bake(lambda t, fn=fn: resolve(fn(t), model), ln, fps, loop, bones, unwrap=True)
+        anim = bake(lambda t, fn=fn, ln=ln, loop=loop: resolve(with_tail(fn, t, ln, loop), model), ln, fps, loop,
+                    bones, unwrap=True)
         if not loop:
             anchor_end(anim)
         out["animation.%s.%s" % (model.name, name)] = anim
@@ -1020,7 +1194,43 @@ def jet_nozzle_point(model, fn, t, side_name="right"):
     return (-p[0] / 16.0, (24 - p[1]) / 16.0, -p[2] / 16.0)
 
 
+def case_texture(path):
+    """Чёрный чемодан (CurbCaseEntity, 32×32). Развёртки совпадают с CurbCaseRenderer:
+    корпус uv (0,0) 12×8×4, ручка (0,14) 5×1×1, стойки ручки (0,18) 1×1.5×1, замки (16,14) 2×1.5×0.5."""
+    from PIL import Image
+    import random
+    rnd = random.Random(1972)
+    img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+
+    def put(x, y, c):
+        k = 1.0 + (rnd.random() - 0.5) * 0.12
+        img.putpixel((x, y), (min(255, int(c[0] * k)), min(255, int(c[1] * k)), min(255, int(c[2] * k)), 255))
+
+    leather, edge, seam = (20, 20, 24), (34, 34, 40), (12, 12, 15)
+    for y in range(12):
+        for x in range(32):
+            c = leather
+            if y >= 4 and y in (4, 11):
+                c = edge                                     # окантовка по краям граней
+            if y == 8:
+                c = seam                                     # шов посередине
+            if y < 4 and (x % 16 in (0, 15) or y in (0, 3)):
+                c = edge
+            put(x, y, c)
+    for y in range(14, 16):
+        for x in range(12):
+            put(x, y, (28, 28, 32))
+    for y in range(18, 21):
+        for x in range(4):
+            put(x, y, (40, 40, 46))
+    for y in range(14, 16):
+        for x in range(16, 21):
+            put(x, y, (150, 150, 160) if (x + y) % 3 else (110, 110, 122))
+    img.save(path)
+
+
 if __name__ == "__main__":
+    case_texture(asset_groups.tex("curb_case.png", ROOT))
     for M_, PT in ((B, PB), (N, PN)):
         M_.write_geo(ROOT)
         PT.img.save(asset_groups.tex(M_.name + ".png", ROOT))
