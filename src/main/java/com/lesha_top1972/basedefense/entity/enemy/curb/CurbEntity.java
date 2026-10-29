@@ -49,7 +49,7 @@ import java.util.List;
 
 /**
  * Босс «Боря228» (id curb, бывший «Бордюр») — боец в чёрной броне с реактивными соплами в локтях, фиолетовой
- * щелью визора и массивным чёрным хвостом. 500 HP, стрелы −55%, раз в 25 с переключается на другого игрока.
+ * щелью визора и массивным чёрным хвостом. 550 HP (на половине HP — +1 картридж; «Я не сдамся» лечит 10%), стрелы −55%, раз в 25 с переключается на другого игрока.
  * Урон атак (+1 к прежнему): серия 5, реактивный 13, таран 7 + топот 5, пике 14, «Я не сдамся» 8/9/8×0.75/15.
  * Новое: TAIL «Хвост» (быстрая, 5, до 3 бл, откидывает ~4 бл), BEAM «Импульс» (луч из маски, 10; стоишь/идёшь —
  * попадает с шансом 75%, бежишь вбок от него — 25%), EJECT — после «Я не сдамся» из‑за спины вылетает чемодан.
@@ -157,7 +157,7 @@ public class CurbEntity extends AbstractCurbEntity {
     static final float YIELD_AXE_DMG = 9f;
     static final float YIELD_FLURRY_DMG = 0.75f;
     static final float YIELD_HAMMER_DMG = 15f;
-    static final float YIELD_HEAL_PART = 0.2f;
+    static final float YIELD_HEAL_PART = 0.1f;     // «Я не сдамся» лечит 10% макс. HP
     static final int MAX_CARTRIDGES = 99;
 
     static final float COMBO_DAMAGE = 5f;
@@ -176,6 +176,8 @@ public class CurbEntity extends AbstractCurbEntity {
     /** Число картриджей (видно эффектом «Картридж»), флаг «только что получил» и перезарядка атаки. */
     private int cartridges = 1;                     // изначально 1 картридж
     private boolean yieldNow;
+    /** Картридж за половину здоровья уже выдан (один раз за бой). */
+    private boolean halfCartridge;
     private int yieldCooldown = 600;                // первый «Я не сдамся» — не раньше чем через 30 с
     private int retargetTimer = RETARGET_TICKS;
 
@@ -187,7 +189,7 @@ public class CurbEntity extends AbstractCurbEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 500.0)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 550.0)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.26)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 3.0)
@@ -331,6 +333,10 @@ public class CurbEntity extends AbstractCurbEntity {
         if (this.yieldCooldown > 0) {
             this.yieldCooldown--;
         }
+        if (!this.halfCartridge && this.isAlive() && this.getHealth() <= this.getMaxHealth() * 0.5f) {
+            this.halfCartridge = true;
+            this.addCartridges(1);                  // половина здоровья — +1 картридж
+        }
         this.syncCartridgeEffect();
         boolean spiked = this.hasStatusEffect(ModEffects.SPIKES);
         if (spiked != this.dataTracker.get(SPIKED)) {
@@ -382,12 +388,14 @@ public class CurbEntity extends AbstractCurbEntity {
         nbt.putBoolean("Phase2", this.phase2);
         nbt.putInt("Cartridges", this.cartridges);
         nbt.putInt("YieldCooldown", this.yieldCooldown);
+        nbt.putBoolean("HalfCartridge", this.halfCartridge);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.phase2 = nbt.getBoolean("Phase2");
+        this.halfCartridge = nbt.getBoolean("HalfCartridge");
         if (nbt.contains("Cartridges")) {
             this.cartridges = nbt.getInt("Cartridges");
             this.yieldCooldown = nbt.getInt("YieldCooldown");
@@ -433,14 +441,21 @@ public class CurbEntity extends AbstractCurbEntity {
     public boolean onKilledOther(ServerWorld world, LivingEntity other) {
         boolean r = super.onKilledOther(world, other);
         if (other != this) {
-            int add = other instanceof PlayerEntity ? 3 : 1;
-            this.cartridges = Math.min(MAX_CARTRIDGES, this.cartridges + add);
-            this.yieldNow = true;
-            this.syncCartridgeEffect();
-            world.spawnParticles(ParticleTypes.WAX_ON, this.getX(), this.getBodyY(0.6), this.getZ(), 10 * add, 0.4, 0.5, 0.4, 0.1);
-            this.sound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.4f, 0.7f);
+            this.addCartridges(other instanceof PlayerEntity ? 3 : 1);
         }
         return r;
+    }
+
+    /** +картриджи; сразу после получения — «Я не сдамся». */
+    private void addCartridges(int add) {
+        this.cartridges = Math.min(MAX_CARTRIDGES, this.cartridges + add);
+        this.yieldNow = true;
+        this.syncCartridgeEffect();
+        ServerWorld s = this.sw();
+        if (s != null) {
+            s.spawnParticles(ParticleTypes.WAX_ON, this.getX(), this.getBodyY(0.6), this.getZ(), 10 * add, 0.4, 0.5, 0.4, 0.1);
+        }
+        this.sound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.4f, 0.7f);
     }
 
     int cartridges() {
