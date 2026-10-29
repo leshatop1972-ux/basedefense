@@ -25,13 +25,13 @@ public class AmuletTableScreenHandler extends ScreenHandler {
     // ---------- Размеры окна и места слотов (верхний левый угол предмета) ----------
     public static final int W = 256;
     public static final int H = 240;
-    public static final int LEFT_X = 34;
+    public static final int LEFT_X = 26;
     public static final int LEFT_Y = 46;
-    public static final int RIGHT_X = 110;
+    public static final int RIGHT_X = 92;
     public static final int RIGHT_Y = 46;
-    public static final int RESULT_X = 72;
+    public static final int RESULT_X = 59;
     public static final int RESULT_Y = 76;
-    public static final int PENDANT_X = 72;
+    public static final int PENDANT_X = 59;
     public static final int PENDANT_Y = 106;
     public static final int INV_X = 48;
     public static final int INV_Y = 156;

@@ -543,7 +543,7 @@
   "screen.basedefense.amulet_table.pendant": "Кулон",
   "screen.basedefense.amulet_table.start": "Начать крафт",
   "screen.basedefense.amulet_table.left": "Осталось %s:%s",
-  "screen.basedefense.amulet_table.chances": "Шансы того, что может получиться",
+  "screen.basedefense.amulet_table.chances": "Шансы крафта",
   "screen.basedefense.amulet_table.hint.none": "Из этих амулетов ничего не получится.",
   "message.basedefense.amulet_table.done": "Стол амулетов: готово — %s",
   "screen.basedefense.settler.smith.1": "Нет материалов: 3 железа, 1 золото, 5 редстоуна",
@@ -555,6 +555,5 @@
   "screen.basedefense.settler.forge.off": "Ковка кулонов: ВЫКЛ",
   "screen.basedefense.settler.tip.forge": "Куёт пустые кулоны для стола амулетов.\nОдин кулон: 3 железных слитка, 1 золотой, 5 редстоуна.\nБерёт из сундука кузницы или со склада Базы.\nВремя: 3 / 2.5 / 2 минуты по уровню.\nКурьер относит готовые кулоны на склад.",
   "message.basedefense.blacksmith.forge_on": "%s снова куёт кулоны",
-  "message.basedefense.blacksmith.forge_off": "%s больше не куёт кулоны",
-  "screen.basedefense.amulet_table.all": "Все крафты стола"
+  "message.basedefense.blacksmith.forge_off": "%s больше не куёт кулоны"
 }
