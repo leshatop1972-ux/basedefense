@@ -53,6 +53,7 @@ public final class Director {
                                 .executes(Director::cmdInfo)
                                 .then(CommandManager.literal("roll").executes(Director::cmdRoll))
                                 .then(CommandManager.literal("wave").executes(Director::cmdWave))
+                                .then(CommandManager.literal("drain").executes(Director::cmdDrain))
                                 .then(CommandManager.literal("show").executes(Director::cmdShow))
                                 .then(CommandManager.literal("set")
                                         .then(CommandManager.argument("event", StringArgumentType.word())
@@ -239,6 +240,17 @@ public final class Director {
                 + ", шкала " + s.points + "/" + DirectorTables.SCALE_MAX + ", событие: ")
                 .append(Text.translatable(s.today.key()))
                 .append(isActive(server) ? "" : " (режиссёр начнёт с " + DirectorTables.START_DAY + "-го дня)"), false);
+        return 1;
+    }
+
+    /** Осушить: убрать воду и лёд на высоте моря…+5 в 64 блоках от игрока (остатки наводнения). */
+    private static int cmdDrain(CommandContext<ServerCommandSource> ctx) {
+        ServerPlayerEntity p = ctx.getSource().getPlayer();
+        if (p == null) {
+            return 0;
+        }
+        int n = Flood.get(ctx.getSource().getServer()).drain(p.getServerWorld(), p.getBlockPos(), 64);
+        ctx.getSource().sendFeedback(() -> Text.literal("Убрано блоков воды и льда: " + n), false);
         return 1;
     }
 

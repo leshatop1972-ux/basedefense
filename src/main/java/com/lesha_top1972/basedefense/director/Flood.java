@@ -22,14 +22,14 @@ import java.util.UUID;
 
 /**
  * Подъём воды (наводнение +4, ливень +3): всё, что ниже уровня «море + подъём» и открыто сверху (крыша
- * спасает), заливается водой — вокруг игроков (радиус 48) и Базы, по кусочку за тик. Каждый поставленный
+ * спасает), заливается водой — вокруг игроков (радиус 64, кругом) и Базы, по кусочку за тик. Каждый поставленный
  * блок воды запоминается (data/basedefense_flood.dat); на следующее утро вода быстро уходит — убираются
  * только наши источники, которые всё ещё вода.
  */
 public final class Flood extends PersistentState {
 
     private static final String SAVE_ID = "basedefense_flood";
-    private static final int RADIUS = 48;
+    private static final int RADIUS = 64;
     private static final int COLUMNS_PER_TICK = 450;
     private static final int RECEDE_PER_TICK = 2500;
     private static final int LIMIT = 400_000;
@@ -37,6 +37,8 @@ public final class Flood extends PersistentState {
     private final LongArrayList placed = new LongArrayList();
     private final LongOpenHashSet placedSet = new LongOpenHashSet();
     private boolean receding;
+    /** Убранные позиции: после ухода воды им шлётся обновление соседей — остатки текущей воды высыхают. */
+    private final LongArrayList cleanup = new LongArrayList();
 
     /** Курсор обхода квадрата вокруг каждого центра (не сохраняется). */
     private static final Map<UUID, Integer> CURSORS = new HashMap<>();
@@ -79,9 +81,11 @@ public final class Flood extends PersistentState {
             for (int n = 0; n < COLUMNS_PER_TICK; n++) {
                 // шаг с простым числом — обход «вразброс», вода растёт равномерно, а не полосой
                 cursor = (cursor + 7919) % total;
-                int x = center.getX() - RADIUS + cursor % side;
-                int z = center.getZ() - RADIUS + cursor / side;
-                fillColumn(w, x, z, top);
+                int dx = cursor % side - RADIUS;
+                int dz = cursor / side - RADIUS;
+                if (dx * dx + dz * dz <= RADIUS * RADIUS) {      // круг, а не квадрат
+                    fillColumn(w, center.getX() + dx, center.getZ() + dz, top);
+                }
             }
             CURSORS.put(keys.get(c), cursor);
         }
@@ -121,30 +125,79 @@ public final class Flood extends PersistentState {
         }
     }
 
-    /** Тик отступления — быстро, по 2500 блоков. */
+    /**
+     * Тик отступления — быстро, по 2500 блоков. Блоки убираются БЕЗ обновления соседей: иначе вода между
+     * ещё не убранными источниками (над морем) сама становится новым источником и остаётся. Когда все
+     * источники убраны — второй проход шлёт обновления, и остатки текущей воды высыхают.
+     */
     void tickRecede(ServerWorld w) {
-        if (!receding) {
+        if (!receding && cleanup.isEmpty()) {
             return;
         }
         BlockPos.Mutable p = new BlockPos.Mutable();
         int n = 0;
-        while (!placed.isEmpty() && n < RECEDE_PER_TICK) {
-            long key = placed.removeLong(placed.size() - 1);
-            placedSet.remove(key);
-            p.set(key);
+        if (receding) {
+            while (!placed.isEmpty() && n < RECEDE_PER_TICK) {
+                long key = placed.removeLong(placed.size() - 1);
+                placedSet.remove(key);
+                p.set(key);
+                n++;
+                if (!w.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
+                    continue;
+                }
+                BlockState st = w.getBlockState(p);
+                boolean ours = (st.isOf(Blocks.WATER) && st.getFluidState().getFluid() == Fluids.WATER)
+                        || st.isOf(Blocks.ICE);                  // в холоде вода успела замёрзнуть
+                if (ours) {
+                    w.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                    cleanup.add(key);
+                }
+            }
+            if (placed.isEmpty()) {
+                receding = false;
+            }
+            markDirty();
+            return;
+        }
+        while (!cleanup.isEmpty() && n < RECEDE_PER_TICK) {
+            p.set(cleanup.removeLong(cleanup.size() - 1));
             n++;
-            if (!w.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
-                continue;
-            }
-            BlockState st = w.getBlockState(p);
-            if (st.isOf(Blocks.WATER) && st.getFluidState().isStill() && st.getFluidState().getFluid() == Fluids.WATER) {
-                w.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            if (w.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
+                w.updateNeighborsAlways(p, Blocks.AIR);
             }
         }
-        if (placed.isEmpty()) {
-            receding = false;
+    }
+
+    /**
+     * Команда «осушить»: вся вода и лёд на высоте моря…море+4 в радиусе от точки — убрать
+     * (в том числе вода, которая уже «размножилась»). Убирает и естественную воду на этой высоте.
+     */
+    int drain(ServerWorld w, BlockPos center, int radius) {
+        int sea = w.getSeaLevel();
+        BlockPos.Mutable p = new BlockPos.Mutable();
+        int removed = 0;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                if (dx * dx + dz * dz > radius * radius
+                        || !w.isChunkLoaded((center.getX() + dx) >> 4, (center.getZ() + dz) >> 4)) {
+                    continue;
+                }
+                for (int y = sea; y <= sea + 5; y++) {
+                    p.set(center.getX() + dx, y, center.getZ() + dz);
+                    BlockState st = w.getBlockState(p);
+                    if (st.isOf(Blocks.WATER) || st.isOf(Blocks.ICE)) {
+                        w.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        cleanup.add(p.asLong());
+                        removed++;
+                    }
+                }
+            }
         }
+        placed.clear();
+        placedSet.clear();
+        receding = false;
         markDirty();
+        return removed;
     }
 
     boolean isReceding() {
