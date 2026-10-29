@@ -50,8 +50,8 @@ import java.util.UUID;
  * точки примерно в 150 блоках от Базы (если там мир не «живёт» — ближе, вплоть до 50; совсем нигде — у игрока).
  * Мобы помечены тегом, не исчезают, идут к Базе ({@link WaveMarchGoal}), на них действует усиление акта.
  * Полоска сверху: часть и сколько врагов осталось. Все убиты — волна отбита (боссовая — следующий акт).
- * Рассвет — оставшиеся отступают (исчезают). В ночь волны спать нельзя. Ванильные враждебные мобы
- * рядом с Базой в эту ночь видят далеко и тоже идут на Базу.
+ * Рассвет — оставшиеся отступают (исчезают). В ночь волны спать нельзя. Из ванильных враждебных мобов
+ * у Базы на неё идёт лишь «капля»: каждый десятый, не больше 4 за ночь.
  */
 public final class WaveManager {
 
@@ -377,20 +377,38 @@ public final class WaveManager {
     // Ванильные мобы в ночь волны
     // =====================================================================
 
+    /** Ванильных мобов на Базу за ночь — совсем немного (пользователь: «прям каплю»). */
+    private static final int VANILLA_MAX = 4;
+    private static final float VANILLA_CHANCE = 0.1f;
+    private static long vanillaDay = -1;
+    private static int vanillaDrawn;
+
     private static void drawVanilla(MinecraftServer server) {
         ServerWorld w = waveWorld(server);
         BlockPos base = basePos(w);
         if (base == null) {
             return;
         }
-        Box box = new Box(base).expand(128, 64, 128);
+        DirectorState s = DirectorState.get(server);
+        if (vanillaDay != s.waveDay) {
+            vanillaDay = s.waveDay;
+            vanillaDrawn = 0;
+        }
+        if (vanillaDrawn >= VANILLA_MAX) {
+            return;
+        }
+        Box box = new Box(base).expand(96, 48, 96);
         for (HostileEntity mob : w.getEntitiesByClass(HostileEntity.class, box, m -> !(m instanceof Angerable)
                 && Registries.ENTITY_TYPE.getId(m.getType()).getNamespace().equals("minecraft")
                 && !m.getCommandTags().contains(DRAWN_TAG))) {
-            mob.addCommandTag(DRAWN_TAG);
+            mob.addCommandTag(DRAWN_TAG);               // каждого проверяем один раз
+            if (vanillaDrawn >= VANILLA_MAX || w.getRandom().nextFloat() >= VANILLA_CHANCE) {
+                continue;
+            }
+            vanillaDrawn++;
             EntityAttributeInstance range = mob.getAttributeInstance(EntityAttributes.GENERIC_FOLLOW_RANGE);
             if (range != null && range.getModifier(RANGE_ID) == null) {
-                range.addTemporaryModifier(new EntityAttributeModifier(RANGE_ID, "Wave night", 48.0,
+                range.addTemporaryModifier(new EntityAttributeModifier(RANGE_ID, "Wave night", 16.0,
                         EntityAttributeModifier.Operation.ADDITION));
             }
             ((MobEntityAccessor) mob).basedefense$getGoalSelector().add(5, new WaveMarchGoal(mob, 1.0));
