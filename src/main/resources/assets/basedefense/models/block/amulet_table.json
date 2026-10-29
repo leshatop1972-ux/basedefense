@@ -1,0 +1,258 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "basedefense:block/amulet_table_side",
+    "side": "basedefense:block/amulet_table_side",
+    "top": "basedefense:block/amulet_table_top",
+    "edge": "basedefense:block/amulet_table_edge",
+    "velvet": "basedefense:block/amulet_table_velvet",
+    "crystal": "basedefense:block/amulet_table_crystal"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        11,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side",
+          "uv": [
+            1,
+            5,
+            15,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            1,
+            5,
+            15,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            1,
+            5,
+            15,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            1,
+            5,
+            15,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#edge",
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        11,
+        0
+      ],
+      "to": [
+        16,
+        14,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#edge",
+          "uv": [
+            0,
+            0,
+            16,
+            3
+          ]
+        },
+        "south": {
+          "texture": "#edge",
+          "uv": [
+            0,
+            0,
+            16,
+            3
+          ]
+        },
+        "east": {
+          "texture": "#edge",
+          "uv": [
+            0,
+            0,
+            16,
+            3
+          ]
+        },
+        "west": {
+          "texture": "#edge",
+          "uv": [
+            0,
+            0,
+            16,
+            3
+          ]
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#edge",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        14,
+        4
+      ],
+      "to": [
+        12,
+        15,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#velvet",
+          "uv": [
+            4,
+            0,
+            12,
+            1
+          ]
+        },
+        "south": {
+          "texture": "#velvet",
+          "uv": [
+            4,
+            0,
+            12,
+            1
+          ]
+        },
+        "east": {
+          "texture": "#velvet",
+          "uv": [
+            4,
+            0,
+            12,
+            1
+          ]
+        },
+        "west": {
+          "texture": "#velvet",
+          "uv": [
+            4,
+            0,
+            12,
+            1
+          ]
+        },
+        "up": {
+          "texture": "#velvet",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        15,
+        7
+      ],
+      "to": [
+        9,
+        19,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#crystal",
+          "uv": [
+            7,
+            2,
+            9,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#crystal",
+          "uv": [
+            7,
+            2,
+            9,
+            6
+          ]
+        },
+        "east": {
+          "texture": "#crystal",
+          "uv": [
+            7,
+            2,
+            9,
+            6
+          ]
+        },
+        "west": {
+          "texture": "#crystal",
+          "uv": [
+            7,
+            2,
+            9,
+            6
+          ]
+        },
+        "up": {
+          "texture": "#crystal",
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ]
+        }
+      }
+    }
+  ]
+}

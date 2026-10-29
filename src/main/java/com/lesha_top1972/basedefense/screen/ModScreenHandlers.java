@@ -51,6 +51,12 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "squad"),
             new ExtendedScreenHandlerType<>(SquadScreenHandler::new));
 
+    /** Меню стола амулетов (два амулета + пустой кулон → новый амулет). */
+    public static final ScreenHandlerType<AmuletTableScreenHandler> AMULET_TABLE = Registry.register(
+            Registries.SCREEN_HANDLER,
+            new Identifier(Basedefense.MOD_ID, "amulet_table"),
+            new ScreenHandlerType<>(AmuletTableScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
+
     private ModScreenHandlers() {
     }
 

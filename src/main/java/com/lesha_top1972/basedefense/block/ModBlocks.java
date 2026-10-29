@@ -64,6 +64,10 @@ public final class ModBlocks {
             .copyOf(Blocks.STONE).mapColor(MapColor.TERRACOTTA_ORANGE).strength(1.5f, 6.0f)
             .sounds(BlockSoundGroup.AMETHYST_BLOCK).luminance(s -> 4).dropsNothing()));
 
+    /** Стол амулетов: ПКМ — меню, из двух амулетов и пустого кулона за 8 минут делает новый амулет. */
+    public static final Block AMULET_TABLE = register("amulet_table", new AmuletTableBlock(
+            FabricBlockSettings.copyOf(Blocks.SMITHING_TABLE).strength(2.5f, 6.0f).nonOpaque().luminance(s -> 5)));
+
     private ModBlocks() {
     }
 
@@ -90,6 +94,6 @@ public final class ModBlocks {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.addAfter(
                 Items.CRAFTING_TABLE, BASE, BUILDER_HOUSE, FARMER_HOUSE, RANCHER_HOUSE,
                 COOK_HOUSE, MINER_HOUSE, BLACKSMITH_HOUSE, LUMBERJACK_HOUSE, TOWN_SQUARE, BASE_HOUSE, BARRACKS,
-                RECRUITMENT_OFFICE));
+                RECRUITMENT_OFFICE, AMULET_TABLE));
     }
 }

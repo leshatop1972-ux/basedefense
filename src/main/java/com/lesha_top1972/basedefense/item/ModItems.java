@@ -58,6 +58,9 @@ public final class ModItems {
     public static final Item LIFE_AMULET_2 = amulet("life_amulet_2", Rarity.RARE);
     public static final Item LIFE_AMULET_3 = amulet("life_amulet_3", Rarity.EPIC);
 
+    /** Пустой кулон: делает кузнец (3 железа, 1 золото, 5 редстоуна, 3 минуты); нужен для стола амулетов. */
+    public static final Item EMPTY_PENDANT = register("empty_pendant", new Item(new Item.Settings().maxCount(16)));
+
     /** Амулеты уворота I–III: 7/10/13% не получить урон от атаки моба. Складываются (максимум 50%). */
     public static final Item DODGE_AMULET_1 = amulet("dodge_amulet_1", Rarity.UNCOMMON);
     public static final Item DODGE_AMULET_2 = amulet("dodge_amulet_2", Rarity.RARE);
@@ -189,6 +192,7 @@ public final class ModItems {
             entries.add(DODGE_AMULET_3);
             entries.add(VAMPIRE_CLOAK);
             entries.add(WISDOM_AMULET);
+            entries.add(EMPTY_PENDANT);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(BUILDER_SPAWN_EGG);

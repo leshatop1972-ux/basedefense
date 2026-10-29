@@ -1,6 +1,7 @@
 package com.lesha_top1972.basedefense.entity.settler;
 
 import com.lesha_top1972.basedefense.block.BaseStorage;
+import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.settlement.SettlementItems;
 import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.settlement.SettlementState;
@@ -32,7 +33,7 @@ import java.util.UUID;
 /**
  * Курьер — живёт в здании Базы. Ходит по поселению:
  *  1) забирает добычу из сундуков домов (фермер, скотовод, повар, шахтёр, кузнец, лесоруб) и относит
- *     на склад Базы (сундуки вокруг блока «База»);
+ *     на склад Базы (сундуки вокруг блока «База»); пустой кулон кузнеца — сразу, не дожидаясь 16 предметов;
  *  2) когда запас еды поселения меньше чем на 3 дня — сдаёт еду прямо в блок «База»;
  *  3) носит повару продукты со склада, если у повара их меньше чем на 2 дня.
  * Строитель сам берёт материалы со склада. Сундуки строителя курьер не трогает.
@@ -392,8 +393,14 @@ public class CourierEntity extends SettlerEntity {
                 continue;
             }
             int count = 0;
+            boolean urgent = false;
             for (int i = 0; i < inv.size(); i++) {
-                count += inv.getStack(i).getCount();
+                ItemStack stack = inv.getStack(i);
+                count += stack.getCount();
+                urgent |= stack.isOf(ModItems.EMPTY_PENDANT);
+            }
+            if (urgent) {
+                count += 1000;   // готовый кулон кузнеца несём сразу
             }
             // Мелочь не носим — ждём, пока наберётся
             if (count >= 16 && count > bestCount) {

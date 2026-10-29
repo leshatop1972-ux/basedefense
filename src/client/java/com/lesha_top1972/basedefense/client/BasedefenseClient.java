@@ -55,6 +55,8 @@ public class BasedefenseClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.RECRUIT, RecruitScreen::new);
         HandledScreens.register(ModScreenHandlers.GUARD, com.lesha_top1972.basedefense.client.screen.GuardScreen::new);
         HandledScreens.register(ModScreenHandlers.SQUAD, com.lesha_top1972.basedefense.client.screen.SquadScreen::new);
+        HandledScreens.register(ModScreenHandlers.AMULET_TABLE,
+                com.lesha_top1972.basedefense.client.screen.AmuletTableScreen::new);
 
         // Рамка места постройки, пока в руке планшет с выбранной постройкой
         TabletPreview.init();

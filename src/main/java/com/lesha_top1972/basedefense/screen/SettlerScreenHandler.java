@@ -47,7 +47,9 @@ public class SettlerScreenHandler extends ScreenHandler {
     public static final int PROP_ENTITY_HI = 15;
     public static final int PROP_TOGGLE = 16;         // -1 — нет переключателя, 0 — выключен, 1 — включён
     public static final int PROP_COURIER = 17;        // 0 — не курьер; см. CourierEntity.STATUS_*
-    public static final int PROP_COUNT = 18;
+    public static final int PROP_SMITH = 18;          // 0 — не кузнец; см. BlacksmithEntity.STATUS_*
+    public static final int PROP_SMITH_PROGRESS = 19; // готовность кулона, %
+    public static final int PROP_COUNT = 20;
 
     /** Житель (только на сервере; на клиенте null). */
     @Nullable
@@ -89,6 +91,10 @@ public class SettlerScreenHandler extends ScreenHandler {
                     case PROP_TOGGLE -> settler.hasWorkToggle() ? (settler.isWorkToggleOn() ? 1 : 0) : -1;
                     case PROP_COURIER -> settler instanceof com.lesha_top1972.basedefense.entity.settler.CourierEntity c
                             ? c.getCourierStatus() : 0;
+                    case PROP_SMITH -> settler instanceof com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity s
+                            ? s.getSmithStatus() : 0;
+                    case PROP_SMITH_PROGRESS -> settler instanceof com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity s
+                            ? s.getForgeProgress() : 0;
                     case PROP_ENTITY_LO -> (short) (settler.getId() & 0xFFFF);
                     case PROP_ENTITY_HI -> (short) ((settler.getId() >>> 16) & 0xFFFF);
                     case PROP_BUILD_MISSING -> settler instanceof BuilderEntity b && b.getMissingItem() != null

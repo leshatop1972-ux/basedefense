@@ -26,6 +26,7 @@ public class Basedefense implements ModInitializer {
         ModEffects.init();
         ModEntities.init();
         ModBlocks.init();
+        com.lesha_top1972.basedefense.block.ModBlockEntities.init();
         ModItems.init();
         ModScreenHandlers.init();
         BuildManager.init();

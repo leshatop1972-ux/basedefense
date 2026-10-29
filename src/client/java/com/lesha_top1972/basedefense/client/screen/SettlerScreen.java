@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.screen;
 
+import com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity;
 import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
 import com.lesha_top1972.basedefense.entity.settler.CourierEntity;
 import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
@@ -224,6 +225,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (stored > 0) {
             return Text.translatable("screen.basedefense.settler.status.chest_full", stored);
         }
+        int smith = handler.getProp(SettlerScreenHandler.PROP_SMITH);
+        if (smith > 0) {
+            return Text.translatable("screen.basedefense.settler.smith." + smith,
+                    handler.getProp(SettlerScreenHandler.PROP_SMITH_PROGRESS));
+        }
         if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
             int have = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS);
             int need = handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS_DAY);
@@ -251,6 +257,14 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1
                 || handler.getProp(SettlerScreenHandler.PROP_STORED) > 0) {
             return UiKit.BAD;
+        }
+        int smith = handler.getProp(SettlerScreenHandler.PROP_SMITH);
+        if (smith > 0) {
+            return switch (smith) {
+                case BlacksmithEntity.STATUS_FORGING -> UiKit.GOOD;
+                case BlacksmithEntity.STATUS_NO_MATERIALS -> UiKit.BAD;
+                default -> UiKit.TEXT_MUTED;
+            };
         }
         if (handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1) {
             return handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS)
@@ -291,6 +305,15 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         if (handler.getProp(SettlerScreenHandler.PROP_HAS_CHEST) != 1
                 || handler.getProp(SettlerScreenHandler.PROP_STORED) > 0) {
             return Items.CHEST;
+        }
+        int smith = handler.getProp(SettlerScreenHandler.PROP_SMITH);
+        if (smith > 0) {
+            return switch (smith) {
+                case BlacksmithEntity.STATUS_FORGING -> ModItems.EMPTY_PENDANT;
+                case BlacksmithEntity.STATUS_NO_MATERIALS -> Items.IRON_INGOT;
+                case BlacksmithEntity.STATUS_RESTING -> Items.RED_BED;
+                default -> Items.CLOCK;
+            };
         }
         return handler.getProp(SettlerScreenHandler.PROP_ACCEPTS) == 1 ? Items.PUMPKIN_PIE : Items.GOLDEN_HOE;
     }
@@ -342,6 +365,11 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
         return SettlerEntity.getUpgradeCost(handler.getProp(SettlerScreenHandler.PROP_LEVEL));
     }
 
+    /** Чей переключатель: лесоруба («chop») или кузнеца («forge»). */
+    private String toggleKey() {
+        return handler.getProp(SettlerScreenHandler.PROP_SMITH) > 0 ? "forge" : "chop";
+    }
+
     private boolean isMaxLevel() {
         return handler.getProp(SettlerScreenHandler.PROP_LEVEL) >= SettlerEntity.MAX_LEVEL;
     }
@@ -351,8 +379,8 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
             case SettlerScreenHandler.BUTTON_INGREDIENTS -> Text.translatable("screen.basedefense.settler.ingredients",
                     handler.getProp(SettlerScreenHandler.PROP_INGREDIENTS), SettlerEntity.INGREDIENTS_MAX);
             case SettlerScreenHandler.BUTTON_TOGGLE -> Text.translatable(
-                    handler.getProp(SettlerScreenHandler.PROP_TOGGLE) == 1
-                            ? "screen.basedefense.settler.chop.on" : "screen.basedefense.settler.chop.off");
+                    "screen.basedefense.settler." + toggleKey() + (handler.getProp(SettlerScreenHandler.PROP_TOGGLE) == 1
+                            ? ".on" : ".off"));
             default -> isMaxLevel()
                     ? Text.translatable("screen.basedefense.settler.max_level")
                     : Text.translatable("screen.basedefense.settler.upgrade",
@@ -377,7 +405,7 @@ public class SettlerScreen extends HandledScreen<SettlerScreenHandler> {
                         .styled(s -> s.withColor(0xFFD45A)));
             }
             case SettlerScreenHandler.BUTTON_TOGGLE -> {
-                for (String line : Text.translatable("screen.basedefense.settler.tip.chop").getString().split("\n")) {
+                for (String line : Text.translatable("screen.basedefense.settler.tip." + toggleKey()).getString().split("\n")) {
                     lines.add(Text.literal(line));
                 }
             }
