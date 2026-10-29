@@ -43,7 +43,7 @@ import java.util.UUID;
  * <ul>
  *   <li>Амулет памяти — удар в ближнем бою по мобу тратит 1/4 уровня опыта и оглушает его на 3 с
  *       (не двигается и не атакует), перезарядка 10 с;</li>
- *   <li>Амулет вечности — как тотем бессмертия, но не тратится: перезарядка 5 минут;</li>
+ *   <li>Амулет вечности — как тотем бессмертия, и тратится так же;</li>
  *   <li>Амулет жадности — голод быстрее и выгоднее превращается в здоровье: +1 HP в секунду (вчетверо чаще
  *       обычного) за половину обычного расхода сытости, пока сытость больше 6;</li>
  *   <li>Амулет ярости — +4 HP; каждый удар в ближнем бою тратит 1/8 уровня опыта: урон ×1.2;</li>
@@ -52,6 +52,16 @@ import java.util.UUID;
  *       эффектам, перезарядка 30 с;</li>
  *   <li>Кольцо жадности I — каждый удар в ближнем бою стоит 1 HP: урон ×1.25;</li>
  *   <li>Кольцо жадности II — 2 HP за удар: урон ×1.5; +6 HP.</li>
+ * </ul>
+ * Третья партия (29.10.2026):
+ * <ul>
+ *   <li>Дробитель — +1 урона; при ударе 8% остановить противника на 1 с (не ходит и не атакует);</li>
+ *   <li>Меч богов — +4 урона; при смерти игрока исчезает навсегда;</li>
+ *   <li>Ледяной плащ — 25% при ударе: Замедление I на 4 с;</li>
+ *   <li>Святой плащ — +2 HP; клавиша: золотое кольцо r 8 на 8 с, урон враждебным мобам внутри (кто бы ни бил)
+ *       суммируется; в конце владелец лечится на x/4 и получает +x/4 к максимуму HP на 30 с; кд 70 с;</li>
+ *   <li>Летопись призывателя — клавиша: стражник в железной броне с железным мечом на 20 с
+ *       (не житель поселения, ничего не роняет), кд 68 с.</li>
  * </ul>
  * Чистота I/II и кольца I/II не складываются (действует сильнейшее надетое).
  */
@@ -62,7 +72,14 @@ public final class ArtifactPowers {
 
     public static final int MEMORY_STUN = 60;
     public static final int MEMORY_COOLDOWN = 200;
-    public static final int ETERNITY_COOLDOWN = 5 * 60 * 20;
+    public static final int HOLY_RADIUS = 8;
+    public static final int HOLY_TICKS = 160;
+    public static final int HOLY_COOLDOWN = 1400;
+    /** Сколько держится добавка к максимальному здоровью от святого плаща. */
+    public static final int HOLY_BONUS_TICKS = 600;
+    public static final int SUMMON_TICKS = 400;
+    public static final int SUMMON_COOLDOWN = 1360;
+    private static final UUID HOLY_ID = UUID.fromString("6b0f6c1e-3b7a-4f0e-9a51-0d6f3a1c7e03");
     public static final int PURITY_IMMUNE = 200;
     public static final int PURITY_COOLDOWN = 600;
     private static final int PURITY1_PERIOD = 200;
@@ -94,6 +111,7 @@ public final class ArtifactPowers {
     public static void init() {
         ServerTickEvents.START_SERVER_TICK.register(s -> server = s);
         ServerTickEvents.END_SERVER_TICK.register(ArtifactPowers::tickStuns);
+        ServerTickEvents.END_SERVER_TICK.register(ArtifactPowers::tickRings);
         ServerPlayNetworking.registerGlobalReceiver(ABILITY_C2S, (srv, player, handler, buf, sender) -> {
             int slot = buf.readVarInt();
             srv.execute(() -> ability(player, slot));
@@ -105,6 +123,7 @@ public final class ArtifactPowers {
             LAST_CLEANSE.remove(id);
             PAID_FURY.remove(id);
             PAID_RING.remove(id);
+            HOLY_BONUS_END.remove(id);
         });
     }
 
@@ -126,7 +145,22 @@ public final class ArtifactPowers {
         if (Artifacts.has(p, ModItems.GREED_RING_2)) {
             hp += 6;
         }
+        if (Artifacts.has(p, ModItems.HOLY_CLOAK)) {
+            hp += 2;
+        }
         return hp;
+    }
+
+    /** Добавка к урону атаки (дробитель +1, меч богов +4). */
+    public static double extraDamage(PlayerEntity p) {
+        double d = 0;
+        if (Artifacts.has(p, ModItems.CRUSHER)) {
+            d += 1;
+        }
+        if (Artifacts.has(p, ModItems.GOD_SWORD)) {
+            d += 4;
+        }
+        return d;
     }
 
     public static void tickPlayer(ServerPlayerEntity p) {
@@ -198,6 +232,10 @@ public final class ArtifactPowers {
         ItemStack stack = Artifacts.of(p).getStack(slot);
         if (stack.isOf(ModItems.PURITY_AMULET_2)) {
             purityShield(p);
+        } else if (stack.isOf(ModItems.HOLY_CLOAK)) {
+            holyRing(p);
+        } else if (stack.isOf(ModItems.SUMMONER_CHRONICLE)) {
+            summonGuard(p);
         }
     }
 
@@ -263,10 +301,28 @@ public final class ArtifactPowers {
         return amount;
     }
 
-    /** Из Artifacts.onDamaged (удар прошёл): амулет памяти оглушает. */
+    /** Из Artifacts.onDamaged (удар прошёл): дробитель, ледяной плащ, амулет памяти. */
     public static void onHit(LivingEntity target, DamageSource source) {
         ServerPlayerEntity p = meleeAttacker(target, source);
-        if (p == null || !target.isAlive() || !Artifacts.has(p, ModItems.MEMORY_AMULET)
+        if (p == null || !target.isAlive()) {
+            return;
+        }
+        ServerWorld w = p.getServerWorld();
+        if (Artifacts.has(p, ModItems.CRUSHER) && p.getRandom().nextFloat() < 0.08f) {
+            stun((MobEntity) target, 20);
+            w.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_ZOMBIE_ATTACK_IRON_DOOR,
+                    SoundCategory.PLAYERS, 0.6f, 1.3f);
+            w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.7), target.getZ(), 10, 0.3, 0.3, 0.3, 0.2);
+        }
+        if (Artifacts.has(p, ModItems.ICE_CLOAK) && p.getRandom().nextFloat() < 0.25f) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0), p);
+            w.spawnParticles(ParticleTypes.SNOWFLAKE, target.getX(), target.getBodyY(0.6), target.getZ(), 10, 0.3, 0.4, 0.3, 0.02);
+        }
+        memory(p, target);
+    }
+
+    private static void memory(ServerPlayerEntity p, LivingEntity target) {
+        if (!target.isAlive() || !Artifacts.has(p, ModItems.MEMORY_AMULET)
                 || p.getItemCooldownManager().isCoolingDown(ModItems.MEMORY_AMULET)) {
             return;
         }
@@ -290,7 +346,7 @@ public final class ArtifactPowers {
         if (!STUNNED.containsKey(mob)) {
             AI_WAS_ON.put(mob, !mob.isAiDisabled());
         }
-        STUNNED.put(mob, now() + ticks);
+        STUNNED.merge(mob, now() + ticks, Math::max);   // короткое оглушение не сокращает длинное
         mob.setAiDisabled(true);
         mob.getNavigation().stop();
         mob.setVelocity(0, Math.min(0, mob.getVelocity().y), 0);
@@ -324,12 +380,154 @@ public final class ArtifactPowers {
     }
 
     // =====================================================================
+    // Святой плащ
+    // =====================================================================
+
+    /** Активное кольцо святого плаща. */
+    private static final class HolyRing {
+        final UUID owner;
+        final net.minecraft.registry.RegistryKey<net.minecraft.world.World> world;
+        final double x, y, z;
+        final long end;
+        float damage;
+
+        HolyRing(ServerPlayerEntity p, long end) {
+            this.owner = p.getUuid();
+            this.world = p.getWorld().getRegistryKey();
+            this.x = p.getX();
+            this.y = p.getY();
+            this.z = p.getZ();
+            this.end = end;
+        }
+    }
+
+    private static final List<HolyRing> RINGS = new ArrayList<>();
+    /** Когда снять добавку к максимуму HP: игрок → тик. */
+    private static final Map<UUID, Long> HOLY_BONUS_END = new HashMap<>();
+    private static final net.minecraft.particle.DustParticleEffect GOLD_DUST =
+            new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(1.0f, 0.82f, 0.25f), 1.4f);
+
+    private static void holyRing(ServerPlayerEntity p) {
+        if (p.getItemCooldownManager().isCoolingDown(ModItems.HOLY_CLOAK)) {
+            return;
+        }
+        p.getItemCooldownManager().set(ModItems.HOLY_CLOAK, HOLY_COOLDOWN);
+        RINGS.removeIf(r -> r.owner.equals(p.getUuid()));
+        RINGS.add(new HolyRing(p, now() + HOLY_TICKS));
+        p.getServerWorld().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE,
+                SoundCategory.PLAYERS, 1.0f, 1.4f);
+    }
+
+    /** Из LivingEntityCombatMixin (после любого урона): урон враждебным мобам внутри колец копится. */
+    public static void onAnyDamage(LivingEntity target, float dealt) {
+        if (RINGS.isEmpty() || dealt <= 0 || !(target instanceof MobEntity) || target instanceof SettlerEntity
+                || !(target instanceof net.minecraft.entity.mob.Monster
+                || Basedefense.MOD_ID.equals(net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).getNamespace()))) {
+            return;
+        }
+        for (HolyRing r : RINGS) {
+            if (r.world.equals(target.getWorld().getRegistryKey())) {
+                double dx = target.getX() - r.x;
+                double dz = target.getZ() - r.z;
+                if (dx * dx + dz * dz <= HOLY_RADIUS * HOLY_RADIUS && Math.abs(target.getY() - r.y) <= 6) {
+                    r.damage += dealt;
+                }
+            }
+        }
+    }
+
+    private static void tickRings(MinecraftServer srv) {
+        long t = srv.getTicks();
+        Iterator<HolyRing> it = RINGS.iterator();
+        while (it.hasNext()) {
+            HolyRing r = it.next();
+            ServerWorld w = srv.getWorld(r.world);
+            if (w != null && t % 4 == 0) {
+                for (int i = 0; i < 40; i++) {
+                    double a = Math.PI * 2 * i / 40 + t * 0.02;
+                    w.spawnParticles(GOLD_DUST, r.x + Math.cos(a) * HOLY_RADIUS, r.y + 0.15, r.z + Math.sin(a) * HOLY_RADIUS,
+                            1, 0, 0, 0, 0);
+                }
+            }
+            if (t >= r.end) {
+                it.remove();
+                ServerPlayerEntity p = srv.getPlayerManager().getPlayer(r.owner);
+                float bonus = r.damage / 4f;
+                if (p != null && p.isAlive() && bonus > 0) {
+                    net.minecraft.entity.attribute.EntityAttributeInstance inst =
+                            p.getAttributeInstance(net.minecraft.entity.attribute.EntityAttributes.GENERIC_MAX_HEALTH);
+                    if (inst != null) {
+                        inst.removeModifier(HOLY_ID);
+                        inst.addTemporaryModifier(new net.minecraft.entity.attribute.EntityAttributeModifier(HOLY_ID,
+                                "basedefense holy cloak", bonus,
+                                net.minecraft.entity.attribute.EntityAttributeModifier.Operation.ADDITION));
+                        HOLY_BONUS_END.put(r.owner, t + HOLY_BONUS_TICKS);
+                    }
+                    p.heal(bonus);
+                    p.getServerWorld().spawnParticles(ParticleTypes.HEART, p.getX(), p.getBodyY(1.0) + 0.3, p.getZ(),
+                            5, 0.4, 0.3, 0.4, 0.0);
+                    p.getServerWorld().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_PLAYER_LEVELUP,
+                            SoundCategory.PLAYERS, 0.6f, 1.6f);
+                    p.sendMessage(Text.translatable("message.basedefense.holy_cloak",
+                            String.format("%.1f", bonus)).formatted(Formatting.GOLD), true);
+                }
+            }
+        }
+        if (!HOLY_BONUS_END.isEmpty()) {
+            HOLY_BONUS_END.entrySet().removeIf(e -> {
+                if (t < e.getValue()) {
+                    return false;
+                }
+                ServerPlayerEntity p = srv.getPlayerManager().getPlayer(e.getKey());
+                if (p != null) {
+                    net.minecraft.entity.attribute.EntityAttributeInstance inst =
+                            p.getAttributeInstance(net.minecraft.entity.attribute.EntityAttributes.GENERIC_MAX_HEALTH);
+                    if (inst != null) {
+                        inst.removeModifier(HOLY_ID);
+                    }
+                    if (p.getHealth() > p.getMaxHealth()) {
+                        p.setHealth(p.getMaxHealth());
+                    }
+                }
+                return true;
+            });
+        }
+    }
+
+    // =====================================================================
+    // Летопись призывателя
+    // =====================================================================
+
+    private static void summonGuard(ServerPlayerEntity p) {
+        if (p.getItemCooldownManager().isCoolingDown(ModItems.SUMMONER_CHRONICLE)) {
+            return;
+        }
+        ServerWorld w = p.getServerWorld();
+        com.lesha_top1972.basedefense.entity.settler.GuardEntity guard =
+                com.lesha_top1972.basedefense.entity.ModEntities.GUARD.create(w);
+        if (guard == null) {
+            return;
+        }
+        p.getItemCooldownManager().set(ModItems.SUMMONER_CHRONICLE, SUMMON_COOLDOWN);
+        // рядом с игроком, сбоку
+        double a = Math.toRadians(p.getYaw() + 90);
+        double gx = p.getX() + Math.cos(a) * 1.5;
+        double gz = p.getZ() + Math.sin(a) * 1.5;
+        guard.refreshPositionAndAngles(gx, p.getY(), gz, p.getYaw(), 0f);
+        guard.makeSummoned(SUMMON_TICKS);
+        w.spawnEntity(guard);
+        w.spawnParticles(ParticleTypes.ENCHANT, gx, p.getY() + 1.0, gz, 40, 0.4, 0.8, 0.4, 0.5);
+        w.spawnParticles(ParticleTypes.CLOUD, gx, p.getY() + 0.1, gz, 10, 0.3, 0.05, 0.3, 0.02);
+        w.playSound(null, gx, p.getY(), gz, SoundEvents.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 1.0f, 0.8f);
+        w.playSound(null, gx, p.getY(), gz, SoundEvents.ITEM_ARMOR_EQUIP_IRON, SoundCategory.PLAYERS, 1.0f, 1.0f);
+    }
+
+    // =====================================================================
     // Амулет вечности
     // =====================================================================
 
     private static boolean allowDeath(LivingEntity entity, DamageSource source, float amount) {
         if (!(entity instanceof ServerPlayerEntity p) || !Artifacts.has(p, ModItems.ETERNITY_AMULET)
-                || p.getItemCooldownManager().isCoolingDown(ModItems.ETERNITY_AMULET)
                 || source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             return true;
         }
@@ -340,7 +538,14 @@ public final class ArtifactPowers {
         p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 100, 1));
         p.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 800, 0));
         p.getWorld().sendEntityStatus(p, (byte) 35);   // анимация и звук тотема
-        p.getItemCooldownManager().set(ModItems.ETERNITY_AMULET, ETERNITY_COOLDOWN);
+        // тратится, как тотем
+        net.minecraft.inventory.SimpleInventory inv = Artifacts.of(p);
+        for (int i = 0; i < inv.size(); i++) {
+            if (inv.getStack(i).isOf(ModItems.ETERNITY_AMULET)) {
+                inv.setStack(i, ItemStack.EMPTY);
+                break;
+            }
+        }
         p.sendMessage(Text.translatable("message.basedefense.eternity").formatted(Formatting.GOLD), true);
         return false;
     }

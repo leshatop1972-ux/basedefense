@@ -488,7 +488,15 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return stack.isEmpty() ? ItemStack.EMPTY : stack;
     }
 
+    /** Временный житель (стражник из летописи призывателя) — не записывается в поселение. */
+    protected boolean isTemporary() {
+        return false;
+    }
+
     private void updateSettlement(ServerWorld world) {
+        if (isTemporary()) {
+            return;
+        }
         if (SettlementState.get(world.getServer()).addSettler(this.getUuid(), getFoodPerDay())) {
             // новый житель поселения — очки шкалы «Режиссёра мира»
             com.lesha_top1972.basedefense.director.Director.addPoints(world.getServer(),
