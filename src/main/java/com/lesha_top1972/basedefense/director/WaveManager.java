@@ -55,10 +55,15 @@ import java.util.UUID;
  */
 public final class WaveManager {
 
-    /** Волна идёт 8 частями через 20 с, каждая — со своей стороны вокруг Базы (по кругу через 45°). */
-    public static final int PARTS = 8;
+    /**
+     * Волна растянута на всю ночь: 12 частей через 750 т (~37 с), с 13 000 до 21 250 т; каждая — со своей
+     * стороны вокруг Базы (12 направлений через 30°).
+     */
+    public static final int PARTS = 12;
     public static final int START = 13000;
-    public static final int GAP = 400;                   // 20 с между частями
+    public static final int GAP = 750;
+    /** С какой частью приходит босс — около 2/3 ночи (~18 250 т), чтобы до рассвета хватило времени на бой. */
+    public static final int BOSS_PART = 7;
     public static final String TAG = "basedefense.wave";
     public static final String BOSS_TAG = "basedefense.wave_boss";
     /** Яйца волны: не считаются во «врагах», но на рассвете тоже исчезают. */
@@ -204,7 +209,7 @@ public final class WaveManager {
             EntityType<?> type = Registries.ENTITY_TYPE.get(new Identifier(id));
             spawnMob(w, s, type, center, 7, false);
         }
-        if (index == PARTS - 1 && s.waveEvent == DirectorEvent.BOSS_WAVE) {
+        if (index == BOSS_PART && s.waveEvent == DirectorEvent.BOSS_WAVE) {
             EntityType<?> boss = Registries.ENTITY_TYPE.get(new Identifier(Basedefense.MOD_ID, DirectorTables.boss(s.act)));
             // босс выходит ближе к Базе (на пути этой части), чтобы точно дошёл
             BlockPos base = basePos(w);
@@ -419,12 +424,12 @@ public final class WaveManager {
     }
 
     /**
-     * Сторона части: 8 направлений через 45° с общим сдвигом (от дня волны), порядок перемешан так,
-     * что соседние части приходят с разных сторон (через 135°).
+     * Сторона части: 12 направлений через 30° с общим сдвигом (от дня волны), порядок перемешан так,
+     * что соседние части приходят с разных сторон (через 150°).
      */
     private static double partAngle(DirectorState s, int index) {
         double offset = Math.floorMod(s.waveDay * 2654435761L, 360L);
-        int slot = (index * 3) % PARTS;
+        int slot = (index * 5) % PARTS;                  // 5 и 12 взаимно просты — все стороны по разу
         return Math.toRadians(offset + slot * (360.0 / PARTS));
     }
 
