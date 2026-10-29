@@ -489,7 +489,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
     }
 
     private void updateSettlement(ServerWorld world) {
-        SettlementState.get(world.getServer()).addSettler(this.getUuid(), getFoodPerDay());
+        if (SettlementState.get(world.getServer()).addSettler(this.getUuid(), getFoodPerDay())) {
+            // новый житель поселения — очки шкалы «Режиссёра мира»
+            com.lesha_top1972.basedefense.director.Director.addPoints(world.getServer(),
+                    com.lesha_top1972.basedefense.director.DirectorTables.POINTS_SETTLER);
+        }
     }
 
     // =====================================================================

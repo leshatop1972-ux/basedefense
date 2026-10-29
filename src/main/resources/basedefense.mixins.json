@@ -9,6 +9,7 @@
     "MobEntityMixin",
     "LivingEntityCombatMixin",
     "PlayerEntityArtifactsMixin",
+    "PlayerEntityDirectorMixin",
     "PlayerScreenHandlerMixin",
     "ScreenHandlerAccessor"
   ],

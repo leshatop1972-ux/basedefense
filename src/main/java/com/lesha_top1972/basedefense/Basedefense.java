@@ -34,6 +34,7 @@ public class Basedefense implements ModInitializer {
         SettlerThreats.init();
         com.lesha_top1972.basedefense.military.GuardEvents.init();   // Повестка: ЛКМ по блоку — точка обороны отряда
         com.lesha_top1972.basedefense.artifact.Artifacts.init();   // слоты артефактов, амулет рывка
+        com.lesha_top1972.basedefense.director.Director.init();   // «Режиссёр мира»: дни, акты, шкала, события
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         com.lesha_top1972.basedefense.weapon.KatanaCombat.init();   // катана: серия из трёх ударов
         // «Шум» игроков в бою с Набатом

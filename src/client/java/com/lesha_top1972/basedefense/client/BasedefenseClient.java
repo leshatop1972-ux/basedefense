@@ -155,6 +155,7 @@ public class BasedefenseClient implements ClientModInitializer {
         com.lesha_top1972.basedefense.client.artifact.ArtifactClient.init();
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом
         BossEffectsHud.init();         // эффекты боссов под их полоской здоровья
+        com.lesha_top1972.basedefense.client.director.DirectorClient.init();   // «Режиссёр мира»: вкладка «Летопись», утренняя заставка
         StunOverlay.init();            // «Оглушение»: дымка (I) или сильное затемнение (II)
         SpikesOverlay.init();          // «Шипы»: вспышка осколков, когда шипы ранили игрока
         BloodPoolOverlay.init();       // кровавая лужа ранит — экран чуть краснеет

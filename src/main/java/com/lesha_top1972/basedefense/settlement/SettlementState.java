@@ -30,12 +30,13 @@ public class SettlementState extends PersistentState {
 
     // ---------- Жители ----------
 
-    /** Записать жителя в поселение (или обновить, сколько еды он тратит в день). */
-    public void addSettler(UUID id, int foodPerDay) {
+    /** Записать жителя в поселение (или обновить, сколько еды он тратит в день). true — житель новый. */
+    public boolean addSettler(UUID id, int foodPerDay) {
         Integer old = settlers.put(id, foodPerDay);
         if (old == null || old != foodPerDay) {
             markDirty();
         }
+        return old == null;
     }
 
     public void removeSettler(UUID id) {

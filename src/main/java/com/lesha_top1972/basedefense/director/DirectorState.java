@@ -1,0 +1,123 @@
+package com.lesha_top1972.basedefense.director;
+
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.PersistentState;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Состояние «Режиссёра мира» (одно на сервер, общее для всех игроков): день, акт, шкала, событие дня,
+ * журнал прошлых дней и кому уже показана утренняя заставка. Файл data/basedefense_director.dat.
+ */
+public class DirectorState extends PersistentState {
+
+    private static final String SAVE_ID = "basedefense_director";
+    public static final int HISTORY = 10;
+
+    /** День в журнале: номер и событие. */
+    public record Entry(int day, DirectorEvent event) {
+    }
+
+    /** Последний обработанный день (-1 — ещё не начинали). */
+    long lastDay = -1;
+    int act = 1;
+    int points;
+    DirectorEvent today = DirectorEvent.PEACE;
+    /** День, на который выпало событие {@link #today}. */
+    long todayDay = -1;
+    final List<Entry> history = new ArrayList<>();
+    /** Игрок → последний день, за который ему показали утреннюю заставку. */
+    final Map<UUID, Long> shown = new HashMap<>();
+
+    public static DirectorState get(MinecraftServer server) {
+        return server.getOverworld().getPersistentStateManager()
+                .getOrCreate(DirectorState::fromNbt, DirectorState::new, SAVE_ID);
+    }
+
+    public int act() {
+        return act;
+    }
+
+    public int points() {
+        return points;
+    }
+
+    public DirectorEvent today() {
+        return today;
+    }
+
+    public long todayDay() {
+        return todayDay;
+    }
+
+    public List<Entry> history() {
+        return history;
+    }
+
+    void addHistory(int day, DirectorEvent e) {
+        history.removeIf(h -> h.day() == day);
+        history.add(0, new Entry(day, e));
+        while (history.size() > HISTORY) {
+            history.remove(history.size() - 1);
+        }
+    }
+
+    @Override
+    public NbtCompound writeNbt(NbtCompound nbt) {
+        nbt.putLong("LastDay", lastDay);
+        nbt.putInt("Act", act);
+        nbt.putInt("Points", points);
+        nbt.putString("Today", today.id);
+        nbt.putLong("TodayDay", todayDay);
+        NbtList list = new NbtList();
+        for (Entry h : history) {
+            NbtCompound c = new NbtCompound();
+            c.putInt("Day", h.day());
+            c.putString("Event", h.event().id);
+            list.add(c);
+        }
+        nbt.put("History", list);
+        NbtList seen = new NbtList();
+        for (Map.Entry<UUID, Long> s : shown.entrySet()) {
+            NbtCompound c = new NbtCompound();
+            c.putUuid("Id", s.getKey());
+            c.putLong("Day", s.getValue());
+            seen.add(c);
+        }
+        nbt.put("Shown", seen);
+        return nbt;
+    }
+
+    public static DirectorState fromNbt(NbtCompound nbt) {
+        DirectorState s = new DirectorState();
+        s.lastDay = nbt.getLong("LastDay");
+        s.act = Math.max(1, nbt.getInt("Act"));
+        s.points = nbt.getInt("Points");
+        DirectorEvent t = DirectorEvent.byId(nbt.getString("Today"));
+        s.today = t == null ? DirectorEvent.PEACE : t;
+        s.todayDay = nbt.getLong("TodayDay");
+        NbtList list = nbt.getList("History", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < list.size(); i++) {
+            NbtCompound c = list.getCompound(i);
+            DirectorEvent e = DirectorEvent.byId(c.getString("Event"));
+            if (e != null) {
+                s.history.add(new Entry(c.getInt("Day"), e));
+            }
+        }
+        NbtList seen = nbt.getList("Shown", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < seen.size(); i++) {
+            NbtCompound c = seen.getCompound(i);
+            if (c.containsUuid("Id")) {
+                s.shown.put(c.getUuid("Id"), c.getLong("Day"));
+            }
+        }
+        return s;
+    }
+}
