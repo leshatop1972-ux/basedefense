@@ -544,11 +544,8 @@
   "screen.basedefense.amulet_table.start": "Start crafting",
   "screen.basedefense.amulet_table.left": "%s:%s left",
   "screen.basedefense.amulet_table.chances": "Possible results",
-  "screen.basedefense.amulet_table.hint.put": "Put two amulets in the top slots and an empty pendant in the bottom one.",
   "screen.basedefense.amulet_table.hint.none": "Nothing can be made from these amulets.",
-  "screen.basedefense.amulet_table.hint.unknown": "You have not crafted this pair yet. Craft it once to see the chances here.",
   "message.basedefense.amulet_table.done": "Amulet Table: done — %s",
-  "message.basedefense.amulet_table.learned": "The chances of this pair are now shown in the Amulet Table.",
   "screen.basedefense.settler.smith.1": "No materials: 3 iron, 1 gold, 5 redstone",
   "screen.basedefense.settler.smith.2": "Forging an empty pendant: %s%%",
   "screen.basedefense.settler.smith.3": "Enough pendants (8 in storage) — resting",
@@ -558,5 +555,6 @@
   "screen.basedefense.settler.forge.off": "Pendant forging: OFF",
   "screen.basedefense.settler.tip.forge": "Forges empty pendants for the Amulet Table.\nOne pendant: 3 iron ingots, 1 gold ingot, 5 redstone.\nTakes them from the forge chest or Base storage.\nTime: 3 / 2.5 / 2 minutes by level.\nThe courier carries finished pendants to storage.",
   "message.basedefense.blacksmith.forge_on": "%s is forging pendants again",
-  "message.basedefense.blacksmith.forge_off": "%s stopped forging pendants"
+  "message.basedefense.blacksmith.forge_off": "%s stopped forging pendants",
+  "screen.basedefense.amulet_table.all": "All table recipes"
 }

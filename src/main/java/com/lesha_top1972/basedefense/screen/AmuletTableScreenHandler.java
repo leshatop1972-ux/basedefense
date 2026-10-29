@@ -1,6 +1,5 @@
 package com.lesha_top1972.basedefense.screen;
 
-import com.lesha_top1972.basedefense.artifact.AmuletKnowledge;
 import com.lesha_top1972.basedefense.artifact.ArtifactItem;
 import com.lesha_top1972.basedefense.block.AmuletTableBlockEntity;
 import com.lesha_top1972.basedefense.item.ModItems;
@@ -19,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Меню стола амулетов. Слоты: 0, 1 — амулеты (сверху слева и справа), 2 — пустой кулон (снизу),
  * 3 — результат (в центре, только забрать), дальше — инвентарь игрока.
- * Клиенту через props: какой рецепт в работе, сколько осталось, и какие рецепты этот игрок уже знает.
+ * Клиенту через props: какой рецепт в работе и сколько осталось. Все рецепты видны сразу.
  */
 public class AmuletTableScreenHandler extends ScreenHandler {
 
@@ -40,9 +39,7 @@ public class AmuletTableScreenHandler extends ScreenHandler {
     public static final int PROP_RECIPE = 0;      // рецепт в работе + 1 (0 — стол свободен)
     public static final int PROP_LEFT = 1;        // сколько секунд осталось
     public static final int PROP_TOTAL = 2;       // сколько секунд всего
-    public static final int PROP_KNOWN_LO = 3;    // известные игроку рецепты: биты 0–14
-    public static final int PROP_KNOWN_HI = 4;    // биты 15–29
-    public static final int PROP_COUNT = 5;
+    public static final int PROP_COUNT = 3;
 
     public static final int BUTTON_START = 0;
 
@@ -126,11 +123,6 @@ public class AmuletTableScreenHandler extends ScreenHandler {
                     case PROP_RECIPE -> entity.getRecipe() + 1;
                     case PROP_LEFT -> (entity.remainingTicks() + 19) / 20;
                     case PROP_TOTAL -> entity.getTotalTicks() / 20;
-                    case PROP_KNOWN_LO, PROP_KNOWN_HI -> {
-                        int mask = player.getServer() == null ? 0
-                                : AmuletKnowledge.get(player.getServer()).mask(player.getUuid());
-                        yield index == PROP_KNOWN_LO ? mask & 0x7FFF : (mask >>> 15) & 0x7FFF;
-                    }
                     default -> 0;
                 };
             }
@@ -167,14 +159,6 @@ public class AmuletTableScreenHandler extends ScreenHandler {
 
     public int secondsTotal() {
         return props.get(PROP_TOTAL);
-    }
-
-    public boolean knows(int recipe) {
-        if (recipe < 0) {
-            return false;
-        }
-        int mask = (props.get(PROP_KNOWN_LO) & 0x7FFF) | ((props.get(PROP_KNOWN_HI) & 0x7FFF) << 15);
-        return (mask & (1 << recipe)) != 0;
     }
 
     // ---------- Логика ----------

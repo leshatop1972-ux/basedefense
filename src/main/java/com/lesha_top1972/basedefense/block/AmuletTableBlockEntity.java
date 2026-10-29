@@ -1,6 +1,5 @@
 package com.lesha_top1972.basedefense.block;
 
-import com.lesha_top1972.basedefense.artifact.AmuletKnowledge;
 import com.lesha_top1972.basedefense.artifact.AmuletRecipes;
 import com.lesha_top1972.basedefense.artifact.ArtifactItem;
 import com.lesha_top1972.basedefense.item.ModItems;
@@ -35,8 +34,7 @@ import java.util.UUID;
  * Стол амулетов: слоты 0 и 1 — амулеты, 2 — пустой кулон, 3 — результат.
  * Кнопка «Начать» забирает амулеты и кулон (они хранятся внутри, пока идёт крафт) и запускает
  * 8 минут работы. Время считается по часам мира (getTime), так что идёт, даже если рядом никого нет.
- * В конце результат выпадает по шансам рецепта и кладётся в слот 3; игрок, начавший крафт,
- * «запоминает» рецепт — теперь ему видны шансы ({@link AmuletKnowledge}).
+ * В конце результат выпадает по шансам рецепта и кладётся в слот 3, игроку, начавшему крафт, — сообщение.
  */
 public class AmuletTableBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
 
@@ -144,7 +142,6 @@ public class AmuletTableBlockEntity extends BlockEntity implements Inventory, Na
             }
             consumed.clear();
         }
-        int done = recipe;
         UUID who = crafter;
         recipe = -1;
         crafter = null;
@@ -155,15 +152,10 @@ public class AmuletTableBlockEntity extends BlockEntity implements Inventory, Na
         world.spawnParticles(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + 1.3, pos.getZ() + 0.5,
                 20, 0.2, 0.3, 0.2, 0.08);
         if (who != null && result != null) {
-            boolean learned = AmuletKnowledge.get(world.getServer()).learn(who, done);
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(who);
             if (player != null) {
                 player.sendMessage(Text.translatable("message.basedefense.amulet_table.done",
                         new ItemStack(result).getName()).formatted(Formatting.LIGHT_PURPLE), false);
-                if (learned) {
-                    player.sendMessage(Text.translatable("message.basedefense.amulet_table.learned")
-                            .formatted(Formatting.GRAY), false);
-                }
             }
         }
     }

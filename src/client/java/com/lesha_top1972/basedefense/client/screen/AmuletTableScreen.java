@@ -24,8 +24,8 @@ import static com.lesha_top1972.basedefense.screen.AmuletTableScreenHandler.*;
 
 /**
  * Меню стола амулетов (стиль «стекло»): слева схема «два амулета сверху → результат в центре ← кулон снизу»
- * и кнопка «Начать крафт» (во время работы — полоска и сколько осталось), справа — что может получиться
- * и с каким шансом (видно, только если игрок уже хоть раз крафтил эту пару), внизу — инвентарь.
+ * и кнопка «Начать крафт» (во время работы — полоска и сколько осталось), справа — все крафты стола
+ * (пока пара не выбрана) или что может получиться из выбранной пары и с каким шансом, внизу — инвентарь.
  */
 public class AmuletTableScreen extends HandledScreen<AmuletTableScreenHandler> {
 
@@ -39,6 +39,14 @@ public class AmuletTableScreen extends HandledScreen<AmuletTableScreenHandler> {
     private static final int PANEL_T = 32;
     private static final int PANEL_B = 148;
     private static final int ROW_H = 26;
+    private static final int RECIPE_H = 50;
+
+    /** Места значков в правой панели (для подсказок), пересчитываются каждый кадр. */
+    private final List<Hit> hits = new java.util.ArrayList<>();
+    private int scroll;
+    private int maxScroll;
+    private int listTop;
+    private int listBottom;
 
     private static final ItemStack ICON = new ItemStack(ModBlocks.AMULET_TABLE);
     private static final ItemStack GHOST_AMULET = new ItemStack(ModItems.LIFE_AMULET_1);
@@ -174,38 +182,26 @@ public class AmuletTableScreen extends HandledScreen<AmuletTableScreenHandler> {
         }
     }
 
-    /** Правая панель: шансы того, что может получиться. */
+    /** Правая панель: пока пара не выбрана — все крафты стола; иначе — шансы этой пары. */
     private void drawPanel(DrawContext c, int left, int top) {
+        hits.clear();
         int pl = left + PANEL_L;
         int pr = left + PANEL_R;
         int pt = top + PANEL_T;
         int pb = top + PANEL_B;
         inset(c, pl, pt, pr, pb, CONTENT);
-        List<OrderedText> title = this.textRenderer.wrapLines(
-                Text.translatable("screen.basedefense.amulet_table.chances"), pr - pl - 8);
-        int ty = pt + 4;
-        for (OrderedText line : title) {
-            c.drawText(this.textRenderer, line, pl + 4, ty, TEXT_DARK, true);
-            ty += 10;
-        }
-        divider(c, pl + 4, pr - 4, ty + 1);
-        int y0 = ty + 6;
 
         int recipe = shownRecipe();
         boolean bothIn = handler.isCrafting() || (!table().getStack(AmuletTableBlockEntity.LEFT).isEmpty()
                 && !table().getStack(AmuletTableBlockEntity.RIGHT).isEmpty());
+        int y0 = panelTitle(c, pl, pr, pt, Text.translatable(bothIn
+                ? "screen.basedefense.amulet_table.chances" : "screen.basedefense.amulet_table.all"));
         if (!bothIn) {
-            wrapped(c, Text.translatable("screen.basedefense.amulet_table.hint.put"), pl + 4, y0, pr - pl - 8, TEXT_MUTED);
+            drawAllRecipes(c, pl, pr, y0, pb);
             return;
         }
         if (recipe < 0) {
             wrapped(c, Text.translatable("screen.basedefense.amulet_table.hint.none"), pl + 4, y0, pr - pl - 8, BAD);
-            return;
-        }
-        if (!handler.knows(recipe)) {
-            embossedCentered(c, this.textRenderer, Text.literal("? ? ?"), (pl + pr) / 2, y0 + 2, WARN);
-            wrapped(c, Text.translatable("screen.basedefense.amulet_table.hint.unknown"), pl + 4, y0 + 16,
-                    pr - pl - 8, TEXT_MUTED);
             return;
         }
         AmuletRecipes.Recipe r = AmuletRecipes.get(recipe);
@@ -217,17 +213,89 @@ public class AmuletTableScreen extends HandledScreen<AmuletTableScreenHandler> {
             if (ry + ROW_H > pb - 2) {
                 break;
             }
+            ItemStack item = new ItemStack(o.item());
             card(c, pl + 3, ry, pr - 3, ry + ROW_H - 2, CARD, false);
-            c.drawItem(new ItemStack(o.item()), pl + 6, ry + 4);
-            String name = this.textRenderer.trimToWidth(new ItemStack(o.item()).getName().getString(), pr - pl - 32);
+            c.drawItem(item, pl + 6, ry + 4);
+            String name = this.textRenderer.trimToWidth(item.getName().getString(), pr - pl - 32);
             c.drawText(this.textRenderer, name, pl + 25, ry + 3, TEXT_BODY, false);
-            int barL = pl + 25;
-            int barR = pr - 30;
-            progress(c, barL, ry + 15, barR, ry + 19, o.chance() / 100.0f, chanceTop(o.chance()), chanceBottom(o.chance()));
+            progress(c, pl + 25, ry + 15, pr - 30, ry + 19, o.chance() / 100.0f, chanceTop(o.chance()), chanceBottom(o.chance()));
             Text pct = Text.literal(o.chance() + "%");
             c.drawText(this.textRenderer, pct, pr - 6 - this.textRenderer.getWidth(pct), ry + 13, chanceTop(o.chance()), true);
+            hits.add(new Hit(pl + 3, ry, pr - 3, ry + ROW_H - 2, item));
             ry += ROW_H;
         }
+    }
+
+    /** Заголовок панели; возвращает, где начинается содержимое. */
+    private int panelTitle(DrawContext c, int pl, int pr, int pt, Text text) {
+        int ty = pt + 4;
+        for (OrderedText line : this.textRenderer.wrapLines(text, pr - pl - 8)) {
+            c.drawText(this.textRenderer, line, pl + 4, ty, TEXT_DARK, true);
+            ty += 10;
+        }
+        divider(c, pl + 4, pr - 4, ty + 1);
+        return ty + 6;
+    }
+
+    /** Все рецепты стола: «амулет + амулет →», ниже все результаты с шансами. Колесо мыши — прокрутка. */
+    private void drawAllRecipes(DrawContext c, int pl, int pr, int y0, int pb) {
+        List<AmuletRecipes.Recipe> list = AmuletRecipes.all();
+        int visible = pb - 2 - y0;
+        maxScroll = Math.max(0, list.size() * RECIPE_H - visible);
+        scroll = Math.max(0, Math.min(scroll, maxScroll));
+        listTop = y0;
+        listBottom = pb - 2;
+        c.enableScissor(pl, y0, pr, pb - 2);
+        int cy = y0 - scroll;
+        for (AmuletRecipes.Recipe r : list) {
+            if (cy + RECIPE_H > y0 && cy < pb) {
+                card(c, pl + 3, cy, pr - 3, cy + RECIPE_H - 3, CARD, false);
+                ItemStack a = new ItemStack(r.a());
+                ItemStack b = new ItemStack(r.b());
+                int ix = pl + 7;
+                c.drawItem(a, ix, cy + 3);
+                c.drawText(this.textRenderer, "+", ix + 19, cy + 7, TEXT_MUTED, false);
+                c.drawItem(b, ix + 27, cy + 3);
+                c.drawText(this.textRenderer, "→", ix + 47, cy + 7, TEXT_MUTED, false);
+                addHit(ix, cy + 3, a, y0, pb);
+                addHit(ix + 27, cy + 3, b, y0, pb);
+                int ox = pl + 7;
+                for (AmuletRecipes.Outcome o : r.outcomes()) {
+                    ItemStack item = new ItemStack(o.item());
+                    c.drawItem(item, ox + 4, cy + 21);
+                    Text pct = Text.literal(o.chance() + "%");
+                    c.drawText(this.textRenderer, pct, ox + 12 - this.textRenderer.getWidth(pct) / 2, cy + 38,
+                            chanceTop(o.chance()), true);
+                    addHit(ox + 4, cy + 21, item, y0, pb);
+                    ox += 28;
+                }
+            }
+            cy += RECIPE_H;
+        }
+        c.disableScissor();
+        if (maxScroll > 0) {
+            // полоска прокрутки
+            int trackH = listBottom - listTop;
+            int barH = Math.max(10, trackH * visible / (visible + maxScroll));
+            int barY = listTop + (trackH - barH) * scroll / maxScroll;
+            c.fill(pr - 3, listTop, pr - 1, listBottom, 0x30FFFFFF);
+            c.fill(pr - 3, barY, pr - 1, barY + barH, 0xA0FFFFFF);
+        }
+    }
+
+    private void addHit(int ix, int iy, ItemStack item, int clipTop, int clipBottom) {
+        if (iy + 16 > clipTop && iy < clipBottom) {
+            hits.add(new Hit(ix, Math.max(iy, clipTop), ix + 16, Math.min(iy + 16, clipBottom), item));
+        }
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        if (mouseX >= x + PANEL_L && mouseX < x + PANEL_R && mouseY >= listTop && mouseY < listBottom && maxScroll > 0) {
+            scroll = (int) Math.max(0, Math.min(maxScroll, scroll - amount * 16));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
     private static int chanceTop(int chance) {
@@ -245,31 +313,17 @@ public class AmuletTableScreen extends HandledScreen<AmuletTableScreenHandler> {
         }
     }
 
-    /** Подсказка над строкой шансов — полное название предмета. */
+    /** Подсказка над значком или строкой в правой панели. */
     private void drawRowTooltip(DrawContext c, int mouseX, int mouseY) {
-        int recipe = shownRecipe();
-        if (recipe < 0 || !handler.knows(recipe)) {
-            return;
-        }
-        AmuletRecipes.Recipe r = AmuletRecipes.get(recipe);
-        if (r == null) {
-            return;
-        }
-        int pl = x + PANEL_L;
-        int pr = x + PANEL_R;
-        if (mouseX < pl || mouseX >= pr) {
-            return;
-        }
-        int titleLines = this.textRenderer.wrapLines(Text.translatable("screen.basedefense.amulet_table.chances"),
-                PANEL_R - PANEL_L - 8).size();
-        int ry = y + PANEL_T + 4 + titleLines * 10 + 6;
-        for (AmuletRecipes.Outcome o : r.outcomes()) {
-            if (mouseY >= ry && mouseY < ry + ROW_H - 2) {
-                c.drawItemTooltip(this.textRenderer, new ItemStack(o.item()), mouseX, mouseY);
+        for (Hit h : hits) {
+            if (mouseX >= h.l && mouseX < h.r && mouseY >= h.t && mouseY < h.b) {
+                c.drawItemTooltip(this.textRenderer, h.item, mouseX, mouseY);
                 return;
             }
-            ry += ROW_H;
         }
+    }
+
+    private record Hit(int l, int t, int r, int b, ItemStack item) {
     }
 
     /** Линия толщиной 2 px (по точкам). */
