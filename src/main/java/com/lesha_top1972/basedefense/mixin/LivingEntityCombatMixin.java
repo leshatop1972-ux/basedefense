@@ -58,6 +58,10 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
     @ModifyVariable(method = "damage", at = @At("HEAD"), argsOnly = true)
     private float basedefense$modifyDamage(float amount, DamageSource source, float original) {
         LivingEntity self = (LivingEntity) (Object) this;
+        if (!self.getWorld().isClient) {
+            // ярость и кольца жадности (удар игрока по мобу)
+            amount = com.lesha_top1972.basedefense.artifact.ArtifactPowers.modifyOutgoing(self, source, amount);
+        }
         if (source.getAttacker() instanceof LivingEntity attacker && attacker.hasStatusEffect(ModEffects.SNEAKY_RAT)) {
             amount *= 0.8f;                                      // «Подлая крыса»: −20% урона
         }
@@ -105,6 +109,27 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
             NabatHooks.onDamaged(self, source, dealt);
             com.lesha_top1972.basedefense.artifact.Artifacts.onDamaged(self, source, dealt);
             com.lesha_top1972.basedefense.entity.settler.SettlerThreats.onDamaged(self, source);
+        }
+    }
+
+    /** Моб, оглушённый амулетом памяти, не наносит урона. */
+    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void basedefense$stunnedAttacker(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (!self.getWorld().isClient
+                && com.lesha_top1972.basedefense.artifact.ArtifactPowers.isStunned(source.getAttacker())) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    /** Амулет чистоты II: на время способности негативные эффекты не накладываются. */
+    @Inject(method = "canHaveStatusEffect", at = @At("HEAD"), cancellable = true)
+    private void basedefense$purityImmune(net.minecraft.entity.effect.StatusEffectInstance effect,
+                                         CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (!self.getWorld().isClient
+                && com.lesha_top1972.basedefense.artifact.ArtifactPowers.blocksEffect(self, effect)) {
+            cir.setReturnValue(false);
         }
     }
 

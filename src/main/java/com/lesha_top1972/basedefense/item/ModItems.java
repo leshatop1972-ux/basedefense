@@ -58,6 +58,16 @@ public final class ModItems {
     public static final Item LIFE_AMULET_2 = amulet("life_amulet_2", Rarity.RARE);
     public static final Item LIFE_AMULET_3 = amulet("life_amulet_3", Rarity.EPIC);
 
+    /** Вторая партия артефактов (см. ArtifactPowers). */
+    public static final Item MEMORY_AMULET = amulet("memory_amulet", Rarity.RARE);
+    public static final Item ETERNITY_AMULET = amulet("eternity_amulet", Rarity.EPIC);
+    public static final Item GREED_AMULET = amulet("greed_amulet", Rarity.RARE);
+    public static final Item FURY_AMULET = amulet("fury_amulet", Rarity.RARE);
+    public static final Item PURITY_AMULET_1 = amulet("purity_amulet_1", Rarity.RARE);
+    public static final Item PURITY_AMULET_2 = amulet("purity_amulet_2", Rarity.EPIC);
+    public static final Item GREED_RING_1 = amulet("greed_ring_1", Rarity.RARE);
+    public static final Item GREED_RING_2 = amulet("greed_ring_2", Rarity.EPIC);
+
     /** Пустой кулон: делает кузнец (3 железа, 1 золото, 5 редстоуна, 3 минуты); нужен для стола амулетов. */
     public static final Item EMPTY_PENDANT = register("empty_pendant", new Item(new Item.Settings().maxCount(16)));
 
@@ -192,6 +202,14 @@ public final class ModItems {
             entries.add(DODGE_AMULET_3);
             entries.add(VAMPIRE_CLOAK);
             entries.add(WISDOM_AMULET);
+            entries.add(MEMORY_AMULET);
+            entries.add(ETERNITY_AMULET);
+            entries.add(GREED_AMULET);
+            entries.add(FURY_AMULET);
+            entries.add(PURITY_AMULET_1);
+            entries.add(PURITY_AMULET_2);
+            entries.add(GREED_RING_1);
+            entries.add(GREED_RING_2);
             entries.add(EMPTY_PENDANT);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {

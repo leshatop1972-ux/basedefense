@@ -40,12 +40,14 @@ import java.util.UUID;
 
 /**
  * Артефакты: 5 слотов у игрока, проверка «надет ли артефакт», способности.
+ * Способности с клавишей — «Способность артефакта 1…5» (клавиша того слота, где лежит артефакт).
+ * Вторая партия (память, вечность, жадность, ярость, чистота, кольца жадности) — {@link ArtifactPowers}.
  * <ul>
- *   <li>Амулет рывка — клавиша R: быстрый плавный рывок на 4 блока в сторону движения (или вперёд),
+ *   <li>Амулет рывка — клавиша слота: быстрый плавный рывок на 4 блока в сторону движения (или вперёд),
  *       перезарядка 2 с. Двигает игрока клиент (движение игрока — клиентское), сервер проверяет амулет
  *       и перезарядку, ставит перезарядку на предмет, играет звук и рассылает анимацию остальным.</li>
  * </ul>
- *   <li>Амулет взлёта — клавиша Y: подброс вверх на 3.5 блока, до 3 раз подряд (и в воздухе), потом
+ *   <li>Амулет взлёта — клавиша слота: подброс вверх на 3.5 блока, до 3 раз подряд (и в воздухе), потом
  *       перезарядка 6 с; после взлёта до приземления урона от падения нет.</li>
  * Пассивные амулеты (проверяются раз в 10 тиков, см. {@link #updatePassives}):
  *   <li>Вампиризм I/II/III — убийство моба лечит на 4/6/8 HP, у III ещё 1 HP за каждое попадание;</li>
@@ -112,6 +114,7 @@ public final class Artifacts {
 
     public static void init() {
         // после смерти и возвращения из Энда артефакты остаются
+        ArtifactPowers.init();
         ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
             SimpleInventory from = of(oldPlayer);
             SimpleInventory to = of(newPlayer);
@@ -169,6 +172,8 @@ public final class Artifacts {
         double speed = SPEED[level(p, ModItems.SPEED_AMULET_1, ModItems.SPEED_AMULET_2, ModItems.SPEED_AMULET_3)];
         setModifier(p, EntityAttributes.GENERIC_MOVEMENT_SPEED, SPEED_ID, "basedefense speed amulet", speed,
                 EntityAttributeModifier.Operation.MULTIPLY_BASE);
+        life += ArtifactPowers.extraHealth(p);   // ярость, чистота, кольцо жадности II
+        ArtifactPowers.tickPlayer(p);
         setModifier(p, EntityAttributes.GENERIC_MAX_HEALTH, LIFE_ID, "basedefense life amulet", life,
                 EntityAttributeModifier.Operation.ADDITION);
         if (p.getHealth() > p.getMaxHealth()) {
@@ -214,13 +219,14 @@ public final class Artifacts {
             }
         }
         // Мудрость: только удар рукой/оружием (не стрела). 1/4 уровня опыта → Скорость I на 5 с и +1 HP.
-        if (source.getSource() == p && has(p, ModItems.WISDOM_AMULET) && spendQuarterLevel(p)) {
+        if (source.getSource() == p && has(p, ModItems.WISDOM_AMULET) && spendLevel(p, WISDOM_COST)) {
             p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, WISDOM_SPEED_TICKS, 0, false, true, true));
             heal += WISDOM_HEAL;
         }
         if (heal > 0) {
             p.heal(heal);
         }
+        ArtifactPowers.onHit(target, source);   // амулет памяти
         // Плащ вампиризма: с шансом 25% все союзники в 25 блоках (игроки и жители, вместе с носителем)
         // лечатся на 25% прошедшего урона.
         if (has(p, ModItems.VAMPIRE_CLOAK) && p.getRandom().nextFloat() < CLOAK_CHANCE) {
@@ -238,10 +244,13 @@ public final class Artifacts {
         }
     }
 
-    /** Списать 1/4 уровня опыта; false — опыта не хватает (ничего не списано). */
-    private static boolean spendQuarterLevel(ServerPlayerEntity p) {
+    /** Списать долю уровня опыта (1/4, 1/8…); false — опыта не хватает (ничего не списано). */
+    public static boolean spendLevel(ServerPlayerEntity p, float fraction) {
+        if (p.isCreative()) {
+            return true;
+        }
         int level = p.experienceLevel;
-        float progress = p.experienceProgress - WISDOM_COST;
+        float progress = p.experienceProgress - fraction;
         if (progress < 0f) {
             if (level <= 0) {
                 return false;
@@ -249,7 +258,7 @@ public final class Artifacts {
             level--;
             progress += 1f;
         }
-        int points = Math.max(1, Math.round(p.getNextLevelExperience() * WISDOM_COST));
+        int points = Math.max(1, Math.round(p.getNextLevelExperience() * fraction));
         p.totalExperience = Math.max(0, p.totalExperience - points);
         p.experienceProgress = progress;
         p.setExperienceLevel(level);   // заодно отправляет полоску опыта клиенту

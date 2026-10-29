@@ -17,6 +17,7 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.item.ItemStack;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.util.InputUtil;
@@ -47,14 +48,16 @@ public final class ArtifactClient {
     public static final int PANEL_H = Artifacts.SLOTS * 18 + 10;
 
     private static boolean panelOpen;
-    private static KeyBinding dashKey;
+    /** «Способность артефакта 1…5»: клавиша для каждого слота артефактов. */
+    private static final KeyBinding[] SLOT_KEYS = new KeyBinding[Artifacts.SLOTS];
+    private static final int[] DEFAULT_KEYS = {GLFW.GLFW_KEY_R, GLFW.GLFW_KEY_Y, GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H,
+            GLFW.GLFW_KEY_J};
     private static long ticks;
     private static int dashLeft;
     private static boolean dashStop;
     private static long cooldownUntil;
     private static final Vector3f DIR = new Vector3f();
 
-    private static KeyBinding leapKey;
     private static int leapUsed;
     private static long leapLast = -1000;
     private static long leapCooldownUntil;
@@ -75,10 +78,10 @@ public final class ArtifactClient {
 
     public static void init() {
         ArtifactSlot.visible = ArtifactClient::panelVisible;
-        dashKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.basedefense.dash", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R, "category.basedefense"));
-        leapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.basedefense.leap", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_Y, "category.basedefense"));
+        for (int i = 0; i < Artifacts.SLOTS; i++) {
+            SLOT_KEYS[i] = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.basedefense.artifact_" + (i + 1),
+                    InputUtil.Type.KEYSYM, DEFAULT_KEYS[i], "category.basedefense"));
+        }
         ClientPlayNetworking.registerGlobalReceiver(Artifacts.LEAP_S2C, (client, handler, buf, sender) -> {
             int id = buf.readVarInt();
             client.execute(() -> LEAPS.put(id, ticks));
@@ -150,14 +153,30 @@ public final class ArtifactClient {
             dashLeft = 0;
             return;
         }
-        while (dashKey.wasPressed()) {
-            tryDash(client.player);
-        }
-        while (leapKey.wasPressed()) {
-            tryLeap(client.player);
+        for (int i = 0; i < Artifacts.SLOTS; i++) {
+            while (SLOT_KEYS[i].wasPressed()) {
+                useSlot(client.player, i);
+            }
         }
         DASHES.entrySet().removeIf(e -> ticks - e.getValue()[0] > 10);
         LEAPS.entrySet().removeIf(e -> ticks - e.getValue() > 14);
+    }
+
+    /** Клавиша слота: рывок и взлёт двигают игрока здесь, остальные способности делает сервер. */
+    private static void useSlot(ClientPlayerEntity p, int slot) {
+        ItemStack stack = Artifacts.of(p).getStack(slot);
+        if (stack.isEmpty()) {
+            return;
+        }
+        if (stack.isOf(ModItems.DASH_AMULET)) {
+            tryDash(p);
+        } else if (stack.isOf(ModItems.LEAP_AMULET)) {
+            tryLeap(p);
+        } else if (!p.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeVarInt(slot);
+            ClientPlayNetworking.send(com.lesha_top1972.basedefense.artifact.ArtifactPowers.ABILITY_C2S, buf);
+        }
     }
 
     private static void tryDash(ClientPlayerEntity p) {
