@@ -221,7 +221,7 @@ public final class ModEntities {
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "curb_minion"),
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, CurbMinionEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.7f, 2.15f))
+                    .dimensions(EntityDimensions.fixed(0.85f, 2.15f))
                     .trackRangeBlocks(64)
                     .build());
 

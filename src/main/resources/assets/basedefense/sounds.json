@@ -989,19 +989,6 @@
       }
     ]
   },
-  "entity.curb_minion.servo": {
-    "subtitle": "subtitles.basedefense.curb_minion.servo",
-    "sounds": [
-      {
-        "name": "basedefense:mob/curb/minion_servo0",
-        "attenuation_distance": 10
-      },
-      {
-        "name": "basedefense:mob/curb/minion_servo1",
-        "attenuation_distance": 10
-      }
-    ]
-  },
   "entity.curb_minion.hurt": {
     "subtitle": "subtitles.basedefense.curb_minion.hurt",
     "sounds": [

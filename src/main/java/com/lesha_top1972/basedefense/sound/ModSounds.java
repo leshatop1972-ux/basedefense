@@ -101,7 +101,6 @@ public final class ModSounds {
     public static final SoundEvent CURB_HURT = register("entity.curb.hurt");
     public static final SoundEvent CURB_DEATH = register("entity.curb.death");
     public static final SoundEvent CURB_MINION_STEP = register("entity.curb_minion.step");
-    public static final SoundEvent CURB_MINION_SERVO = register("entity.curb_minion.servo");
     public static final SoundEvent CURB_MINION_HURT = register("entity.curb_minion.hurt");
     public static final SoundEvent CURB_MINION_DEATH = register("entity.curb_minion.death");
 

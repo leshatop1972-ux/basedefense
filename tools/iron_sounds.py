@@ -158,9 +158,6 @@ def curb():
         x = servo(sec, 140 + v * 30, 260 + v * 50)
         place(x, clank(0.2, 900 + v * 80, 0.02, 0.4), sec - 0.18)
         save("servo%d" % v, x, vol=0.45)
-    for v in range(2):                                 # сервопривод прислужника — выше и короче
-        sec = 0.5
-        save("minion_servo%d" % v, servo(sec, 300 + v * 60, 520 + v * 80), vol=0.4)
     for v in range(3):                                 # урон Бордюра: глухой лязг брони
         sec = 0.6
         x = clank(sec, 240 + v * 30, 0.1, 1.0) + thud(sec, 65, 0.06, 0.8)
@@ -189,7 +186,6 @@ def curb():
     ev("entity.curb.hurt", "curb", ["hurt0", "hurt1", "hurt2"], 16)
     ev("entity.curb.death", "curb", ["death"], 24)
     ev("entity.curb_minion.step", "curb", ["minion_step0", "minion_step1", "minion_step2"], 10)
-    ev("entity.curb_minion.servo", "curb", ["minion_servo0", "minion_servo1"], 10)
     ev("entity.curb_minion.hurt", "curb", ["minion_hurt0", "minion_hurt1"], 14)
     ev("entity.curb_minion.death", "curb", ["minion_death"], 16)
 

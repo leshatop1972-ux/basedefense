@@ -138,7 +138,13 @@ public class CurbMinionEntity extends AbstractCurbEntity {
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return ModSounds.CURB_MINION_SERVO;
+        return ModSounds.CURB_SERVO;
+    }
+
+    /** Сервоприводы — те же, что у Бори228, но выше (мельче механизм). */
+    @Override
+    public void playAmbientSound() {
+        this.playSound(ModSounds.CURB_SERVO, this.getSoundVolume(), this.getSoundPitch() * 1.25f);
     }
 
     @Override

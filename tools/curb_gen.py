@@ -184,9 +184,60 @@ def skeleton(M, minion):
     M.mirror_x("right_fore", "left_fore", parent="left_arm")
     M.mirror_x("jet_r", "jet_l", parent="left_fore")
     M.mirror_x("right_hand", "left_hand", parent="left_fore")
+    if minion:
+        fatten(M)
     M.pack()
     M.finalize()
     return M
+
+
+# Прислужник — толстый и почти квадратный: корпус шире и глубже, ноги толще, руки отодвинуты к краям
+FAT_BODY = (1.4, 1.7)           # корпус и пальто: x, z
+FAT_LEG = 1.35                  # толщина ног
+FAT_ARM_SHIFT = 1.9             # руки дальше от центра (пикс.)
+FAT_ARM = 1.2                   # толщина рук
+
+
+def fatten(M):
+    def scale_cube(c, kx, kz, cx, cz):
+        (ox, oy, oz), (sx, sy, sz) = c["origin"], c["size"]
+        c["origin"] = [round(cx + (ox - cx) * kx, 4), oy, round(cz + (oz - cz) * kz, 4)]
+        c["size"] = [round(sx * kx, 4), sy, round(sz * kz, 4)]
+        if "pivot" in c:
+            px, py, pz = c["pivot"]
+            c["pivot"] = [round(cx + (px - cx) * kx, 4), py, round(cz + (pz - cz) * kz, 4)]
+
+    trunk = ("body", "torso", "coat_fr", "coat_fl", "coat_b", "cape")
+    for name in trunk:
+        b = M.by_name[name]
+        kx, kz = FAT_BODY
+        if name != "body" and name != "torso":
+            px, py, pz = b["pivot"]
+            b["pivot"] = [round(px * kx, 4), py, round(pz * kz, 4)]
+        for c in b["cubes"]:
+            scale_cube(c, kx, kz, 0.0, 0.0)
+    for side in ("right", "left"):
+        sg = -1 if side == "right" else 1
+        for name in (side + "_leg", side + "_shin", side + "_foot"):
+            b = M.by_name[name]
+            for c in b["cubes"]:
+                cx = c["origin"][0] + c["size"][0] / 2
+                cz = c["origin"][2] + c["size"][2] / 2
+                scale_cube(c, FAT_LEG, FAT_LEG, cx, cz)
+        for name in (side + "_arm", side + "_fore", side + "_hand", "jet_r" if side == "right" else "jet_l"):
+            b = M.by_name[name]
+            b["pivot"] = [round(b["pivot"][0] + sg * FAT_ARM_SHIFT, 4), b["pivot"][1], b["pivot"][2]]
+            for c in b["cubes"]:
+                c["origin"][0] = round(c["origin"][0] + sg * FAT_ARM_SHIFT, 4)
+                if "pivot" in c:
+                    c["pivot"][0] = round(c["pivot"][0] + sg * FAT_ARM_SHIFT, 4)
+                if name != ("jet_r" if side == "right" else "jet_l"):
+                    cx = c["origin"][0] + c["size"][0] / 2
+                    cz = c["origin"][2] + c["size"][2] / 2
+                    scale_cube(c, FAT_ARM, FAT_ARM, cx, cz)
+    # голова (капюшон) тоже чуть шире и квадратнее
+    for c in M.by_name["head"]["cubes"]:
+        scale_cube(c, 1.18, 1.1, 0.0, 0.0)
 
 
 B = skeleton(Model("curb", 128, 128), False)
