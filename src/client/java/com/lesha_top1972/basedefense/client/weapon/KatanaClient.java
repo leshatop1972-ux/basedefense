@@ -32,8 +32,8 @@ import java.util.Map;
  * Катана на клиенте.
  * <p>
  * 1‑е лицо (свой игрок): клипы assets/basedefense/fpanim/katana.json (сняты с видео‑образца, tools/katana_gen.py):
- * в ножнах на поясе (рука на рукояти), 3 удара (из ножен — сразу с выхвата), после боя или на бегу — в ножны,
- * зарядка, готовность, особая атака (заканчивается ното — в ножны). Плавные переходы, события
+ * в ножнах у таза (правая рука на рукояти), 3 удара (из ножен — сразу с выхвата), после боя или на бегу — в ножны,
+ * зарядка, готовность, особая атака. Плавные переходы, события
  * клипа (звуки, «стоп‑кадр» при попадании), наклон/крен камеры и обзор — из клипа (mixin GameRendererMixin).
  * <p>
  * Ввод: ЛКМ — серия (вместо ванильного удара), ПКМ — зарядка (как лук; KatanaItem). Рывки своего игрока — здесь.
@@ -227,6 +227,7 @@ public final class KatanaClient {
         dashDir = flat.lengthSquared() > 1e-4 ? flat.normalize() : Vec3d.ZERO;
         dashTicks = KatanaCombat.DASH_TICKS;
         specialRunning = true;
+        drawn = true;                                    // после выхвата катана обнажена (в ножны — как после ударов)
         begin(state(p.getId()), KatanaCombat.ANIM_SPECIAL, ticks);
         startAction("special", 0.03f);
     }
@@ -266,7 +267,7 @@ public final class KatanaClient {
         if (using) {
             lastUse = p.getItemUseTime();
             if (!charging(action) && !(action != null && action.name.equals("special"))) {
-                startAction(drawn ? "charge_drawn" : "charge", 0.12f);
+                startAction(drawn ? "charge_drawn" : "charge", drawn ? 0.12f : 0.25f);
                 drawn = false;
             }
             if (lastUse >= KatanaCombat.AUTO_RELEASE && client.interactionManager != null) {
@@ -392,7 +393,7 @@ public final class KatanaClient {
                     String done = action.name;
                     a.sample(action, action.length, cur);
                     endAction(done.equals("special") ? 0.2f : 0.15f);
-                    if (done.equals("sheathe") || done.equals("special")) {
+                    if (done.equals("sheathe")) {
                         drawn = false;
                     } else {
                         lastCombat = clock;
