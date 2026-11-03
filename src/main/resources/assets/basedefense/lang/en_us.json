@@ -346,8 +346,8 @@
   "subtitles.basedefense.bloodthirster_sword.ready": "Bloodthirster's Sword thirsts",
   "subtitles.basedefense.bloodthirster_sword.cleave": "Blood cleave",
   "item.basedefense.katana": "Katana",
-  "item.basedefense.katana.tip1": "3-hit combo: side, other side, overhead",
-  "item.basedefense.katana.tip2": "Each hit dashes forward, 5 damage; 1 s rest after the combo",
+  "item.basedefense.katana.tip1": "LMB - 3-hit combo with dashes: diagonal, reverse diagonal, horizontal + rising",
+  "item.basedefense.katana.tip2": "Damage 5 / 5 / 4+6; short rest after the third hit",
   "item.basedefense.dash_amulet": "Dash Amulet",
   "item.basedefense.dash_amulet.tip": "Slot key — dash 4 blocks in the movement direction, 2 s cooldown",
   "item.basedefense.artifact": "Artifact — put it into an artifact slot",
@@ -626,5 +626,15 @@
   "subtitles.basedefense.thunder_tiger.spin": "Blade twirls",
   "subtitles.basedefense.thunder_tiger.flick": "Cigar flicked away",
   "message.basedefense.tiger_arena.pull": "The Thunder Tiger dragged you into his arena!",
-  "message.basedefense.tiger_arena.return": "The tiger is down. Returning in %s s"
+  "message.basedefense.tiger_arena.return": "The tiger is down. Returning in %s s",
+  "item.basedefense.katana.tip3": "Hold RMB 1.5 s - Issen: draw-cut on an 8-block dash (8 dmg), then a delayed cut (12); 8 s cooldown",
+  "subtitles.basedefense.katana.swing": "Katana swings",
+  "subtitles.basedefense.katana.hit": "Katana cuts",
+  "subtitles.basedefense.katana.draw": "Katana drawn",
+  "subtitles.basedefense.katana.sheathe": "Katana sheathed",
+  "subtitles.basedefense.katana.charge": "Katana charges",
+  "subtitles.basedefense.katana.ready": "Katana ready",
+  "subtitles.basedefense.katana.special": "Katana draw-cut",
+  "subtitles.basedefense.katana.flick": "Katana flick",
+  "subtitles.basedefense.katana.burst": "Delayed cut"
 }

@@ -1,7 +1,9 @@
 package com.lesha_top1972.basedefense.client.weapon;
 
-import com.lesha_top1972.basedefense.weapon.KatanaCombat;
+import com.lesha_top1972.basedefense.client.weapon.fp.FpAnim;
 import com.lesha_top1972.basedefense.item.ModItems;
+import com.lesha_top1972.basedefense.sound.ModSounds;
+import com.lesha_top1972.basedefense.weapon.KatanaCombat;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -9,45 +11,94 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3f;
 import org.joml.Vector3f;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Катана на клиенте: клики ЛКМ → серия из трёх ударов с рывком; позы (стойка у бедра, удары, стойка с
- * обнажённым мечом, возврат в ножны) для 3‑го и 1‑го лица — по ключам {@link KatanaKeys}.
+ * Катана на клиенте.
+ * <p>
+ * 1‑е лицо (свой игрок): клипы assets/basedefense/fpanim/katana.json (сняты с видео‑образца, tools/katana_gen.py):
+ * стойка с дыханием, бег, достать, 3 удара, зарядка в ножнах, готовность, особая атака. Плавные переходы, события
+ * клипа (звуки, «стоп‑кадр» при попадании), наклон/крен камеры и обзор — из клипа (mixin GameRendererMixin).
+ * <p>
+ * Ввод: ЛКМ — серия (вместо ванильного удара), ПКМ — зарядка (как лук; KatanaItem). Рывки своего игрока — здесь.
+ * <p>
+ * 3‑е лицо (все игроки): позы KatanaKeys (стойка у бедра в ножнах, удары, зарядка, особая атака).
  */
 public final class KatanaClient {
 
+    // =====================================================================
+    // 3‑е лицо
+    // =====================================================================
     /** Возврат в ножны: через сколько тиков после удара начать и сколько длится. */
-    private static final float SHEATHE_AT = 30f;
+    private static final float SHEATHE_AT = 34f;
     private static final float SHEATHE_LEN = 8f;
-    /** Переход между ударами (и выхват из ножен). */
+    /** Переход между ударами. */
     private static final float BLEND = 1.5f;
+    /** Окна следа клинка от 3‑го лица (тики от начала клипа): {от, до, …}. */
+    static final float[][] TRAIL_TP = {{0.5f, 6f}, {0.5f, 6f}, {0.5f, 6f, 8.5f, 13f}, {0f, 4f, 12.5f, 15f}};
 
-    /** Состояние у игрока: текущий удар серии (−1 — нет) и прошлый — для плавного перехода. */
     static final class State {
         int clip = -1;
         float start = -1000f;
         int prevClip = -1;
         float prevStart = -1000f;
+        float charge;
         final BloodSwordPose.Frame katana = new BloodSwordPose.Frame();
         final BloodSwordPose.Frame saya = new BloodSwordPose.Frame();
         boolean posed;
+        /** След от 3‑го лица: {время, основание xyz, острие xyz} в пространстве модели (блоки). */
+        final ArrayDeque<float[]> trail = new ArrayDeque<>();
     }
 
     private static final Map<Integer, State> STATES = new HashMap<>();
     private static long ticks;
+
+    // =====================================================================
+    // 1‑е лицо (свой игрок)
+    // =====================================================================
+    private static FpAnim anim;
+    private static FpAnim.Clip action;
+    private static double actionStart;
+    private static int nextEvent;
+    private static final FpAnim.Pose cur = new FpAnim.Pose();
+    private static final FpAnim.Pose from = new FpAnim.Pose();
+    private static final FpAnim.Pose tmpA = new FpAnim.Pose();
+    private static final FpAnim.Pose tmpB = new FpAnim.Pose();
+    private static double blendStart = -10;
+    private static float blendLen = 0.1f;
+    private static double clock;
+    private static double lastReal = -1;
+    private static double hitstopUntil;
+    private static float runW;
+    private static boolean active;
+
+    // ввод и бой (свой игрок)
+    private static int comboIdx = -1;
+    private static long comboStart = -1000;
+    private static long restUntil;
     private static boolean buffered;
-    private static long cooldownUntil;
+    private static boolean wasUsing;
+    private static int lastUse;
+    private static int dashTicks;
+    private static Vec3d dashDir = Vec3d.ZERO;
+    private static int dash2At = -1;
+    private static boolean held;
+    private static boolean specialRunning;
 
     private KatanaClient() {
     }
@@ -63,6 +114,14 @@ public final class KatanaClient {
             });
         });
         ClientTickEvents.END_CLIENT_TICK.register(KatanaClient::tick);
+        KatanaWorldFx.init();
+    }
+
+    static FpAnim anim() {
+        if (anim == null) {
+            anim = FpAnim.load("katana");
+        }
+        return anim;
     }
 
     static float now() {
@@ -87,6 +146,14 @@ public final class KatanaClient {
         s.prevStart = s.start;
         s.clip = idx;
         s.start = t;
+        s.trail.clear();
+    }
+
+    private static void play(SoundEvent ev, float vol, float pitch) {
+        MinecraftClient c = MinecraftClient.getInstance();
+        if (c.player != null && c.world != null) {
+            c.world.playSound(c.player.getX(), c.player.getY(), c.player.getZ(), ev, SoundCategory.PLAYERS, vol, pitch, false);
+        }
     }
 
     // =====================================================================
@@ -99,39 +166,55 @@ public final class KatanaClient {
         if (p == null || !KatanaCombat.holding(p) || p.isSpectator()) {
             return false;
         }
-        if (ticks < cooldownUntil || p.getItemCooldownManager().isCoolingDown(ModItems.KATANA)) {
+        if (p.isUsingItem() || specialRunning || ticks < restUntil) {
             return true;
         }
-        State s = state(p.getId());
-        float age = ticks - s.start;
-        if (s.clip >= 0 && age < KatanaCombat.NEXT_MIN) {
+        long age = ticks - comboStart;
+        if (comboIdx >= 0 && comboIdx < 2 && age < KatanaCombat.NEXT_MIN) {
             if (age >= 2) {
                 buffered = true;                         // нажал чуть раньше — удар начнётся сам
             }
             return true;
         }
-        startSwing(p, s);
+        startSwing(p);
         return true;
     }
 
-    private static void startSwing(ClientPlayerEntity p, State s) {
-        float age = ticks - s.start;
-        int idx = s.clip >= 0 && s.clip < 2 && age <= KatanaCombat.COMBO_WINDOW ? s.clip + 1 : 0;
-        begin(s, idx, ticks);
+    private static void startSwing(ClientPlayerEntity p) {
+        long age = ticks - comboStart;
+        int idx = comboIdx >= 0 && comboIdx < 2 && age <= KatanaCombat.COMBO_WINDOW ? comboIdx + 1 : 0;
+        comboIdx = idx;
+        comboStart = ticks;
         buffered = false;
         if (idx == 2) {
-            cooldownUntil = ticks + KatanaCombat.COOLDOWN;
+            restUntil = ticks + KatanaCombat.FINISH_REST;
+            dash2At = (int) (ticks + KatanaCombat.DASH2_TICK);
         }
-        // рывок вперёд (движение своего игрока считает клиент)
-        Vec3d look = p.getRotationVector();
-        Vec3d flat = new Vec3d(look.x, 0, look.z);
-        if (flat.lengthSquared() > 1e-4) {
-            flat = flat.normalize().multiply(KatanaCombat.DASH[idx] * (p.isOnGround() ? 1.0 : 0.35));
-            p.addVelocity(flat.x, 0, flat.z);
-        }
+        dash(p, KatanaCombat.DASH[idx]);
+        begin(state(p.getId()), idx, ticks);
+        startAction("slash" + (idx + 1), 0.05f);
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeByte(idx);
         ClientPlayNetworking.send(KatanaCombat.C2S, buf);
+    }
+
+    private static void dash(ClientPlayerEntity p, float speed) {
+        Vec3d look = p.getRotationVector();
+        Vec3d flat = new Vec3d(look.x, 0, look.z);
+        if (flat.lengthSquared() > 1e-4) {
+            flat = flat.normalize().multiply(speed * (p.isOnGround() ? 1.0 : 0.35));
+            p.addVelocity(flat.x, 0, flat.z);
+        }
+    }
+
+    private static void startSpecial(ClientPlayerEntity p) {
+        Vec3d look = p.getRotationVector();
+        Vec3d flat = new Vec3d(look.x, 0, look.z);
+        dashDir = flat.lengthSquared() > 1e-4 ? flat.normalize() : Vec3d.ZERO;
+        dashTicks = KatanaCombat.DASH_TICKS;
+        specialRunning = true;
+        begin(state(p.getId()), KatanaCombat.ANIM_SPECIAL, ticks);
+        startAction("special", 0.03f);
     }
 
     private static void tick(MinecraftClient client) {
@@ -139,15 +222,64 @@ public final class KatanaClient {
         if (client.player == null || client.world == null) {
             STATES.clear();
             buffered = false;
+            action = null;
             return;
         }
         ClientPlayerEntity p = client.player;
+        boolean holding = KatanaCombat.holding(p);
+        if (holding && !held) {
+            startAction("draw", 0.0f);
+        }
+        held = holding;
+        // --- серия: заранее нажатый удар ---
         if (buffered) {
-            State s = STATES.get(p.getId());
-            if (!KatanaCombat.holding(p) || s == null) {
+            if (!holding) {
                 buffered = false;
-            } else if (ticks - s.start >= KatanaCombat.NEXT_MIN) {
-                startSwing(p, s);
+            } else if (ticks - comboStart >= KatanaCombat.NEXT_MIN) {
+                startSwing(p);
+            }
+        }
+        if (dash2At >= 0 && ticks >= dash2At) {
+            dash2At = -1;
+            if (holding) {
+                dash(p, KatanaCombat.DASH2);
+            }
+        }
+        // --- зарядка (ПКМ держат) и особая атака ---
+        boolean using = holding && p.isUsingItem() && p.getActiveItem().isOf(ModItems.KATANA);
+        if (using) {
+            lastUse = p.getItemUseTime();
+            if (action == null || !(action.name.equals("charge") || action.name.equals("charged"))) {
+                startAction("charge", 0.12f);
+            }
+            if (lastUse >= KatanaCombat.AUTO_RELEASE && client.interactionManager != null) {
+                client.interactionManager.stopUsingItem(p);         // готово и держат долго — бьёт сам
+                using = false;
+            }
+        }
+        if (wasUsing && !using) {
+            if (holding && lastUse >= KatanaCombat.CHARGE_TICKS - 2) {
+                startSpecial(p);
+            } else if (action != null && (action.name.equals("charge") || action.name.equals("charged"))) {
+                endAction(0.15f);
+            }
+        }
+        wasUsing = using;
+        if (dashTicks > 0) {
+            dashTicks--;
+            double sp = KatanaCombat.DASH_SPEED;
+            p.setVelocity(dashDir.x * sp, Math.min(0.0, p.getVelocity().y * 0.2), dashDir.z * sp);
+            p.fallDistance = 0f;
+            if (dashTicks == 0) {
+                p.setVelocity(dashDir.x * 0.25, p.getVelocity().y, dashDir.z * 0.25);
+            }
+        }
+        // события клипа и время 1‑го лица — и без отрисовки (звуки идут и от 3‑го лица)
+        update(0f);
+        // частицы зарядки у всех игроков с катаной
+        for (PlayerEntity pl : client.world.getPlayers()) {
+            if (KatanaCombat.holding(pl) && pl.isUsingItem() && pl.getActiveItem().isOf(ModItems.KATANA)) {
+                KatanaWorldFx.chargeParticles(client.world, pl, pl.getItemUseTime());
             }
         }
         STATES.entrySet().removeIf(e -> {
@@ -157,7 +289,155 @@ public final class KatanaClient {
     }
 
     // =====================================================================
-    // Позы
+    // 1‑е лицо: клипы
+    // =====================================================================
+    private static void startAction(String name, float blend) {
+        FpAnim.Clip c = anim().clip(name);
+        if (c == null) {
+            return;
+        }
+        from.set(cur);
+        blendStart = clock;
+        blendLen = Math.max(0.001f, blend);
+        action = c;
+        actionStart = clock;
+        nextEvent = 0;
+    }
+
+    private static void endAction(float blend) {
+        from.set(cur);
+        blendStart = clock;
+        blendLen = blend;
+        action = null;
+        specialRunning = false;
+    }
+
+    /** Обновить время и позу 1‑го лица (из тика — tickDelta 0, из кадра — настоящий). */
+    public static void update(float tickDelta) {
+        MinecraftClient c = MinecraftClient.getInstance();
+        ClientPlayerEntity p = c.player;
+        if (p == null || !KatanaCombat.holding(p)) {
+            active = false;
+            action = null;
+            specialRunning = false;
+            return;
+        }
+        double real = (ticks + tickDelta) / 20.0;
+        if (lastReal < 0 || real - lastReal > 1.0) {
+            lastReal = real;
+        }
+        double dt = real - lastReal;
+        if (dt <= 0 && active) {
+            return;
+        }
+        lastReal = real;
+        clock += dt * (real < hitstopUntil ? 0.08 : 1.0);
+        active = true;
+        FpAnim a = anim();
+        // бег — по спринту
+        float runTarget = p.isSprinting() && p.isOnGround() ? 1f : 0f;
+        runW += (runTarget - runW) * (float) Math.min(1.0, dt * 8.0);
+        a.sample(a.clip("idle"), (float) clock, tmpA);
+        if (runW > 0.01f) {
+            a.sample(a.clip("run"), (float) clock, tmpB);
+            tmpA.blend(tmpA, tmpB, runW);
+        }
+        FpAnim.Pose target = tmpA;
+        if (action != null) {
+            float t = (float) (clock - actionStart);
+            fireEvents(p, t);
+            if (!action.loop && t >= action.length) {
+                if (action.name.equals("charge")) {
+                    startAction("charged", 0.05f);
+                } else {
+                    a.sample(action, action.length, cur);
+                    endAction(action.name.equals("special") ? 0.2f : 0.15f);
+                }
+            }
+            if (action != null) {
+                a.sample(action, (float) (clock - actionStart), tmpB);
+                target = tmpB;
+            }
+        }
+        float w = (float) ((clock - blendStart) / blendLen);
+        if (w < 1f) {
+            w = MathHelper.clamp(w, 0f, 1f);
+            w = w * w * (3f - 2f * w);
+            cur.blend(from, target, w);
+        } else {
+            cur.set(target);
+        }
+    }
+
+    private static void fireEvents(ClientPlayerEntity p, float t) {
+        while (action != null && nextEvent < action.events.length && t >= action.eventTimes[nextEvent]) {
+            String ev = action.events[nextEvent++];
+            switch (ev) {
+                case "swing" -> play(ModSounds.KATANA_SWING, 0.9f, 0.95f + p.getRandom().nextFloat() * 0.1f);
+                case "swing_heavy" -> play(ModSounds.KATANA_SWING_HEAVY, 0.9f, 1.0f);
+                case "draw" -> play(ModSounds.KATANA_DRAW, 0.7f, 1.0f);
+                case "charge" -> play(ModSounds.KATANA_CHARGE, 0.8f, 1.0f);
+                case "sheathe" -> play(ModSounds.KATANA_SHEATHE, 0.8f, 1.0f);
+                case "ready" -> {
+                    play(ModSounds.KATANA_READY, 0.9f, 1.0f);
+                    KatanaWorldFx.readyBurst(p.getWorld(), p);
+                }
+                case "special" -> play(ModSounds.KATANA_SPECIAL, 1.0f, 1.0f);
+                case "flick" -> play(ModSounds.KATANA_FLICK, 0.8f, 1.0f);
+                case "hit" -> {
+                    if (!KatanaCombat.targets(p, p.getWorld()).isEmpty()) {
+                        hitstopUntil = lastReal + 0.07;             // «стоп‑кадр» при попадании
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+    }
+
+    /** Катана от 1‑го лица сейчас рисуется (своя, в руке, вид из глаз). */
+    public static boolean firstPersonActive() {
+        MinecraftClient c = MinecraftClient.getInstance();
+        return active && c.options.getPerspective().isFirstPerson() && holdingLocal();
+    }
+
+    static FpAnim.Pose pose() {
+        return cur;
+    }
+
+    static FpAnim.Clip actionClip() {
+        return action;
+    }
+
+    static float actionTime() {
+        return (float) (clock - actionStart);
+    }
+
+    /** Камера (mixin GameRendererMixin, tiltViewWhenHurt): крен, наклон и поворот из клипа. */
+    public static void applyCamera(MatrixStack matrices, float tickDelta) {
+        update(tickDelta);
+        if (!firstPersonActive()) {
+            return;
+        }
+        Vector3f c = cur.cam;
+        if (c.z != 0f) {
+            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(c.z));
+        }
+        if (c.x != 0f) {
+            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(c.x));
+        }
+        if (c.y != 0f) {
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(c.y));
+        }
+    }
+
+    /** Множитель обзора (рывок — шире, замах — чуть уже). */
+    public static float fovMultiplier() {
+        return firstPersonActive() ? MathHelper.clamp(cur.fov, 0.8f, 1.35f) : 1f;
+    }
+
+    // =====================================================================
+    // 3‑е лицо: позы
     // =====================================================================
     private static float smooth(float x) {
         x = MathHelper.clamp(x, 0f, 1f);
@@ -171,13 +451,13 @@ public final class KatanaClient {
         return out;
     }
 
-    /** Ключ позы удара clip через s тиков (с обнажённой стойкой и возвратом в ножны). */
-    private static float[] clip(float[] idle, float[][][] swings, int clip, float s, float[] out) {
-        if (clip < 0) {
+    private static float[] clip(int clip, float s, float[] out) {
+        float[] idle = KatanaKeys.TP_IDLE[0];
+        if (clip < 0 || clip >= KatanaKeys.TP_SWINGS.length) {
             System.arraycopy(idle, 1, out, 0, out.length);
             return out;
         }
-        float[][] keys = swings[clip];
+        float[][] keys = KatanaKeys.TP_SWINGS[clip];
         float end = keys[keys.length - 1][0];
         if (s <= end) {
             return BloodSwordPose.sample(keys, s, out);
@@ -189,12 +469,17 @@ public final class KatanaClient {
         return lerp(guard, rest, smooth((s - SHEATHE_AT) / SHEATHE_LEN), out);
     }
 
-    static float[] values(State st, float[] idle, float[][][] swings, float now, float[] out) {
-        clip(idle, swings, st.clip, now - st.start, out);
+    static float[] values(State st, float now, float[] out) {
+        clip(st.clip, now - st.start, out);
         float a = now - st.start;
         if (a < BLEND) {
-            float[] from = clip(idle, swings, st.prevClip, now - st.prevStart, new float[out.length]);
-            lerp(from, out, smooth(a / BLEND), out);
+            float[] prev = clip(st.prevClip, now - st.prevStart, new float[out.length]);
+            lerp(prev, out, smooth(a / BLEND), out);
+        }
+        if (st.charge > 0.001f) {
+            float[] ch = new float[out.length];
+            System.arraycopy(KatanaKeys.TP_CHARGE[0], 1, ch, 0, out.length);
+            lerp(out, ch, smooth(st.charge), out);
         }
         return out;
     }
@@ -208,25 +493,37 @@ public final class KatanaClient {
         return out;
     }
 
-    /** Из миксина BipedEntityModel.setAngles: игрок с катаной в руке — стойка или удар. */
+    /** Из миксина BipedEntityModel.setAngles: игрок с катаной в руке — стойка, удар, зарядка. */
     public static void applyModel(BipedEntityModel<?> model, LivingEntity entity) {
         if (!(model instanceof PlayerEntityModel) || !(entity instanceof PlayerEntity pl) || !KatanaCombat.holding(pl)) {
             return;
         }
         State st = state(entity.getId());
         float now = now();
-        float[] v = values(st, KatanaKeys.TP_IDLE[0], KatanaKeys.TP_SWINGS, now, new float[16]);
+        boolean charging = pl.isUsingItem() && pl.getActiveItem().isOf(ModItems.KATANA);
+        float chTarget = charging ? MathHelper.clamp(pl.getItemUseTime() / 6f, 0f, 1f) : 0f;
+        st.charge += (chTarget - st.charge) * 0.35f;
+        float[] v = values(st, now, new float[17]);
         float hipY = (model.rightLeg.pivotY + model.leftLeg.pivotY) * 0.5f;
         float hipZ = (model.rightLeg.pivotZ + model.leftLeg.pivotZ) * 0.5f;
         float lean = v[12] + model.body.pitch;
         float twist = v[13];
+        float sh = MathHelper.clamp(v[16], 0f, 1f);
         Matrix3f r = new Matrix3f().rotateY(twist).rotateX(lean);
         Vector3f neck = new Vector3f(0, hipY, hipZ).add(r.transform(new Vector3f(0, -12, 0)));
         Vector3f shR = new Vector3f(neck).add(r.transform(new Vector3f(-5, 2, 0)));
         Vector3f shL = new Vector3f(neck).add(r.transform(new Vector3f(5, 2, 0)));
-        Vector3f g = r.transform(new Vector3f(v[0], v[1], v[2])).add(neck);
-        Vector3f l = r.transform(new Vector3f(v[9], v[10], v[11])).add(neck);
         Vector3f xRef = r.transform(new Vector3f(1, 0, 0));
+        // ножны — у бедра (поза покоя без наклона корпуса); «в ножнах» — катана и правая кисть у них
+        float[] idle = KatanaKeys.TP_IDLE[0];
+        Vector3f neck0 = new Vector3f(0, hipY - 12, hipZ);
+        Vector3f gi = new Vector3f(idle[1], idle[2], idle[3]).add(neck0);
+        Vector3f handI = new Vector3f();
+        aim(new Vector3f(neck0).add(-5, 2, 0), gi, -1f, new Vector3f(1, 0, 0), new Matrix3f(), handI);
+        frame(handI, new Vector3f(idle[4], idle[5], idle[6]), new Vector3f(idle[7], idle[8], idle[9]), st.saya);
+        Vector3f g = r.transform(new Vector3f(v[0], v[1], v[2])).add(neck);
+        g.lerp(handI, sh);
+        Vector3f l = r.transform(new Vector3f(v[9], v[10], v[11])).add(neck);
         Matrix3f armR = new Matrix3f();
         Matrix3f armL = new Matrix3f();
         Vector3f handR = new Vector3f();
@@ -252,16 +549,20 @@ public final class KatanaClient {
         float walk = MathHelper.clamp(1f - pl.limbAnimator.getSpeed() * 1.5f, 0f, 1f);  // на ходу ноги — свои
         model.leftLeg.pitch += v[14] * walk;
         model.rightLeg.pitch += v[15] * walk;
+        if (model instanceof PlayerEntityModel<?> pm) {
+            pm.jacket.copyTransform(model.body);
+            pm.rightSleeve.copyTransform(model.rightArm);
+            pm.leftSleeve.copyTransform(model.leftArm);
+            pm.leftPants.copyTransform(model.leftLeg);
+            pm.rightPants.copyTransform(model.rightLeg);
+        }
 
         frame(handR, r.transform(new Vector3f(v[3], v[4], v[5])), r.transform(new Vector3f(v[6], v[7], v[8])), st.katana);
+        if (sh > 0f) {
+            st.katana.p.lerp(st.saya.p, sh);
+            st.katana.q.slerp(st.saya.q, sh);
+        }
         st.katana.p.div(16f);
-        // ножны — всегда у бедра (поза покоя без наклона корпуса)
-        float[] idle = KatanaKeys.TP_IDLE[0];
-        Vector3f neck0 = new Vector3f(0, hipY - 12, hipZ);
-        Vector3f gi = new Vector3f(idle[1], idle[2], idle[3]).add(neck0);
-        Vector3f handI = new Vector3f();
-        aim(new Vector3f(neck0).add(-5, 2, 0), gi, -1f, new Vector3f(1, 0, 0), new Matrix3f(), handI);
-        frame(handI, new Vector3f(idle[4], idle[5], idle[6]), new Vector3f(idle[7], idle[8], idle[9]), st.saya);
         st.saya.p.div(16f);
         st.posed = true;
     }
@@ -285,5 +586,20 @@ public final class KatanaClient {
         }
         BloodSwordPose.basis(new Vector3f(a).sub(sh), xRef, arm);
         arm.transform(local.set(hx, BloodSwordKeys.ARM_REACH, 0), hand).add(sh);
+    }
+
+    /** След от 3‑го лица идёт сейчас? */
+    static float trailTP(State st, float now) {
+        if (st.clip < 0 || st.clip >= TRAIL_TP.length) {
+            return 0f;
+        }
+        float a = now - st.start;
+        float[] w = TRAIL_TP[st.clip];
+        for (int i = 0; i + 1 < w.length; i += 2) {
+            if (a >= w[i] && a <= w[i + 1]) {
+                return 1f;
+            }
+        }
+        return 0f;
     }
 }

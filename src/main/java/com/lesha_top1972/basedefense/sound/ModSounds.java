@@ -182,6 +182,18 @@ public final class ModSounds {
     /** Музыка боя с Громовым тигром (клиент — TigerMusic). */
     public static final SoundEvent TIGER_MUSIC = register("music.thunder_tiger");
 
+    // --- Катана (синтез — tools/katana_sounds.py) ---
+    public static final SoundEvent KATANA_SWING = register("item.katana.swing");
+    public static final SoundEvent KATANA_SWING_HEAVY = register("item.katana.swing_heavy");
+    public static final SoundEvent KATANA_HIT = register("item.katana.hit");
+    public static final SoundEvent KATANA_DRAW = register("item.katana.draw");
+    public static final SoundEvent KATANA_SHEATHE = register("item.katana.sheathe");
+    public static final SoundEvent KATANA_CHARGE = register("item.katana.charge");
+    public static final SoundEvent KATANA_READY = register("item.katana.ready");
+    public static final SoundEvent KATANA_SPECIAL = register("item.katana.special");
+    public static final SoundEvent KATANA_FLICK = register("item.katana.flick");
+    public static final SoundEvent KATANA_BURST = register("item.katana.burst");
+
     private static SoundEvent register(String name) {
         Identifier id = new Identifier(Basedefense.MOD_ID, name);
         return Registry.register(Registries.SOUND_EVENT, id, SoundEvent.of(id));

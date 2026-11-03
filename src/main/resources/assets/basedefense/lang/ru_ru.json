@@ -346,8 +346,8 @@
   "subtitles.basedefense.bloodthirster_sword.ready": "Меч кровожада жаждет крови",
   "subtitles.basedefense.bloodthirster_sword.cleave": "Кровавый разруб",
   "item.basedefense.katana": "Катана",
-  "item.basedefense.katana.tip1": "Серия из 3 ударов: сбоку, с другой стороны, сверху",
-  "item.basedefense.katana.tip2": "Каждый удар — рывок вперёд, урон 5; после серии отдых 1 с",
+  "item.basedefense.katana.tip1": "ЛКМ — серия из 3 ударов с рывками: наискось, наискось обратно, горизонтально + снизу вверх",
+  "item.basedefense.katana.tip2": "Урон 5 / 5 / 4+6; после третьего удара — короткий отдых",
   "item.basedefense.dash_amulet": "Амулет рывка",
   "item.basedefense.dash_amulet.tip": "Клавиша слота — рывок на 4 блока в сторону движения, перезарядка 2 с",
   "item.basedefense.artifact": "Артефакт — положи в слот артефактов",
@@ -626,5 +626,15 @@
   "subtitles.basedefense.thunder_tiger.spin": "Тесак крутится в руке",
   "subtitles.basedefense.thunder_tiger.flick": "Отброшена сигара",
   "message.basedefense.tiger_arena.pull": "Громовой тигр утащил вас на свою арену!",
-  "message.basedefense.tiger_arena.return": "Тигр повержен. Возвращение через %s с"
+  "message.basedefense.tiger_arena.return": "Тигр повержен. Возвращение через %s с",
+  "item.basedefense.katana.tip3": "Зажать ПКМ 1.5 с — «Иссэн»: выхват на рывке 8 блоков (8 урона), затем отложенный разрез (12); перезарядка 8 с",
+  "subtitles.basedefense.katana.swing": "Свист катаны",
+  "subtitles.basedefense.katana.hit": "Катана рассекает",
+  "subtitles.basedefense.katana.draw": "Катану обнажили",
+  "subtitles.basedefense.katana.sheathe": "Катану вложили в ножны",
+  "subtitles.basedefense.katana.charge": "Катана готовится к удару",
+  "subtitles.basedefense.katana.ready": "Катана готова",
+  "subtitles.basedefense.katana.special": "Выхват катаны",
+  "subtitles.basedefense.katana.flick": "Взмах катаны",
+  "subtitles.basedefense.katana.burst": "Отложенный разрез"
 }

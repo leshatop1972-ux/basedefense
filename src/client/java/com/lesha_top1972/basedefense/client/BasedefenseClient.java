@@ -156,10 +156,6 @@ public class BasedefenseClient implements ClientModInitializer {
                 () -> BedrockModelLoader.load("blood_greatsword"));
         com.lesha_top1972.basedefense.client.weapon.BloodSwordClient.init();
         // катана: модель и ножны, серия из трёх ударов
-        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.KatanaRender.LAYER,
-                () -> BedrockModelLoader.load("katana"));
-        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.weapon.KatanaRender.SAYA,
-                () -> BedrockModelLoader.load("katana_saya"));
         com.lesha_top1972.basedefense.client.weapon.KatanaClient.init();
         // артефакты: вкладка с 5 слотами в инвентаре, рывок на R
         com.lesha_top1972.basedefense.client.artifact.ArtifactClient.init();

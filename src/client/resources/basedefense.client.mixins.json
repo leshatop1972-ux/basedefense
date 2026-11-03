@@ -10,6 +10,7 @@
     "BossBarHudMixin",
     "CameraMixin",
     "ClientWorldSkyMixin",
+    "GameRendererMixin",
     "HeldItemFeatureRendererMixin",
     "HeldItemRendererMixin",
     "InGameOverlayRendererMixin",

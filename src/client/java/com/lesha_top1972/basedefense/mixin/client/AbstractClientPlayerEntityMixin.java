@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.mixin.client;
 
 import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordClient;
+import com.lesha_top1972.basedefense.client.weapon.KatanaClient;
 import com.lesha_top1972.basedefense.effect.ModEffects;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -24,6 +25,10 @@ public abstract class AbstractClientPlayerEntityMixin {
             float w = ArtifactClient.localWeight();
             if (w > 0f) {
                 cir.setReturnValue(cir.getReturnValueF() * (1f + 0.1f * w));
+            }
+            float k = KatanaClient.fovMultiplier();                   // катана: рывок — шире, замах — уже
+            if (k != 1f) {
+                cir.setReturnValue(cir.getReturnValueF() * k);
             }
         }
     }
