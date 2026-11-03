@@ -427,8 +427,8 @@ final class TigerBrain {
                 return;
             }
             LivingEntity cur = t.getTarget();
-            if (t.prey != null && t.getWorld().getPlayerByUuid(t.prey) instanceof PlayerEntity p && valid(p)
-                    && p.squaredDistanceTo(t) < 36 * 36) {
+            PlayerEntity p = t.prey != null ? t.getWorld().getPlayerByUuid(t.prey) : null;
+            if (p != null && valid(p) && p.squaredDistanceTo(t) < 36 * 36) {
                 if (cur != p) {
                     t.setTarget(p);
                 }

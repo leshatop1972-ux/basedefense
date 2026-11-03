@@ -434,8 +434,8 @@ public class ThunderTigerEntity extends HostileEntity {
             }
         }
         this.prey = best;
-        if (best != null && this.getWorld().getPlayerByUuid(best) instanceof PlayerEntity p && p.isAlive()
-                && p.squaredDistanceTo(this) < 48 * 48) {
+        PlayerEntity p = best != null ? this.getWorld().getPlayerByUuid(best) : null;
+        if (p != null && p.isAlive() && p.squaredDistanceTo(this) < 48 * 48) {
             p.addStatusEffect(new StatusEffectInstance(ModEffects.PREY, 50, 0, false, false, true), this);
         }
     }
