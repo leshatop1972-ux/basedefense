@@ -184,6 +184,32 @@ public final class TigerTimings {
     public static final int FINAL_RISE_LEN = 40;
     public static final int FINAL_RISE_FLARE = 16;
 
+    // thrust
+    public static final int THRUST = 27;
+    public static final int THRUST_LEN = 21;
+    public static final int[] THRUST_HITS = {9};
+    public static final int[] THRUST_SHOTS = {9};
+    public static final int THRUST_LUNGE = 8;
+
+    // spin
+    public static final int SPIN = 28;
+    public static final int SPIN_LEN = 28;
+    public static final int[] SPIN_HITS = {12};
+    public static final int SPIN_SPIN_FROM = 9;
+    public static final int SPIN_SPIN_TO = 16;
+
+    // rising
+    public static final int RISING = 29;
+    public static final int RISING_LEN = 22;
+    public static final int[] RISING_HITS = {10};
+    public static final int[] RISING_SHOTS = {10};
+
+    // burst
+    public static final int BURST = 30;
+    public static final int BURST_LEN = 26;
+    public static final int[] BURST_HITS = {10, 17};
+    public static final int[] BURST_SHOTS = {10, 17};
+
     /** Имена клипов по номеру действия (клиент). */
-    public static final String[] NAMES = {"double", "triple", "double_blast", "triple_blast", "shatter", "tangle", "stance", "counter", "reload", "reload_tac", "one_wait", "one_hit", "stagger", "phase2", "flurry_a", "flurry_b", "flurry_end", "dodge_l", "dodge_r", "dodge_back", "dash", "kick", "backshot", "death", "taunt", "twirl", "final_rise"};
+    public static final String[] NAMES = {"double", "triple", "double_blast", "triple_blast", "shatter", "tangle", "stance", "counter", "reload", "reload_tac", "one_wait", "one_hit", "stagger", "phase2", "flurry_a", "flurry_b", "flurry_end", "dodge_l", "dodge_r", "dodge_back", "dash", "kick", "backshot", "death", "taunt", "twirl", "final_rise", "thrust", "spin", "rising", "burst"};
 }

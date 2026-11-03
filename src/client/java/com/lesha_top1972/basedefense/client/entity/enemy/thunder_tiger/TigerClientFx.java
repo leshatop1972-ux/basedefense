@@ -41,6 +41,10 @@ public final class TigerClientFx {
             case TigerTimings.FLURRY_A -> TigerTimings.FLURRY_A_HITS;
             case TigerTimings.FLURRY_B -> TigerTimings.FLURRY_B_HITS;
             case TigerTimings.FLURRY_END -> TigerTimings.FLURRY_END_HITS;
+            case TigerTimings.THRUST -> TigerTimings.THRUST_HITS;
+            case TigerTimings.SPIN -> TigerTimings.SPIN_HITS;
+            case TigerTimings.RISING -> TigerTimings.RISING_HITS;
+            case TigerTimings.BURST -> TigerTimings.BURST_SHOTS;
             default -> null;
         };
         if (hits == null) {
@@ -79,6 +83,10 @@ public final class TigerClientFx {
             case TigerTimings.COUNTER -> TigerTimings.COUNTER_HITS;
             case TigerTimings.ONE_HIT -> TigerTimings.ONE_HIT_HITS;
             case TigerTimings.FLURRY_END -> TigerTimings.FLURRY_END_HITS;
+            case TigerTimings.THRUST -> TigerTimings.THRUST_HITS;
+            case TigerTimings.SPIN -> TigerTimings.SPIN_HITS;
+            case TigerTimings.RISING -> TigerTimings.RISING_HITS;
+            case TigerTimings.BURST -> TigerTimings.BURST_SHOTS;
             case TigerTimings.KICK -> TigerTimings.KICK_HITS;
             default -> null;
         };

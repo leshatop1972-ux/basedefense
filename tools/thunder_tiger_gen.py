@@ -1117,6 +1117,76 @@ FR_W = [(0.0, KNEEL_W, "lin"), (0.5, LOW, "soft"),
         (1.3, dict(rh=(-12.0, -5.6, 0.6), wdir=hdir(-100, -32), wface=(0.0, 0.0, -1.0)), "soft"),
         (2.0, GUARD2, "soft")]
 
+# ---------------------------------------------------------------- новые атаки (03.11.2026)
+# «Тигриный выпад»: тесак отведён к бедру остриём вперёд → длинный укол с выпадом и выстрелом
+TH_BACK = dict(rh=(-7.8, -1.2, 3.4), wdir=(0.06, -0.06, -1.0), wface=(0.0, 1.0, 0.0), two=0.0, r_pole=(-0.7, -0.2, 1.0))
+TH_HIT = dict(rh=(-2.6, -3.6, -11.8), wdir=(0.05, -0.06, -1.0), wface=(0.0, 1.0, 0.0), two=0.0, r_pole=(-1.0, 0.3, 0.2))
+THRUST_EV = dict(hits=(0.46,), shots=(0.46,), lunge=0.38)
+THRUST_W = [(0.0, LOW, "lin"), (0.34, TH_BACK, "soft"), (0.40, dict(TH_BACK, rh=(-7.9, -1.0, 3.9)), "lin"),
+            (0.46, TH_HIT, "in3"), (0.66, TH_HIT, "soft"), (1.05, LOW, "soft")]
+THRUST_B = [(0.0, STANCE, "lin"),
+            (0.34, dict(torso=(2, 40, 2), head=(-2, -36, 0), body=(-2, 14, 0), body_pos=(0, 2.6, 0),
+                        rf=(-3.8, 22.5, 3.4), lf=(3.0, 22.5, -2.4), lh=(6.4, -4.2, -6.0)), "soft"),
+            (0.46, dict(torso=(22, -14, 0), head=(-18, 10, 0), body=(10, -6, 0), body_pos=(0, 3.6, 0),
+                        root_pos=(0, 0, -3.0), rf=(-3.6, 22.5, 5.2), lf=(3.2, 22.5, -7.2), lh=(8.6, -3.0, 3.0),
+                        coat=14), "in3"),
+            (0.66, dict(torso=(20, -12, 0), head=(-16, 8, 0)), "soft"),
+            (1.05, dict(STANCE, **FREE_L, coat=0), "soft")]
+
+# «Вихрь»: закрутка вправо, полный оборот на месте, тесак вытянут в сторону — бьёт всех вокруг
+SP_OUT = dict(rh=(-11.6, -3.4, -0.6), wdir=hdir(-96, 2), wface=(0.0, 0.0, -1.0), two=0.0, r_pole=(-0.3, 0.6, 0.6))
+SPIN_EV = dict(hits=(0.62,), spin=(0.44, 0.80))
+
+
+def spin_clip(t):
+    pr = clip(SPIN_B, SPIN_W)(t)
+    k = max(0.0, min(1.0, (t - 0.44) / 0.36))
+    k = k * k * (3 - 2 * k)
+    pr["root"] = (0, -360.0 * k, 0)
+    return pr
+
+
+SPIN_W = [(0.0, LOW, "lin"),
+          (0.40, dict(rh=(-8.6, -0.8, 4.6), wdir=hdir(-150, -8), wface=(0.0, 0.0, -1.0), two=0.0), "soft"),
+          (0.48, SP_OUT, "out"), (0.80, SP_OUT, "lin"), (1.4, LOW, "soft")]
+SPIN_B = [(0.0, STANCE, "lin"),
+          (0.40, dict(torso=(16, 46, 4), head=(-14, -40, 0), body=(4, 16, 0), body_pos=(0, 3.4, 0),
+                      rf=(-3.8, 22.5, 2.6), lf=(3.2, 22.5, -2.8), lh=(5.0, -4.0, -5.0)), "soft"),
+          (0.48, dict(torso=(10, -8, -6), head=(-8, 6, 0), body=(2, 0, 0), body_pos=(0, 3.0, 0),
+                      lh=(10.6, -3.6, 0.8), coat=30), "out"),
+          (0.80, dict(torso=(10, -8, -6), coat=30), "lin"),
+          (0.95, dict(torso=(14, -20, -2), head=(-12, 16, 0), coat=10), "soft"),
+          (1.4, dict(STANCE, **FREE_L, coat=0), "soft")]
+
+# «Восходящий разрез»: присел, тесак у левого бедра → разрез снизу вверх с подскоком (подбрасывает цель)
+RI_S = sweep(0.40, 0.53, [hdir(140, -48), hdir(70, -40), hdir(0, -12), vdir(20), vdir(-10)], C1, e="in")
+RISING_EV = dict(hits=(0.50,), shots=(0.50,))
+RISING_W = W((0.0, LOW, "lin"), first(RI_S, 0.34, "soft"), RI_S, last(RI_S, 0.72, "soft"), hold(1.1, LOW))
+RISING_B = [(0.0, STANCE, "lin"),
+            (0.34, dict(torso=(30, -26, -4), head=(-26, 22, 0), body=(8, -10, 0), body_pos=(0, 4.6, 0),
+                        rf=(-3.8, 22.5, 3.0), lf=(3.2, 22.5, -3.4), lh=(7.6, -0.6, -2.0)), "soft"),
+            (0.50, dict(torso=(-12, 18, 6), head=(6, -16, 0), body=(-6, 8, 0), body_pos=(0, 0.6, 0),
+                        root_pos=(0, -2.4, -2.0), rf=(-3.2, 20.6, 2.0), lf=(3.0, 21.5, -3.6), lh=(9.0, -5.0, 1.6),
+                        toe_r=-16, coat=-8), "in3"),
+            (0.72, dict(torso=(-6, 16, 4), head=(2, -14, 0), body_pos=(0, 1.6, 0), root_pos=(0, 0, -2.0),
+                        rf=(-3.6, 22.5, 2.6), lf=(3.2, 22.5, -3.8), toe_r=0, coat=0), "soft"),
+            (1.1, dict(STANCE, **FREE_L), "soft")]
+
+# «Залп выхлопов»: тесак у плеча, как ружьё, два выстрела пламенем вперёд с отдачей
+AIM = dict(rh=(-2.6, -5.0, -8.6), wdir=(0.02, -0.04, -1.0), wface=(0.0, 1.0, 0.0), two=1.0, r_pole=(-0.9, 0.5, 0.4))
+RECOIL = dict(AIM, rh=(-2.8, -7.2, -6.0), wdir=norm((0.02, -0.45, -0.9)))
+BURST_EV = dict(hits=(0.52, 0.86), shots=(0.52, 0.86))
+BURST_W = [(0.0, LOW, "lin"), (0.36, AIM, "soft"), (0.50, AIM, "lin"), (0.56, RECOIL, "out3"), (0.76, AIM, "soft"),
+           (0.84, AIM, "lin"), (0.90, RECOIL, "out3"), (1.3, LOW, "soft")]
+BURST_B = [(0.0, STANCE, "lin"),
+           (0.36, dict(torso=(6, 28, 0), head=(-8, -26, 0), body=(0, 12, 0), body_pos=(0, 2.4, 0),
+                       rf=(-3.8, 22.5, 3.0), lf=(3.0, 22.5, -3.2)), "soft"),
+           (0.52, dict(torso=(6, 28, 0)), "lin"),
+           (0.58, dict(torso=(-4, 30, 0), head=(2, -26, 0), body_pos=(0, 2.0, 0.6)), "out3"),
+           (0.84, dict(torso=(6, 28, 0), head=(-8, -26, 0), body_pos=(0, 2.4, 0)), "soft"),
+           (0.92, dict(torso=(-6, 30, 0), head=(4, -26, 0), body_pos=(0, 1.8, 1.0)), "out3"),
+           (1.3, dict(STANCE, **FREE_L), "soft")]
+
 # ----------------------------------------------------------------
 # (имя, функция, длина, кадров/с, цикл, события) — события в секундах (для TigerTimings.java)
 LOOPS = [
@@ -1158,6 +1228,10 @@ ACTIONS = [
     ("taunt", taunt, 1.6, dict()),
     ("twirl", clip(TWIRL_B, TWIRL_W), 1.3, TWIRL_EV),
     ("final_rise", clip(FR_B, FR_W), 2.0, FR_EV),
+    ("thrust", clip(THRUST_B, THRUST_W), 1.05, THRUST_EV),
+    ("spin", spin_clip, 1.4, SPIN_EV),
+    ("rising", clip(RISING_B, RISING_W), 1.1, RISING_EV),
+    ("burst", clip(BURST_B, BURST_W), 1.3, BURST_EV),
 ]
 
 

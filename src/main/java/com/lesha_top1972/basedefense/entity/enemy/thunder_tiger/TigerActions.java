@@ -34,7 +34,7 @@ final class TigerActions {
     /** Атаки, после которых считаем «обычные» для ротации (2 обычные → 1 по площади). */
     static boolean regular(int a) {
         return a == DOUBLE || a == TRIPLE || a == DOUBLE_BLAST || a == TRIPLE_BLAST || a == SHATTER || a == COUNTER
-                || a == ONE_HIT;
+                || a == ONE_HIT || a == THRUST || a == SPIN || a == RISING || a == BURST;
     }
 
     static int length(int a) {
@@ -66,6 +66,10 @@ final class TigerActions {
             case TAUNT -> TAUNT_LEN;
             case TWIRL -> TWIRL_LEN;
             case FINAL_RISE -> FINAL_RISE_LEN;
+            case THRUST -> THRUST_LEN;
+            case SPIN -> SPIN_LEN;
+            case RISING -> RISING_LEN;
+            case BURST -> BURST_LEN;
             default -> 20;
         };
     }
@@ -755,6 +759,84 @@ final class TigerActions {
                 }
             }
             case DEATH -> t.setVelocity(0, t.getVelocity().y, 0);
+            case THRUST -> {
+                if (!soon(k, THRUST_HITS)) {
+                    face(t, e, 24);
+                }
+                if (k == THRUST_LUNGE) {
+                    impulse(t, t.forward(), MathHelper.clamp((d - 1.8) * 0.4, 0.1, 0.95), 0);
+                    t.sound(ModSounds.TIGER_DASH, 1f, 1.2f);
+                }
+                if (k == THRUST_HITS[0]) {
+                    t.hitIds.clear();
+                    boolean shot = shoot(t, t.getPos().add(0, 1.2, 0).add(t.forward().multiply(3.6)));
+                    lineHit(t, 5.2, 0.9, ThunderTigerEntity.DMG_THRUST, 0.9, 0.15, 2, shot);
+                    slashFx(t, 4.8, 0.0, 1, shot);
+                }
+            }
+            case SPIN -> {
+                if (k < SPIN_SPIN_FROM && !soon(k, SPIN_HITS)) {
+                    face(t, e, 20);
+                }
+                if (k == SPIN_SPIN_FROM) {
+                    t.sound(ModSounds.TIGER_SWING_HEAVY, 1.4f, 0.8f);
+                }
+                if (k == SPIN_HITS[0]) {
+                    t.hitIds.clear();
+                    t.areaHit(t.getPos(), 4.0, ThunderTigerEntity.DMG_SPIN, 1.1, 0.3, 2, false);
+                    ServerWorld s = t.sw();
+                    if (s != null) {
+                        for (int i = 0; i < 3; i++) {
+                            Fx.tigerSlash(s, t.getPos().add(0, 1.3, 0), t.getYaw() + i * 120, 3.8, 0.0, 1, t.getAmmo() > 0);
+                        }
+                        Shake.send(s, t.getPos(), 14, 0.3f, 6);
+                    }
+                }
+            }
+            case RISING -> {
+                if (!soon(k, RISING_HITS)) {
+                    face(t, e, 24);
+                }
+                if (k == RISING_HITS[0] - 2) {
+                    t.sound(ModSounds.TIGER_SWING, 1.1f, 0.9f);
+                    if (d > 2.8) {
+                        impulse(t, t.forward(), Math.min(0.5, (d - 2.4) * 0.35), 0.25);
+                    }
+                }
+                if (k == RISING_HITS[0]) {
+                    t.hitIds.clear();
+                    boolean shot = shoot(t, t.getPos().add(0, 1.0, 0).add(t.forward().multiply(2.2)));
+                    t.arcHit(3.7, 70, ThunderTigerEntity.DMG_RISING, 0.3, 0.8, 2, shot, false);
+                    slashFx(t, 3.6, -1.2, -1, shot);
+                }
+            }
+            case BURST -> {
+                if (!soon(k, BURST_SHOTS)) {
+                    face(t, e, 20);
+                }
+                if (hitAt(k, BURST_SHOTS)) {
+                    t.hitIds.clear();
+                    Vec3d f = t.forward();
+                    Vec3d at = t.getPos().add(0, 1.3, 0).add(f.multiply(3.0));
+                    if (shoot(t, at)) {
+                        ServerWorld s = t.sw();
+                        if (s != null) {
+                            Fx.tigerShot(s, t.getPos().add(0, 1.5, 0).add(f.multiply(1.6)), f, t.isSavage());
+                            Fx.tigerFire(s, t.getPos().add(f.multiply(3.5)), 1.2);
+                            Fx.tigerFire(s, t.getPos().add(f.multiply(5.5)), 1.4);
+                        }
+                        double cos = Math.cos(Math.toRadians(24));
+                        for (LivingEntity v : t.victims(7.0)) {
+                            Vec3d to = new Vec3d(v.getX() - t.getX(), 0, v.getZ() - t.getZ());
+                            double dist = to.length();
+                            if (dist < 7.0 && (dist < 1.0 || to.normalize().dotProduct(f) > cos)) {
+                                t.strike(v, ThunderTigerEntity.DMG_BURST, 0.6, 0.1, 1, true, false);
+                            }
+                        }
+                        impulse(t, f.multiply(-1), 0.25, 0);
+                    }
+                }
+            }
             default -> {
             }
         }
@@ -762,6 +844,20 @@ final class TigerActions {
             t.actionTick++;
             if (t.actionTick >= length(a)) {
                 end(t);
+            }
+        }
+    }
+
+    /** Укол по линии вперёд: длина len, полуширина half. */
+    private static void lineHit(ThunderTigerEntity t, double len, double half, float dmg, double knock, double up, int tremor,
+                                boolean shot) {
+        Vec3d f = t.forward();
+        for (LivingEntity v : t.victims(len + 1)) {
+            Vec3d to = new Vec3d(v.getX() - t.getX(), 0, v.getZ() - t.getZ());
+            double along = to.dotProduct(f);
+            double side = Math.abs(to.x * f.z - to.z * f.x);
+            if (along > -0.5 && along < len && side < half + v.getWidth() / 2 && Math.abs(v.getY() - t.getY()) < 3) {
+                t.strike(v, dmg, knock, up, tremor, shot, false);
             }
         }
     }
