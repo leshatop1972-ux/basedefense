@@ -214,7 +214,7 @@ public final class KatanaClient {
             if (age >= 2) {
                 buffered = true;                         // нажал чуть раньше — удар начнётся сам
             }
-            return true;
+            return;
         }
         startSwing(p);
     }
