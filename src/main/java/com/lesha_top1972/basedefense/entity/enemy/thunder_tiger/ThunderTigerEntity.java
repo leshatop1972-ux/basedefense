@@ -870,7 +870,7 @@ public class ThunderTigerEntity extends HostileEntity {
     List<PlayerEntity> playersNear(double r) {
         List<PlayerEntity> out = new ArrayList<>();
         for (PlayerEntity p : this.getWorld().getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(r),
-                p -> p.isAlive() && !p.isCreative() && !p.isSpectator())) {
+                q -> q.isAlive() && !q.isCreative() && !q.isSpectator())) {
             out.add(p);
         }
         return out;
