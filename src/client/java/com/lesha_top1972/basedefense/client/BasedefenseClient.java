@@ -133,6 +133,7 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.ThunderTigerRenderer.BLADE, () -> BedrockModelLoader.load("thunder_tiger_blade"));
         EntityRendererRegistry.register(ModEntities.THUNDER_TIGER, com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.ThunderTigerRenderer::new);
         com.lesha_top1972.basedefense.client.fx.CameraShake.init();
+        com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.TigerMusic.init();   // музыка боя
         // осадный жук, маленький жук, яйцо
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.beetle.SiegeBeetleRenderer.LAYER, () -> BedrockModelLoader.load("siege_beetle"));
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.beetle.BeetleMiteRenderer.LAYER, () -> BedrockModelLoader.load("beetle_mite"));

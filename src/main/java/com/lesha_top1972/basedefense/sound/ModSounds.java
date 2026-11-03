@@ -179,6 +179,8 @@ public final class ModSounds {
     public static final SoundEvent TIGER_BURST = register("entity.thunder_tiger.burst");
     public static final SoundEvent TIGER_SPIN = register("entity.thunder_tiger.spin");
     public static final SoundEvent TIGER_FLICK = register("entity.thunder_tiger.flick");
+    /** Музыка боя с Громовым тигром (клиент — TigerMusic). */
+    public static final SoundEvent TIGER_MUSIC = register("music.thunder_tiger");
 
     private static SoundEvent register(String name) {
         Identifier id = new Identifier(Basedefense.MOD_ID, name);

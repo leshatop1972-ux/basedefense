@@ -121,7 +121,7 @@ final class TigerBrain {
         this.chainWindow = CHAIN_WINDOW;
         this.dodgeCd = this.chain >= DODGE_CHAIN ? DODGE_CD : 0;
         // уклонение что‑то даёт: стойка восстанавливается, +1 к внутренней силе, и часто сразу ответный удар
-        this.t.setPosture(this.t.getPosture() - 10f);
+        this.t.setPosture(this.t.getPosture() - 5f);
         this.t.setInner(this.t.getInner() + 1);
         if (this.rnd().nextFloat() < 0.6f) {
             Random r = this.rnd();

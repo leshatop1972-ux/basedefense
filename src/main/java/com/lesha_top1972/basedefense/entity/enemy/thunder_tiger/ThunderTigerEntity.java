@@ -67,43 +67,43 @@ public class ThunderTigerEntity extends HostileEntity {
     public static final double SPEED = 0.30;
     public static final double FOLLOW = 48.0;
     /** Урон обычного разреза. (Все удары ослаблены втрое по просьбе автора, 03.11.2026.) */
-    static final float DMG_SLASH = 2.98f;
+    static final float DMG_SLASH = 3.28f;
     /** Тяжёлые удары (сверху двумя руками, «Сокрушающий разрыв»). */
-    static final float DMG_HEAVY = 3.73f;
+    static final float DMG_HEAVY = 4.1f;
     /** Удар в землю «Двойного разреза — взрыв». */
-    static final float DMG_SMASH = 3.35f;
+    static final float DMG_SMASH = 3.69f;
     /** Огненная волна ульты. */
-    static final float DMG_WAVE = 3.73f;
+    static final float DMG_WAVE = 4.1f;
     /** Удар в землю ульты (в центре). */
-    static final float DMG_TANGLE = 4.22f;
+    static final float DMG_TANGLE = 4.64f;
     /** «Один удар» (неблокируемый). */
-    static final float DMG_ONE = 6.71f;
-    static final float DMG_COUNTER = 4.22f;
-    static final float DMG_FLURRY = 0.99f;
-    static final float DMG_FLURRY_END = 5.83f;
-    static final float DMG_KICK = 2.11f;
+    static final float DMG_ONE = 7.38f;
+    static final float DMG_COUNTER = 4.64f;
+    static final float DMG_FLURRY = 1.09f;
+    static final float DMG_FLURRY_END = 6.41f;
+    static final float DMG_KICK = 2.32f;
     /** «Тигриный выпад» (укол с выпадом). */
-    static final float DMG_THRUST = 3.67f;
+    static final float DMG_THRUST = 4.04f;
     /** «Вихрь» (оборот на месте). */
-    static final float DMG_SPIN = 3.35f;
+    static final float DMG_SPIN = 3.69f;
     /** «Восходящий разрез». */
-    static final float DMG_RISING = 3.35f;
+    static final float DMG_RISING = 3.69f;
     /** «Залп выхлопов» — каждый из двух выстрелов. */
-    static final float DMG_BURST = 2.81f;
-    static final float DMG_BACKSHOT = 2.48f;
+    static final float DMG_BURST = 3.09f;
+    static final float DMG_BACKSHOT = 2.73f;
     /** Выстрел: обычный патрон +30%, свирепый +50%; поджог 3 / 6 с. */
     static final float SHOT_MUL = 1.3f;
     static final float SAVAGE_MUL = 1.5f;
     static final int SHOT_FIRE = 2;
     static final int SAVAGE_FIRE = 4;
     public static final int MAX_AMMO = 6;
-    /** Стойка: 0..100; удар игрока даёт урон × 0.6, блок щитом его удара — +5; падает после 3 с без ударов
-     *  (5 в секунду). Остыла до 0 после того, как была ≥ 10, — тигр лечится на 6% (не чаще раза в 20 с). */
-    public static final float POSTURE_MAX = 100f;
+    /** Стойка: 0..115; удар игрока даёт урон × 0.6, блок щитом его удара — +5; падает после 3 с без ударов
+     *  (3.6 в секунду), за уклонение −5. Остыла до 0 после того, как была ≥ 10, — тигр лечится на 6% (не чаще раза в 20 с). */
+    public static final float POSTURE_MAX = 115f;
     static final float POSTURE_PER_DMG = 0.6f;
     static final float POSTURE_SHIELD = 5f;
     static final int POSTURE_DELAY = 60;
-    static final float POSTURE_DECAY = 0.25f;
+    static final float POSTURE_DECAY = 0.18f;
     static final float RECOVER_HEAL = 0.06f;
     static final int RECOVER_CD = 400;
     static final float RECOVER_MIN = 10f;
@@ -116,7 +116,7 @@ public class ThunderTigerEntity extends HostileEntity {
     /** Дрожь: стаки до 10, держится 8 с; разрыв — 0.5 × стаки, оглушение 0.4 с, стаки −3. */
     static final int TREMOR_MAX = 10;
     static final int TREMOR_TICKS = 160;
-    static final float BURST_PER = 0.62f;
+    static final float BURST_PER = 0.68f;
     static final int BURST_STUN = 8;
     /** Кольца силы (фаза 2): каждое +4% урона; слом стойки гасит одно. */
     public static final int RINGS_MAX = 5;
