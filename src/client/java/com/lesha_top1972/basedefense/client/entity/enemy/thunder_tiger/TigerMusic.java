@@ -13,12 +13,13 @@ import java.util.List;
 /**
  * Музыка боя с «Громовым тигром» (sounds/music/thunder_tiger_battle.ogg, событие music.thunder_tiger).
  * Начинается, когда тигр рядом (48 бл) и дерётся всерьёз; играет по кругу, пока он жив и не дальше 80 бл;
- * плавно появляется и затихает. Ванильная музыка на это время выключается. Громкость — ползунок «Музыка».
+ * плавно появляется и затихает. Ванильная музыка на это время выключается. Не зависит от ползунка «Музыка»
+ * (категория «Общая громкость»), громкость задана здесь — VOLUME.
  */
 public final class TigerMusic {
 
-    /** Громкость (до ползунка «Музыка»): негромко, чтобы не забивать звуки боя. */
-    public static final float VOLUME = 0.35f;
+    /** Громкость (умножается только на «Общую громкость»): негромко, чтобы не забивать звуки боя. */
+    public static final float VOLUME = 0.3f;
     private static final double START = 48.0;
     private static final double KEEP = 80.0;
 
@@ -75,7 +76,7 @@ public final class TigerMusic {
         private boolean fading;
 
         Track() {
-            super(ModSounds.TIGER_MUSIC, SoundCategory.MUSIC, SoundInstance.createRandom());
+            super(ModSounds.TIGER_MUSIC, SoundCategory.MASTER, SoundInstance.createRandom());
             this.repeat = true;
             this.repeatDelay = 0;
             this.volume = 0.01f;
