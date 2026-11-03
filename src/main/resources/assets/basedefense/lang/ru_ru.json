@@ -624,5 +624,7 @@
   "subtitles.basedefense.thunder_tiger.plant": "Тесак вонзается в землю",
   "subtitles.basedefense.thunder_tiger.burst": "Разрыв дрожи",
   "subtitles.basedefense.thunder_tiger.spin": "Тесак крутится в руке",
-  "subtitles.basedefense.thunder_tiger.flick": "Отброшена сигара"
+  "subtitles.basedefense.thunder_tiger.flick": "Отброшена сигара",
+  "message.basedefense.tiger_arena.pull": "Громовой тигр утащил вас на свою арену!",
+  "message.basedefense.tiger_arena.return": "Тигр повержен. Возвращение через %s с"
 }

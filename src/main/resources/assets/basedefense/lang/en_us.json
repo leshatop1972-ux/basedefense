@@ -624,5 +624,7 @@
   "subtitles.basedefense.thunder_tiger.plant": "Blade stabs the ground",
   "subtitles.basedefense.thunder_tiger.burst": "Tremor burst",
   "subtitles.basedefense.thunder_tiger.spin": "Blade twirls",
-  "subtitles.basedefense.thunder_tiger.flick": "Cigar flicked away"
+  "subtitles.basedefense.thunder_tiger.flick": "Cigar flicked away",
+  "message.basedefense.tiger_arena.pull": "The Thunder Tiger dragged you into his arena!",
+  "message.basedefense.tiger_arena.return": "The tiger is down. Returning in %s s"
 }

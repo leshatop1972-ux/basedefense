@@ -62,7 +62,7 @@ import java.util.UUID;
 public class ThunderTigerEntity extends HostileEntity {
 
     // ===================================================================== баланс (стартовые цифры)
-    public static final double MAX_HP = 600.0;
+    public static final double MAX_HP = 1500.0;
     public static final double ARMOR = 8.0;
     public static final double SPEED = 0.30;
     public static final double FOLLOW = 48.0;
@@ -97,10 +97,10 @@ public class ThunderTigerEntity extends HostileEntity {
     static final float POSTURE_DECAY = 0.25f;
     /** Во время слома стойки урон по нему ×1.5. */
     static final float STAGGER_TAKEN = 1.5f;
-    /** Внутренняя сила: +1 за каждые 12 полученного урона, максимум 25, аура с 10. */
+    /** Внутренняя сила: +1 за каждые 30 полученного урона, максимум 25, аура с 10. */
     public static final int INNER_MAX = 25;
     public static final int INNER_AURA = 10;
-    static final float INNER_PER = 12f;
+    static final float INNER_PER = 30f;
     /** Дрожь: стаки до 10, держится 8 с; разрыв — 0.5 × стаки, оглушение 0.4 с, стаки −3. */
     static final int TREMOR_MAX = 10;
     static final int TREMOR_TICKS = 160;
@@ -112,10 +112,10 @@ public class ThunderTigerEntity extends HostileEntity {
     /** До финала здоровье не опускается ниже 10%. */
     static final float HP_FLOOR = 0.10f;
     /** Огненная волна: растёт на 0.55 бл/тик до 10 блоков; перепрыгнуть — быть в воздухе выше 0.5 бл. */
-    static final double WAVE_SPEED = 0.4;
+    static final double WAVE_SPEED = 0.5;
     static final double WAVE_MAX = 10.0;
     /** Шквал: число рывков. */
-    static final int FLURRY_DASHES = 10;
+    static final int FLURRY_DASHES = 12;
 
     public static final int NONE = -1;
     public static final byte STATUS_BASE = 90;
@@ -173,6 +173,14 @@ public class ThunderTigerEntity extends HostileEntity {
     Vec3d dashDir = Vec3d.ZERO;
     double dashSpeed;
     Vec3d dashStart = Vec3d.ZERO;
+    // арена: потеряв 20% здоровья, утаскивает игроков к себе (TigerArena)
+    /** Доля здоровья, при которой тигр утаскивает игроков на арену. */
+    static final float ARENA_AT = 0.8f;
+    boolean arenaDone;
+    boolean pendingArena;
+    int arenaCooldown;
+    String originDim;
+    Vec3d originPos;
 
     public ThunderTigerEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -321,6 +329,13 @@ public class ThunderTigerEntity extends HostileEntity {
         nbt.putInt("Inner", this.getInner());
         nbt.putInt("Rings", this.getRings());
         nbt.putInt("Breaks", this.breaks);
+        nbt.putBoolean("ArenaDone", this.arenaDone);
+        if (this.originDim != null && this.originPos != null) {
+            nbt.putString("OriginDim", this.originDim);
+            nbt.putDouble("OriginX", this.originPos.x);
+            nbt.putDouble("OriginY", this.originPos.y);
+            nbt.putDouble("OriginZ", this.originPos.z);
+        }
     }
 
     @Override
@@ -334,6 +349,11 @@ public class ThunderTigerEntity extends HostileEntity {
         this.setInner(nbt.getInt("Inner"));
         this.setRings(nbt.getInt("Rings"));
         this.breaks = nbt.getInt("Breaks");
+        this.arenaDone = nbt.getBoolean("ArenaDone");
+        if (nbt.contains("OriginDim")) {
+            this.originDim = nbt.getString("OriginDim");
+            this.originPos = new Vec3d(nbt.getDouble("OriginX"), nbt.getDouble("OriginY"), nbt.getDouble("OriginZ"));
+        }
         if (this.hasCustomName()) {
             this.bossBar.setName(this.getDisplayName());
         }
@@ -375,6 +395,9 @@ public class ThunderTigerEntity extends HostileEntity {
         }
         this.tickWave();
         this.updateAura();
+        if (this.arenaCooldown > 0) {
+            this.arenaCooldown--;
+        }
         if (this.action != NONE) {
             TigerActions.tick(this);
         }

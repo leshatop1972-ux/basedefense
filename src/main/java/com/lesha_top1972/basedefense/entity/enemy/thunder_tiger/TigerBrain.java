@@ -20,7 +20,7 @@ import static com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.TigerTimi
 final class TigerBrain {
 
     // паузы между действиями (тики): фаза 1 — вальяжно, фаза 2 — быстрее, финал — почти без пауз
-    private static final int[][] PAUSE = {{45, 75}, {32, 52}, {22, 38}};
+    private static final int[][] PAUSE = {{22, 38}, {13, 26}, {8, 17}};
     /** Шанс уклониться от удара: фаза 1 вразвалку / фаза 1 в бою / фаза 2 / финал; от стрел — +15%. */
     private static final float[] DODGE = {0.30f, 0.25f, 0.22f, 0.18f};
     private static final int DODGE_CD = 50;
@@ -57,7 +57,7 @@ final class TigerBrain {
     void afterAction(int a) {
         this.think = this.pause();
         if (TigerActions.isDodge(a)) {
-            this.think = this.forced >= 0 ? 8 : 14;
+            this.think = this.forced >= 0 ? 4 : 8;
         }
         if (a == STAGGER || a == PHASE2 || a == FINAL_RISE) {
             this.think = 10;
@@ -101,7 +101,7 @@ final class TigerBrain {
         this.t.sound(ModSounds.TIGER_DASH, 0.9f, 1.25f);
         this.dodgeCd = DODGE_CD;
         // иногда сразу контратака
-        if (this.rnd().nextFloat() < 0.25f) {
+        if (this.rnd().nextFloat() < 0.3f) {
             this.forced = d < 4 ? DOUBLE : (this.t.getAmmo() > 0 ? TRIPLE_BLAST : DASH);
         }
     }
@@ -128,6 +128,15 @@ final class TigerBrain {
         // переход в фазу 2 по здоровью
         if (t.getPhase() == 1 && t.getHealth() <= t.getMaxHealth() * 0.5f) {
             TigerActions.start(t, PHASE2, target);
+            return;
+        }
+        // потерял 20% здоровья — крутанул тесак и утащил всех к себе на арену
+        if (!t.arenaDone && t.arenaCooldown <= 0 && !TigerArena.isArena(t.getWorld()) && t.flurryLeft <= 0
+                && t.getHealth() <= t.getMaxHealth() * ThunderTigerEntity.ARENA_AT) {
+            t.pendingArena = true;
+            t.speak("arena");
+            TigerActions.start(t, TWIRL, target);
+            t.setLazy(false);
             return;
         }
         // шквал: паузы между рывками — стоит и смотрит (здесь можно уйти в сторону)

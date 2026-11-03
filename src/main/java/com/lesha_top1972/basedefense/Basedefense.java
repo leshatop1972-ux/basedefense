@@ -25,6 +25,7 @@ public class Basedefense implements ModInitializer {
         ModSounds.init();
         ModEffects.init();
         ModEntities.init();
+        com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.TigerArena.init();   // арена «Громового тигра»
         ModBlocks.init();
         com.lesha_top1972.basedefense.block.ModBlockEntities.init();
         ModItems.init();
