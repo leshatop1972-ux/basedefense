@@ -8,7 +8,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import static com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.TigerTimings.*;
 
@@ -346,10 +348,10 @@ final class TigerBrain {
         if (phase == 1 && d > 6.0 && this.tauntCd == 0 && r.nextFloat() < 0.3f) {
             return r.nextBoolean() ? TAUNT : TWIRL;
         }
-        // ротация: после трёх обычных (в финале — двух) — по площади; «Шквал» не чаще раза в 45 с
+        // ротация: после трёх обычных (в финале — двух) — по площади; со 2‑й фазы «Шквал» (не чаще раза в 45 с)
         if (this.regularCount >= (t.isFinal() ? 2 : 3)) {
             this.regularCount = 0;
-            return t.isFinal() && this.flurryCd == 0 ? FLURRY_A : TANGLE;
+            return phase >= 2 && this.flurryCd == 0 ? FLURRY_A : TANGLE;
         }
         if (this.oneCd == 0 && d >= 3 && d <= 12 && r.nextFloat() < 0.18f) {
             return ONE_WAIT;
@@ -448,10 +450,15 @@ final class TigerBrain {
         }
     }
 
-    /** Цель: «Добыча» (если рядом), иначе ближайший игрок; ответ тому, кто бьёт. */
+    /**
+     * Цель: раз в 11 с — переагр на другого игрока рядом (против нескольких игроков он не «залипает» на одном;
+     * «Добыча» выбирается вдвое чаще). Цели нет или пропала — ближайший игрок; ответ тому, кто бьёт.
+     */
     static final class PreyTargetGoal extends Goal {
+        private static final int RETARGET = 220;
         private final ThunderTigerEntity t;
         private int timer;
+        private int retarget = RETARGET;
 
         PreyTargetGoal(ThunderTigerEntity t) {
             this.t = t;
@@ -475,18 +482,33 @@ final class TigerBrain {
             }
             this.timer = 20;
             ThunderTigerEntity t = this.t;
+            this.retarget -= 20;
             if (t.action != ThunderTigerEntity.NONE && valid(t.getTarget())) {
                 return;
             }
             LivingEntity cur = t.getTarget();
             PlayerEntity preyP = t.prey != null ? t.getWorld().getPlayerByUuid(t.prey) : null;
-            if (preyP != null && valid(preyP) && preyP.squaredDistanceTo(t) < 36 * 36) {
-                if (cur != preyP) {
-                    t.setTarget(preyP);
+            if (this.retarget <= 0) {
+                this.retarget = RETARGET;
+                List<PlayerEntity> pool = new ArrayList<>();
+                for (PlayerEntity q : t.playersNear(36)) {
+                    if (q != cur && valid(q)) {
+                        pool.add(q);
+                        if (q == preyP) {
+                            pool.add(q);
+                        }
+                    }
                 }
-                return;
+                if (!pool.isEmpty()) {
+                    t.setTarget(pool.get(t.getRandom().nextInt(pool.size())));
+                    return;
+                }
             }
             if (valid(cur) && cur.squaredDistanceTo(t) < 44 * 44) {
+                return;
+            }
+            if (preyP != null && valid(preyP) && preyP.squaredDistanceTo(t) < 36 * 36) {
+                t.setTarget(preyP);
                 return;
             }
             PlayerEntity best = null;

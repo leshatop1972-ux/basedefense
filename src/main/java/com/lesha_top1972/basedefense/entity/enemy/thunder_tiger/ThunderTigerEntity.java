@@ -67,42 +67,46 @@ public class ThunderTigerEntity extends HostileEntity {
     public static final double SPEED = 0.30;
     public static final double FOLLOW = 48.0;
     /** Урон обычного разреза. (Все удары ослаблены втрое по просьбе автора, 03.11.2026.) */
-    static final float DMG_SLASH = 2.76f;
+    static final float DMG_SLASH = 2.98f;
     /** Тяжёлые удары (сверху двумя руками, «Сокрушающий разрыв»). */
-    static final float DMG_HEAVY = 3.45f;
+    static final float DMG_HEAVY = 3.73f;
     /** Удар в землю «Двойного разреза — взрыв». */
-    static final float DMG_SMASH = 3.1f;
+    static final float DMG_SMASH = 3.35f;
     /** Огненная волна ульты. */
-    static final float DMG_WAVE = 3.45f;
+    static final float DMG_WAVE = 3.73f;
     /** Удар в землю ульты (в центре). */
-    static final float DMG_TANGLE = 3.91f;
+    static final float DMG_TANGLE = 4.22f;
     /** «Один удар» (неблокируемый). */
-    static final float DMG_ONE = 6.21f;
-    static final float DMG_COUNTER = 3.91f;
-    static final float DMG_FLURRY = 0.92f;
-    static final float DMG_FLURRY_END = 5.4f;
-    static final float DMG_KICK = 1.95f;
+    static final float DMG_ONE = 6.71f;
+    static final float DMG_COUNTER = 4.22f;
+    static final float DMG_FLURRY = 0.99f;
+    static final float DMG_FLURRY_END = 5.83f;
+    static final float DMG_KICK = 2.11f;
     /** «Тигриный выпад» (укол с выпадом). */
-    static final float DMG_THRUST = 3.4f;
+    static final float DMG_THRUST = 3.67f;
     /** «Вихрь» (оборот на месте). */
-    static final float DMG_SPIN = 3.1f;
+    static final float DMG_SPIN = 3.35f;
     /** «Восходящий разрез». */
-    static final float DMG_RISING = 3.1f;
+    static final float DMG_RISING = 3.35f;
     /** «Залп выхлопов» — каждый из двух выстрелов. */
-    static final float DMG_BURST = 2.6f;
-    static final float DMG_BACKSHOT = 2.3f;
+    static final float DMG_BURST = 2.81f;
+    static final float DMG_BACKSHOT = 2.48f;
     /** Выстрел: обычный патрон +30%, свирепый +50%; поджог 3 / 6 с. */
     static final float SHOT_MUL = 1.3f;
     static final float SAVAGE_MUL = 1.5f;
-    static final int SHOT_FIRE = 3;
-    static final int SAVAGE_FIRE = 6;
+    static final int SHOT_FIRE = 2;
+    static final int SAVAGE_FIRE = 4;
     public static final int MAX_AMMO = 6;
-    /** Стойка: 0..100; удар игрока даёт урон × 1.2, блок щитом его удара — +10; падает после 3 с без ударов. */
+    /** Стойка: 0..100; удар игрока даёт урон × 0.6, блок щитом его удара — +5; падает после 3 с без ударов
+     *  (5 в секунду). Остыла до 0 после того, как была ≥ 10, — тигр лечится на 6% (не чаще раза в 20 с). */
     public static final float POSTURE_MAX = 100f;
-    static final float POSTURE_PER_DMG = 1.2f;
-    static final float POSTURE_SHIELD = 10f;
+    static final float POSTURE_PER_DMG = 0.6f;
+    static final float POSTURE_SHIELD = 5f;
     static final int POSTURE_DELAY = 60;
     static final float POSTURE_DECAY = 0.25f;
+    static final float RECOVER_HEAL = 0.06f;
+    static final int RECOVER_CD = 400;
+    static final float RECOVER_MIN = 10f;
     /** Во время слома стойки урон по нему ×1.5. */
     static final float STAGGER_TAKEN = 1.5f;
     /** Внутренняя сила: +1 за каждые 30 полученного урона, максимум 25, аура с 10. */
@@ -112,7 +116,7 @@ public class ThunderTigerEntity extends HostileEntity {
     /** Дрожь: стаки до 10, держится 8 с; разрыв — 0.5 × стаки, оглушение 0.4 с, стаки −3. */
     static final int TREMOR_MAX = 10;
     static final int TREMOR_TICKS = 160;
-    static final float BURST_PER = 0.57f;
+    static final float BURST_PER = 0.62f;
     static final int BURST_STUN = 8;
     /** Кольца силы (фаза 2): каждое +4% урона; слом стойки гасит одно. */
     public static final int RINGS_MAX = 5;
@@ -166,6 +170,9 @@ public class ThunderTigerEntity extends HostileEntity {
     int breaks;
     private float innerAcc;
     private long lastPostureGain;
+    /** Стойка была заполнена хотя бы на RECOVER_MIN с последнего лечения/слома. */
+    private boolean postureArmed;
+    private int recoverCd;
     private final Map<UUID, Float> damageLog = new HashMap<>();
     UUID prey;
     private DamageSource deathSource;
@@ -398,8 +405,28 @@ public class ThunderTigerEntity extends HostileEntity {
             this.updatePrey();
         }
         // стойка остывает, если его давно не били
-        if (this.getWorld().getTime() - this.lastPostureGain > POSTURE_DELAY && this.action != TigerTimings.STAGGER) {
+        if (this.recoverCd > 0) {
+            this.recoverCd--;
+        }
+        if (this.getPosture() >= RECOVER_MIN) {
+            this.postureArmed = true;
+        }
+        if (this.getWorld().getTime() - this.lastPostureGain > POSTURE_DELAY && this.action != TigerTimings.STAGGER
+                && this.getPosture() > 0) {
             this.setPosture(this.getPosture() - POSTURE_DECAY);
+            // стойку долго не заполняли — остыла до нуля: затяжка сигарой, лечение 6%
+            if (this.getPosture() <= 0 && this.postureArmed && this.recoverCd == 0 && this.action != TigerTimings.DEATH) {
+                this.postureArmed = false;
+                this.recoverCd = RECOVER_CD;
+                this.heal(this.getMaxHealth() * RECOVER_HEAL);
+                this.sound(ModSounds.TIGER_PUFF, 1.4f, 1f);
+                if (this.sw() != null) {
+                    this.sw().spawnParticles(new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(1.0f, 0.85f, 0.35f), 1.2f),
+                            this.getX(), this.getBodyY(0.5), this.getZ(), 30, 0.5, 0.8, 0.5, 0.02);
+                    this.sw().spawnParticles(net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
+                            this.getX(), this.getBodyY(0.6), this.getZ(), 10, 0.5, 0.6, 0.5, 0.0);
+                }
+            }
         }
         this.tickWave();
         this.updateAura();
@@ -581,6 +608,7 @@ public class ThunderTigerEntity extends HostileEntity {
     /** Слом стойки: оглушён 3 с, урон по нему ×1.5; гаснет одно кольцо. */
     void breakPosture() {
         this.breaks++;
+        this.postureArmed = false;
         this.setPosture(0f);
         if (this.getRings() > 0) {
             this.setRings(this.getRings() - 1);
@@ -884,7 +912,7 @@ public class ThunderTigerEntity extends HostileEntity {
                 float dmg = this.waveDamage * this.damageMul(e);
                 e.timeUntilRegen = 0;
                 if (e.damage(this.getDamageSources().mobAttack(this), dmg)) {
-                    e.setOnFireFor(this.isSavage() ? SAVAGE_FIRE : 4);
+                    e.setOnFireFor(this.isSavage() ? SAVAGE_FIRE : 3);
                     e.takeKnockback(0.8, this.waveCenter.x - e.getX(), this.waveCenter.z - e.getZ());
                     e.addVelocity(0, 0.3, 0);
                     e.velocityModified = true;

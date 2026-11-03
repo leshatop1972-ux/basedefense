@@ -12,6 +12,7 @@
     "ClientWorldSkyMixin",
     "HeldItemFeatureRendererMixin",
     "HeldItemRendererMixin",
+    "InGameOverlayRendererMixin",
     "InventoryScreenMixin",
     "LivingEntityRendererMixin",
     "MinecraftClientMixin"
