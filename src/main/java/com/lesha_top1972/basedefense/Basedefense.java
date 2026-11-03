@@ -38,7 +38,8 @@ public class Basedefense implements ModInitializer {
         com.lesha_top1972.basedefense.artifact.Artifacts.init();   // слоты артефактов, амулет рывка
         com.lesha_top1972.basedefense.director.Director.init();   // «Режиссёр мира»: дни, акты, шкала, события
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
-        com.lesha_top1972.basedefense.weapon.KatanaCombat.init();   // катана: серия из трёх ударов
+        com.lesha_top1972.basedefense.weapon.KatanaCombat.init();
+        com.lesha_top1972.basedefense.weapon.KatanaPower.init();   // катана: серия, блок, «Иссэн»; древняя сила
         // «Шум» игроков в бою с Набатом
         ServerTickEvents.END_SERVER_TICK.register(NabatNoise::tick);
     }

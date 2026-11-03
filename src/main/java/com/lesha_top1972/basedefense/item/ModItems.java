@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.item;
 
 import com.lesha_top1972.basedefense.weapon.BloodthirsterSwordItem;
 import com.lesha_top1972.basedefense.weapon.KatanaItem;
+import com.lesha_top1972.basedefense.weapon.KatanaVariant;
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -31,7 +32,11 @@ public final class ModItems {
             new BloodthirsterSwordItem(new Item.Settings().rarity(Rarity.EPIC)));
 
     /** Катана: серия из трёх ударов с рывком (урон 5 каждый), в покое — в ножнах у бедра. */
-    public static final Item KATANA = register("katana", new KatanaItem(new Item.Settings()));
+    public static final Item KATANA = register("katana", new KatanaItem(KatanaVariant.BASE, new Item.Settings()));
+    public static final Item REFINED_KATANA = register("refined_katana",
+            new KatanaItem(KatanaVariant.REFINED, new Item.Settings().rarity(Rarity.UNCOMMON)));
+    public static final Item ANCIENT_KATANA = register("ancient_katana",
+            new KatanaItem(KatanaVariant.ANCIENT, new Item.Settings().rarity(Rarity.EPIC)));
 
     /** Артефакт «Амулет рывка»: R — рывок на 4 блока, перезарядка 2 с. */
     public static final Item DASH_AMULET = register("dash_amulet",
@@ -195,6 +200,8 @@ public final class ModItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);
+            entries.add(REFINED_KATANA);
+            entries.add(ANCIENT_KATANA);
             entries.add(DASH_AMULET);
             entries.add(LEAP_AMULET);
             entries.add(VAMPIRE_AMULET_1);

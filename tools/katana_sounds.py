@@ -147,10 +147,41 @@ def s_burst():
     save("burst", reverb(x, 0.3, 1.0), 1.0)
 
 
+def s_block():
+    for i in range(2):
+        x = np.zeros(int(0.7 * SR))
+        t = T(0.05)
+        hitn = highp(noise(0.05), 1500) * np.exp(-t / 0.006) * 2.0
+        place(x, hitn, 0.0)
+        place(x, shimmer(0.6, 1650 + 260 * i, 0.12, 0.5), 0.0)       # сталь о сталь — короткий, неровный звон
+        place(x, scrape(0.18, 5000, 2500, 0.5), 0.01)
+        tt = T(0.2)
+        place(x, (np.sin(2 * np.pi * 120 * tt) * np.exp(-tt / 0.05)) * 0.6, 0.0)
+        save("block%d" % i, reverb(x, 0.2, 0.5), 0.95)
+
+
+def s_rift():
+    """Разлом пространства: низкий гул, «стеклянный» треск, засасывающий свист."""
+    sec = 1.6
+    x = np.zeros(int(sec * SR))
+    t = T(sec)
+    drone = np.sin(2 * np.pi * (48 + 20 * t) * t) * np.exp(-t / 0.7) * 0.9
+    place(x, drone, 0.0)
+    place(x, sweep(1.0, 6000, 300, 0.2, 0.35) * 0.8, 0.0)
+    for i in range(10):
+        at = 0.05 + rng.random() * 0.5
+        tt = T(0.08)
+        crack = highp(noise(0.08), 3000) * np.exp(-tt / (0.004 + rng.random() * 0.01)) * (0.6 + rng.random())
+        place(x, crack, at)
+    place(x, shimmer(1.2, 820, 0.4, 0.25), 0.0)
+    save("rift", reverb(x, 0.4, 1.2), 1.0)
+
+
 EVENTS = {
     "swing": (["swing0", "swing1", "swing2"], 16), "swing_heavy": (["swing_heavy"], 20), "hit": (["hit0", "hit1"], 16),
     "draw": (["draw"], 12), "sheathe": (["sheathe"], 12), "charge": (["charge"], 16), "ready": (["ready"], 16),
     "special": (["special"], 32), "flick": (["flick"], 12), "burst": (["burst"], 32),
+    "block": (["block0", "block1"], 16), "rift": (["rift"], 48),
 }
 
 
@@ -170,7 +201,7 @@ def write_json():
 
 
 if __name__ == "__main__":
-    for fn in (s_swing, s_swing_heavy, s_hit, s_draw, s_sheathe, s_charge, s_ready, s_special, s_flick, s_burst):
+    for fn in (s_swing, s_swing_heavy, s_hit, s_draw, s_sheathe, s_charge, s_ready, s_special, s_flick, s_burst, s_block, s_rift):
         fn()
     write_json()
     print("готово:", len(ns.SOUNDS), "файлов")

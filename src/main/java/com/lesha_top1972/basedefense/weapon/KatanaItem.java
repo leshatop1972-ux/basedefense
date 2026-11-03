@@ -1,12 +1,10 @@
 package com.lesha_top1972.basedefense.weapon;
 
 import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.ToolMaterials;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -18,14 +16,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Катана: ЛКМ — серия из 3 ударов с рывками ({@link KatanaCombat}, ванильный удар заменён);
- * ПКМ зажать 1.5 с — особая атака «Иссэн» (как лук: пока держишь — зарядка, отпустил — удар; перезарядка 8 с).
+ * Катана (все виды — {@link KatanaVariant}): ЛКМ — серия из 3 ударов с рывками, зажать ЛКМ 1.5 с — «Иссэн»
+ * ({@link KatanaCombat}, ванильный удар заменён); ПКМ держать — блок (−65% урона спереди).
  */
 public class KatanaItem extends SwordItem {
 
-    public KatanaItem(Settings settings) {
-        // в подсказке: урон 1 + 4 = 5 (железный материал даёт +2, поэтому 2), скорость 1.6
-        super(ToolMaterials.IRON, 2, -2.4f, settings);
+    private final KatanaVariant variant;
+
+    public KatanaItem(KatanaVariant variant, Settings settings) {
+        // в подсказке урон = 1 + 2 (железо) + attackDamage: 4 / 5 / 6 — как первый удар серии; скорость 1.6
+        super(ToolMaterials.IRON, 1 + (int) variant.comboBonus, -2.4f, settings.maxDamage(variant.durability));
+        this.variant = variant;
+    }
+
+    public KatanaVariant variant() {
+        return this.variant;
     }
 
     @Override
@@ -38,10 +43,11 @@ public class KatanaItem extends SwordItem {
         return 72000;
     }
 
+    /** ПКМ — блок, пока держат. */
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
-        if (hand != Hand.MAIN_HAND || user.getItemCooldownManager().isCoolingDown(this) || KatanaCombat.busy(user)) {
+        if (hand != Hand.MAIN_HAND || KatanaCombat.busy(user)) {
             return TypedActionResult.pass(stack);
         }
         user.setCurrentHand(hand);
@@ -49,17 +55,13 @@ public class KatanaItem extends SwordItem {
     }
 
     @Override
-    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
-        int used = this.getMaxUseTime(stack) - remainingUseTicks;
-        if (!world.isClient && user instanceof ServerPlayerEntity sp) {
-            KatanaCombat.release(sp, used);
-        }
-    }
-
-    @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
-        tooltip.add(Text.translatable("item.basedefense.katana.tip1").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("item.basedefense.katana.tip2").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("item.basedefense.katana.tip3").formatted(Formatting.GRAY));
+        String k = "item.basedefense." + this.variant.model.replace("katana_", "") + (this.variant == KatanaVariant.BASE ? "" : "_katana");
+        if (this.variant == KatanaVariant.BASE) {
+            k = "item.basedefense.katana";
+        }
+        tooltip.add(Text.translatable(k + ".tip1").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable(k + ".tip2").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable(k + ".tip3").formatted(Formatting.GRAY));
     }
 }

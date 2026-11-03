@@ -87,15 +87,18 @@ R_CORD = (16, 60, 16, 4)        # шнур
 R_GLOW = (32, 60, 8, 4)         # белый (для свечения)
 
 
-def paint():
+def paint(glowmask=False):
+    """Текстура текущего варианта (палитра PAL). glowmask=True → (текстура, маска свечения: светятся линия закалки,
+    кромка, кольцо гарды), иначе — текстура."""
     A = Atlas()
+    GM = np.zeros((TEX_H, TEX_W, 4), np.uint8) if glowmask else None
     rng = A.rng
     # --- клинок: плоскость у кромки. Строка 0 — кромка, 11 — ребро.
     x0, y0, w, h = R_HIRA
     for x in range(w):
         s = x / (w - 1)                                      # 0 — у гарды, 1 — у острия
         # линия закалки (хамон): волна notare + мелкие «зубцы» gunome; у острия — бо‑си (поворот к обуху)
-        wave = 4.3 + 1.1 * math.sin(s * 9.0 + 0.6) + 0.55 * math.sin(s * 23.0 + 1.3) + 0.35 * math.sin(s * 51.0)
+        wave = 4.3 + PAL['wave'] * (1.1 * math.sin(s * 9.0 + 0.6) + 0.55 * math.sin(s * 23.0 + 1.3) + 0.35 * math.sin(s * 51.0))
         if s > 0.86:
             wave += (s - 0.86) / 0.14 * 2.5
         if s < 0.04:
@@ -103,14 +106,16 @@ def paint():
         for y in range(h):
             d = y - wave
             if d < -0.6:                                     # закалённая зона: светлая, «изморозь»
-                c = lerpc((236, 240, 246), (214, 222, 232), y / max(wave, 1))
+                c = lerpc(PAL['hard0'], PAL['hard1'], y / max(wave, 1))
                 k = 1.0 + rng.uniform(-0.03, 0.03)
             elif d < 0.8:                                    # сама граница — нио (светящиеся крупинки)
-                c = (248, 250, 255) if rng.uniform() < 0.55 else (226, 232, 242)
+                c = PAL['nie0'] if rng.uniform() < 0.55 else PAL['nie1']
+                if GM is not None:
+                    GM[y0 + y, x0 + x] = PAL['glow'] + (255,)
                 k = 1.0
             else:                                            # чёрная сталь (дзигане) с древесным узором
                 grain = 0.04 * math.sin(x * 0.9 + y * 2.1 + math.sin(x * 0.21) * 3)
-                c = lerpc((160, 170, 186), (132, 142, 160), (y - wave) / max(h - wave, 1))
+                c = lerpc(PAL['steel0'], PAL['steel1'], (y - wave) / max(h - wave, 1))
                 k = 1.0 + grain + rng.uniform(-0.025, 0.025)
             if 0.30 < s < 0.40 and 6 <= y <= 7:              # полированный блик вдоль клинка
                 k += 0.10
@@ -119,15 +124,17 @@ def paint():
     x0, y0, w, h = R_SHIN
     for x in range(w):
         for y in range(h):
-            c = lerpc((122, 130, 146), (98, 106, 124), y / (h - 1))
+            c = lerpc(PAL['shin0'], PAL['shin1'], y / (h - 1))
             k = 1.0 + rng.uniform(-0.02, 0.02) + (0.08 if y == 0 else 0)
             A.put(x0 + x, y0 + y, tuple(min(255, ch * k) for ch in c))
     for x in range(R_MUNE[2]):
         for y in range(R_MUNE[3]):
-            A.put(R_MUNE[0] + x, R_MUNE[1] + y, (150, 158, 172) if y == 1 else (118, 126, 142))
+            A.put(R_MUNE[0] + x, R_MUNE[1] + y, PAL['mune1'] if y == 1 else PAL['mune0'])
     for x in range(R_EDGE[2]):
         for y in range(R_EDGE[3]):
-            A.put(R_EDGE[0] + x, R_EDGE[1] + y, (252, 253, 255))
+            A.put(R_EDGE[0] + x, R_EDGE[1] + y, PAL['edge'])
+            if GM is not None:
+                GM[R_EDGE[1] + y, R_EDGE[0] + x] = PAL['glow'] + (255,)
     # --- рукоять: белая кожа ската (самэ) под чёрной шёлковой оплёткой ромбами
     x0, y0, w, h = R_TSUKA
     period = 12.0
@@ -138,32 +145,34 @@ def paint():
             a1 = abs(phase - 0.5) * 2                        # 0 в центре витка
             diamond = a1 + cy * 0.9 < 0.62                   # окошко — видна самэ
             if diamond:
-                c = (232, 226, 210)
+                c = PAL['same0']
                 if rng.uniform() < 0.3:
-                    c = (214, 206, 188)
+                    c = PAL['same1']
                 if abs(a1 + cy * 0.9 - 0.62) < 0.12:
-                    c = (150, 144, 132)                      # тень от оплётки
+                    c = PAL['same2']                      # тень от оплётки
             else:
-                c = (30, 26, 34)
+                c = PAL['ito0']
                 if (x + y) % 3 == 0:
-                    c = (46, 40, 52)                         # блеск шёлка
+                    c = PAL['ito1']                         # блеск шёлка
                 if abs(a1 - (1 - cy)) < 0.08:
-                    c = (58, 50, 64)
+                    c = PAL['ito2']
             A.put(x0 + x, y0 + y, c)
     # --- гарда: чернёное железо с золотым ободом и узором
     x0, y0, w, h = R_TSUBA
     for x in range(w):
         for y in range(h):
             r = math.hypot(x - 7.5, y - 7.5) / 7.5
-            c = (44, 40, 44)
+            c = PAL['tsuba']
             if r > 0.86:
-                c = (176, 140, 64)
+                c = PAL['rim0']
             elif 0.55 < r < 0.62:
-                c = (120, 96, 50)
+                c = PAL['ring']
+                if GM is not None:
+                    GM[y0 + y, x0 + x] = PAL['glow'] + (255,)
             k = 1.0 + rng.uniform(-0.05, 0.05)
             A.put(x0 + x, y0 + y, tuple(min(255, ch * k) for ch in c))
-    for (reg, base, hi) in ((R_TSUBA_RIM, (176, 140, 64), (214, 182, 96)), (R_GOLD, (192, 150, 68), (232, 196, 110)),
-                            (R_IRON, (40, 38, 44), (72, 68, 76))):
+    for (reg, base, hi) in ((R_TSUBA_RIM, PAL['rim0'], PAL['rim1']), (R_GOLD, PAL['gold0'], PAL['gold1']),
+                            (R_IRON, PAL['iron0'], PAL['iron1'])):
         x0, y0, w, h = reg
         for x in range(w):
             for y in range(h):
@@ -173,23 +182,78 @@ def paint():
     for x in range(w):
         for y in range(h):
             cy = abs((y / (h - 1)) * 2 - 1)
-            c = lerpc((26, 18, 22), (54, 22, 30), 0.5 + 0.5 * math.sin(x * 0.11))
+            c = lerpc(PAL['saya0'], PAL['saya1'], 0.5 + 0.5 * math.sin(x * 0.11))
             if cy < 0.12:
-                c = lerpc(c, (120, 90, 100), 0.6)            # блик лака
+                c = lerpc(c, PAL['shine'], 0.6)            # блик лака
             if x < 3 or x > w - 5:
-                c = (36, 32, 38)
+                c = PAL['sayaend']
             k = 1.0 + rng.uniform(-0.02, 0.02)
             A.put(x0 + x, y0 + y, tuple(min(255, ch * k) for ch in c))
     for x in range(R_HORN[2]):
         for y in range(R_HORN[3]):
-            A.put(R_HORN[0] + x, R_HORN[1] + y, (228, 214, 186) if y else (246, 236, 214))
+            A.put(R_HORN[0] + x, R_HORN[1] + y, PAL['horn0'] if y else PAL['horn1'])
     for x in range(R_CORD[2]):
         for y in range(R_CORD[3]):
-            A.put(R_CORD[0] + x, R_CORD[1] + y, (150, 24, 32) if (x + y) % 3 else (196, 46, 50))
+            A.put(R_CORD[0] + x, R_CORD[1] + y, PAL['cord0'] if (x + y) % 3 else PAL['cord1'])
     for x in range(R_GLOW[2]):
         for y in range(R_GLOW[3]):
             A.put(R_GLOW[0] + x, R_GLOW[1] + y, (255, 255, 255))
+    if glowmask:
+        GM[..., 3] = 255
+        return A.img(), Image.fromarray(GM, "RGBA")
     return A.img()
+
+# =====================================================================
+# Варианты катан: палитра (P) и немного другая форма
+# =====================================================================
+PAL_BASE = dict(hard0=(236, 240, 246), hard1=(214, 222, 232), nie0=(248, 250, 255), nie1=(226, 232, 242),
+                steel0=(160, 170, 186), steel1=(132, 142, 160), shin0=(122, 130, 146), shin1=(98, 106, 124),
+                mune0=(118, 126, 142), mune1=(150, 158, 172), edge=(252, 253, 255),
+                same0=(232, 226, 210), same1=(214, 206, 188), same2=(150, 144, 132),
+                ito0=(30, 26, 34), ito1=(46, 40, 52), ito2=(58, 50, 64),
+                tsuba=(44, 40, 44), rim0=(176, 140, 64), rim1=(214, 182, 96), ring=(120, 96, 50),
+                gold0=(192, 150, 68), gold1=(232, 196, 110), iron0=(40, 38, 44), iron1=(72, 68, 76),
+                saya0=(26, 18, 22), saya1=(54, 22, 30), shine=(120, 90, 100), sayaend=(36, 32, 38),
+                horn0=(228, 214, 186), horn1=(246, 236, 214), cord0=(150, 24, 32), cord1=(196, 46, 50),
+                wave=1.0, glow=(0, 0, 0))
+VARIANTS = {
+    # обычная
+    "katana": dict(pal=PAL_BASE, geo=dict(W_BASE=1.20, W_TIP=0.86, SORI=0.80, TSUBA=(1.62, 1.38, 14))),
+    # утончённая: клинок уже и изогнут сильнее, глубокий хамон, белая оплётка с синим, серебро, синие лаковые ножны
+    "katana_refined": dict(pal=dict(PAL_BASE, steel0=(176, 184, 198), steel1=(146, 154, 172), wave=1.6,
+                                    same0=(40, 56, 104), same1=(32, 46, 90), same2=(24, 34, 66),
+                                    ito0=(226, 228, 236), ito1=(244, 246, 250), ito2=(200, 204, 216),
+                                    tsuba=(150, 156, 168), rim0=(206, 212, 222), rim1=(236, 240, 246), ring=(120, 128, 140),
+                                    gold0=(196, 202, 214), gold1=(236, 240, 246), iron0=(176, 182, 194), iron1=(220, 224, 232),
+                                    saya0=(16, 26, 58), saya1=(30, 48, 96), shine=(110, 140, 200), sayaend=(190, 196, 208),
+                                    cord0=(230, 232, 240), cord1=(176, 186, 210)),
+                           geo=dict(W_BASE=1.06, W_TIP=0.76, SORI=1.00, TSUBA=(1.36, 1.24, 18))),
+    # древняя: тёмная сталь, светящаяся фиолетовая линия закалки и кромка, чёрная гарда с фиолетовым кольцом
+    "katana_ancient": dict(pal=dict(PAL_BASE, hard0=(150, 132, 182), hard1=(118, 100, 156), nie0=(214, 150, 255),
+                                    nie1=(176, 110, 238), steel0=(70, 66, 84), steel1=(50, 46, 62),
+                                    shin0=(58, 52, 72), shin1=(40, 36, 52), mune0=(46, 42, 58), mune1=(72, 66, 88),
+                                    edge=(226, 186, 255), same0=(96, 40, 140), same1=(80, 30, 120), same2=(50, 18, 76),
+                                    ito0=(18, 14, 22), ito1=(34, 24, 44), ito2=(60, 30, 84),
+                                    tsuba=(22, 18, 26), rim0=(120, 60, 170), rim1=(170, 100, 230), ring=(190, 110, 255),
+                                    gold0=(84, 52, 110), gold1=(130, 86, 170), iron0=(20, 16, 24), iron1=(52, 40, 64),
+                                    saya0=(12, 8, 16), saya1=(36, 16, 52), shine=(110, 60, 150), sayaend=(70, 36, 100),
+                                    horn0=(90, 50, 130), horn1=(140, 90, 190), cord0=(110, 40, 170), cord1=(170, 90, 240),
+                                    wave=1.3, glow=(170, 70, 255)),
+                           geo=dict(W_BASE=1.30, W_TIP=0.94, SORI=0.66, TSUBA=(1.70, 1.50, 8))),
+}
+PAL = PAL_BASE
+TSUBA_SHAPE = (1.62, 1.38, 14)
+
+
+def use_variant(name):
+    """Включить вариант: палитра и форма (модуль строит модель по этим числам)."""
+    global PAL, W_BASE, W_TIP, SORI, TSUBA_SHAPE, KATANA, SAYA
+    v = VARIANTS[name]
+    PAL = v["pal"]
+    W_BASE, W_TIP, SORI = v["geo"]["W_BASE"], v["geo"]["W_TIP"], v["geo"]["SORI"]
+    TSUBA_SHAPE = v["geo"]["TSUBA"]
+    KATANA = build_katana()
+    SAYA = build_saya()
 
 
 def uv_of(reg, u, v):
@@ -364,7 +428,7 @@ def build_katana():
     e, mu = sec[0][0] + 0.10, sec[2][0] - 0.10
     build_box(m, mu, e, TSUBA_Y1, HABAKI_Y1, -0.25, 0.25, R_GOLD)
     # гарда (цуба) и шайбы (сэппа)
-    build_disc(m, TSUBA_Y0 + 0.06, TSUBA_Y1 - 0.06, 1.62, 1.38, 14, R_TSUBA, R_TSUBA_RIM)
+    build_disc(m, TSUBA_Y0 + 0.06, TSUBA_Y1 - 0.06, TSUBA_SHAPE[0], TSUBA_SHAPE[1], TSUBA_SHAPE[2], R_TSUBA, R_TSUBA_RIM)
     build_disc(m, TSUBA_Y1 - 0.06, TSUBA_Y1, 0.86, 0.56, 10, R_GOLD, R_GOLD)
     build_disc(m, TSUBA_Y0, TSUBA_Y0 + 0.06, 0.86, 0.56, 10, R_GOLD, R_GOLD)
     # рукоять: к середине чуть тоньше; фути (латунное кольцо) у гарды
@@ -440,21 +504,21 @@ def make_icon():
         x = 9.5 + t * 20.5
         y = 21.5 - t * 20.5 - 1.6 * math.sin(t * math.pi) * 0 - 1.3 * t * t
         bx, by = int(round(x)), int(round(y))
-        d[(bx, by)] = (236, 240, 246)                 # кромка (сверху‑слева)
-        d[(bx + 1, by + 1)] = (150, 160, 178)         # обух
-        d[(bx, by + 1)] = (200, 208, 220)
+        d[(bx, by)] = PAL['nie0']                 # кромка (сверху‑слева)
+        d[(bx + 1, by + 1)] = PAL['steel1']         # обух
+        d[(bx, by + 1)] = PAL['steel0']
         if i % 3 == 0:
-            d[(bx + 1, by)] = (214, 220, 230)
+            d[(bx + 1, by)] = PAL['hard1']
     for (x, y) in ((7, 21), (8, 22), (9, 23), (10, 24), (8, 20), (11, 25), (6, 20)):
-        d[(x, y)] = (176, 140, 64) if (x, y) in ((8, 22), (9, 23)) else (52, 48, 52)
+        d[(x, y)] = PAL['rim0'] if (x, y) in ((8, 22), (9, 23)) else PAL['tsuba']
     for i in range(6):
         x, y = 7 - i, 24 + i
-        d[(x, y)] = (30, 26, 34) if i % 2 == 0 else (232, 226, 210)
-        d[(x + 1, y)] = (46, 40, 52)
-        d[(x, y - 1)] = (40, 36, 44)
-    d[(1, 30)] = (60, 58, 66)
-    d[(2, 30)] = (60, 58, 66)
-    d[(1, 29)] = (60, 58, 66)
+        d[(x, y)] = PAL['ito0'] if i % 2 == 0 else PAL['same0']
+        d[(x + 1, y)] = PAL['ito1']
+        d[(x, y - 1)] = PAL['ito1']
+    d[(1, 30)] = PAL['iron1']
+    d[(2, 30)] = PAL['iron1']
+    d[(1, 29)] = PAL['iron1']
     for (x, y), c in d.items():
         if 0 <= x < 32 and 0 <= y < 32:
             px[x, y] = c + (255,)
@@ -989,6 +1053,20 @@ def build_clips():
     for k in chd.keys:
         k.sv = 1.0
     clip(chd)
+    # ---------------- блок (ПКМ держат): клинок поперёк перед собой, кромка к врагу ----------------
+    BG, BB, BE = (0.26, -0.17, -0.58), (-0.95, 0.20, -0.22), (0.05, 0.75, -0.65)
+    clip(Clip("block", 1.2, [
+        P(0.0, BG, BB, BE, tw=-4, cr=0.02),
+        P(0.6, v3(BG) + v3(0.003, -0.004, 0.0), v3(BB) + v3(0.0, -0.01, 0.0), BE, tw=-4, cr=0.025),
+        P(1.2, BG, BB, BE, tw=-4, cr=0.02),
+    ], loop=True))
+    # отбил удар: клинок толкает к лицу, камера вздрагивает, возврат
+    clip(Clip("block_hit", 0.30, [
+        P(0.00, BG, BB, BE, tw=-4, cr=0.02),
+        P(0.04, v3(BG) + v3(0.02, 0.04, 0.07), v3(BB) + v3(0.0, 0.08, 0.06), BE, tw=-2, cr=0.03, cam=(-1.6, 0.4, 1.2)),
+        P(0.12, v3(BG) + v3(0.01, 0.01, 0.03), BB, BE, tw=-4, cr=0.025, cam=(-0.5, 0.1, 0.3)),
+        P(0.30, BG, BB, BE, tw=-4, cr=0.02, hold=True),
+    ], events=[(0.0, "blocked")]))
     # ---------------- особая атака: выхват‑разрез на рывке (нукицукэ), пауза, стряхнуть кровь (тибури) ----------------
     sp_ = Clip("special", 1.25, [
         sh(0.00, 0.6, tw=-18, cr=0.12, cam=(4.0, -1.0, -1.6), L=L_saya(), lw=1.0, fov=0.94, gl=1.0),
@@ -1054,9 +1132,9 @@ def export_fp():
     print("→", os.path.relpath(path), "%.0f КБ" % (os.path.getsize(path) / 1024))
 
 
-def export_mesh():
+def export_mesh(name="katana"):
     data = {"texture": [TEX_W, TEX_H], "parts": {"katana": mesh_json(KATANA), "saya": mesh_json(SAYA)}}
-    path = os.path.join(ASSETS, "mesh", "katana.json")
+    path = os.path.join(ASSETS, "mesh", name + ".json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, separators=(",", ":"))
@@ -1127,6 +1205,8 @@ def tk_guard(t, **kw):
 
 
 TP_CHARGE = tk_idle(0, lean=0.30, tw=-0.25, ll=-0.45, lr=0.50)
+# блок: клинок поперёк перед грудью, кромка вверх (y вниз), правая кисть справа
+TP_BLOCK = TK(0, (-3.0, 3.5, -8.0), (0.97, -0.18, -0.12), (0.0, -0.95, 0.3), lean=0.06, tw=0.1, ll=-0.25, lr=0.3)
 
 
 def tp_clips():
@@ -1225,6 +1305,11 @@ def write_java():
            "    static final float SCALE_3P = %.3ff;\n\n" % SCALE_3P)
     src += "    static final float[][] TP_IDLE = {\n" + arr([idle]) + "\n    };\n\n"
     src += "    static final float[][] TP_CHARGE = {\n" + arr([charge]) + "\n    };\n\n"
+    bl = TP_BLOCK
+    lb = bl.G - nrm(bl.B) * (-LEFT_GRIP * SCALE_3P)
+    block = [0.0] + list(bl.G) + list(nrm(bl.B)) + list(np.cross(nrm(bl.E - nrm(bl.B) * np.dot(bl.E, nrm(bl.B))), nrm(bl.B))) \
+        + list(lb) + [bl.lean, bl.tw, bl.ll, bl.lr, 0.0]
+    src += "    static final float[][] TP_BLOCK = {\n" + arr([block]) + "\n    };\n\n"
     src += "    /** 0–2 — удары серии, 3 — особая атака (выхват на рывке, тибури, в ножны). */\n"
     src += "    static final float[][][] TP_SWINGS = {\n" + ",\n".join(
         "        {\n" + arr(c) + "\n        }" for c in clips) + "\n    };\n\n"
@@ -1342,11 +1427,17 @@ def gif_clip(name, tex, skin, path, size=(480, 270)):
 
 
 def main():
-    tex = paint()
     skin = fv.make_skin()
-    tex.save(os.path.join(ASSETS, "textures", "entity", "weapon", "katana.png"))
-    make_icon().save(os.path.join(ASSETS, "textures", "item", "katana.png"))
-    export_mesh()
+    for name in VARIANTS:
+        use_variant(name)
+        tex, glow = paint(glowmask=True)
+        tex.save(os.path.join(ASSETS, "textures", "entity", "weapon", name + ".png"))
+        if VARIANTS[name]["pal"]["glow"] != (0, 0, 0):
+            glow.save(os.path.join(ASSETS, "textures", "entity", "weapon", name + "_glow.png"))
+        make_icon().save(os.path.join(ASSETS, "textures", "item", name + ".png"))
+        export_mesh(name)
+    use_variant("katana")
+    tex = paint()
     export_fp()
     write_java()
     if "--check" in sys.argv:

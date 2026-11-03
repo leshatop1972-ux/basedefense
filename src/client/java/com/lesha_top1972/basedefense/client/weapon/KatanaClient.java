@@ -1,7 +1,6 @@
 package com.lesha_top1972.basedefense.client.weapon;
 
 import com.lesha_top1972.basedefense.client.weapon.fp.FpAnim;
-import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import com.lesha_top1972.basedefense.weapon.KatanaCombat;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -36,7 +35,8 @@ import java.util.Map;
  * зарядка, готовность, особая атака. Плавные переходы, события
  * клипа (звуки, «стоп‑кадр» при попадании), наклон/крен камеры и обзор — из клипа (mixin GameRendererMixin).
  * <p>
- * Ввод: ЛКМ — серия (вместо ванильного удара), ПКМ — зарядка (как лук; KatanaItem). Рывки своего игрока — здесь.
+ * Ввод: ЛКМ клик — серия (вместо ванильного удара), ЛКМ держать 1.5 с — особая атака, ПКМ держать — блок (KatanaItem).
+ * Рывки своего игрока — здесь.
  * <p>
  * 3‑е лицо (все игроки): позы KatanaKeys (стойка у бедра в ножнах, удары, зарядка, особая атака).
  */
@@ -59,6 +59,9 @@ public final class KatanaClient {
         int prevClip = -1;
         float prevStart = -1000f;
         float charge;
+        float block;
+        /** Заряжает особую атаку (зажата ЛКМ) — с какого тика (−1 — нет). */
+        float chargeStart = -1f;
         final BloodSwordPose.Frame katana = new BloodSwordPose.Frame();
         final BloodSwordPose.Frame saya = new BloodSwordPose.Frame();
         boolean posed;
@@ -100,13 +103,18 @@ public final class KatanaClient {
     private static long comboStart = -1000;
     private static long restUntil;
     private static boolean buffered;
-    private static boolean wasUsing;
-    private static int lastUse;
+    private static boolean wasBlocking;
+    /** Тик нажатия ЛКМ (−1 — не нажата): короткий клик — удар, держат — зарядка. */
+    private static long pressTick = -1;
+    private static boolean chargingLocal;
+    private static long chargeStartTick;
     private static int dashTicks;
     private static Vec3d dashDir = Vec3d.ZERO;
     private static int dash2At = -1;
     private static boolean held;
     private static boolean specialRunning;
+    /** Древняя сила (шлёт сервер). */
+    static int power;
 
     private KatanaClient() {
     }
@@ -117,10 +125,26 @@ public final class KatanaClient {
             int idx = buf.readByte();
             client.execute(() -> {
                 if (client.player != null && id != client.player.getId()) {
-                    begin(state(id), idx, ticks);
+                    State st = state(id);
+                    if (idx == KatanaCombat.ANIM_CHARGE) {
+                        st.chargeStart = ticks;
+                    } else if (idx == KatanaCombat.ANIM_CHARGE_END) {
+                        st.chargeStart = -1f;
+                    } else {
+                        st.chargeStart = -1f;
+                        begin(st, idx, ticks);
+                    }
                 }
             });
         });
+        ClientPlayNetworking.registerGlobalReceiver(KatanaCombat.S2C_BLOCKED, (client, handler, buf, sender) ->
+                client.execute(KatanaClient::onBlocked));
+        ClientPlayNetworking.registerGlobalReceiver(com.lesha_top1972.basedefense.weapon.KatanaPower.SYNC,
+                (client, handler, buf, sender) -> {
+                    int v = buf.readVarInt();
+                    client.execute(() -> power = v);
+                });
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(KatanaHud::render);
         ClientTickEvents.END_CLIENT_TICK.register(KatanaClient::tick);
         KatanaWorldFx.init();
     }
@@ -167,15 +191,23 @@ public final class KatanaClient {
     // =====================================================================
     // Ввод: вызывается вместо ванильного удара (MinecraftClient.doAttack)
     // =====================================================================
-    /** @return true — клик съеден катаной. */
+    /** @return true — клик съеден катаной. Удар — когда отпустят (держат дольше — зарядка особой атаки). */
     public static boolean onAttack() {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity p = client.player;
         if (p == null || !KatanaCombat.holding(p) || p.isSpectator()) {
             return false;
         }
+        if (!p.isUsingItem() && !specialRunning && !chargingLocal) {
+            pressTick = ticks;
+        }
+        return true;
+    }
+
+    /** Короткий клик ЛКМ: удар серии (с учётом темпа и отдыха). */
+    private static void click(ClientPlayerEntity p) {
         if (p.isUsingItem() || specialRunning || ticks < restUntil) {
-            return true;
+            return;
         }
         long age = ticks - comboStart;
         if (comboIdx >= 0 && comboIdx < 2 && age < KatanaCombat.NEXT_MIN) {
@@ -185,7 +217,46 @@ public final class KatanaClient {
             return true;
         }
         startSwing(p);
-        return true;
+    }
+
+    private static boolean canCharge(ClientPlayerEntity p) {
+        return !p.isUsingItem() && !specialRunning && !p.getItemCooldownManager().isCoolingDown(p.getMainHandStack().getItem());
+    }
+
+    private static void startCharge(ClientPlayerEntity p) {
+        chargingLocal = true;
+        chargeStartTick = ticks;
+        state(p.getId()).chargeStart = ticks;
+        buffered = false;
+        startAction(drawn ? "charge_drawn" : "charge", drawn ? 0.12f : 0.25f);
+        drawn = false;
+        sendCharge(1);
+    }
+
+    private static void releaseCharge(ClientPlayerEntity p) {
+        boolean ready = ticks - chargeStartTick >= KatanaCombat.CHARGE_TICKS - 2;
+        chargingLocal = false;
+        state(p.getId()).chargeStart = -1f;
+        sendCharge(ready ? 2 : 0);
+        if (ready) {
+            startSpecial(p);
+        } else if (charging(action)) {
+            endAction(0.15f);                            // отпустил раньше — остаётся в ножнах
+        }
+    }
+
+    private static void sendCharge(int what) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeByte(what);
+        ClientPlayNetworking.send(KatanaCombat.C2S_CHARGE, buf);
+    }
+
+    /** Сервер: удар отбит блоком — отдача в руки. */
+    private static void onBlocked() {
+        if (holdingLocal()) {
+            startAction("block_hit", 0.02f);
+            hitstopUntil = lastReal + 0.05;
+        }
     }
 
     private static void startSwing(ClientPlayerEntity p) {
@@ -225,7 +296,7 @@ public final class KatanaClient {
         Vec3d look = p.getRotationVector();
         Vec3d flat = new Vec3d(look.x, 0, look.z);
         dashDir = flat.lengthSquared() > 1e-4 ? flat.normalize() : Vec3d.ZERO;
-        dashTicks = KatanaCombat.DASH_TICKS;
+        dashTicks = KatanaCombat.variant(p).dashTicks;
         specialRunning = true;
         drawn = true;                                    // после выхвата катана обнажена (в ножны — как после ударов)
         begin(state(p.getId()), KatanaCombat.ANIM_SPECIAL, ticks);
@@ -262,27 +333,42 @@ public final class KatanaClient {
                 dash(p, KatanaCombat.DASH2);
             }
         }
-        // --- зарядка (ПКМ держат) и особая атака ---
-        boolean using = holding && p.isUsingItem() && p.getActiveItem().isOf(ModItems.KATANA);
-        if (using) {
-            lastUse = p.getItemUseTime();
-            if (!charging(action) && !(action != null && action.name.equals("special"))) {
-                startAction(drawn ? "charge_drawn" : "charge", drawn ? 0.12f : 0.25f);
-                drawn = false;
+        // --- ЛКМ: короткий клик — удар, держат — зарядка особой атаки ---
+        boolean down = client.options.attackKey.isPressed() && client.currentScreen == null;
+        if (!holding) {
+            pressTick = -1;
+            if (chargingLocal) {
+                chargingLocal = false;
+                sendCharge(0);
             }
-            if (lastUse >= KatanaCombat.AUTO_RELEASE && client.interactionManager != null) {
-                client.interactionManager.stopUsingItem(p);         // готово и держат долго — бьёт сам
-                using = false;
+        } else if (chargingLocal) {
+            if (!down || ticks - chargeStartTick >= KatanaCombat.AUTO_RELEASE) {
+                releaseCharge(p);                        // отпустил (или готово и держат долго — бьёт сам)
+                pressTick = -1;
+            }
+        } else if (pressTick >= 0) {
+            if (!down) {
+                pressTick = -1;
+                click(p);
+            } else if (ticks - pressTick >= KatanaCombat.HOLD_START && canCharge(p)) {
+                pressTick = -1;
+                startCharge(p);
             }
         }
-        if (wasUsing && !using) {
-            if (holding && lastUse >= KatanaCombat.CHARGE_TICKS - 2) {
-                startSpecial(p);
-            } else if (charging(action)) {
-                endAction(0.15f);                        // отпустил раньше — остаётся в ножнах
+        // --- ПКМ держат — блок ---
+        boolean blocking = holding && p.isUsingItem() && p.getActiveItem().getItem() instanceof com.lesha_top1972.basedefense.weapon.KatanaItem;
+        if (blocking && !wasBlocking) {
+            if (chargingLocal) {
+                chargingLocal = false;
+                sendCharge(0);
             }
+            drawn = true;
+            startAction("block", 0.08f);
+        } else if (!blocking && wasBlocking && action != null && action.name.startsWith("block")) {
+            endAction(0.12f);
+            lastCombat = clock;
         }
-        wasUsing = using;
+        wasBlocking = blocking;
         if (dashTicks > 0) {
             dashTicks--;
             double sp = KatanaCombat.DASH_SPEED;
@@ -296,8 +382,9 @@ public final class KatanaClient {
         update(0f);
         // частицы зарядки у всех игроков с катаной
         for (PlayerEntity pl : client.world.getPlayers()) {
-            if (KatanaCombat.holding(pl) && pl.isUsingItem() && pl.getActiveItem().isOf(ModItems.KATANA)) {
-                KatanaWorldFx.chargeParticles(client.world, pl, pl.getItemUseTime());
+            State st = STATES.get(pl.getId());
+            if (KatanaCombat.holding(pl) && st != null && st.chargeStart >= 0) {
+                KatanaWorldFx.chargeParticles(client.world, pl, (int) (ticks - st.chargeStart), KatanaCombat.variant(pl).ancient);
             }
         }
         STATES.entrySet().removeIf(e -> {
@@ -389,6 +476,8 @@ public final class KatanaClient {
             if (!action.loop && t >= action.length) {
                 if (action.name.equals("charge") || action.name.equals("charge_drawn")) {
                     startAction("charged", 0.05f);
+                } else if (action.name.equals("block_hit") && wasBlocking) {
+                    startAction("block", 0.05f);
                 } else {
                     String done = action.name;
                     a.sample(action, action.length, cur);
@@ -527,6 +616,11 @@ public final class KatanaClient {
             System.arraycopy(KatanaKeys.TP_CHARGE[0], 1, ch, 0, out.length);
             lerp(out, ch, smooth(st.charge), out);
         }
+        if (st.block > 0.001f) {
+            float[] bl = new float[out.length];
+            System.arraycopy(KatanaKeys.TP_BLOCK[0], 1, bl, 0, out.length);
+            lerp(out, bl, smooth(st.block), out);
+        }
         return out;
     }
 
@@ -546,9 +640,10 @@ public final class KatanaClient {
         }
         State st = state(entity.getId());
         float now = now();
-        boolean charging = pl.isUsingItem() && pl.getActiveItem().isOf(ModItems.KATANA);
-        float chTarget = charging ? MathHelper.clamp(pl.getItemUseTime() / 6f, 0f, 1f) : 0f;
+        float chTarget = st.chargeStart >= 0 ? MathHelper.clamp((now - st.chargeStart) / 6f, 0f, 1f) : 0f;
         st.charge += (chTarget - st.charge) * 0.35f;
+        boolean blocking = pl.isUsingItem() && pl.getActiveItem().getItem() instanceof com.lesha_top1972.basedefense.weapon.KatanaItem;
+        st.block += ((blocking ? 1f : 0f) - st.block) * 0.4f;
         float[] v = values(st, now, new float[17]);
         float hipY = (model.rightLeg.pivotY + model.leftLeg.pivotY) * 0.5f;
         float hipZ = (model.rightLeg.pivotZ + model.leftLeg.pivotZ) * 0.5f;

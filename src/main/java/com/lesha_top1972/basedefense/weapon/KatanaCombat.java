@@ -1,7 +1,6 @@
 package com.lesha_top1972.basedefense.weapon;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.item.ModItems;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -42,23 +41,30 @@ import java.util.UUID;
  * 3 — горизонтальный справа налево и восходящий разрез (2 попадания). Тайминги — как в клипах 1‑го лица
  * (tools/katana_gen.py).
  * <p>
- * ПКМ зажать 1.5 с — «Иссэн»: катана в ножны, зарядка; отпустить (или само через 1 с после готовности) —
+ * ЛКМ зажать 1.5 с — «Иссэн»: катана в ножны, зарядка; отпустить (или само через 1 с после готовности) —
  * выхват на сильном рывке (8 блоков, неуязвим на время рывка) режет всех на пути, а когда стряхивает кровь —
- * по всем задетым проходит второй, отложенный разрез.
+ * по всем задетым проходит второй, отложенный разрез. У древней катаны — разлом пространства (KatanaVariant).
+ * <p>
+ * ПКМ держать — блок: удар спереди ослабляется на 65% (щит мода — на 85%), без отброса; древняя катана копит
+ * «Древнюю силу» (KatanaPower). Вызывает LivingEntityCombatMixin.
  */
 public final class KatanaCombat {
 
     public static final Identifier C2S = new Identifier(Basedefense.MOD_ID, "katana_swing");
     public static final Identifier S2C = new Identifier(Basedefense.MOD_ID, "katana_anim");
     public static final Identifier FX = new Identifier(Basedefense.MOD_ID, "katana_fx");
+    /** Клиент → сервер: зарядка ЛКМ (1 — начал, 0 — отпустил раньше, 2 — отпустил заряженной). */
+    public static final Identifier C2S_CHARGE = new Identifier(Basedefense.MOD_ID, "katana_charge");
+    /** Сервер → игроку: удар отбит блоком (отдача в руки). */
+    public static final Identifier S2C_BLOCKED = new Identifier(Basedefense.MOD_ID, "katana_blocked");
 
     // ---- серия ----
     /** Длина ударов (тики). */
     public static final int[] LEN = {12, 12, 26};
     /** Когда бьёт (тики от начала удара). */
     public static final int[][] HITS = {{4}, {3}, {3, 11}};
-    /** Урон каждого попадания. */
-    public static final float[][] DAMAGE = {{5f}, {5f}, {4f, 6f}};
+    /** Урон каждого попадания (обычная катана; виды — + KatanaVariant.comboBonus). */
+    public static final float[][] DAMAGE = {{4f}, {4f}, {3f, 5f}};
     /** Следующий удар — не раньше (тики). */
     public static final int NEXT_MIN = 6;
     /** Серия продолжается, если следующий клик — не позже (тики от начала прошлого удара). */
@@ -74,40 +80,65 @@ public final class KatanaCombat {
     static final double REACH = 3.2;
     static final double HALF_ANGLE = 70;
 
-    // ---- особая атака ----
+    // ---- особая атака (зажать ЛКМ) ----
+    /** Сколько держать ЛКМ, чтобы это была зарядка, а не удар (тики). */
+    public static final int HOLD_START = 5;
     public static final int CHARGE_TICKS = 30;
     public static final int AUTO_RELEASE = 50;
-    public static final int DASH_TICKS = 4;
+    public static final int DASH_TICKS = 4;            // у древней — KatanaVariant.dashTicks
     public static final double DASH_SPEED = 2.0;
     public static final float PATH_DAMAGE = 8f;
     public static final int BURST_TICK = 14;
     public static final float BURST_DAMAGE = 12f;
     public static final int SPECIAL_COOLDOWN = 160;
+    /** Древняя: +урона за каждую единицу силы. */
+    public static final float POWER_DAMAGE = 1f;
+
+    // ---- блок ----
+    /** Доля урона, проходящая сквозь блок катаной. */
+    public static final float BLOCK_PASS = 0.35f;
+    /** Блок начинает работать через столько тиков после нажатия ПКМ. */
+    public static final int BLOCK_DELAY = 3;
 
     // ---- виды анимаций (S2C) ----
     public static final int ANIM_SPECIAL = 3;
+    public static final int ANIM_CHARGE = 4;
+    public static final int ANIM_CHARGE_END = 5;
 
     // ---- эффекты (FX) ----
     public static final int FX_DASH = 1;
     public static final int FX_BURST = 2;
     public static final int FX_HIT = 3;
+    /** Разлом пространства по пути рывка (древняя). */
+    public static final int FX_RIFT = 4;
+    /** Отложенный разрез древней: пространство трескается на цели. */
+    public static final int FX_RIFT_BURST = 5;
+    /** Блок: искры и звон в точке p. */
+    public static final int FX_BLOCK = 6;
+
+    private static final java.util.UUID SLOW_ID = java.util.UUID.fromString("6f1c2b7e-3d4a-4f5b-9c8d-1e2f3a4b5c6d");
 
     private static final Map<UUID, int[]> LAST = new HashMap<>();     // {тик, номер удара}
     private static final List<Pending> PENDING = new ArrayList<>();
     private static final Map<UUID, Special> SPECIALS = new HashMap<>();
+    private static final Map<UUID, Integer> CHARGES = new HashMap<>();
 
     private record Pending(UUID player, int at, int idx, int hit) {
     }
 
     private static final class Special {
         final int start;
+        final KatanaVariant variant;
+        float pathDamage;
+        float burstDamage;
         Vec3d last;
         final Vec3d from;
         final Set<Integer> hit = new HashSet<>();
         final List<LivingEntity> targets = new ArrayList<>();
 
-        Special(int start, Vec3d pos) {
+        Special(int start, Vec3d pos, KatanaVariant variant) {
             this.start = start;
+            this.variant = variant;
             this.last = pos;
             this.from = pos;
         }
@@ -121,15 +152,25 @@ public final class KatanaCombat {
             int idx = buf.readByte();
             server.execute(() -> swing(server, player, idx));
         });
+        ServerPlayNetworking.registerGlobalReceiver(C2S_CHARGE, (server, player, handler, buf, sender) -> {
+            int what = buf.readByte();
+            server.execute(() -> charge(server, player, what));
+        });
         ServerTickEvents.END_SERVER_TICK.register(KatanaCombat::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             LAST.remove(handler.player.getUuid());
             SPECIALS.remove(handler.player.getUuid());
+            CHARGES.remove(handler.player.getUuid());
         });
     }
 
     public static boolean holding(PlayerEntity p) {
-        return p.getMainHandStack().isOf(ModItems.KATANA);
+        return p.getMainHandStack().getItem() instanceof KatanaItem;
+    }
+
+    /** Вид катаны в руке (или BASE). */
+    public static KatanaVariant variant(PlayerEntity p) {
+        return p.getMainHandStack().getItem() instanceof KatanaItem k ? k.variant() : KatanaVariant.BASE;
     }
 
     /** Занят особой атакой (сервер). */
@@ -141,7 +182,8 @@ public final class KatanaCombat {
     // Серия
     // =====================================================================
     private static void swing(MinecraftServer server, ServerPlayerEntity player, int clientIdx) {
-        if (!holding(player) || !player.isAlive() || player.isSpectator() || player.isUsingItem() || busy(player)) {
+        if (!holding(player) || !player.isAlive() || player.isSpectator() || player.isUsingItem() || busy(player)
+                || CHARGES.containsKey(player.getUuid())) {
             return;
         }
         int now = server.getTicks();
@@ -238,7 +280,7 @@ public final class KatanaCombat {
         ItemStack stack = player.getMainHandStack();
         int hits = 0;
         for (LivingEntity e : targets(player, w)) {
-            float dmg = DAMAGE[idx][hitNo] + EnchantmentHelper.getAttackDamage(stack, e.getGroup());
+            float dmg = DAMAGE[idx][hitNo] + variant(player).comboBonus + EnchantmentHelper.getAttackDamage(stack, e.getGroup());
             e.timeUntilRegen = 0;                         // удары серии чаще ванильной «неуязвимости»
             if (!e.damage(w.getDamageSources().playerAttack(player), dmg)) {
                 continue;
@@ -263,48 +305,135 @@ public final class KatanaCombat {
     }
 
     // =====================================================================
-    // Особая атака (вызывает KatanaItem.onStoppedUsing на сервере)
+    // Особая атака: зарядка — зажатая ЛКМ (пакеты от клиента)
     // =====================================================================
-    public static void release(ServerPlayerEntity player, int usedTicks) {
-        if (!holding(player) || busy(player) || usedTicks < CHARGE_TICKS - 2) {
+    private static void charge(MinecraftServer server, ServerPlayerEntity player, int what) {
+        int now = server.getTicks();
+        if (what == 1) {
+            if (!holding(player) || busy(player) || player.isUsingItem() || player.isSpectator()
+                    || player.getItemCooldownManager().isCoolingDown(player.getMainHandStack().getItem())) {
+                return;
+            }
+            CHARGES.put(player.getUuid(), now);
+            slow(player, true);
+            sendAnim(player, ANIM_CHARGE);
+            player.getServerWorld().playSound(player, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_CHARGE,
+                    SoundCategory.PLAYERS, 0.8f, 1.0f);
+            return;
+        }
+        Integer start = CHARGES.remove(player.getUuid());
+        slow(player, false);
+        if (start == null) {
+            return;
+        }
+        if (what == 2 && now - start >= CHARGE_TICKS - 3 && holding(player)) {
+            release(player);
+        } else {
+            sendAnim(player, ANIM_CHARGE_END);
+        }
+    }
+
+    /** Пока заряжает — шагом (−50% скорости; клиент видит атрибут и сам замедляется). */
+    private static void slow(ServerPlayerEntity player, boolean on) {
+        net.minecraft.entity.attribute.EntityAttributeInstance a =
+                player.getAttributeInstance(net.minecraft.entity.attribute.EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        if (a == null) {
+            return;
+        }
+        a.removeModifier(SLOW_ID);
+        if (on) {
+            a.addTemporaryModifier(new net.minecraft.entity.attribute.EntityAttributeModifier(SLOW_ID, "katana_charge", -0.5,
+                    net.minecraft.entity.attribute.EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+        }
+    }
+
+    private static void release(ServerPlayerEntity player) {
+        if (busy(player)) {
             return;
         }
         ServerWorld w = player.getServerWorld();
         int now = w.getServer().getTicks();
-        SPECIALS.put(player.getUuid(), new Special(now, player.getPos()));
-        player.getItemCooldownManager().set(ModItems.KATANA, SPECIAL_COOLDOWN);
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, DASH_TICKS + 4, 4, false, false, false));
+        KatanaVariant v = variant(player);
+        Special sp = new Special(now, player.getPos(), v);
+        sp.pathDamage = PATH_DAMAGE + v.specialBonus;
+        sp.burstDamage = BURST_DAMAGE + v.specialBonus;
+        if (v.ancient) {
+            int power = KatanaPower.spendHalf(player);
+            sp.pathDamage += power * POWER_DAMAGE;
+            sp.burstDamage += power * POWER_DAMAGE;
+        }
+        SPECIALS.put(player.getUuid(), sp);
+        player.getItemCooldownManager().set(player.getMainHandStack().getItem(), SPECIAL_COOLDOWN);
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, v.dashTicks + 4, 4, false, false, false));
         w.playSound(player, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_SPECIAL, SoundCategory.PLAYERS, 1.0f, 1.0f);
+        if (v.ancient) {
+            w.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_RIFT, SoundCategory.PLAYERS, 1.0f, 1.0f);
+        }
         sendAnim(player, ANIM_SPECIAL);
+    }
+
+    // =====================================================================
+    // Блок (ПКМ): вызывает LivingEntityCombatMixin.damage до вычета урона
+    // =====================================================================
+    /** @return урон после блока, или −1 — не заблокировано. */
+    public static float block(PlayerEntity player, net.minecraft.entity.damage.DamageSource source, float amount) {
+        if (!(player instanceof ServerPlayerEntity sp) || !holding(player) || !player.isUsingItem()
+                || !(player.getActiveItem().getItem() instanceof KatanaItem) || player.getItemUseTime() < BLOCK_DELAY
+                || source.isIn(net.minecraft.registry.tag.DamageTypeTags.BYPASSES_SHIELD)) {
+            return -1f;
+        }
+        Vec3d from = source.getPosition();
+        if (from == null) {
+            return -1f;
+        }
+        Vec3d look = player.getRotationVec(1.0f);
+        Vec3d to = from.subtract(player.getPos());
+        if (new Vec3d(to.x, 0, to.z).dotProduct(look) < 0.0) {
+            return -1f;                                      // удар сзади — как у щита, не блокируется
+        }
+        ServerWorld w = sp.getServerWorld();
+        w.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_BLOCK, SoundCategory.PLAYERS,
+                1.0f, 0.9f + w.random.nextFloat() * 0.2f);
+        Vec3d at = player.getEyePos().add(look.multiply(0.7)).add(0, -0.35, 0);
+        fx(w, FX_BLOCK, at, look, variant(player).ordinal());
+        ServerPlayNetworking.send(sp, S2C_BLOCKED, PacketByteBufs.create());
+        if (variant(player).ancient) {
+            KatanaPower.add(sp, 1);
+        }
+        if (!player.isCreative()) {
+            player.getMainHandStack().damage(1, player, p -> p.sendToolBreakStatus(Hand.MAIN_HAND));
+        }
+        return amount * BLOCK_PASS;
     }
 
     /** @return true — атака закончилась. */
     private static boolean tickSpecial(ServerPlayerEntity player, Special s, int now) {
         int age = now - s.start;
         ServerWorld w = player.getServerWorld();
-        if (age <= DASH_TICKS + 2) {
+        KatanaVariant v = s.variant;
+        if (age <= v.dashTicks + 2) {
             player.fallDistance = 0f;
             Vec3d cur = player.getPos();
             Vec3d a = s.last.add(0, 1.0, 0);
             Vec3d b = cur.add(0, 1.0, 0);
-            Box sweep = new Box(a, b).expand(1.6);
+            Box sweep = new Box(a, b).expand(v.sweep);
             for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, sweep, e -> e != player && e.isAlive())) {
                 if (s.hit.contains(e.getId()) || BloodSwordCombat.excluded(player, e)) {
                     continue;
                 }
-                Box bb = e.getBoundingBox().expand(1.0);
+                Box bb = e.getBoundingBox().expand(v.hitBox);
                 if (!bb.contains(a) && !bb.contains(b) && bb.raycast(a, b).isEmpty()) {
                     continue;
                 }
                 s.hit.add(e.getId());
                 s.targets.add(e);
                 e.timeUntilRegen = 0;
-                e.damage(w.getDamageSources().playerAttack(player), PATH_DAMAGE);
+                e.damage(w.getDamageSources().playerAttack(player), s.pathDamage);
                 fx(w, FX_HIT, new Vec3d(e.getX(), e.getBodyY(0.55), e.getZ()), b.subtract(a), 6);
             }
             s.last = cur;
-            if (age == DASH_TICKS + 2) {
-                fx(w, FX_DASH, s.from.add(0, 1.0, 0), cur.add(0, 1.0, 0).subtract(s.from.add(0, 1.0, 0)), 0);
+            if (age == v.dashTicks + 2) {
+                fx(w, v.ancient ? FX_RIFT : FX_DASH, s.from.add(0, 1.0, 0), cur.add(0, 1.0, 0).subtract(s.from.add(0, 1.0, 0)), 0);
             }
         }
         if (age == BURST_TICK) {
@@ -314,10 +443,11 @@ public final class KatanaCombat {
                     continue;
                 }
                 e.timeUntilRegen = 0;
-                if (e.damage(w.getDamageSources().playerAttack(player), BURST_DAMAGE)) {
+                if (e.damage(w.getDamageSources().playerAttack(player), s.burstDamage)) {
                     n++;
                 }
-                fx(w, FX_BURST, new Vec3d(e.getX(), e.getBodyY(0.5), e.getZ()), new Vec3d(e.getWidth(), e.getHeight(), 0), e.getId());
+                fx(w, v.ancient ? FX_RIFT_BURST : FX_BURST, new Vec3d(e.getX(), e.getBodyY(0.5), e.getZ()),
+                        new Vec3d(e.getWidth(), e.getHeight(), 0), e.getId());
             }
             if (n > 0) {
                 w.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_BURST, SoundCategory.PLAYERS, 1.0f, 1.0f);

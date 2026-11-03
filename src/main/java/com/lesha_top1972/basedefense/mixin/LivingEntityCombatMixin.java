@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *   <li>щиты: удар, принятый щитом, не обнуляется, а ослабляется на 85%; отбрасывания нет
  *       (в этот тик takeKnockback отменяется). Без повторного вызова damage — сложность
  *       мира не применяется дважды.</li>
+ *   <li>катана: блок на ПКМ — удар спереди ослабляется на 65% (KatanaCombat.block), отброса нет.</li>
  * </ul>
  */
 @Mixin(LivingEntity.class)
@@ -84,6 +85,15 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
             }
         }
         this.basedefense$partial = false;
+        if (!self.getWorld().isClient && amount > 0 && self instanceof net.minecraft.entity.player.PlayerEntity player) {
+            // катана: блок на ПКМ ослабляет удар спереди на 65%, без отброса
+            float blocked = com.lesha_top1972.basedefense.weapon.KatanaCombat.block(player, source, amount);
+            if (blocked >= 0f) {
+                this.basedefense$shieldTick = self.getWorld().getTime();
+                this.basedefense$partial = true;
+                return blocked;
+            }
+        }
         if (self.getWorld().isClient || amount <= 0 || !this.blockedByShield(source)) {
             return amount;
         }

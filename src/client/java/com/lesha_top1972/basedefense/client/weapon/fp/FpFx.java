@@ -31,6 +31,24 @@ public final class FpFx {
         return vcp.getBuffer(RenderLayer.getEyes(this.texture));
     }
 
+    /** Полупрозрачный (не светящийся) слой — затемнения, «пустота» разлома. Цвет с альфой: {r, g, b, a}. */
+    public VertexConsumer translucent(VertexConsumerProvider vcp) {
+        return vcp.getBuffer(RenderLayer.getEntityTranslucent(this.texture));
+    }
+
+    public void quadA(VertexConsumer vc, MatrixStack matrices, Vector3f a, Vector3f b, Vector3f c, Vector3f d,
+                      float[] ca, float[] cb, float[] cc, float[] cd) {
+        MatrixStack.Entry e = matrices.peek();
+        Matrix4f m = e.getPositionMatrix();
+        Matrix3f n = e.getNormalMatrix();
+        for (Object[] v : new Object[][]{{a, ca}, {b, cb}, {c, cc}, {d, cd}}) {
+            Vector3f p = (Vector3f) v[0];
+            float[] col = (float[]) v[1];
+            vc.vertex(m, p.x, p.y, p.z).color(clamp(col[0]), clamp(col[1]), clamp(col[2]), clamp(col[3])).texture(this.u, this.v)
+                    .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(n, 0f, 1f, 0f).next();
+        }
+    }
+
     /** Четырёхугольник a‑b‑c‑d, у каждой вершины своя яркость/цвет (r, g, b 0..1). */
     public void quad(VertexConsumer vc, MatrixStack matrices, Vector3f a, Vector3f b, Vector3f c, Vector3f d,
                      float[] ca, float[] cb, float[] cc, float[] cd) {

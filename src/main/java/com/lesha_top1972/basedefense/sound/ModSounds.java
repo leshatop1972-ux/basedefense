@@ -193,6 +193,8 @@ public final class ModSounds {
     public static final SoundEvent KATANA_SPECIAL = register("item.katana.special");
     public static final SoundEvent KATANA_FLICK = register("item.katana.flick");
     public static final SoundEvent KATANA_BURST = register("item.katana.burst");
+    public static final SoundEvent KATANA_BLOCK = register("item.katana.block");
+    public static final SoundEvent KATANA_RIFT = register("item.katana.rift");
 
     private static SoundEvent register(String name) {
         Identifier id = new Identifier(Basedefense.MOD_ID, name);
