@@ -26,6 +26,7 @@ public final class AssetGroups {
             {"sapper", "sapper"},
             {"siege_beetle", "beetle"},
             {"beetle", "beetle"},
+            {"thunder_tiger", "thunder_tiger"},
     };
 
     private AssetGroups() {

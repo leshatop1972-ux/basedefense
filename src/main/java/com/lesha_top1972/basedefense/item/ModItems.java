@@ -160,6 +160,8 @@ public final class ModItems {
             new SpawnEggItem(ModEntities.NABAT_BLADE, 0x7A5834, 0xE8C25A, new Item.Settings()));
     public static final Item SAPPER_SPAWN_EGG = register("sapper_spawn_egg",
             new SpawnEggItem(ModEntities.SAPPER, 0x2A2522, 0xC07038, new Item.Settings()));
+    public static final Item THUNDER_TIGER_SPAWN_EGG = register("thunder_tiger_spawn_egg",
+            new SpawnEggItem(ModEntities.THUNDER_TIGER, 0x7A1A1C, 0xE0B040, new Item.Settings()));
     public static final Item SIEGE_BEETLE_SPAWN_EGG = register("siege_beetle_spawn_egg",
             new SpawnEggItem(ModEntities.SIEGE_BEETLE, 0x281E1B, 0x8C5A34, new Item.Settings()));
     public static final Item BEETLE_MITE_SPAWN_EGG = register("beetle_mite_spawn_egg",
@@ -246,6 +248,7 @@ public final class ModItems {
             entries.add(NABAT_SPAWN_EGG);
             entries.add(NABAT_BLADE_SPAWN_EGG);
             entries.add(SAPPER_SPAWN_EGG);
+            entries.add(THUNDER_TIGER_SPAWN_EGG);
             entries.add(SIEGE_BEETLE_SPAWN_EGG);
             entries.add(BEETLE_MITE_SPAWN_EGG);
             entries.add(MIST_ENTITY_SPAWN_EGG);

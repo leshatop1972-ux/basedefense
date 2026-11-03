@@ -23,8 +23,8 @@ import os
 from PIL import Image
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, cross, dot, ease, ease_in, ease_out, faces, length,
-import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     lerp, look_R, mix, mm, mul, mv, norm, rx_m, ry_m, scl, sub, tr, write_anims)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 

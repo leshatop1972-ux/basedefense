@@ -72,7 +72,8 @@ public abstract class LivingEntityCombatMixin implements ShieldBlocker {
             net.minecraft.util.Identifier type = net.minecraft.registry.Registries.ENTITY_TYPE.getId(attacker.getType());
             if (!(attacker instanceof com.lesha_top1972.basedefense.entity.settler.SettlerEntity)
                     && !(attacker instanceof net.minecraft.entity.player.PlayerEntity)
-                    && com.lesha_top1972.basedefense.Basedefense.MOD_ID.equals(type.getNamespace())) {
+                    && com.lesha_top1972.basedefense.Basedefense.MOD_ID.equals(type.getNamespace())
+                    && !type.getPath().equals("thunder_tiger")) {   // у тигра свои цифры урона
                 amount *= 0.75f;
                 String id = type.getPath();
                 boolean boss = id.equals("tattered_lancer") || id.equals("bloodthirster") || id.equals("curb")

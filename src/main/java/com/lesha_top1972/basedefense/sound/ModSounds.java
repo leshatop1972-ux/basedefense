@@ -150,6 +150,36 @@ public final class ModSounds {
     private ModSounds() {
     }
 
+    // Громовой тигр (tools/thunder_tiger_sounds.py)
+    public static final SoundEvent TIGER_SHOT = register("entity.thunder_tiger.shot");
+    public static final SoundEvent TIGER_SHOT_SAVAGE = register("entity.thunder_tiger.shot_savage");
+    public static final SoundEvent TIGER_SHELL = register("entity.thunder_tiger.shell");
+    public static final SoundEvent TIGER_DRUM_OPEN = register("entity.thunder_tiger.drum_open");
+    public static final SoundEvent TIGER_DRUM_LOAD = register("entity.thunder_tiger.drum_load");
+    public static final SoundEvent TIGER_DRUM_CLOSE = register("entity.thunder_tiger.drum_close");
+    public static final SoundEvent TIGER_SWING = register("entity.thunder_tiger.swing");
+    public static final SoundEvent TIGER_SWING_HEAVY = register("entity.thunder_tiger.swing_heavy");
+    public static final SoundEvent TIGER_HIT = register("entity.thunder_tiger.hit");
+    public static final SoundEvent TIGER_CLANG = register("entity.thunder_tiger.clang");
+    public static final SoundEvent TIGER_DASH = register("entity.thunder_tiger.dash");
+    public static final SoundEvent TIGER_STEP = register("entity.thunder_tiger.step");
+    public static final SoundEvent TIGER_PUFF = register("entity.thunder_tiger.puff");
+    public static final SoundEvent TIGER_IGNITE = register("entity.thunder_tiger.ignite");
+    public static final SoundEvent TIGER_WAVE = register("entity.thunder_tiger.wave");
+    public static final SoundEvent TIGER_SMASH = register("entity.thunder_tiger.smash");
+    public static final SoundEvent TIGER_BREAK = register("entity.thunder_tiger.break");
+    public static final SoundEvent TIGER_PHASE = register("entity.thunder_tiger.phase");
+    public static final SoundEvent TIGER_FLURRY = register("entity.thunder_tiger.flurry");
+    public static final SoundEvent TIGER_FINAL = register("entity.thunder_tiger.final");
+    public static final SoundEvent TIGER_DEATH = register("entity.thunder_tiger.death");
+    public static final SoundEvent TIGER_HURT = register("entity.thunder_tiger.hurt");
+    public static final SoundEvent TIGER_CHUCKLE = register("entity.thunder_tiger.chuckle");
+    public static final SoundEvent TIGER_KICK = register("entity.thunder_tiger.kick");
+    public static final SoundEvent TIGER_PLANT = register("entity.thunder_tiger.plant");
+    public static final SoundEvent TIGER_BURST = register("entity.thunder_tiger.burst");
+    public static final SoundEvent TIGER_SPIN = register("entity.thunder_tiger.spin");
+    public static final SoundEvent TIGER_FLICK = register("entity.thunder_tiger.flick");
+
     private static SoundEvent register(String name) {
         Identifier id = new Identifier(Basedefense.MOD_ID, name);
         return Registry.register(Registries.SOUND_EVENT, id, SoundEvent.of(id));

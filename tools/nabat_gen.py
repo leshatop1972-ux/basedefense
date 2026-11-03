@@ -31,8 +31,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, cross, dot, ease, euler, faces, length, lerp,  # noqa: E402
-import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, ry_m, rz_m, scl, sub, to_euler, tr, write_anims)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 

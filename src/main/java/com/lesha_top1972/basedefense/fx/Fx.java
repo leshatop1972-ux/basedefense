@@ -55,6 +55,32 @@ public final class Fx {
      *  вертикальный след удара; a — длина, b — сколько задето. */
     public static final int BLOOD_CLEAVE = 14;
 
+    // --- Громовой тигр (рисует client/entity/enemy/thunder_tiger/TigerFxClient) ---
+    public static final int TIGER_FIRST = 15;
+    /** Выстрел из выхлопов тесака: p — точка у обуха, p2 — куда бьёт пламя (направление); F_LOUD — свирепый патрон. */
+    public static final int TIGER_SHOT = 15;
+    /** Взрыв патрона в точке удара: a — радиус; F_LOUD — свирепый (красный, больше огня). */
+    public static final int TIGER_BLAST = 16;
+    /** Фронт огненной волны «Тесак в узел»: кольцо радиусом a вокруг p. */
+    public static final int TIGER_WAVE = 17;
+    /** Разрыв дрожи на цели: a — стаки; F_LOUD — жгучая дрожь (огонь). */
+    public static final int TIGER_BURST = 18;
+    /** Слом стойки: золотые осколки, искры, пыль кольцом. */
+    public static final int TIGER_BREAK = 19;
+    /** След рывка/уклонения от p до p2 (тёмный «силуэт» из дыма и угольков). */
+    public static final int TIGER_TRAIL = 20;
+    /** Вспышка колец силы (фаза 2 / финал): золотой взрыв кольцом и столб света. */
+    public static final int TIGER_RINGS = 21;
+    /** Перезарядка: из барабана в точке p сыплются гильзы. b — сколько. */
+    public static final int TIGER_SHELLS = 22;
+    /** Дуга разреза перед тигром: p — центр (уровень груди), x2 — yaw (градусы), a — длина, y2 — наклон дуги
+     *  (рад, 0 — горизонтально), z2 — направление (+1 справа налево / −1 слева направо); F_LOUD — горящий (с выстрелом). */
+    public static final int TIGER_SLASH = 23;
+    /** Огонь по земле (отскок с выстрелом в землю): пятно радиусом a. */
+    public static final int TIGER_FIRE = 24;
+    /** Парирование в контрстойке: искры и звон стали в точке p. */
+    public static final int TIGER_PARRY = 25;
+
     // --- флаги ---
     public static final int F_BLOCK = 1;
     public static final int F_CLOUD = 2;
@@ -160,6 +186,51 @@ public final class Fx {
     /** Удар меча кровожада: c — точка удара на земле, fwd — направление удара. */
     public static void cleave(ServerWorld w, Vec3d c, Vec3d fwd, double reach, int hits) {
         send(w, BLOOD_CLEAVE, c, fwd, (float) reach, hits, 0, groundId(w, c), F_BLOOD);
+    }
+
+    // --- Громовой тигр ---
+    public static void tigerShot(ServerWorld w, Vec3d p, Vec3d dir, boolean savage) {
+        send(w, TIGER_SHOT, p, dir, 0f, 0f, 0, 0, savage ? F_LOUD : 0);
+    }
+
+    public static void tigerBlast(ServerWorld w, Vec3d p, double r, boolean savage) {
+        send(w, TIGER_BLAST, p, Vec3d.ZERO, (float) r, 0f, 0, groundId(w, p), savage ? F_LOUD : 0);
+    }
+
+    public static void tigerWave(ServerWorld w, Vec3d c, double r, boolean savage) {
+        send(w, TIGER_WAVE, c, Vec3d.ZERO, (float) r, 0f, 0, groundId(w, c), savage ? F_LOUD : 0);
+    }
+
+    public static void tigerBurst(ServerWorld w, Vec3d p, int stacks, boolean scorch) {
+        send(w, TIGER_BURST, p, Vec3d.ZERO, stacks, 0f, 0, 0, scorch ? F_LOUD : 0);
+    }
+
+    public static void tigerBreak(ServerWorld w, Vec3d p) {
+        send(w, TIGER_BREAK, p, Vec3d.ZERO, 0f, 0f, 0, groundId(w, p), 0);
+    }
+
+    public static void tigerTrail(ServerWorld w, Vec3d a, Vec3d b) {
+        send(w, TIGER_TRAIL, a, b, 0f, 0f, 0, 0, 0);
+    }
+
+    public static void tigerRings(ServerWorld w, Vec3d p) {
+        send(w, TIGER_RINGS, p, Vec3d.ZERO, 0f, 0f, 0, 0, 0);
+    }
+
+    public static void tigerShells(ServerWorld w, Vec3d p, int count) {
+        send(w, TIGER_SHELLS, p, Vec3d.ZERO, 0f, count, 0, 0, 0);
+    }
+
+    public static void tigerSlash(ServerWorld w, Vec3d c, float yawDeg, double reach, double tilt, int dir, boolean fire) {
+        send(w, TIGER_SLASH, c, new Vec3d(yawDeg, tilt, dir), (float) reach, 0f, 0, 0, fire ? F_LOUD : 0);
+    }
+
+    public static void tigerFire(ServerWorld w, Vec3d p, double r) {
+        send(w, TIGER_FIRE, p, Vec3d.ZERO, (float) r, 0f, 0, groundId(w, p), 0);
+    }
+
+    public static void tigerParry(ServerWorld w, Vec3d p) {
+        send(w, TIGER_PARRY, p, Vec3d.ZERO, 0f, 0f, 0, 0, 0);
     }
 
     public static void quakeFront(ServerWorld w, Vec3d c, double r) {

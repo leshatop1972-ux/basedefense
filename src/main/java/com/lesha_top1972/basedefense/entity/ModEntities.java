@@ -314,6 +314,16 @@ public final class ModEntities {
                     .trackRangeBlocks(32)
                     .build());
 
+    /** Босс «Громовой тигр» (модель ×1.0, ≈2.4 блока). */
+    public static final EntityType<com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.ThunderTigerEntity> THUNDER_TIGER =
+            Registry.register(Registries.ENTITY_TYPE, new Identifier(Basedefense.MOD_ID, "thunder_tiger"),
+                    FabricEntityTypeBuilder.create(SpawnGroup.MONSTER,
+                                    com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.ThunderTigerEntity::new)
+                            .dimensions(EntityDimensions.fixed(0.9f, 2.4f))
+                            .trackRangeBlocks(96)
+                            .trackedUpdateRate(1)
+                            .build());
+
     /** «Подкопщик» — карлик‑сапёр (модель ×0.85). */
     public static final EntityType<SapperEntity> SAPPER = Registry.register(
             Registries.ENTITY_TYPE,
@@ -446,6 +456,8 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(NABAT, NabatEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(NABAT_BLADE, NabatBladeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SAPPER, SapperEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(THUNDER_TIGER,
+                com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.ThunderTigerEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SIEGE_BEETLE, SiegeBeetleEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(MIST_ENTITY, MistEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BLOOD_ENTITY, BloodEntity.createAttributes());

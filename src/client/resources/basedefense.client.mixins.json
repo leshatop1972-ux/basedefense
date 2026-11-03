@@ -8,6 +8,7 @@
     "BackgroundRendererMixin",
     "BipedEntityModelMixin",
     "BossBarHudMixin",
+    "CameraMixin",
     "ClientWorldSkyMixin",
     "HeldItemFeatureRendererMixin",
     "HeldItemRendererMixin",

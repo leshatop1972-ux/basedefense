@@ -25,6 +25,7 @@ GROUPS = [
     ("sapper", "sapper"),
     ("siege_beetle", "beetle"),
     ("beetle", "beetle"),
+    ("thunder_tiger", "thunder_tiger"),
 ]
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")

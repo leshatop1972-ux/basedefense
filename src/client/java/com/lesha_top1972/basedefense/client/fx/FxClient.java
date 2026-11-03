@@ -348,6 +348,10 @@ public final class FxClient {
                 spawn(w, SOIL, x, y + 0.4, z, 8, 0.35, 0.3, 0.35, 0.02);
             }
             default -> {
+                if (type >= Fx.TIGER_FIRST) {
+                    com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.TigerFxClient.play(w, type, x, y, z,
+                            x2, y2, z2, a, b, color, blockFx, flags);
+                }
             }
         }
     }

@@ -1485,5 +1485,345 @@
         "attenuation_distance": 32
       }
     ]
+  },
+  "entity.thunder_tiger.shot": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.shot",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/shot0",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/shot1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/shot2",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "entity.thunder_tiger.shot_savage": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.shot_savage",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/shot_savage0",
+        "attenuation_distance": 56
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/shot_savage1",
+        "attenuation_distance": 56
+      }
+    ]
+  },
+  "entity.thunder_tiger.shell": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.shell",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/shell0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/shell1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/shell2",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.drum_open": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.drum_open",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/drum_open",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.drum_load": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.drum_load",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/drum_load0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/drum_load1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.drum_close": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.drum_close",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/drum_close",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.thunder_tiger.swing": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.swing",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/swing0",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/swing1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/swing2",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.thunder_tiger.swing_heavy": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.swing_heavy",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/swing_heavy0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/swing_heavy1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.thunder_tiger.hit": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.hit",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/hit0",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/hit1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/hit2",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.thunder_tiger.clang": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.clang",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/clang0",
+        "attenuation_distance": 28
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/clang1",
+        "attenuation_distance": 28
+      }
+    ]
+  },
+  "entity.thunder_tiger.dash": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.dash",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/dash0",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/dash1",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "entity.thunder_tiger.step": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.step",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/step0",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/step1",
+        "attenuation_distance": 14
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/step2",
+        "attenuation_distance": 14
+      }
+    ]
+  },
+  "entity.thunder_tiger.puff": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.puff",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/puff",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "entity.thunder_tiger.ignite": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.ignite",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/ignite",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.thunder_tiger.wave": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.wave",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/wave",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "entity.thunder_tiger.smash": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.smash",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/smash0",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/smash1",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "entity.thunder_tiger.break": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.break",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/break",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "entity.thunder_tiger.phase": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.phase",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/phase",
+        "attenuation_distance": 64
+      }
+    ]
+  },
+  "entity.thunder_tiger.flurry": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.flurry",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/flurry0",
+        "attenuation_distance": 28
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/flurry1",
+        "attenuation_distance": 28
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/flurry2",
+        "attenuation_distance": 28
+      }
+    ]
+  },
+  "entity.thunder_tiger.final": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.final",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/final",
+        "attenuation_distance": 64
+      }
+    ]
+  },
+  "entity.thunder_tiger.death": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.death",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/death",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "entity.thunder_tiger.hurt": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.hurt",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/hurt0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/hurt1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.chuckle": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.chuckle",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/chuckle0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/chuckle1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.kick": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.kick",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/kick0",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/kick1",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.plant": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.plant",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/plant",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.thunder_tiger.burst": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.burst",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/burst0",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "basedefense:mob/thunder_tiger/burst1",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "entity.thunder_tiger.spin": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.spin",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/spin",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "entity.thunder_tiger.flick": {
+    "subtitle": "subtitles.basedefense.thunder_tiger.flick",
+    "sounds": [
+      {
+        "name": "basedefense:mob/thunder_tiger/flick",
+        "attenuation_distance": 12
+      }
+    ]
   }
 }

@@ -77,6 +77,26 @@ public final class ModEffects {
     public static final StatusEffect BELL_MARK = Registry.register(Registries.STATUS_EFFECT,
             new Identifier(Basedefense.MOD_ID, "bell_mark"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xD49A3A));
 
+    // --- Громовой тигр ---
+    /** Дрожь (игрок): уровень = стаки 1–10; «разрыв дрожи» — урон 1.5 × стаки, оглушение, стаки −3. */
+    public static final StatusEffect TREMOR = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "tremor"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xC98A3A));
+    /** Жгучая дрожь (игрок): пока висит, разрыв дрожи ещё и жжёт (+50% урона, поджог). */
+    public static final StatusEffect SCORCH = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "scorch"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xFF6A1E));
+    /** Добыча (игрок): больше всех ранил тигра за последнее время — тигр охотится за ним. */
+    public static final StatusEffect PREY = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "prey"), new MarkerEffect(StatusEffectCategory.HARMFUL, 0xE0B040));
+    /** Внутренняя сила (тигр): уровень = стаки 1–25; с 10 — аура, быстрее и сильнее; ульта тратит всё. */
+    public static final StatusEffect INNER_STRENGTH = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "inner_strength"), new MarkerEffect(StatusEffectCategory.BENEFICIAL, 0xFFD24A));
+    /** Тигриные патроны (тигр): уровень = патронов в барабане. */
+    public static final StatusEffect TIGER_ROUNDS = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "tiger_rounds"), new MarkerEffect(StatusEffectCategory.NEUTRAL, 0xD9A24A));
+    /** Свирепые патроны (тигр, фаза 2): уровень = патронов; двойной поджог, выстрел сильнее. */
+    public static final StatusEffect SAVAGE_ROUNDS = Registry.register(Registries.STATUS_EFFECT,
+            new Identifier(Basedefense.MOD_ID, "savage_rounds"), new MarkerEffect(StatusEffectCategory.NEUTRAL, 0xD8402A));
+
     public static final float SPIKES_FACTOR = 0.3f;
     /** Тип урона «шипы» (data/basedefense/damage_type/spikes.json, чистый урон). */
     public static final RegistryKey<DamageType> SPIKES_DAMAGE_TYPE =

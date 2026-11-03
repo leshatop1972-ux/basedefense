@@ -16,8 +16,8 @@ import math
 import os
 
 from mobgen import (FACE_LIGHT, Model, Painter, add, bake, clamp, ease, ease_in, ease_out, faces, lerp, lerp3, look_R,
-import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
                     mix, mm, mul, mv, norm, rx_m, ry_m, rz_m, scl, sub, write_anims)
+import asset_groups  # noqa: E402  (папки мобов: geo/animations/textures)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "basedefense")
 NAME = "tattered_lancer"

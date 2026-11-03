@@ -128,6 +128,11 @@ public class BasedefenseClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SAPPER_BOMB, com.lesha_top1972.basedefense.client.entity.enemy.sapper.SapperPropRenderer.bomb());
         EntityRendererRegistry.register(ModEntities.SAPPER_CHARGE, com.lesha_top1972.basedefense.client.entity.enemy.sapper.SapperPropRenderer.charge());
         EntityRendererRegistry.register(ModEntities.SAPPER_SMOKE, com.lesha_top1972.basedefense.client.entity.enemy.sapper.SapperPropRenderer.smoke());
+        // босс «Громовой тигр»: модель автора мода, тесак отдельной моделью; тряска камеры от его ударов
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.ThunderTigerRenderer.LAYER, () -> BedrockModelLoader.load("thunder_tiger"));
+        EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.ThunderTigerRenderer.BLADE, () -> BedrockModelLoader.load("thunder_tiger_blade"));
+        EntityRendererRegistry.register(ModEntities.THUNDER_TIGER, com.lesha_top1972.basedefense.client.entity.enemy.thunder_tiger.ThunderTigerRenderer::new);
+        com.lesha_top1972.basedefense.client.fx.CameraShake.init();
         // осадный жук, маленький жук, яйцо
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.beetle.SiegeBeetleRenderer.LAYER, () -> BedrockModelLoader.load("siege_beetle"));
         EntityModelLayerRegistry.registerModelLayer(com.lesha_top1972.basedefense.client.entity.enemy.beetle.BeetleMiteRenderer.LAYER, () -> BedrockModelLoader.load("beetle_mite"));
