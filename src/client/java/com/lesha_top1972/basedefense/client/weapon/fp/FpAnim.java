@@ -30,6 +30,8 @@ public final class FpAnim {
     public final float[] trailTip;
     public final float trailLength;
     public final float[] flare;
+    /** Куда уезжают ножны за край экрана, когда исчезают/появляются при плавном переходе. */
+    public final Vector3f sayaHide = new Vector3f();
     private final Map<String, Clip> clips = new HashMap<>();
 
     public static final class Clip {
@@ -83,8 +85,13 @@ public final class FpAnim {
             return this;
         }
 
-        /** this = a + (b − a)·w (кватернионы — по кратчайшей дуге). */
+        /** this = a + (b − a)·w (кватернионы — по кратчайшей дуге). Ножны, которые появляются или исчезают,
+         *  уезжают за край экрана (hide), а не пропадают на месте. */
         public Pose blend(Pose a, Pose b, float w) {
+            return blend(a, b, w, null);
+        }
+
+        public Pose blend(Pose a, Pose b, float w, Vector3f hide) {
             a.g.lerp(b.g, w, g);
             nlerp(a.q, b.q, w, q);
             a.lp.lerp(b.lp, w, lp);
@@ -102,9 +109,17 @@ public final class FpAnim {
             if (a.saya <= 0.001f) {
                 sp.set(b.sp);
                 sq.set(b.sq);
+                if (hide != null) {
+                    sp.add(hide.x * (1f - w), hide.y * (1f - w), hide.z * (1f - w));
+                    saya = b.saya;
+                }
             } else if (b.saya <= 0.001f) {
                 sp.set(a.sp);
                 sq.set(a.sq);
+                if (hide != null) {
+                    sp.add(hide.x * w, hide.y * w, hide.z * w);
+                    saya = w < 0.999f ? a.saya : 0f;
+                }
             } else {
                 a.sp.lerp(b.sp, w, sp);
                 nlerp(a.sq, b.sq, w, sq);
@@ -129,6 +144,10 @@ public final class FpAnim {
         this.trailTip = floats(tr.getAsJsonArray("tip"));
         this.trailLength = tr.get("length").getAsFloat();
         this.flare = floats(root.getAsJsonArray("flare"));
+        if (root.has("sayaHide")) {
+            float[] h = floats(root.getAsJsonArray("sayaHide"));
+            this.sayaHide.set(h[0], h[1], h[2]);
+        }
         JsonObject cs = root.getAsJsonObject("clips");
         for (Map.Entry<String, JsonElement> e : cs.entrySet()) {
             JsonObject c = e.getValue().getAsJsonObject();

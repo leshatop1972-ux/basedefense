@@ -32,7 +32,8 @@ import java.util.Map;
  * Катана на клиенте.
  * <p>
  * 1‑е лицо (свой игрок): клипы assets/basedefense/fpanim/katana.json (сняты с видео‑образца, tools/katana_gen.py):
- * стойка с дыханием, бег, достать, 3 удара, зарядка в ножнах, готовность, особая атака. Плавные переходы, события
+ * в ножнах на поясе (рука на рукояти), 3 удара (из ножен — сразу с выхвата), после боя или на бегу — в ножны,
+ * зарядка, готовность, особая атака (заканчивается ното — в ножны). Плавные переходы, события
  * клипа (звуки, «стоп‑кадр» при попадании), наклон/крен камеры и обзор — из клипа (mixin GameRendererMixin).
  * <p>
  * Ввод: ЛКМ — серия (вместо ванильного удара), ПКМ — зарядка (как лук; KatanaItem). Рывки своего игрока — здесь.
@@ -84,8 +85,15 @@ public final class KatanaClient {
     private static double clock;
     private static double lastReal = -1;
     private static double hitstopUntil;
-    private static float runW;
     private static boolean active;
+    /** Катана обнажена (иначе — в ножнах на поясе, рука на рукояти). */
+    private static boolean drawn;
+    /** Когда последний раз бил (часы 1‑го лица) — через SHEATHE_AFTER без ударов убирает в ножны. */
+    private static double lastCombat;
+    private static double sprintTime;
+    private static boolean equipPending;
+    private static final double SHEATHE_AFTER = 1.2;
+    private static final double SHEATHE_SPRINT = 0.25;
 
     // ввод и бой (свой игрок)
     private static int comboIdx = -1;
@@ -192,7 +200,13 @@ public final class KatanaClient {
         }
         dash(p, KatanaCombat.DASH[idx]);
         begin(state(p.getId()), idx, ticks);
-        startAction("slash" + (idx + 1), 0.05f);
+        if (!drawn) {                                    // из ножен — выхват прямо в удар
+            drawn = true;
+            play(ModSounds.KATANA_DRAW, 0.6f, 1.15f);
+            startAction("slash" + (idx + 1), 0.07f, idx == 0 ? 0.07f : 0f);
+        } else {
+            startAction("slash" + (idx + 1), 0.05f);
+        }
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeByte(idx);
         ClientPlayNetworking.send(KatanaCombat.C2S, buf);
@@ -228,7 +242,9 @@ public final class KatanaClient {
         ClientPlayerEntity p = client.player;
         boolean holding = KatanaCombat.holding(p);
         if (holding && !held) {
-            startAction("draw", 0.0f);
+            drawn = false;                               // достал катану — она в ножнах на поясе
+            action = null;
+            equipPending = true;
         }
         held = holding;
         // --- серия: заранее нажатый удар ---
@@ -249,8 +265,9 @@ public final class KatanaClient {
         boolean using = holding && p.isUsingItem() && p.getActiveItem().isOf(ModItems.KATANA);
         if (using) {
             lastUse = p.getItemUseTime();
-            if (action == null || !(action.name.equals("charge") || action.name.equals("charged"))) {
-                startAction("charge", 0.12f);
+            if (!charging(action) && !(action != null && action.name.equals("special"))) {
+                startAction(drawn ? "charge_drawn" : "charge", 0.12f);
+                drawn = false;
             }
             if (lastUse >= KatanaCombat.AUTO_RELEASE && client.interactionManager != null) {
                 client.interactionManager.stopUsingItem(p);         // готово и держат долго — бьёт сам
@@ -260,8 +277,8 @@ public final class KatanaClient {
         if (wasUsing && !using) {
             if (holding && lastUse >= KatanaCombat.CHARGE_TICKS - 2) {
                 startSpecial(p);
-            } else if (action != null && (action.name.equals("charge") || action.name.equals("charged"))) {
-                endAction(0.15f);
+            } else if (charging(action)) {
+                endAction(0.15f);                        // отпустил раньше — остаётся в ножнах
             }
         }
         wasUsing = using;
@@ -292,6 +309,11 @@ public final class KatanaClient {
     // 1‑е лицо: клипы
     // =====================================================================
     private static void startAction(String name, float blend) {
+        startAction(name, blend, 0f);
+    }
+
+    /** offset — начать клип не с начала (удар из ножен — сразу с того места, где катана ушла за край экрана). */
+    private static void startAction(String name, float blend, float offset) {
         FpAnim.Clip c = anim().clip(name);
         if (c == null) {
             return;
@@ -300,8 +322,18 @@ public final class KatanaClient {
         blendStart = clock;
         blendLen = Math.max(0.001f, blend);
         action = c;
-        actionStart = clock;
+        actionStart = clock - offset;
         nextEvent = 0;
+        while (nextEvent < c.events.length && c.eventTimes[nextEvent] < offset && !c.events[nextEvent].startsWith("swing")) {
+            nextEvent++;
+        }
+        if (!name.equals("sheathe")) {
+            lastCombat = clock;
+        }
+    }
+
+    private static boolean charging(FpAnim.Clip c) {
+        return c != null && (c.name.equals("charge") || c.name.equals("charge_drawn") || c.name.equals("charged"));
     }
 
     private static void endAction(float blend) {
@@ -334,24 +366,37 @@ public final class KatanaClient {
         clock += dt * (real < hitstopUntil ? 0.08 : 1.0);
         active = true;
         FpAnim a = anim();
-        // бег — по спринту
-        float runTarget = p.isSprinting() && p.isOnGround() ? 1f : 0f;
-        runW += (runTarget - runW) * (float) Math.min(1.0, dt * 8.0);
-        a.sample(a.clip("idle"), (float) clock, tmpA);
-        if (runW > 0.01f) {
-            a.sample(a.clip("run"), (float) clock, tmpB);
-            tmpA.blend(tmpA, tmpB, runW);
+        // покой: обнажена — стойка, иначе — в ножнах на поясе
+        a.sample(a.clip(drawn ? "idle" : "sheathed"), (float) clock, tmpA);
+        if (equipPending) {                              // достал — рука с катаной поднимается снизу
+            equipPending = false;
+            from.set(tmpA);
+            from.g.add(0f, -0.45f, 0.1f);
+            from.lp.add(0f, -0.45f, 0.1f);
+            from.sp.add(0f, -0.45f, 0.1f);
+            blendStart = clock;
+            blendLen = 0.3f;
+        }
+        sprintTime = p.isSprinting() ? sprintTime + dt : 0.0;
+        if (drawn && action == null && (clock - lastCombat > SHEATHE_AFTER || sprintTime > SHEATHE_SPRINT)) {
+            startAction("sheathe", 0.12f);
         }
         FpAnim.Pose target = tmpA;
         if (action != null) {
             float t = (float) (clock - actionStart);
             fireEvents(p, t);
             if (!action.loop && t >= action.length) {
-                if (action.name.equals("charge")) {
+                if (action.name.equals("charge") || action.name.equals("charge_drawn")) {
                     startAction("charged", 0.05f);
                 } else {
+                    String done = action.name;
                     a.sample(action, action.length, cur);
-                    endAction(action.name.equals("special") ? 0.2f : 0.15f);
+                    endAction(done.equals("special") ? 0.2f : 0.15f);
+                    if (done.equals("sheathe") || done.equals("special")) {
+                        drawn = false;
+                    } else {
+                        lastCombat = clock;
+                    }
                 }
             }
             if (action != null) {
@@ -363,7 +408,7 @@ public final class KatanaClient {
         if (w < 1f) {
             w = MathHelper.clamp(w, 0f, 1f);
             w = w * w * (3f - 2f * w);
-            cur.blend(from, target, w);
+            cur.blend(from, target, w, a.sayaHide);
         } else {
             cur.set(target);
         }
