@@ -299,6 +299,10 @@ def weapon_R(model, pose, pr):
 
 
 HANGERS = ("sleeve_r", "sleeve_l")
+# Скручивание корпуса и головы смягчено: у модели широкие плечи и голова с волосами по бокам —
+# при сильном повороте голова «двоится» (видна чёрная боковина рядом с лицом).
+TWIST = 0.65
+HEAD_TWIST = 0.35
 
 
 def resolve(pr, model, hang=None):
@@ -306,7 +310,8 @@ def resolve(pr, model, hang=None):
     rp = pr["root_pos"]
     pose = {"root": {"rot": pr["root"], "pos": (rp[0] * 1.1, rp[1] * 1.15, rp[2] * 1.1)},
             "body": {"rot": pr["body"], "pos": (bp[0] * 1.1, bp[1] * 1.18, bp[2] * 1.1)},
-            "torso": {"rot": pr["torso"]}, "head": {"rot": pr["head"]}}
+            "torso": {"rot": (pr["torso"][0], pr["torso"][1] * TWIST, pr["torso"][2])},
+            "head": {"rot": (pr["head"][0], pr["head"][1] * HEAD_TWIST, pr["head"][2] * 0.7)}}
     Rroot = model.chain_R("root", pose)
     for s_, key in (("right", "rf"), ("left", "lf")):
         fx = foot_xyz(pr[key])
@@ -1156,6 +1161,55 @@ ACTIONS = [
 ]
 
 
+# ----------------------------------------------------------------
+# Замедление времени по участкам (старое время → новое): длинный, читаемый замах перед каждым ударом,
+# сам удар — с той же скоростью, после удара — дольше «открыт». Моменты ударов для сервера пересчитываются.
+WARP = {
+    "double": [(0, 0), (0.10, 0.15), (0.27, 0.62), (0.41, 0.76), (0.55, 0.98), (0.69, 1.12), (1.1, 1.75)],
+    "triple": [(0, 0), (0.24, 0.60), (0.37, 0.73), (0.49, 0.95), (0.62, 1.08), (0.88, 1.62), (1.01, 1.75), (1.5, 2.4)],
+    "double_blast": [(0, 0), (0.32, 0.75), (0.43, 0.86), (0.56, 1.05), (0.62, 1.25), (0.80, 1.43), (0.92, 1.55),
+                     (1.4, 2.15)],
+    "triple_blast": [(0, 0), (0.16, 0.55), (0.42, 0.81), (0.55, 0.94), (0.66, 1.12), (0.78, 1.24), (0.98, 1.62),
+                     (1.10, 1.74), (1.6, 2.4)],
+    "shatter": [(0, 0), (0.70, 0.95), (0.83, 1.08), (1.10, 1.50), (1.23, 1.63), (1.50, 2.10), (1.63, 2.23), (2.2, 3.0)],
+    "tangle": [(0, 0), (1.0, 1.3), (1.45, 1.75), (2.4, 3.0)],
+    "counter": [(0, 0), (0.12, 0.30), (0.26, 0.44), (0.8, 1.2)],
+    "one_hit": [(0, 0), (0.26, 0.60), (0.40, 0.74), (1.0, 1.5)],
+    "flurry_a": [(0, 0), (0.14, 0.30), (0.26, 0.42), (0.45, 0.65)],
+    "flurry_b": [(0, 0), (0.14, 0.30), (0.26, 0.42), (0.45, 0.65)],
+    "flurry_end": [(0, 0), (0.60, 0.95), (0.73, 1.08), (2.0, 2.6)],
+    "kick": [(0, 0), (0.18, 0.42), (0.30, 0.54), (0.7, 1.0)],
+    "backshot": [(0, 0), (0.42, 0.75), (0.56, 0.89), (0.9, 1.3)],
+    "dash": [(0, 0), (0.08, 0.25), (0.5, 0.7)],
+}
+
+
+def _interp(knots, x, a, b):
+    for i in range(1, len(knots)):
+        x0, x1 = knots[i - 1][a], knots[i][a]
+        if x <= x1 or i == len(knots) - 1:
+            y0, y1 = knots[i - 1][b], knots[i][b]
+            f = 0.0 if x1 == x0 else (x - x0) / (x1 - x0)
+            return y0 + (y1 - y0) * max(0.0, min(1.0, f))
+    return knots[-1][b]
+
+
+def _retime(entry):
+    name, fn, ln, ev = entry
+    k = WARP.get(name)
+    if not k:
+        return entry
+    old = lambda tn: _interp(k, tn, 1, 0)       # noqa: E731
+    new = lambda to: _interp(k, to, 0, 1)       # noqa: E731
+
+    def mp(v):
+        return tuple(new(x) for x in v) if isinstance(v, tuple) else new(v)
+    return name, (lambda t, fn=fn: fn(old(t))), k[-1][1], {kk: mp(vv) for kk, vv in ev.items()}
+
+
+ACTIONS = [_retime(a_) for a_ in ACTIONS]
+
+
 # =====================================================================
 # 5. Запекание, дорожка тесака, тайминги для сервера, проверка, предпросмотр
 # =====================================================================
@@ -1280,8 +1334,9 @@ def main():
 
             def strip(lst):
                 out = []
+                hide_ = set(filter(None, os.environ.get("HIDE", "").split(",")))
                 for p in lst:
-                    if p["name"].startswith("ring"):
+                    if p["name"].startswith("ring") or p["name"] in hide_:
                         continue
                     p["children"] = strip(p["children"])
                     out.append(p)

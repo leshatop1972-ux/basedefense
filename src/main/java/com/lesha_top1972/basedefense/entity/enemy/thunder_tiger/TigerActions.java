@@ -129,7 +129,7 @@ final class TigerActions {
             }
             case FLURRY_A, FLURRY_B -> {
                 if (t.flurryLeft > 0) {
-                    t.flurryPause = 5 + t.getRandom().nextInt(5);
+                    t.flurryPause = 9 + t.getRandom().nextInt(6);
                 } else {
                     start(t, FLURRY_END, tgt);
                 }
@@ -204,6 +204,19 @@ final class TigerActions {
         return -1;
     }
 
+    /** За сколько тиков до удара тигр перестаёт доворачиваться к цели — можно отойти в сторону. */
+    static final int LOCK = 6;
+
+    /** Удар скоро (в ближайшие LOCK тиков) или прямо сейчас. */
+    private static boolean soon(int k, int[] hits) {
+        for (int h : hits) {
+            if (k <= h && h - k <= LOCK) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Есть ли замах через 2 тика (звук свиста). */
     private static boolean swingAt(int k, int[] hits) {
         return hitAt(k + 2, hits);
@@ -272,11 +285,11 @@ final class TigerActions {
         double d = dist(t, e);
         switch (a) {
             case DOUBLE -> {
-                if (k < DOUBLE_HITS[0] - 1 || (k > DOUBLE_HITS[0] && k < DOUBLE_HITS[1] - 1)) {
-                    face(t, e, k < DOUBLE_HITS[0] ? 30 : 14);
+                if (!soon(k, DOUBLE_HITS)) {
+                    face(t, e, k < DOUBLE_HITS[0] ? 18 : 8);
                 }
                 if (k == DOUBLE_HITS[0] - 2 && d > 2.6) {
-                    impulse(t, t.forward(), Math.min(0.55, (d - 2.2) * 0.35), 0);
+                    impulse(t, t.forward(), Math.min(0.35, (d - 2.4) * 0.3), 0);
                 }
                 if (swingAt(k, DOUBLE_HITS)) {
                     t.sound(ModSounds.TIGER_SWING, 1f, 1.05f + t.getRandom().nextFloat() * 0.1f);
@@ -284,7 +297,7 @@ final class TigerActions {
                 int i = hitIndex(k, DOUBLE_HITS);
                 if (i >= 0) {
                     t.hitIds.clear();
-                    t.arcHit(3.8, 80, ThunderTigerEntity.DMG_SLASH, 0.5, 0.05, i == 0 ? 2 : 3, false, false);
+                    t.arcHit(3.4, 70, ThunderTigerEntity.DMG_SLASH, 0.5, 0.05, i == 0 ? 2 : 3, false, false);
                     slashFx(t, 3.6, i == 0 ? 0.05 : -0.25, i == 0 ? 1 : -1, false);
                     if (i == 0) {
                         t.speak("double");
@@ -292,14 +305,14 @@ final class TigerActions {
                 }
             }
             case TRIPLE -> {
-                if (k < TRIPLE_HITS[2] - 3) {
-                    face(t, e, k < TRIPLE_HITS[0] ? 30 : 14);
+                if (!soon(k, TRIPLE_HITS)) {
+                    face(t, e, k < TRIPLE_HITS[0] ? 18 : 8);
                 }
                 if (k == TRIPLE_HITS[0] - 2 && d > 2.6) {
-                    impulse(t, t.forward(), Math.min(0.55, (d - 2.2) * 0.35), 0);
+                    impulse(t, t.forward(), Math.min(0.35, (d - 2.4) * 0.3), 0);
                 }
                 if (k == TRIPLE_HITS[2] - 3 && d > 2.8) {
-                    impulse(t, t.forward(), Math.min(0.6, (d - 2.4) * 0.4), 0);
+                    impulse(t, t.forward(), Math.min(0.4, (d - 2.6) * 0.3), 0);
                 }
                 if (swingAt(k, TRIPLE_HITS)) {
                     t.sound(k + 2 == TRIPLE_HITS[2] ? ModSounds.TIGER_SWING_HEAVY : ModSounds.TIGER_SWING, 1f, 1f);
@@ -307,7 +320,7 @@ final class TigerActions {
                 int i = hitIndex(k, TRIPLE_HITS);
                 if (i == 0 || i == 1) {
                     t.hitIds.clear();
-                    t.arcHit(3.8, 80, ThunderTigerEntity.DMG_SLASH, 0.5, 0.05, i == 0 ? 2 : 2, false, false);
+                    t.arcHit(3.4, 70, ThunderTigerEntity.DMG_SLASH, 0.5, 0.05, i == 0 ? 2 : 2, false, false);
                     slashFx(t, 3.6, i == 0 ? 0.05 : -0.25, i == 0 ? 1 : -1, false);
                 } else if (i == 2) {
                     t.hitIds.clear();
@@ -323,8 +336,8 @@ final class TigerActions {
                 }
             }
             case DOUBLE_BLAST -> {
-                if (k < DOUBLE_BLAST_SMASH - 2) {
-                    face(t, e, 30);
+                if (!soon(k, DOUBLE_BLAST_HITS) && k < DOUBLE_BLAST_DASH_FROM) {
+                    face(t, e, 18);
                 }
                 if (k == DOUBLE_BLAST_SMASH - 2) {
                     t.sound(ModSounds.TIGER_SWING_HEAVY, 1f, 1f);
@@ -345,7 +358,7 @@ final class TigerActions {
                     if (k == DOUBLE_BLAST_DASH_FROM) {
                         t.sound(ModSounds.TIGER_DASH, 1f, 1.1f);
                     }
-                    dashToward(t, e, 0.95, 2.2);
+                    dashToward(t, e, 0.75, 2.6);
                 }
                 if (k == DOUBLE_BLAST_HITS[1] - 2) {
                     t.sound(ModSounds.TIGER_SWING, 1f, 0.95f);
@@ -353,23 +366,23 @@ final class TigerActions {
                 if (k == DOUBLE_BLAST_HITS[1]) {
                     t.hitIds.clear();
                     boolean shot = shoot(t, t.getPos().add(0, 1.2, 0).add(t.forward().multiply(2.4)));
-                    t.arcHit(3.9, 80, ThunderTigerEntity.DMG_SLASH, 0.8, 0.35, 2, shot, false);
+                    t.arcHit(3.5, 70, ThunderTigerEntity.DMG_SLASH, 0.8, 0.35, 2, shot, false);
                     slashFx(t, 3.8, -0.6, -1, shot);
                 }
             }
             case TRIPLE_BLAST -> {
                 if (k < TRIPLE_BLAST_DASH_FROM) {
-                    face(t, e, 30);
+                    face(t, e, 18);
                 }
                 if (k == TRIPLE_BLAST_DASH_FROM) {
                     t.sound(ModSounds.TIGER_DASH, 1.1f, 1f);
                     t.speak("triple_blast");
                 }
                 if (k >= TRIPLE_BLAST_DASH_FROM && k <= TRIPLE_BLAST_DASH_TO) {
-                    dashToward(t, e, 1.0, 2.0);
+                    dashToward(t, e, 0.8, 2.4);
                 }
-                if (k > TRIPLE_BLAST_DASH_TO && k < TRIPLE_BLAST_LEAP) {
-                    face(t, e, 12);
+                if (k > TRIPLE_BLAST_DASH_TO && !soon(k, TRIPLE_BLAST_HITS)) {
+                    face(t, e, 8);
                 }
                 if (k == TRIPLE_BLAST_LEAP) {
                     impulse(t, t.forward(), d > 2.5 ? 0.35 : 0.05, 0.42);
@@ -393,12 +406,8 @@ final class TigerActions {
             }
             case SHATTER -> {
                 t.setGlow(k >= SHATTER_GLOW_FROM && k <= SHATTER_GLOW_TO ? 1 : 0);
-                if (k < SHATTER_HITS[0] - 3) {
-                    face(t, e, 20);
-                } else if (k > SHATTER_HITS[0] && k < SHATTER_HITS[1] - 2) {
-                    face(t, e, 15);
-                } else if (k > SHATTER_HITS[1] && k < SHATTER_LEAP) {
-                    face(t, e, 20);
+                if (!soon(k, SHATTER_HITS)) {
+                    face(t, e, 12);
                 }
                 if (swingAt(k, SHATTER_HITS)) {
                     t.sound(ModSounds.TIGER_SWING_HEAVY, 1.2f, 0.9f);
@@ -446,7 +455,7 @@ final class TigerActions {
                     if (k == TANGLE_DASH_FROM) {
                         t.sound(ModSounds.TIGER_DASH, 1.2f, 0.9f);
                     }
-                    dashToward(t, e, 1.05, 2.6);
+                    dashToward(t, e, 0.85, 3.0);
                 }
                 if (k == TANGLE_LEAP) {
                     impulse(t, t.forward(), d > 3 ? 0.3 : 0.05, 0.55);
@@ -475,8 +484,8 @@ final class TigerActions {
             }
             case STANCE -> face(t, e, 15);
             case COUNTER -> {
-                if (k < COUNTER_HITS[0]) {
-                    face(t, e, 60);
+                if (!soon(k, COUNTER_HITS)) {
+                    face(t, e, 40);
                 }
                 if (k == COUNTER_HITS[0] - 2) {
                     t.sound(ModSounds.TIGER_SWING, 1.1f, 1.1f);
@@ -555,8 +564,8 @@ final class TigerActions {
                 }
             }
             case ONE_HIT -> {
-                if (k < ONE_HIT_HITS[0] - 1) {
-                    face(t, e, 40);
+                if (!soon(k, ONE_HIT_HITS)) {
+                    face(t, e, 25);
                 }
                 if (k == ONE_HIT_PULL) {
                     t.sound(ModSounds.TIGER_PLANT, 1f, 1.3f);
@@ -564,7 +573,7 @@ final class TigerActions {
                 if (k == ONE_HIT_HITS[0] - 2) {
                     t.sound(ModSounds.TIGER_SWING_HEAVY, 1.4f, 1f);
                     if (d > 3.0) {
-                        impulse(t, t.forward(), Math.min(0.7, (d - 2.6) * 0.4), 0);
+                        impulse(t, t.forward(), Math.min(0.45, (d - 2.8) * 0.3), 0);
                     }
                 }
                 if (k == ONE_HIT_HITS[0]) {
@@ -625,7 +634,7 @@ final class TigerActions {
                     double ang = (t.getRandom().nextDouble() - 0.5) * 0.8;
                     dir = new Vec3d(dir.x * Math.cos(ang) - dir.z * Math.sin(ang), 0, dir.x * Math.sin(ang) + dir.z * Math.cos(ang));
                     t.dashDir = dir;
-                    t.dashSpeed = MathHelper.clamp((len + 3.5) / (to - from + 1), 0.6, 1.6);
+                    t.dashSpeed = MathHelper.clamp((len + 3.5) / (to - from + 1), 0.5, 1.1);
                     t.dashStart = t.getPos();
                     t.faceTarget(e, 180);
                     t.sound(ModSounds.TIGER_FLURRY, 1f, 0.9f + t.getRandom().nextFloat() * 0.25f);
@@ -633,8 +642,8 @@ final class TigerActions {
                 if (k >= from && k <= to) {
                     t.setVelocity(t.dashDir.x * t.dashSpeed, t.getVelocity().y, t.dashDir.z * t.dashSpeed);
                     t.velocityModified = true;
-                    for (LivingEntity v : t.victims(2.4)) {
-                        if (v.squaredDistanceTo(t) < 2.4 * 2.4) {
+                    for (LivingEntity v : t.victims(1.9)) {
+                        if (v.squaredDistanceTo(t) < 1.9 * 1.9) {
                             t.strike(v, ThunderTigerEntity.DMG_FLURRY, 0.3, 0.1, 1, false, false);
                         }
                     }
@@ -649,7 +658,7 @@ final class TigerActions {
             }
             case FLURRY_END -> {
                 if (k < FLURRY_END_JUMP) {
-                    face(t, e, 40);
+                    face(t, e, 25);
                 }
                 if (k == FLURRY_END_JUMP) {
                     impulse(t, t.forward(), MathHelper.clamp(d * 0.06, 0.05, 0.5), 0.78);
@@ -691,15 +700,15 @@ final class TigerActions {
                     t.dashStart = t.getPos();
                 }
                 if (k >= DASH_DASH_FROM && k <= DASH_DASH_TO) {
-                    dashToward(t, e, 0.95, 2.4);
+                    dashToward(t, e, 0.8, 2.8);
                 }
                 if (k == DASH_DASH_TO + 1 && t.sw() != null) {
                     Fx.tigerTrail(t.sw(), t.dashStart.add(0, 1, 0), t.getPos().add(0, 1, 0));
                 }
             }
             case KICK -> {
-                if (k < KICK_HITS[0]) {
-                    face(t, e, 40);
+                if (!soon(k, KICK_HITS)) {
+                    face(t, e, 25);
                 }
                 if (k == KICK_HITS[0]) {
                     t.hitIds.clear();

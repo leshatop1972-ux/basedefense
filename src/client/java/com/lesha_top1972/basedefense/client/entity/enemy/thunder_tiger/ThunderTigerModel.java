@@ -160,7 +160,7 @@ public class ThunderTigerModel extends BedrockEntityModel<ThunderTigerEntity> im
             this.play2(clip, ct, w);
         }
         this.weapon.result(this.weaponRot);
-        HeadLook.apply(this.head, headYaw, headPitch, free * 0.5f);
+        HeadLook.apply(this.head, headYaw, headPitch, free * 0.35f, 30f, 25f);
         // сигара: до фазы 2 (в переходе — пока не вынул изо рта)
         boolean cig = phase == 1 || (a == TigerTimings.PHASE2 && clip != null && ct < 0.55f);
         show(this.cigar, cig ? 1f : 0f);

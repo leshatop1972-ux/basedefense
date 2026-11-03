@@ -54,6 +54,36 @@ public final class TigerClientFx {
         return false;
     }
 
+    /** Тиков до ближайшего удара действия (или −1). */
+    private static int untilHit(int a, int k) {
+        int[] hits = hitsOf(a);
+        if (hits == null) {
+            return -1;
+        }
+        for (int h : hits) {
+            if (h >= k) {
+                return h - k;
+            }
+        }
+        return -1;
+    }
+
+    private static int[] hitsOf(int a) {
+        return switch (a) {
+            case TigerTimings.DOUBLE -> TigerTimings.DOUBLE_HITS;
+            case TigerTimings.TRIPLE -> TigerTimings.TRIPLE_HITS;
+            case TigerTimings.DOUBLE_BLAST -> TigerTimings.DOUBLE_BLAST_HITS;
+            case TigerTimings.TRIPLE_BLAST -> TigerTimings.TRIPLE_BLAST_HITS;
+            case TigerTimings.SHATTER -> TigerTimings.SHATTER_HITS;
+            case TigerTimings.TANGLE -> TigerTimings.TANGLE_HITS;
+            case TigerTimings.COUNTER -> TigerTimings.COUNTER_HITS;
+            case TigerTimings.ONE_HIT -> TigerTimings.ONE_HIT_HITS;
+            case TigerTimings.FLURRY_END -> TigerTimings.FLURRY_END_HITS;
+            case TigerTimings.KICK -> TigerTimings.KICK_HITS;
+            default -> null;
+        };
+    }
+
     public static void tick(ThunderTigerEntity e) {
         if (e.fxAge == e.age) {
             return;
@@ -95,6 +125,15 @@ public final class TigerClientFx {
                 }
             }
             e.prevBladeTip = e.bladeTip;
+            // «блик» на острие за 0.4 с до удара — подсказка, когда уходить
+            if (inAction && untilHit(a, k) == 8) {
+                Vec3d p = e.bladeTip;
+                w.addParticle(ParticleTypes.END_ROD, p.x, p.y, p.z, 0, 0.02, 0);
+                for (int i = 0; i < 4; i++) {
+                    w.addParticle(ParticleTypes.CRIT, p.x, p.y, p.z, (r.nextDouble() - 0.5) * 0.3,
+                            (r.nextDouble() - 0.5) * 0.3, (r.nextDouble() - 0.5) * 0.3);
+                }
+            }
             int glow = e.getGlow();
             if (glow == 1) {
                 // золото: неостановимый удар

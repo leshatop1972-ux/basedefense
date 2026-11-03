@@ -20,7 +20,7 @@ import static com.lesha_top1972.basedefense.entity.enemy.thunder_tiger.TigerTimi
 final class TigerBrain {
 
     // паузы между действиями (тики): фаза 1 — вальяжно, фаза 2 — быстрее, финал — почти без пауз
-    private static final int[][] PAUSE = {{18, 34}, {10, 22}, {6, 14}};
+    private static final int[][] PAUSE = {{45, 75}, {32, 52}, {22, 38}};
     /** Шанс уклониться от удара: фаза 1 вразвалку / фаза 1 в бою / фаза 2 / финал; от стрел — +15%. */
     private static final float[] DODGE = {0.30f, 0.25f, 0.22f, 0.18f};
     private static final int DODGE_CD = 50;
@@ -57,7 +57,7 @@ final class TigerBrain {
     void afterAction(int a) {
         this.think = this.pause();
         if (TigerActions.isDodge(a)) {
-            this.think = this.forced >= 0 ? 2 : 6;
+            this.think = this.forced >= 0 ? 8 : 14;
         }
         if (a == STAGGER || a == PHASE2 || a == FINAL_RISE) {
             this.think = 10;
@@ -101,7 +101,7 @@ final class TigerBrain {
         this.t.sound(ModSounds.TIGER_DASH, 0.9f, 1.25f);
         this.dodgeCd = DODGE_CD;
         // иногда сразу контратака
-        if (this.rnd().nextFloat() < 0.35f) {
+        if (this.rnd().nextFloat() < 0.25f) {
             this.forced = d < 4 ? DOUBLE : (this.t.getAmmo() > 0 ? TRIPLE_BLAST : DASH);
         }
     }

@@ -55,7 +55,7 @@ def flame(sec, k=1.0, low=300, high=3000):
     """Рёв пламени: шум с хрипом и треском."""
     t = T(sec)
     roar = bp(noise(sec), low, high) * (1 + 0.5 * np.sin(2 * np.pi * 31 * t) * np.sin(2 * np.pi * 7 * t))
-    crackle = rattle(sec, 60, 1500, 6000, 0.002) * 0.4
+    crackle = rattle(sec, 60, 700, 2500, 0.002) * 0.4
     return (roar + crackle) * env(t, 0.01, sec * 0.35) * k
 
 
@@ -63,6 +63,15 @@ def ping(sec, f, d=0.12, k=1.0):
     t = T(sec)
     return (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 2.71 * t) + 0.25 * np.sin(2 * np.pi * f * 5.1 * t)) \
         * np.exp(-t / d) * k
+
+
+def clank(sec, f, d=0.03, k=1.0):
+    """Глухой металлический лязг без «звона» (никаких чистых тонов — не похоже на звук опыта)."""
+    t = T(sec)
+    n = noise(sec)
+    body = bp(n, f * 0.5, f * 1.6) * np.exp(-t / d) * 1.4
+    low = lowp(n, f * 0.4) * np.exp(-t / (d * 1.5)) * 0.8
+    return (body + low) * k
 
 
 def click(sec, f=2500, d=0.006, k=1.0):
@@ -117,8 +126,8 @@ def s_shell():
         at = 0.02
         amp = 1.0
         f = 3100 + v * 260
-        for b_ in range(5):
-            place(x, ping(0.25, f * (1 + 0.03 * b_), 0.05, amp), at)
+        for b_ in range(4):
+            place(x, clank(0.15, f * 0.35 * (1 + 0.05 * b_), 0.012, amp), at)
             at += 0.12 * (0.7 ** b_) + 0.02
             amp *= 0.55
         save("shell%d" % v, x, vol=0.55)
@@ -131,7 +140,7 @@ def s_drum():
     for v in range(2):
         x = np.zeros(int(0.4 * SR))
         place(x, click(0.1, 1800 + v * 200, 0.008, 1.0), 0.0)
-        place(x, ping(0.2, 2200 + v * 150, 0.03, 0.5), 0.03)
+        place(x, clank(0.12, 900 + v * 100, 0.01, 0.6), 0.03)
         save("drum_load%d" % v, x, vol=0.65)
     sec = 0.7
     x = np.zeros(int(sec * SR))
@@ -158,7 +167,7 @@ def s_hit():
         sec = 0.5
         t = T(sec)
         x = thud(sec, 95 + v * 10, 0.05, 1.3) + bp(noise(sec), 800, 4000) * np.exp(-t / 0.03) * 1.2
-        x += ping(sec, 1700 + v * 90, 0.04, 0.25)
+        x += clank(sec, 900 + v * 90, 0.02, 0.3)
         save("hit%d" % v, x, vol=0.8)
 
 
@@ -166,7 +175,7 @@ def s_clang():
     for v in range(2):
         sec = 1.0
         t = T(sec)
-        x = ping(sec, 1250 + v * 170, 0.22, 1.0) + ping(sec, 1870 + v * 90, 0.16, 0.7) + ping(sec, 3410, 0.08, 0.5)
+        x = clank(sec, 1100 + v * 150, 0.06, 1.2) + clank(sec, 2200, 0.025, 0.6)
         x += bp(noise(sec), 2000, 9000) * np.exp(-t / 0.01) * 1.5
         save("clang%d" % v, reverb(x, 0.2, 0.6), vol=0.8)
 
@@ -211,7 +220,7 @@ def s_wave():
     boom = np.sin(2 * np.pi * 45 * t * (1 - 0.2 * t)) * np.exp(-t / 0.4) * 1.6
     roar = flame(sec, 1.4, 150, 2500) * np.exp(-t / 1.0)
     sweep = whoosh(sec, 200, 900, 0.25, 0.3, 0.8)
-    rocks = rattle(sec, 90, 300, 3000, 0.008, start=0.05, fall=1.6) * 0.6
+    rocks = rattle(sec, 90, 200, 1600, 0.008, start=0.05, fall=1.6) * 0.6
     save("wave", reverb(boom + roar + sweep + rocks, 0.3, 1.1))
 
 
@@ -221,15 +230,15 @@ def s_smash():
         t = T(sec)
         crack = bp(noise(sec), 200, 5000) * np.exp(-t / 0.03) * 2.2
         boom = np.sin(2 * np.pi * (52 + v * 6) * t * (1 - 0.25 * t)) * np.exp(-t / 0.25) * 1.6
-        rocks = rattle(sec, 120, 300, 3200, 0.009, start=0.03, fall=1.8) * 0.8
+        rocks = rattle(sec, 120, 200, 1600, 0.009, start=0.03, fall=1.8) * 0.8
         save("smash%d" % v, reverb(crack + boom + rocks, 0.25, 0.9))
 
 
 def s_break():
     sec = 1.8
     t = T(sec)
-    shatter = rattle(sec, 160, 1500, 7000, 0.006, start=0.0, fall=2.2) * 1.2
-    clang = ping(sec, 980, 0.3, 0.8) + ping(sec, 1460, 0.2, 0.5)
+    shatter = rattle(sec, 120, 300, 1500, 0.006, start=0.0, fall=2.2) * 1.0
+    clang = clank(sec, 900, 0.08, 1.0)
     grunt = voice(0.7, 105, -0.35, (520, 950, 2400), grit=1.0, breath=0.7) * env(T(0.7), 0.03, 0.25)
     x = shatter + clang + thud(sec, 70, 0.12, 1.0)
     place(x, grunt * 0.9, 0.08)
@@ -240,7 +249,7 @@ def s_phase():
     sec = 3.0
     t = T(sec)
     rise = whoosh(sec, 150, 2500, 0.45, 0.25, 0.8)
-    chime = sum(ping(sec, f, 0.9, 0.35) for f in (523, 659, 784, 1046)) * (t > 0.6)
+    chime = flame(sec, 0.8, 300, 2600) * (t > 0.5) * np.exp(-np.maximum(t - 0.5, 0) / 0.9)
     burst = np.zeros_like(t)
     place(burst, thud(1.5, 55, 0.3, 1.6) + flame(1.5, 1.2, 200, 3000), 0.62)
     save("phase", reverb(rise + chime + burst, 0.35, 1.2))
@@ -265,7 +274,7 @@ def s_final():
         place(x, shot * (1 - i * 0.06), at)
     x += np.sin(2 * np.pi * 38 * t * (1 - 0.15 * t)) * np.exp(-t / 0.7) * 2.0
     x += flame(sec, 1.4, 150, 2600) * np.exp(-t / 1.2)
-    x += rattle(sec, 160, 300, 3200, 0.01, start=0.1, fall=1.6) * 0.8
+    x += rattle(sec, 160, 200, 1600, 0.01, start=0.1, fall=1.6) * 0.8
     save("final", reverb(x, 0.35, 1.3))
 
 
@@ -290,8 +299,8 @@ def s_voice():
     x = voice(1.6, 92, -0.45, (450, 820, 2200), grit=0.9, breath=0.8)
     x = np.concatenate([x * env(T(1.6), 0.08, 0.6), np.zeros(len(t))])[: len(t)]
     drop = np.zeros_like(t)
-    place(drop, ping(1.0, 1100, 0.25, 0.6) + ping(1.0, 1650, 0.15, 0.4) + thud(1.0, 80, 0.06, 0.8), 1.3)
-    place(drop, ping(0.6, 1150, 0.12, 0.25), 1.55)
+    place(drop, clank(1.0, 800, 0.06, 1.0) + thud(1.0, 80, 0.06, 0.8), 1.3)
+    place(drop, clank(0.6, 700, 0.04, 0.4), 1.55)
     save("death", reverb(x + drop, 0.25, 0.9), vol=0.85)
 
 
@@ -302,13 +311,13 @@ def s_misc():
     sec = 0.9
     t = T(sec)
     x = bp(noise(sec), 600, 5000) * np.exp(-t / 0.04) * 1.4 + thud(sec, 90, 0.08, 1.0)
-    x += rattle(sec, 50, 300, 2500, 0.008, start=0.02, fall=1.5) * 0.5 + ping(sec, 1300, 0.2, 0.3)
+    x += rattle(sec, 50, 300, 1500, 0.008, start=0.02, fall=1.5) * 0.4 + clank(sec, 700, 0.05, 0.4)
     save("plant", x, vol=0.75)
     for v in range(2):
         sec = 1.0
         t = T(sec)
         thump = np.sin(2 * np.pi * (60 + v * 8) * t * (1 - 0.3 * t)) * np.exp(-t / 0.15) * 1.6
-        crackle = rattle(sec, 90, 600, 4000, 0.004, start=0.0, fall=2.0) * 0.7
+        crackle = rattle(sec, 70, 250, 1300, 0.004, start=0.0, fall=2.0) * 0.7
         save("burst%d" % v, reverb(thump + crackle + bp(noise(sec), 200, 1500) * np.exp(-t / 0.05), 0.2, 0.7))
     sec = 1.0
     x = np.zeros(int(sec * SR))
