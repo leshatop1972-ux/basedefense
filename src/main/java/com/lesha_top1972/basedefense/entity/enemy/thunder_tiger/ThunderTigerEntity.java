@@ -62,35 +62,35 @@ import java.util.UUID;
 public class ThunderTigerEntity extends HostileEntity {
 
     // ===================================================================== баланс (стартовые цифры)
-    public static final double MAX_HP = 1950.0;
+    public static final double MAX_HP = 3450.0;
     public static final double ARMOR = 8.0;
     public static final double SPEED = 0.30;
     public static final double FOLLOW = 48.0;
     /** Урон обычного разреза. (Все удары ослаблены втрое по просьбе автора, 03.11.2026.) */
-    static final float DMG_SLASH = 3.28f;
+    static final float DMG_SLASH = 4.1f;
     /** Тяжёлые удары (сверху двумя руками, «Сокрушающий разрыв»). */
-    static final float DMG_HEAVY = 4.1f;
+    static final float DMG_HEAVY = 5.12f;
     /** Удар в землю «Двойного разреза — взрыв». */
-    static final float DMG_SMASH = 3.69f;
+    static final float DMG_SMASH = 4.61f;
     /** Огненная волна ульты. */
-    static final float DMG_WAVE = 4.1f;
+    static final float DMG_WAVE = 5.12f;
     /** Удар в землю ульты (в центре). */
-    static final float DMG_TANGLE = 4.64f;
+    static final float DMG_TANGLE = 5.8f;
     /** «Один удар» (неблокируемый). */
-    static final float DMG_ONE = 7.38f;
-    static final float DMG_COUNTER = 4.64f;
-    static final float DMG_FLURRY = 1.09f;
-    static final float DMG_FLURRY_END = 6.41f;
-    static final float DMG_KICK = 2.32f;
+    static final float DMG_ONE = 9.22f;
+    static final float DMG_COUNTER = 5.8f;
+    static final float DMG_FLURRY = 1.36f;
+    static final float DMG_FLURRY_END = 8.01f;
+    static final float DMG_KICK = 2.9f;
     /** «Тигриный выпад» (укол с выпадом). */
-    static final float DMG_THRUST = 4.04f;
+    static final float DMG_THRUST = 5.05f;
     /** «Вихрь» (оборот на месте). */
-    static final float DMG_SPIN = 3.69f;
+    static final float DMG_SPIN = 4.61f;
     /** «Восходящий разрез». */
-    static final float DMG_RISING = 3.69f;
+    static final float DMG_RISING = 4.61f;
     /** «Залп выхлопов» — каждый из двух выстрелов. */
-    static final float DMG_BURST = 3.09f;
-    static final float DMG_BACKSHOT = 2.73f;
+    static final float DMG_BURST = 3.86f;
+    static final float DMG_BACKSHOT = 3.41f;
     /** Выстрел: обычный патрон +30%, свирепый +50%; поджог 3 / 6 с. */
     static final float SHOT_MUL = 1.3f;
     static final float SAVAGE_MUL = 1.5f;
@@ -116,7 +116,7 @@ public class ThunderTigerEntity extends HostileEntity {
     /** Дрожь: стаки до 10, держится 8 с; разрыв — 0.5 × стаки, оглушение 0.4 с, стаки −3. */
     static final int TREMOR_MAX = 10;
     static final int TREMOR_TICKS = 160;
-    static final float BURST_PER = 0.68f;
+    static final float BURST_PER = 0.85f;
     static final int BURST_STUN = 8;
     /** Кольца силы (фаза 2): каждое +4% урона; слом стойки гасит одно. */
     public static final int RINGS_MAX = 5;
@@ -605,7 +605,7 @@ public class ThunderTigerEntity extends HostileEntity {
         }
     }
 
-    /** Слом стойки: оглушён 3 с, урон по нему ×1.5; гаснет одно кольцо. */
+    /** Слом стойки: оглушён ~4 с, урон по нему ×1.5; гаснет одно кольцо. */
     void breakPosture() {
         this.breaks++;
         this.postureArmed = false;

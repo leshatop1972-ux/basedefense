@@ -96,9 +96,9 @@ public final class TigerTimings {
 
     // stagger
     public static final int STAGGER = 12;
-    public static final int STAGGER_LEN = 68;
+    public static final int STAGGER_LEN = 88;
     public static final int STAGGER_FALL = 7;
-    public static final int STAGGER_RISE = 56;
+    public static final int STAGGER_RISE = 76;
 
     // phase2
     public static final int PHASE2 = 13;
