@@ -3,9 +3,9 @@
     python tools/item_textures.py
 Нужен Pillow (pip install pillow).
 
-Сейчас тут один предмет — строительный планшет:
-деревянная дощечка с латунным зажимом, на ней лист-чертёж (синяя «синька»
-с сеткой и белым контуром домика), справа — перо с чернилами.
+Предметы: повестка, рубашка (одежда).
+Значки пустых слотов одежды (шапка, рубашка, штаны, обувь) — бледные силуэты,
+как у ванильных пустых слотов брони: textures/item/empty_slot_clothing_*.png.
 """
 from pathlib import Path
 
@@ -13,51 +13,15 @@ from PIL import Image
 
 OUT = Path(__file__).resolve().parent.parent / "src/main/resources/assets/basedefense/textures/item"
 
-# Пиксель-арт по строкам, 16×16. Точка — прозрачный пиксель.
-TABLET = [
-    "......KMMK......",
-    ".....KmmMMK.....",
-    ".OOOOKMMMMKOOO..",
-    "OwwwwKKKKKKwwdO.",
-    "OwbBBBBBBBBBBdO.",
-    "OwBbBBBLBBBbBdOP",
-    "OwBBBBLBLBBBBdPp",
-    "OwBBBLBBBLBBBPpO",
-    "OwbBLLLLLLLBbPdO",
-    "OwBBBLBBBLBBPpdO",
-    "OwBBBLBYBLBBPBdO",
-    "OwBbBLBYBLBNbBdO",
-    "OwBBBLLLLLLNBBdO",
-    "OwbBBBBBBBBBBbdO",
-    "OwddddddddddddO.",
-    ".OOOOOOOOOOOOOO.",
-]
 
-COLORS = {
-    "O": (59, 40, 24, 255),      # тёмная обводка
-    "w": (176, 128, 74, 255),    # светлое дерево (край)
-    "d": (112, 76, 42, 255),     # тёмное дерево (тень)
-    "B": (46, 94, 168, 255),     # синька
-    "b": (70, 122, 196, 255),    # линии сетки на синьке
-    "L": (232, 242, 255, 255),   # белый контур домика
-    "Y": (247, 214, 92, 255),    # окошко/дверь — тёплый свет
-    "K": (122, 96, 40, 255),     # латунь, тень
-    "M": (201, 160, 74, 255),    # латунь
-    "m": (246, 222, 150, 255),   # латунь, блик
-    "P": (24, 22, 30, 255),      # перо с чернилами
-    "p": (92, 88, 110, 255),     # блик на пере
-    "N": (36, 52, 96, 255),      # капля чернил у кончика пера
-}
-
-
-def build(rows):
+def build_with(rows, colors):
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     assert len(rows) == 16, "нужно 16 строк"
     for y, row in enumerate(rows):
         assert len(row) == 16, f"строка {y}: нужно 16 символов, а их {len(row)}"
         for x, ch in enumerate(row):
             if ch != ".":
-                img.putpixel((x, y), COLORS[ch])
+                img.putpixel((x, y), colors[ch])
     return img
 
 
@@ -91,22 +55,124 @@ SUMMONS_COLORS = {
     "S": (232, 200, 120, 255),   # оттиск меча на печати
 }
 
+# Рубашка: льняная, светлая, воротник, планка с пуговицами, закатанные рукава
+SHIRT = [
+    "................",
+    "....OOO..OOO....",
+    "..OOcCCOOCCcOO..",
+    ".OLLLcCKKCcLLLO.",
+    "OLLLLLLKbKLLLLLO",
+    "OLLLLLLKKLLLLLLO",
+    "OlLLOLLKbKLLOLlO",
+    "OsslOLLKKLLLOlsO",
+    ".OO.OLLKbKLLO.O.",
+    "....OLLKKLLLO...",
+    "....OLLKbKLLO...",
+    "....OlLKKLLlO...",
+    "....OlLLLLLlO...",
+    "....OslllllsO...",
+    "....OOOOOOOOO...",
+    "................",
+]
 
-def build_with(rows, colors):
-    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    for y, row in enumerate(rows):
-        assert len(row) == 16, f"строка {y}: нужно 16 символов, а их {len(row)}"
-        for x, ch in enumerate(row):
-            if ch != ".":
-                img.putpixel((x, y), colors[ch])
-    return img
+SHIRT_COLORS = {
+    "O": (74, 60, 46, 255),      # обводка
+    "L": (222, 210, 184, 255),   # лён
+    "l": (190, 176, 148, 255),   # лён, тень
+    "s": (158, 142, 114, 255),   # складки, глубокая тень
+    "c": (240, 232, 212, 255),   # воротник, блик
+    "C": (206, 194, 168, 255),   # воротник, изнанка
+    "K": (196, 182, 154, 255),   # планка
+    "b": (110, 82, 56, 255),     # пуговицы
+}
+
+# Пустые слоты одежды: силуэты одним бледным цветом (как ванильные значки пустой брони)
+SLOT_HEAD = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "......XXXX......",
+    ".....XXXXXX.....",
+    "....XXXXXXXX....",
+    "....XXXXXXXX....",
+    "..XXXXXXXXXXXX..",
+    "..XXXXXXXXXXXX..",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+SLOT_CHEST = [
+    "................",
+    "................",
+    ".....XX..XX.....",
+    "...XXXXXXXXXX...",
+    "..XXXXXXXXXXXX..",
+    "..XXXXXXXXXXXX..",
+    "..XX.XXXXXX.XX..",
+    "..XX.XXXXXX.XX..",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    "................",
+    "................",
+    "................",
+]
+
+SLOT_LEGS = [
+    "................",
+    "................",
+    "................",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    ".....XXXXXX.....",
+    ".....XXX.XXX....",
+    ".....XXX.XXX....",
+    ".....XXX.XXX....",
+    ".....XXX.XXX....",
+    ".....XXX.XXX....",
+    ".....XXX.XXX....",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+SLOT_FEET = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "....XX....XX....",
+    "....XX....XX....",
+    "....XX....XX....",
+    "...XXX...XXX....",
+    "..XXXX..XXXX....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+SLOT_COLORS = {"X": (139, 139, 139, 140)}
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    build(TABLET).save(OUT / "building_tablet.png")
     build_with(SUMMONS, SUMMONS_COLORS).save(OUT / "summons.png")
-    print("готово:", OUT / "building_tablet.png", OUT / "summons.png")
+    build_with(SHIRT, SHIRT_COLORS).save(OUT / "shirt.png")
+    for name, rows in (("head", SLOT_HEAD), ("chest", SLOT_CHEST), ("legs", SLOT_LEGS), ("feet", SLOT_FEET)):
+        build_with(rows, SLOT_COLORS).save(OUT / f"empty_slot_clothing_{name}.png")
+    print("готово:", OUT)
 
 
 if __name__ == "__main__":

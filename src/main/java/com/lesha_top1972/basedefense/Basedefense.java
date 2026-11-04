@@ -6,11 +6,8 @@ import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.entity.settler.SettlerThreats;
 import com.lesha_top1972.basedefense.item.ModItems;
-import com.lesha_top1972.basedefense.research.ResearchManager;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
-import com.lesha_top1972.basedefense.settlement.SettlementManager;
 import com.lesha_top1972.basedefense.sound.ModSounds;
-import com.lesha_top1972.basedefense.structure.BuildManager;
 import com.lesha_top1972.basedefense.entity.enemy.nabat.NabatNoise;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -30,12 +27,10 @@ public class Basedefense implements ModInitializer {
         com.lesha_top1972.basedefense.block.ModBlockEntities.init();
         ModItems.init();
         ModScreenHandlers.init();
-        BuildManager.init();
-        ResearchManager.init();
-        SettlementManager.init();
         SettlerThreats.init();
         com.lesha_top1972.basedefense.military.GuardEvents.init();   // Повестка: ЛКМ по блоку — точка обороны отряда
-        com.lesha_top1972.basedefense.artifact.Artifacts.init();   // слоты артефактов, амулет рывка
+        com.lesha_top1972.basedefense.artifact.Artifacts.init();
+        com.lesha_top1972.basedefense.clothing.Clothing.init();   // слой одежды у игроков (под бронёй)   // слоты артефактов, амулет рывка
         com.lesha_top1972.basedefense.director.Director.init();   // «Режиссёр мира»: дни, акты, шкала, события
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         com.lesha_top1972.basedefense.weapon.KatanaCombat.init();

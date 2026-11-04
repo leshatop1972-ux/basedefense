@@ -1,7 +1,6 @@
 package com.lesha_top1972.basedefense.director;
 
 import com.lesha_top1972.basedefense.Basedefense;
-import com.lesha_top1972.basedefense.block.BaseLocationState;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.mixin.MobEntityAccessor;
 import net.fabricmc.fabric.api.entity.event.v1.EntitySleepEvents;
@@ -430,26 +429,15 @@ public final class WaveManager {
     // Помощники
     // =====================================================================
 
-    /** Мир волны: мир Базы, без Базы — обычный мир. */
+    /** Мир волны: обычный мир (Базы больше нет). */
     static ServerWorld waveWorld(MinecraftServer server) {
-        BaseLocationState b = BaseLocationState.get(server);
-        if (b.hasBase()) {
-            ServerWorld w = server.getWorld(b.getDimension());
-            if (w != null) {
-                return w;
-            }
-        }
         return server.getOverworld();
     }
 
-    /** Блок «База», если он в этом мире. */
+    /** Базы больше нет — всегда null (оставлено, чтобы волны и мобы шли к игрокам). */
     @Nullable
     public static BlockPos basePos(World w) {
-        if (w.getServer() == null) {
-            return null;
-        }
-        BaseLocationState b = BaseLocationState.get(w.getServer());
-        return b.hasBase() && w.getRegistryKey().equals(b.getDimension()) ? b.getPos() : null;
+        return null;
     }
 
     /**
@@ -462,44 +450,15 @@ public final class WaveManager {
         return Math.toRadians(offset + slot * (360.0 / PARTS));
     }
 
-    /** Точка появления части: за краем поселения (40–72 бл от Базы) в своей стороне; иначе у игрока. */
+    /** Точка появления части: в 40+ бл от случайного игрока в своей стороне. */
     @Nullable
     private static BlockPos spawnPoint(ServerWorld w, double angle) {
         Random r = w.getRandom();
-        BlockPos base = basePos(w);
-        if (base != null) {
-            int ring = MathHelper.clamp(townRadius(w, base) + TOWN_GAP, MIN_R, MAX_R);
-            BlockPos p = ringPoint(w, base, r, angle, ring);
-            if (p != null) {
-                return p;
-            }
-        }
         List<ServerPlayerEntity> players = w.getPlayers(p -> !p.isSpectator());
         if (!players.isEmpty()) {
-            BlockPos p = ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r, angle, MIN_R);
-            if (p != null) {
-                return p;
-            }
+            return ringPoint(w, players.get(r.nextInt(players.size())).getBlockPos(), r, angle, MIN_R);
         }
-        return base;
-    }
-
-    /** Радиус поселения от Базы: самые дальние здания и жители (не больше 64). */
-    private static int townRadius(ServerWorld w, BlockPos base) {
-        double max = 0;
-        String dim = w.getRegistryKey().getValue().toString();
-        for (com.lesha_top1972.basedefense.structure.TownState.Building b
-                : com.lesha_top1972.basedefense.structure.TownState.get(w.getServer()).getBuildings(dim)) {
-            double d = Math.sqrt(b.pos().getSquaredDistance(base.getX(), b.pos().getY(), base.getZ())) + 10;
-            if (d < 128) {
-                max = Math.max(max, d);
-            }
-        }
-        for (com.lesha_top1972.basedefense.entity.settler.SettlerEntity e : w.getEntitiesByClass(
-                com.lesha_top1972.basedefense.entity.settler.SettlerEntity.class, new Box(base).expand(96, 32, 96), x -> true)) {
-            max = Math.max(max, Math.sqrt(e.squaredDistanceTo(base.getX(), e.getY(), base.getZ())));
-        }
-        return (int) Math.min(64, max);
+        return null;
     }
 
     /** Точка у земли в своей стороне (±40°) на расстоянии ring…ring+24, вдали от домов, жителей и игроков. */
@@ -533,13 +492,6 @@ public final class WaveManager {
         }
         for (ServerPlayerEntity pl : w.getPlayers()) {
             if (!pl.isSpectator() && pl.squaredDistanceTo(Vec3d.ofCenter(p)) < SAFE_PLAYER * SAFE_PLAYER) {
-                return false;
-            }
-        }
-        String dim = w.getRegistryKey().getValue().toString();
-        for (com.lesha_top1972.basedefense.structure.TownState.Building b
-                : com.lesha_top1972.basedefense.structure.TownState.get(w.getServer()).getBuildings(dim)) {
-            if (b.pos().getSquaredDistance(p.getX(), b.pos().getY(), p.getZ()) < SAFE_BUILDING * SAFE_BUILDING) {
                 return false;
             }
         }

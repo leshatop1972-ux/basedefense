@@ -9,11 +9,13 @@
     "MobEntityMixin",
     "LivingEntityCombatMixin",
     "PlayerEntityArtifactsMixin",
+    "PlayerEntityClothingMixin",
     "PlayerEntityDirectorMixin",
     "DimensionTypeMixin",
     "BiomeMixin",
     "PlayerScreenHandlerMixin",
-    "ScreenHandlerAccessor"
+    "ScreenHandlerAccessor",
+    "SlotMixin"
   ],
   "injectors": {
     "defaultRequire": 1

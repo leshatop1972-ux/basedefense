@@ -3,7 +3,6 @@ package com.lesha_top1972.basedefense.entity.enemy.beetle;
 import com.lesha_top1972.basedefense.entity.BuildTargets;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.entity.enemy.sapper.SapperBlast;
-import com.lesha_top1972.basedefense.block.BaseLocationState;
 import com.lesha_top1972.basedefense.combat.ShieldBlocker;
 import com.lesha_top1972.basedefense.effect.ModEffects;
 import com.lesha_top1972.basedefense.fx.Fx;
@@ -161,16 +160,9 @@ public class SiegeBeetleEntity extends HostileEntity {
         }
     }
 
+    /** Базы больше нет. */
     BlockPos basePos() {
-        MinecraftServer srv = this.getWorld().getServer();
-        if (srv == null) {
-            return null;
-        }
-        BaseLocationState b = BaseLocationState.get(srv);
-        if (!b.hasBase() || !this.getWorld().getRegistryKey().equals(b.getDimension())) {
-            return null;
-        }
-        return b.getPos();
+        return null;
     }
 
     /** До края хитбокса цели от «лба» жука. */

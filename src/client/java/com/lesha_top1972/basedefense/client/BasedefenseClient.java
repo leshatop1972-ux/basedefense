@@ -31,12 +31,6 @@ import com.lesha_top1972.basedefense.client.effect.DuelistOverlay;
 import com.lesha_top1972.basedefense.client.effect.FreezeOverlay;
 import com.lesha_top1972.basedefense.client.entity.enemy.lancer.LancerZoneRenderer;
 import com.lesha_top1972.basedefense.client.effect.RatOverlay;
-import com.lesha_top1972.basedefense.client.structure.TabletPreview;
-import com.lesha_top1972.basedefense.client.screen.BaseScreen;
-import com.lesha_top1972.basedefense.client.screen.HouseScreen;
-import com.lesha_top1972.basedefense.client.screen.RecruitScreen;
-import com.lesha_top1972.basedefense.client.screen.SettlerScreen;
-import com.lesha_top1972.basedefense.client.screen.TabletScreen;
 import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.screen.ModScreenHandlers;
 import net.fabricmc.api.ClientModInitializer;
@@ -48,30 +42,15 @@ public class BasedefenseClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Меню: База, житель, стройплощадка, строительный планшет
-        HandledScreens.register(ModScreenHandlers.BASE, BaseScreen::new);
-        HandledScreens.register(ModScreenHandlers.SETTLER, SettlerScreen::new);
-        HandledScreens.register(ModScreenHandlers.HOUSE, HouseScreen::new);
-        HandledScreens.register(ModScreenHandlers.TABLET, TabletScreen::new);
-        HandledScreens.register(ModScreenHandlers.RECRUIT, RecruitScreen::new);
+        // Меню: поселенец, Повестка, стол амулетов
+        com.lesha_top1972.basedefense.client.clothing.ClothingClient.init();   // кнопка «одежда/броня» в инвентаре
         HandledScreens.register(ModScreenHandlers.GUARD, com.lesha_top1972.basedefense.client.screen.GuardScreen::new);
         HandledScreens.register(ModScreenHandlers.SQUAD, com.lesha_top1972.basedefense.client.screen.SquadScreen::new);
         HandledScreens.register(ModScreenHandlers.AMULET_TABLE,
                 com.lesha_top1972.basedefense.client.screen.AmuletTableScreen::new);
 
-        // Рамка места постройки, пока в руке планшет с выбранной постройкой
-        TabletPreview.init();
-
-        // Жители: случайная внешность (5 мужчин, 3 женщины), одна модель на все профессии
+        // Поселенцы: случайная внешность, одна модель
         EntityModelLayerRegistry.registerModelLayer(SettlerEntityRenderer.LAYER, SettlerEntityModel::getTexturedModelData);
-        EntityRendererRegistry.register(ModEntities.BUILDER, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.FARMER, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.RANCHER, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.COOK, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.MINER, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.BLACKSMITH, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.LUMBERJACK, SettlerEntityRenderer::new);
-        EntityRendererRegistry.register(ModEntities.COURIER, SettlerEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GUARD, com.lesha_top1972.basedefense.client.entity.settler.GuardEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GUARD_ARROW, net.minecraft.client.render.entity.ArrowEntityRenderer::new);
 

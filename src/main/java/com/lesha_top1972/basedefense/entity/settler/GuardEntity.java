@@ -5,7 +5,6 @@ import com.lesha_top1972.basedefense.entity.ModEntities;
 import com.lesha_top1972.basedefense.item.SummonsItem;
 import com.lesha_top1972.basedefense.military.SquadState;
 import com.lesha_top1972.basedefense.screen.GuardScreenHandler;
-import com.lesha_top1972.basedefense.structure.TownState;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -60,12 +59,12 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Стражник — военный поселенец. Вербуется в военкомате казармы, приходит с пустыми руками.
- * - ПКМ — своё меню (GuardScreenHandler): оружие (меч, топор или лук), 4 слота брони,
+ * Поселенец (раньше — стражник; сущность «guard»). Профессий нет: у всех жителей одно меню.
+ * - ПКМ — меню (GuardScreenHandler): оружие (меч, топор или лук), 4 слота брони, 4 слота одежды (под бронёй),
  *   3 слота еды (ест сам, когда ранен), 2 слота стрел (для лука), 2 слота артефактов (пока закрыты).
  * - Нападает на всех мобов мода в {@link #AGGRO} блоках. Мечник/топорщик бежит к врагу,
  *   лучник держится в ~{@link #BOW_RANGE} блоках и стреляет раз в 4 секунды (попадает в половине случаев).
- * - Без отряда (или у отряда нет точки) патрулирует город днём и ночью; у отряда с точкой
+ * - Без отряда (или у отряда нет точки) гуляет вокруг места, где появился; у отряда с точкой
  *   бежит к ней и не отходит дальше {@link #LEASH} блоков.
  * - Без оружия (или с луком без стрел) не дерётся — отбегает от врагов.
  * Анимации (клиент, client/entity/settler/GuardAnimations): два вида удара мечом по очереди,
@@ -138,9 +137,6 @@ public class GuardEntity extends SettlerEntity {
             TrackedDataHandlerRegistry.BOOLEAN);
 
     private final SimpleInventory bag = new SimpleInventory(BAG_SIZE);
-
-    @Nullable
-    private BlockPos barracks;
 
     // ---------- Сервер ----------
     @Nullable
@@ -280,7 +276,7 @@ public class GuardEntity extends SettlerEntity {
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity sp) {
             this.getLookControl().lookAt(player, 30.0f, 30.0f);
-            this.playSound(SoundEvents.ENTITY_VILLAGER_AMBIENT, 0.8f, getSoundPitch());
+            this.playSound(getGreetSound(), 1.0f, getSoundPitch());
             menuPlayer = sp;
             GuardEntity self = this;
             sp.openHandledScreen(new ExtendedScreenHandlerFactory() {
@@ -663,15 +659,6 @@ public class GuardEntity extends SettlerEntity {
         this.clearPositionTarget();   // стражник ходит по всему городу, а не вокруг дома
     }
 
-    public void setBarracks(@Nullable BlockPos office) {
-        this.barracks = office == null ? null : office.toImmutable();
-    }
-
-    @Nullable
-    public BlockPos getBarracks() {
-        return barracks;
-    }
-
     // ---------- Призванный стражник (летопись призывателя) ----------
 
     /** Сколько тиков осталось жить призванному стражнику; -1 — обычный стражник. */
@@ -693,11 +680,6 @@ public class GuardEntity extends SettlerEntity {
 
     public boolean isSummoned() {
         return summonLeft >= 0;
-    }
-
-    @Override
-    protected boolean isTemporary() {
-        return isSummoned();
     }
 
     @Override
@@ -726,9 +708,6 @@ public class GuardEntity extends SettlerEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        if (barracks != null) {
-            nbt.put("Barracks", NbtHelper.fromBlockPos(barracks));
-        }
         nbt.put("GuardBag", bag.toNbtList());
         if (summonLeft >= 0) {
             nbt.putInt("SummonLeft", summonLeft);
@@ -738,7 +717,6 @@ public class GuardEntity extends SettlerEntity {
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
-        barracks = nbt.contains("Barracks") ? NbtHelper.toBlockPos(nbt.getCompound("Barracks")) : null;
         summonLeft = nbt.contains("SummonLeft") ? nbt.getInt("SummonLeft") : -1;
         if (nbt.contains("GuardBag")) {
             bag.readNbtList(nbt.getList("GuardBag", NbtElement.COMPOUND_TYPE));
@@ -1015,31 +993,11 @@ public class GuardEntity extends SettlerEntity {
             }
         }
 
-        /** Куда идти в патруле: входы домов и площадь города; без города — вокруг дома. */
+        /** Куда идти без дела: случайная точка в 12 блоках от места, где поселенец появился. */
         @Nullable
         private BlockPos pickPatrolPoint() {
-            if (!(guard.getWorld() instanceof ServerWorld sw)) {
-                return null;
-            }
-            String dim = sw.getRegistryKey().getValue().toString();
-            TownState town = TownState.get(sw.getServer());
-            List<BlockPos> points = new ArrayList<>();
-            for (TownState.Entrance e : town.getEntrances(dim)) {
-                points.add(e.ground().offset(e.outward(), 2).up());
-            }
-            TownState.Square square = town.getSquare(dim);
-            if (square != null) {
-                points.add(square.center().up());
-                points.add(square.center().up());
-            }
-            // Только места в разумных пределах (не через полмира)
-            points.removeIf(p -> p.getSquaredDistance(guard.getBlockPos()) > 96 * 96);
-            if (points.isEmpty()) {
-                BlockPos home = guard.getHome() != null ? guard.getHome() : guard.getBlockPos();
-                return home.add(guard.random.nextInt(25) - 12, 0, guard.random.nextInt(25) - 12);
-            }
-            BlockPos p = points.get(guard.random.nextInt(points.size()));
-            return p.add(guard.random.nextInt(5) - 2, 0, guard.random.nextInt(5) - 2);
+            BlockPos home = guard.getHome() != null ? guard.getHome() : guard.getBlockPos();
+            return home.add(guard.random.nextInt(25) - 12, 0, guard.random.nextInt(25) - 12);
         }
     }
 }

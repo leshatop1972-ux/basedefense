@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.screen;
 
+import com.lesha_top1972.basedefense.client.clothing.ClothingClient;
 import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
 import com.lesha_top1972.basedefense.military.SquadState;
 import com.lesha_top1972.basedefense.screen.GuardScreenHandler;
@@ -16,7 +17,8 @@ import static com.lesha_top1972.basedefense.client.screen.UiKit.*;
 import static com.lesha_top1972.basedefense.screen.GuardScreenHandler.*;
 
 /**
- * Меню стражника (стиль «стекло»): слева живой портрет, рядом броня, оружие, стрелы, артефакты
+ * Меню поселенца (стиль «стекло»): слева живой портрет, рядом броня (кнопка в углу портрета — показать одежду),
+ * оружие, стрелы, артефакты
  * (закрыты замочком), еда; здоровье полоской, броня, урон, отряд; внизу — инвентарь игрока.
  */
 public class GuardScreen extends HandledScreen<GuardScreenHandler> {
@@ -27,6 +29,13 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         super(handler, inventory, title);
         this.backgroundWidth = W;
         this.backgroundHeight = H;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        // Кнопка «одежда/броня» — в правом верхнем углу портрета, рядом со слотами брони
+        this.addDrawableChild(ClothingClient.toggleButton(this.x + 66, this.y + 30));
     }
 
     @Override
@@ -42,6 +51,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
                 case 5, 6, 7 -> Text.translatable("screen.basedefense.guard.tip.food");
                 case 8, 9 -> Text.translatable("screen.basedefense.guard.tip.arrows");
                 case 10, 11 -> Text.translatable("screen.basedefense.guard.tip.artifact");
+                case 12, 13, 14, 15 -> Text.translatable("screen.basedefense.guard.tip.clothing");
                 default -> null;
             };
             if (tip != null) {
@@ -93,9 +103,17 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         label(c, "screen.basedefense.guard.food", l + FOOD_X - 1, t + FOOD_Y - 10);
 
         // Ячейки слотов стражника; у артефактов — замочки
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < GUARD_SLOTS; i++) {
             Slot s = handler.slots.get(i);
-            slot(c, l + s.x, t + s.y, i == 0);
+            if (s.isEnabled()) {
+                slot(c, l + s.x, t + s.y, i == 0);
+            }
+        }
+        if (ClothingClient.showClothes()) {
+            for (int i = CLOTHING_START; i < GUARD_SLOTS; i++) {
+                Slot s = handler.slots.get(i);
+                c.fill(l + s.x, t + s.y, l + s.x + 16, t + s.y + 16, ClothingClient.TINT);
+            }
         }
         for (int i = 10; i < 12; i++) {
             Slot s = handler.slots.get(i);
@@ -125,7 +143,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
 
         // Инвентарь игрока
         divider(c, l + 12, r - 12, t + INV_Y - 5);
-        for (int i = 12; i < handler.slots.size(); i++) {
+        for (int i = GUARD_SLOTS; i < handler.slots.size(); i++) {
             Slot s = handler.slots.get(i);
             slot(c, l + s.x, t + s.y, false);
         }

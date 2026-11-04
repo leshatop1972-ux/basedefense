@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Вкладка артефактов слева от инвентаря: фон под слотами; клик по вкладке — не «мимо окна» (не выбрасывает предмет). */
+/** Подсветка слотов одежды; вкладка артефактов слева от инвентаря: фон под слотами; клик по вкладке — не «мимо окна» (не выбрасывает предмет). */
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin extends AbstractInventoryScreen<PlayerScreenHandler> implements ArtifactPanelHost {
 
@@ -44,6 +44,7 @@ public abstract class InventoryScreenMixin extends AbstractInventoryScreen<Playe
         if (ArtifactClient.panelVisible()) {
             ArtifactClient.drawPanel(context, this.x, this.y);
         }
+        com.lesha_top1972.basedefense.client.clothing.ClothingClient.drawPlayerTint(context, this.x, this.y);
     }
 
     @Inject(method = "isClickOutsideBounds", at = @At("RETURN"), cancellable = true)

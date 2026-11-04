@@ -17,12 +17,9 @@ import net.minecraft.util.Rarity;
 /** Все предметы мода (кроме предметов-блоков, они в ModBlocks). */
 public final class ModItems {
 
-    /** Монета исследований — валюта для исследований в меню Базы. */
-    public static final Item RESEARCH_COIN = register("research_coin", new Item(new Item.Settings()));
-
-    /** Строительный планшет: выбор и установка построек (крафт: верстак + бумага + чернильный мешок). */
-    public static final Item BUILDING_TABLET = register("building_tablet",
-            new BuildingTabletItem(new Item.Settings().maxCount(1)));
+    /** Рубашка: одежда (слот одежды «тело»). Пока ничего не даёт и не крафтится. */
+    public static final Item SHIRT = register("shirt", new com.lesha_top1972.basedefense.clothing.ClothingItem(
+            com.lesha_top1972.basedefense.clothing.ClothingType.CHEST, new Item.Settings().maxCount(1)));
 
     /** Повестка: отряды стражников (ПКМ — меню, ЛКМ по блоку — точка обороны выбранного отряда). */
     public static final Item SUMMONS = register("summons", new SummonsItem(new Item.Settings().maxCount(1)));
@@ -94,39 +91,7 @@ public final class ModItems {
     /** Амулет мудрости: удар тратит 1/4 уровня опыта — Скорость I на 5 с и +1 HP. */
     public static final Item WISDOM_AMULET = amulet("wisdom_amulet", Rarity.RARE);
 
-    /** Яйцо призыва строителя. */
-    public static final Item BUILDER_SPAWN_EGG = register("builder_spawn_egg",
-            new SpawnEggItem(ModEntities.BUILDER, 0xF2B933, 0x3B5BA0, new Item.Settings()));
-
-    /** Яйцо призыва жителя-фермера (для тестов и творческого режима). */
-    public static final Item FARMER_SPAWN_EGG = register("farmer_spawn_egg",
-            new SpawnEggItem(ModEntities.FARMER, 0x6E8F3E, 0xE8C25A, new Item.Settings()));
-
-    /** Яйцо призыва жителя-скотовода. */
-    public static final Item RANCHER_SPAWN_EGG = register("rancher_spawn_egg",
-            new SpawnEggItem(ModEntities.RANCHER, 0xA83A2E, 0x8B5A2B, new Item.Settings()));
-
-    /** Яйцо призыва повара. */
-    public static final Item COOK_SPAWN_EGG = register("cook_spawn_egg",
-            new SpawnEggItem(ModEntities.COOK, 0xF2F2F2, 0xC0392B, new Item.Settings()));
-
-    /** Яйцо призыва шахтёра. */
-    public static final Item MINER_SPAWN_EGG = register("miner_spawn_egg",
-            new SpawnEggItem(ModEntities.MINER, 0x4A4A55, 0xF0B429, new Item.Settings()));
-
-    /** Яйцо призыва кузнеца. */
-    public static final Item BLACKSMITH_SPAWN_EGG = register("blacksmith_spawn_egg",
-            new SpawnEggItem(ModEntities.BLACKSMITH, 0x2B2B2B, 0x8B5A2B, new Item.Settings()));
-
-    /** Яйцо призыва лесоруба. */
-    public static final Item LUMBERJACK_SPAWN_EGG = register("lumberjack_spawn_egg",
-            new SpawnEggItem(ModEntities.LUMBERJACK, 0x2E5E2A, 0x8B2E2E, new Item.Settings()));
-
-    /** Яйцо призыва курьера. */
-    public static final Item COURIER_SPAWN_EGG = register("courier_spawn_egg",
-            new SpawnEggItem(ModEntities.COURIER, 0x1E8C84, 0xC8A24A, new Item.Settings()));
-
-    /** Яйцо призыва стражника (сталь и красный). */
+    /** Яйцо призыва поселенца (сталь и красный; id старый — guard_spawn_egg). */
     public static final Item GUARD_SPAWN_EGG = register("guard_spawn_egg",
             new SpawnEggItem(ModEntities.GUARD, 0x8C949C, 0x9E2A2A, new Item.Settings()));
 
@@ -192,12 +157,11 @@ public final class ModItems {
     }
 
     public static void init() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(RESEARCH_COIN));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
-            entries.add(BUILDING_TABLET);
             entries.add(SUMMONS);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
+            entries.add(SHIRT);
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);
             entries.add(REFINED_KATANA);
@@ -234,14 +198,6 @@ public final class ModItems {
             entries.add(EMPTY_PENDANT);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
-            entries.add(BUILDER_SPAWN_EGG);
-            entries.add(FARMER_SPAWN_EGG);
-            entries.add(RANCHER_SPAWN_EGG);
-            entries.add(COOK_SPAWN_EGG);
-            entries.add(MINER_SPAWN_EGG);
-            entries.add(BLACKSMITH_SPAWN_EGG);
-            entries.add(LUMBERJACK_SPAWN_EGG);
-            entries.add(COURIER_SPAWN_EGG);
             entries.add(GUARD_SPAWN_EGG);
             entries.add(IRON_ZOMBIE_SPAWN_EGG);
             entries.add(IRON_KNIGHT_SPAWN_EGG);

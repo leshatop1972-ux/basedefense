@@ -31,16 +31,8 @@ import com.lesha_top1972.basedefense.entity.enemy.sapper.SapperBombEntity;
 import com.lesha_top1972.basedefense.entity.enemy.sapper.SapperChargeEntity;
 import com.lesha_top1972.basedefense.entity.enemy.sapper.SapperEntity;
 import com.lesha_top1972.basedefense.entity.enemy.sapper.SapperSmokeEntity;
-import com.lesha_top1972.basedefense.entity.settler.BlacksmithEntity;
-import com.lesha_top1972.basedefense.entity.settler.BuilderEntity;
-import com.lesha_top1972.basedefense.entity.settler.CookEntity;
-import com.lesha_top1972.basedefense.entity.settler.CourierEntity;
 import com.lesha_top1972.basedefense.entity.settler.GuardArrowEntity;
 import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
-import com.lesha_top1972.basedefense.entity.settler.FarmerEntity;
-import com.lesha_top1972.basedefense.entity.settler.LumberjackEntity;
-import com.lesha_top1972.basedefense.entity.settler.MinerEntity;
-import com.lesha_top1972.basedefense.entity.settler.RancherEntity;
 import com.lesha_top1972.basedefense.entity.settler.SettlerEntity;
 import com.lesha_top1972.basedefense.Basedefense;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -55,64 +47,7 @@ import net.minecraft.util.Identifier;
 /** Все мобы мода. */
 public final class ModEntities {
 
-    public static final EntityType<BuilderEntity> BUILDER = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "builder"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, BuilderEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<FarmerEntity> FARMER = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "farmer"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, FarmerEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<RancherEntity> RANCHER = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "rancher"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, RancherEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<CookEntity> COOK = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "cook"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, CookEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<MinerEntity> MINER = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "miner"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, MinerEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<BlacksmithEntity> BLACKSMITH = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "blacksmith"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, BlacksmithEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    public static final EntityType<LumberjackEntity> LUMBERJACK = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "lumberjack"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, LumberjackEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    /** Курьер (живёт в здании Базы, разносит ресурсы). */
-    public static final EntityType<CourierEntity> COURIER = Registry.register(
-            Registries.ENTITY_TYPE,
-            new Identifier(Basedefense.MOD_ID, "courier"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, CourierEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                    .build());
-
-    /** Стражник (военный поселенец; вербуется в военкомате казармы). */
+    /** Поселенец (сущность «guard»: у всех жителей одно меню — снаряжение, сумка, одежда). */
     public static final EntityType<GuardEntity> GUARD = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(Basedefense.MOD_ID, "guard"),
@@ -435,14 +370,6 @@ public final class ModEntities {
     }
 
     public static void init() {
-        FabricDefaultAttributeRegistry.register(BUILDER, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(FARMER, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(RANCHER, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(COOK, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(MINER, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(BLACKSMITH, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(LUMBERJACK, SettlerEntity.createSettlerAttributes());
-        FabricDefaultAttributeRegistry.register(COURIER, SettlerEntity.createSettlerAttributes());
         FabricDefaultAttributeRegistry.register(GUARD, GuardEntity.createGuardAttributes());
         FabricDefaultAttributeRegistry.register(IRON_ZOMBIE, IronZombieEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(IRON_KNIGHT, IronKnightEntity.createAttributes());
