@@ -7,7 +7,6 @@ import com.lesha_top1972.basedefense.temperature.TempStatus;
 import com.lesha_top1972.basedefense.temperature.Temperature;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.text.Text;
 
@@ -40,16 +39,7 @@ public class NeedsScreen extends Screen {
     protected void init() {
         left = (this.width - W) / 2;
         top = (this.height - H) / 2;
-        NeedsTabs.add(this::addDrawableChild, left + W, top, true, () -> {
-            if (entityId < 0) {
-                if (this.client != null && this.client.player != null) {
-                    this.client.setScreen(new InventoryScreen(this.client.player));
-                }
-            } else {
-                NeedsTabs.openSettlerInventory(entityId);
-            }
-        }, () -> {
-        });
+        NeedsTabs.add(this::addDrawableChild, left + W, top, NeedsTabs.Tab.NEEDS, entityId);
     }
 
     @Override

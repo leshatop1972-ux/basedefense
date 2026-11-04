@@ -71,6 +71,8 @@ public final class KatanaClient {
 
     private static final Map<Integer, State> STATES = new HashMap<>();
     private static long ticks;
+    /** Особая атака снова готова с этого тика (своя перезарядка — блок ПКМ при ней работает). */
+    private static long specialReadyAt;
 
     // =====================================================================
     // 1‑е лицо (свой игрок)
@@ -220,7 +222,7 @@ public final class KatanaClient {
     }
 
     private static boolean canCharge(ClientPlayerEntity p) {
-        return !p.isUsingItem() && !specialRunning && !p.getItemCooldownManager().isCoolingDown(p.getMainHandStack().getItem());
+        return !p.isUsingItem() && !specialRunning && ticks >= specialReadyAt;
     }
 
     private static void startCharge(ClientPlayerEntity p) {
@@ -292,12 +294,19 @@ public final class KatanaClient {
         }
     }
 
+    /** Сколько осталось до готовности особой атаки (1 — только что, 0 — готова) — для значка на панели. */
+    public static float specialCooldown(float tickDelta) {
+        float left = specialReadyAt - ticks - tickDelta;
+        return left <= 0 ? 0f : Math.min(1f, left / KatanaCombat.SPECIAL_COOLDOWN);
+    }
+
     private static void startSpecial(ClientPlayerEntity p) {
         Vec3d look = p.getRotationVector();
         Vec3d flat = new Vec3d(look.x, 0, look.z);
         dashDir = flat.lengthSquared() > 1e-4 ? flat.normalize() : Vec3d.ZERO;
         dashTicks = KatanaCombat.variant(p).dashTicks;
         specialRunning = true;
+        specialReadyAt = ticks + KatanaCombat.SPECIAL_COOLDOWN;
         drawn = true;                                    // после выхвата катана обнажена (в ножны — как после ударов)
         begin(state(p.getId()), KatanaCombat.ANIM_SPECIAL, ticks);
         startAction("special", 0.03f);

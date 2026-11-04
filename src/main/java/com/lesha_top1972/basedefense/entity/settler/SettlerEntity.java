@@ -57,6 +57,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Float> ENCLOSURE =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    /** Есть ли рюкзак (для вкладки «Рюкзак» на клиенте). */
+    private static final TrackedData<Boolean> HAS_BACKPACK =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     // ---------- Голод ----------
     public static final int HUNGER_MAX = 20;
@@ -103,6 +106,7 @@ public abstract class SettlerEntity extends PathAwareEntity {
         this.dataTracker.startTracking(COMFORT_MIN, Temperature.NAKED_MIN);
         this.dataTracker.startTracking(COMFORT_MAX, Temperature.NAKED_MAX);
         this.dataTracker.startTracking(ENCLOSURE, 0f);
+        this.dataTracker.startTracking(HAS_BACKPACK, false);
     }
 
     // ---------- Внешность ----------
@@ -150,6 +154,10 @@ public abstract class SettlerEntity extends PathAwareEntity {
 
     public float getComfortMax() {
         return this.dataTracker.get(COMFORT_MAX);
+    }
+
+    public boolean hasBackpack() {
+        return this.dataTracker.get(HAS_BACKPACK);
     }
 
     public float getEnclosure() {
@@ -245,6 +253,9 @@ public abstract class SettlerEntity extends PathAwareEntity {
             }
             if (getSkin() < 0 || !this.hasCustomName()) {
                 ensureLook();
+            }
+            if (this.age % 10 == 0) {
+                this.dataTracker.set(HAS_BACKPACK, !Clothing.backpack(clothing).isEmpty());
             }
             if (this.age % 40 == 5 && this.getWorld() instanceof ServerWorld sw) {
                 updateNeeds(sw);

@@ -36,10 +36,16 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         super.init();
         // Кнопка «одежда/броня» — в правом верхнем углу портрета, рядом со слотами брони
         this.addDrawableChild(ClothingClient.toggleButton(this.x + 66, this.y + 30));
-        // Вкладки справа: «Инвентарь» (это меню) и «Потребности»
-        com.lesha_top1972.basedefense.client.needs.NeedsTabs.add(this::addDrawableChild, this.x + W, this.y, false,
-                () -> {
-                }, () -> com.lesha_top1972.basedefense.client.needs.NeedsTabs.openSettlerNeeds(handler.getEntityId()));
+        // Вкладки справа: «Инвентарь» (это меню), «Потребности», «Рюкзак» (если есть)
+        com.lesha_top1972.basedefense.client.needs.NeedsTabs.add(this::addDrawableChild, this.x + W, this.y,
+                com.lesha_top1972.basedefense.client.needs.NeedsTabs.Tab.INVENTORY, handler.getEntityId());
+    }
+
+    /** Клик по панели одежды слева — не «мимо окна». */
+    @Override
+    protected boolean isClickOutsideBounds(double mouseX, double mouseY, int left, int top, int button) {
+        return super.isClickOutsideBounds(mouseX, mouseY, left, top, button)
+                && !ClothingClient.inSettlerPanel(mouseX, mouseY, left, top);
     }
 
     @Override
@@ -56,6 +62,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
                 case 8, 9 -> Text.translatable("screen.basedefense.guard.tip.arrows");
                 case 10, 11 -> Text.translatable("screen.basedefense.guard.tip.artifact");
                 case 12, 13, 14, 15 -> Text.translatable("screen.basedefense.guard.tip.clothing");
+                case BACKPACK_SLOT -> Text.translatable("screen.basedefense.guard.tip.backpack");
                 default -> null;
             };
             if (tip != null) {
@@ -115,18 +122,13 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         label(c, "screen.basedefense.guard.food", l + FOOD_X - 1, t + FOOD_Y - 10);
 
         // Ячейки слотов стражника; у артефактов — замочки
-        for (int i = 0; i < GUARD_SLOTS; i++) {
+        for (int i = 0; i < CLOTHING_START; i++) {
             Slot s = handler.slots.get(i);
             if (s.isEnabled()) {
                 slot(c, l + s.x, t + s.y, i == 0);
             }
         }
-        if (ClothingClient.showClothes()) {
-            for (int i = CLOTHING_START; i < GUARD_SLOTS; i++) {
-                Slot s = handler.slots.get(i);
-                c.fill(l + s.x, t + s.y, l + s.x + 16, t + s.y + 16, ClothingClient.TINT);
-            }
-        }
+        ClothingClient.drawSettlerPanel(c, l, t);
         for (int i = 10; i < 12; i++) {
             Slot s = handler.slots.get(i);
             c.fill(l + s.x, t + s.y, l + s.x + 16, t + s.y + 16, 0x50000000);

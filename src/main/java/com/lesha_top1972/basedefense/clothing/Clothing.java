@@ -13,13 +13,26 @@ import java.util.function.BooleanSupplier;
 
 /**
  * Два слоя экипировки: одежда (снизу) и броня (сверху). Одежда — 4 слота: голова, тело, ноги, ступни
- * ({@link ClothingType}). У игрока слоты одежды — в конце его меню инвентаря (после артефактов), стоят на месте
- * слотов брони и показываются вместо них маленькой кнопкой «одежда/броня». У поселенца — в его меню, так же.
+ * ({@link ClothingType}), плюс слот рюкзака ({@link BackpackItem}). У игрока эти слоты — в конце меню инвентаря
+ * (после артефактов), на отдельной панели над окном инвентаря (открывается маленькой кнопкой у брони).
+ * У поселенца — панель слева от его меню.
  * При смерти одежда выпадает (с keepInventory остаётся).
  */
 public final class Clothing {
 
-    public static final int SLOTS = 4;
+    /** Слоты одежды (0–3: голова, тело, ноги, ступни) + слот рюкзака (4). */
+    public static final int CLOTHES = 4;
+    public static final int BACKPACK = 4;
+    public static final int SLOTS = 5;
+
+    /** Панель у игрока — над окном инвентаря (координаты слотов относительно окна). */
+    public static final int PLAYER_X = 8;
+    public static final int PLAYER_Y = -21;
+    public static final int PLAYER_BACKPACK_X = PLAYER_X + 4 * 18 + 8;
+    /** Панель у поселенца — слева от его меню, столбиком. */
+    public static final int SETTLER_X = -21;
+    public static final int SETTLER_Y = 30;
+    public static final int SETTLER_BACKPACK_Y = SETTLER_Y + 4 * 18 + 8;
 
     /** Клиент: включён вид «одежда» в инвентаре игрока (слоты одежды видны, ванильные слоты брони скрыты). */
     @Nullable
@@ -37,6 +50,15 @@ public final class Clothing {
 
     public static boolean playerViewOn() {
         return playerView != null && playerView.getAsBoolean();
+    }
+
+    /** Рюкзак в слоте рюкзака или пусто. */
+    public static ItemStack backpack(net.minecraft.inventory.Inventory clothes) {
+        if (clothes == null || clothes.size() <= BACKPACK) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack s = clothes.getStack(BACKPACK);
+        return s.getItem() instanceof BackpackItem ? s : ItemStack.EMPTY;
     }
 
     public static boolean settlerViewOn() {

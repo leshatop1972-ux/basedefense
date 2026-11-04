@@ -53,6 +53,9 @@ public class ClothingItem extends Item {
         tooltip.add(Text.translatable("tooltip.basedefense.clothing." + type.id).formatted(Formatting.GRAY));
         tooltip.add(Text.translatable("tooltip.basedefense.warmth." + warmth.name().toLowerCase(Locale.ROOT))
                 .formatted(warmth == Warmth.WARM ? Formatting.GOLD : Formatting.GRAY));
+        if (this == ModClothing.RAINCOAT) {
+            tooltip.add(Text.translatable("tooltip.basedefense.raincoat").formatted(Formatting.BLUE));
+        }
         if (cold != 0) {
             tooltip.add(Text.translatable("tooltip.basedefense.clothing.cold", fmt(cold)).formatted(Formatting.AQUA));
         }

@@ -121,6 +121,9 @@ public final class KatanaCombat {
     private static final Map<UUID, int[]> LAST = new HashMap<>();     // {тик, номер удара}
     private static final List<Pending> PENDING = new ArrayList<>();
     private static final Map<UUID, Special> SPECIALS = new HashMap<>();
+    /** Когда (тик сервера) особая атака снова готова. Своя перезарядка, а не ванильная у предмета: ванильная
+     *  запрещает и ПКМ, т.е. блок катаной. */
+    private static final Map<UUID, Integer> SPECIAL_READY = new HashMap<>();
     private static final Map<UUID, Integer> CHARGES = new HashMap<>();
 
     private record Pending(UUID player, int at, int idx, int hit) {
@@ -161,6 +164,7 @@ public final class KatanaCombat {
             LAST.remove(handler.player.getUuid());
             SPECIALS.remove(handler.player.getUuid());
             CHARGES.remove(handler.player.getUuid());
+            SPECIAL_READY.remove(handler.player.getUuid());
         });
     }
 
@@ -311,7 +315,7 @@ public final class KatanaCombat {
         int now = server.getTicks();
         if (what == 1) {
             if (!holding(player) || busy(player) || player.isUsingItem() || player.isSpectator()
-                    || player.getItemCooldownManager().isCoolingDown(player.getMainHandStack().getItem())) {
+                    || now < SPECIAL_READY.getOrDefault(player.getUuid(), 0)) {
                 return;
             }
             CHARGES.put(player.getUuid(), now);
@@ -363,7 +367,7 @@ public final class KatanaCombat {
             sp.burstDamage += power * POWER_DAMAGE;
         }
         SPECIALS.put(player.getUuid(), sp);
-        player.getItemCooldownManager().set(player.getMainHandStack().getItem(), SPECIAL_COOLDOWN);
+        SPECIAL_READY.put(player.getUuid(), now + SPECIAL_COOLDOWN);
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, v.dashTicks + 4, 4, false, false, false));
         w.playSound(player, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_SPECIAL, SoundCategory.PLAYERS, 1.0f, 1.0f);
         if (v.ancient) {

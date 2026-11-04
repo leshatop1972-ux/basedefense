@@ -6,7 +6,9 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
-/** Вкладка справа от окна («Инвентарь» / «Потребности»): значок‑предмет, выбранная — светлее и шире. */
+import java.util.function.BooleanSupplier;
+
+/** Вкладка справа от окна («Инвентарь» / «Потребности» / «Рюкзак»): значок‑предмет, выбранная — светлее и шире. */
 public class SideTab extends ButtonWidget {
 
     public static final int W = 26;
@@ -14,12 +16,22 @@ public class SideTab extends ButtonWidget {
 
     private final ItemStack icon;
     private final boolean selected;
+    /** Когда вкладка видна (рюкзак — только если он надет). */
+    private final BooleanSupplier shown;
 
-    public SideTab(int x, int y, ItemStack icon, Text tooltip, boolean selected, PressAction onPress) {
+    public SideTab(int x, int y, ItemStack icon, Text tooltip, boolean selected, BooleanSupplier shown,
+                   PressAction onPress) {
         super(x, y, W, H, tooltip, onPress, DEFAULT_NARRATION_SUPPLIER);
         this.icon = icon;
         this.selected = selected;
+        this.shown = shown;
         this.setTooltip(Tooltip.of(tooltip));
+    }
+
+    @Override
+    public void render(DrawContext c, int mouseX, int mouseY, float delta) {
+        this.visible = shown.getAsBoolean();
+        super.render(c, mouseX, mouseY, delta);
     }
 
     @Override

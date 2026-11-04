@@ -2,6 +2,8 @@ package com.lesha_top1972.basedefense.mixin;
 
 import com.lesha_top1972.basedefense.artifact.ArtifactSlot;
 import com.lesha_top1972.basedefense.artifact.Artifacts;
+import com.lesha_top1972.basedefense.clothing.BackpackItem;
+import com.lesha_top1972.basedefense.clothing.BackpackSlot;
 import com.lesha_top1972.basedefense.clothing.Clothing;
 import com.lesha_top1972.basedefense.clothing.ClothingItem;
 import com.lesha_top1972.basedefense.clothing.ClothingSlot;
@@ -18,8 +20,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Доп. слоты в инвентаре игрока — в конце, чтобы не сдвигать ванильные: артефакты (46–50) и одежда (51–54).
- * Слоты одежды стоят на месте слотов брони (видны только в режиме «одежда», см. SlotMixin).
+ * Доп. слоты в инвентаре игрока — в конце, чтобы не сдвигать ванильные: артефакты (46–50), одежда (51–54)
+ * и рюкзак (55). Одежда и рюкзак — на панели над окном (видна, когда открыта кнопкой у брони).
  */
 @Mixin(PlayerScreenHandler.class)
 public abstract class PlayerScreenHandlerMixin {
@@ -31,10 +33,12 @@ public abstract class PlayerScreenHandlerMixin {
             ((ScreenHandlerAccessor) this).basedefense$addSlot(new ArtifactSlot(inv, i));
         }
         SimpleInventory clothes = Clothing.of(owner);
-        for (int i = 0; i < Clothing.SLOTS; i++) {
+        for (int i = 0; i < Clothing.CLOTHES; i++) {
             ((ScreenHandlerAccessor) this).basedefense$addSlot(
-                    new ClothingSlot(clothes, i, 8, 8 + i * 18, Clothing::playerViewOn));
+                    new ClothingSlot(clothes, i, Clothing.PLAYER_X + i * 18, Clothing.PLAYER_Y, Clothing::playerViewOn));
         }
+        ((ScreenHandlerAccessor) this).basedefense$addSlot(
+                new BackpackSlot(clothes, Clothing.PLAYER_BACKPACK_X, Clothing.PLAYER_Y, Clothing::playerViewOn));
     }
 
     /** Shift‑клик по одежде в инвентаре — сразу в её свободный слот одежды. */
@@ -45,12 +49,12 @@ public abstract class PlayerScreenHandlerMixin {
             return;
         }
         Slot from = self.slots.get(index);
-        if (!(from.getStack().getItem() instanceof ClothingItem)) {
+        if (!(from.getStack().getItem() instanceof ClothingItem) && !(from.getStack().getItem() instanceof BackpackItem)) {
             return;
         }
         for (Slot s : self.slots) {
-            if (s instanceof ClothingSlot cs && !cs.hasStack() && cs.canInsert(from.getStack())) {
-                cs.setStack(from.getStack().split(1));
+            if ((s instanceof ClothingSlot || s instanceof BackpackSlot) && !s.hasStack() && s.canInsert(from.getStack())) {
+                s.setStack(from.getStack().split(1));
                 from.markDirty();
                 cir.setReturnValue(ItemStack.EMPTY);
                 return;

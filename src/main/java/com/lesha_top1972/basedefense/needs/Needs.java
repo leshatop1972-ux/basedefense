@@ -66,6 +66,7 @@ public final class Needs {
 
     private static final UUID SPEED_ID = UUID.fromString("3c5e1f0a-8d2b-4b6e-9f41-6a2d1c0e7b11");
     private static final UUID DAMAGE_ID = UUID.fromString("3c5e1f0a-8d2b-4b6e-9f41-6a2d1c0e7b12");
+    private static final UUID BACKPACK_ID = UUID.fromString("3c5e1f0a-8d2b-4b6e-9f41-6a2d1c0e7b14");
     private static final UUID ATTACK_SPEED_ID = UUID.fromString("3c5e1f0a-8d2b-4b6e-9f41-6a2d1c0e7b13");
 
     /** Где хранятся потребности (игрок — миксин, поселенец — поля). */
@@ -179,13 +180,24 @@ public final class Needs {
      */
     public static Result update(LivingEntity e, ServerWorld w, State st, float dt, boolean affect) {
         Temperature.Sample s = Temperature.sample(w, e.getBlockPos(), null);
+        float air = s.temp();
+        // Дождевик: осадки не холодят
+        net.minecraft.inventory.Inventory clothes = Temperature.clothing(e);
+        if (s.rain() && clothes != null && clothes.getStack(com.lesha_top1972.basedefense.clothing.ClothingType.CHEST.ordinal())
+                .isOf(com.lesha_top1972.basedefense.clothing.ModClothing.RAINCOAT)) {
+            air -= Temperature.RAIN;
+        }
+        // Большой рюкзак замедляет
+        double pack = com.lesha_top1972.basedefense.clothing.Clothing.backpack(clothes).getItem()
+                instanceof com.lesha_top1972.basedefense.clothing.BackpackItem bp ? bp.getSpeed() : 0;
+        setModifier(e, EntityAttributes.GENERIC_MOVEMENT_SPEED, BACKPACK_ID, "basedefense backpack", pack);
 
         // Ощущаемая температура — плавно к воздуху
         float felt = st.felt();
         if (Float.isNaN(felt)) {
-            felt = s.temp();
+            felt = air;
         } else {
-            float diff = s.temp() - felt;
+            float diff = air - felt;
             float step = (Math.abs(diff) * FELT_SHARE + FELT_MIN_STEP) * dt;
             felt += Math.signum(diff) * Math.min(Math.abs(diff), step);
         }
@@ -210,7 +222,7 @@ public final class Needs {
         } else {
             apply(e, ComfortLevel.NORMAL, dt);
         }
-        return new Result(felt, s.temp(), status, c[0], c[1], comfort, trend, s.enclosure());
+        return new Result(felt, air, status, c[0], c[1], comfort, trend, s.enclosure());
     }
 
     /** Цель комфорта (см. описание класса). */

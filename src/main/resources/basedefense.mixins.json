@@ -14,9 +14,11 @@
     "PlayerEntityDirectorMixin",
     "DimensionTypeMixin",
     "BiomeMixin",
+    "CropBlockMixin",
+    "CropBlockAccessor",
+    "AbstractBlockDropsMixin",
     "PlayerScreenHandlerMixin",
-    "ScreenHandlerAccessor",
-    "SlotMixin"
+    "ScreenHandlerAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

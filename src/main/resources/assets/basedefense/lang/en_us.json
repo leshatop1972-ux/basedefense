@@ -485,8 +485,6 @@
   "tooltip.basedefense.clothing.chest": "Clothing: body",
   "tooltip.basedefense.clothing.legs": "Clothing: legs",
   "tooltip.basedefense.clothing.feet": "Clothing: feet",
-  "gui.basedefense.clothing.show_clothes": "Show clothing",
-  "gui.basedefense.clothing.show_armor": "Show armor",
   "screen.basedefense.guard.tip.clothing": "Clothing (layer under armor)",
   "season.basedefense.summer": "Summer",
   "season.basedefense.autumn": "Autumn",
@@ -553,5 +551,18 @@
   "needs.basedefense.temp_comfort": "Comfortable in these clothes: %s…%s°",
   "needs.basedefense.place.indoors": "Indoors",
   "needs.basedefense.place.shelter": "Sheltered",
-  "needs.basedefense.place.outdoors": "Outdoors"
+  "needs.basedefense.place.outdoors": "Outdoors",
+  "item.basedefense.knit_hat": "Knit Hat",
+  "item.basedefense.raincoat": "Raincoat",
+  "item.basedefense.backpack": "Backpack",
+  "item.basedefense.big_backpack": "Big Backpack",
+  "tooltip.basedefense.backpack.rows": "Rows: %s (%s slots)",
+  "tooltip.basedefense.backpack.speed": "Speed: %s%%",
+  "tooltip.basedefense.backpack.items": "Items inside: %s",
+  "tooltip.basedefense.raincoat": "Rain and snow don't make you colder",
+  "gui.basedefense.tab.backpack": "Backpack",
+  "gui.basedefense.clothing.show": "Clothing and backpack",
+  "gui.basedefense.clothing.hide": "Hide clothing and backpack",
+  "screen.basedefense.guard.tip.backpack": "Backpack",
+  "container.basedefense.settler_backpack": "Backpack: %s"
 }

@@ -388,6 +388,108 @@ CLOTHES = {
     "felt_boots": (FELT_BOOTS, pal((40, 38, 36), (132, 126, 118), (104, 98, 92), (160, 154, 146))),
 }
 
+KNIT_HAT = [
+    "................",
+    "................",
+    ".......OO.......",
+    "......OBBO......",
+    ".......OO.......",
+    ".....OOOOOO.....",
+    "....OHMMMMSO....",
+    "...OMHMMMMMSO...",
+    "...OMMMMMMMSO...",
+    "...OMMMMMMMSO...",
+    "...OAAAAAAAAO...",
+    "...OABABABABO...",
+    "...OOOOOOOOOO...",
+    "................",
+    "................",
+    "................",
+]
+
+RAINCOAT = [
+    "................",
+    "....OOOOOOOO....",
+    "...OMMMMMMMMO...",
+    "..OMMHOAAOMMSO..",
+    ".OMMHMMOAOMMMSO.",
+    "OMMHMMMOAOMMMMSO",
+    "OMHMOMMOBOMMOMSO",
+    "OMMMOMMOAOMMOMSO",
+    "OMMMOMMOAOMMOMSO",
+    "OSSMOMMOBOMMOSSO",
+    "OOOOOMMOAOMMOOOO",
+    "....OMMOAOMMSO..",
+    "....OMMOAOMMSO..",
+    "....OSSSSSSSSO..",
+    "....OOOOOOOOOO..",
+    "................",
+]
+
+BACKPACK = [
+    "................",
+    "......OOOO......",
+    ".....OS..SO.....",
+    "...OOOOOOOOOO...",
+    "..OHMMMMMMMMSO..",
+    "..OMMMMMMMMMSO..",
+    "..OAAAAAAAAAAO..",
+    "..OMMMOBBOMMSO..",
+    "..OMHMOBBOMMSO..",
+    "..OMMMOOOOMMSO..",
+    "..OMMMMMMMMMSO..",
+    "..OMHMMMMMMMSO..",
+    "..OSSSSSSSSSSO..",
+    "...OOOOOOOOOO...",
+    "................",
+    "................",
+]
+
+BIG_BACKPACK = [
+    "......OOOO......",
+    ".....OS..SO.....",
+    "..OOOOOOOOOOOO..",
+    ".OHMMMMMMMMMMSO.",
+    ".OAAAAAAAAAAAAO.",
+    ".OMMOOOOOOOOMSO.",
+    ".OMMOMMBBMMOMSO.",
+    "OOMMOMMBBMMOMSOO",
+    "OAOMOOOOOOOOMOAO",
+    "OAOMMMMMMMMMMOAO",
+    "OAOMHMMMMMMMMOAO",
+    "OOOMMMMMMMMMSOOO",
+    ".OMMMMMMMMMMMSO.",
+    ".OSSSSSSSSSSSSO.",
+    "..OOOOOOOOOOOO..",
+    "................",
+]
+
+SLOT_BACKPACK = [
+    "................",
+    "................",
+    "......XXXX......",
+    ".....X....X.....",
+    "...XXXXXXXXXX...",
+    "...XXXXXXXXXX...",
+    "...XXXXXXXXXX...",
+    "...XXX....XXX...",
+    "...XXX....XXX...",
+    "...XXXXXXXXXX...",
+    "...XXXXXXXXXX...",
+    "...XXXXXXXXXX...",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+CLOTHES.update({
+    "knit_hat": (KNIT_HAT, pal((40, 50, 70), (70, 110, 170), (52, 84, 136), (110, 150, 206), (236, 232, 220), (200, 60, 50))),
+    "raincoat": (RAINCOAT, pal((60, 50, 10), (226, 190, 40), (186, 150, 24), (250, 224, 110), (90, 72, 20), (40, 36, 30))),
+    "backpack": (BACKPACK, pal((50, 32, 18), (140, 92, 52), (108, 70, 38), (172, 122, 76), (90, 60, 34), (200, 170, 80))),
+    "big_backpack": (BIG_BACKPACK, pal((40, 34, 22), (104, 96, 62), (80, 72, 46), (134, 124, 86), (120, 78, 40), (200, 170, 80))),
+})
+
 # Пустые слоты одежды: силуэты одним бледным цветом (как ванильные значки пустой брони)
 SLOT_HEAD = [
     "................",
@@ -476,6 +578,7 @@ def main():
         build_with(rows, colors).save(OUT / f"{name}.png")
     for name, rows in (("head", SLOT_HEAD), ("chest", SLOT_CHEST), ("legs", SLOT_LEGS), ("feet", SLOT_FEET)):
         build_with(rows, SLOT_COLORS).save(OUT / f"empty_slot_clothing_{name}.png")
+    build_with(SLOT_BACKPACK, SLOT_COLORS).save(OUT / "empty_slot_backpack.png")
     print("готово:", OUT)
 
 

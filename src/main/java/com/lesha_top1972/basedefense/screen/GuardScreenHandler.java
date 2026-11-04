@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.screen;
 
+import com.lesha_top1972.basedefense.clothing.BackpackSlot;
 import com.lesha_top1972.basedefense.clothing.Clothing;
 import com.lesha_top1972.basedefense.clothing.ClothingSlot;
 import com.lesha_top1972.basedefense.entity.settler.GuardEntity;
@@ -23,7 +24,7 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Меню поселенца: оружие, 4 слота брони, 4 слота одежды (на месте брони, переключаются кнопкой),
+ * Меню поселенца: оружие, 4 слота брони, 4 слота одежды и рюкзак (панель слева, открывается кнопкой),
  * 3 слота еды, 2 слота стрел, 2 слота артефактов (закрыты),
  * внизу — инвентарь игрока. Оружие и броня — прямо снаряжение стражника (видно на нём),
  * еда, стрелы и артефакты — его сумка ({@link GuardEntity#getBag()}).
@@ -67,9 +68,10 @@ public class GuardScreenHandler extends ScreenHandler {
             PlayerScreenHandler.EMPTY_BOOTS_SLOT_TEXTURE};
     private static final Identifier SWORD_ICON = new Identifier("item/empty_slot_sword");
 
-    /** Номера слотов в меню: 0 — оружие, 1–4 броня, 5–11 сумка, 12–15 одежда, дальше — игрок. */
+    /** Номера слотов в меню: 0 — оружие, 1–4 броня, 5–11 сумка, 12–15 одежда, 16 рюкзак, дальше — игрок. */
     public static final int CLOTHING_START = 12;
-    public static final int GUARD_SLOTS = 16;
+    public static final int BACKPACK_SLOT = 16;
+    public static final int GUARD_SLOTS = 17;
 
     @Nullable
     private final GuardEntity guard;
@@ -133,10 +135,6 @@ public class GuardScreenHandler extends ScreenHandler {
                     return Pair.of(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, icon);
                 }
 
-                @Override
-                public boolean isEnabled() {
-                    return !Clothing.settlerViewOn();   // в режиме «одежда» на этом месте слоты одежды
-                }
             });
         }
         // 5–7 — еда
@@ -171,10 +169,12 @@ public class GuardScreenHandler extends ScreenHandler {
                 }
             });
         }
-        // 12–15 — одежда (на месте брони)
-        for (int i = 0; i < Clothing.SLOTS; i++) {
-            this.addSlot(new ClothingSlot(clothing, i, ARMOR_X, ARMOR_Y + i * 18, Clothing::settlerViewOn));
+        // 12–15 — одежда, 16 — рюкзак: панель слева от окна (кнопка в углу портрета)
+        for (int i = 0; i < Clothing.CLOTHES; i++) {
+            this.addSlot(new ClothingSlot(clothing, i, Clothing.SETTLER_X, Clothing.SETTLER_Y + i * 18,
+                    Clothing::settlerViewOn));
         }
+        this.addSlot(new BackpackSlot(clothing, Clothing.SETTLER_X, Clothing.SETTLER_BACKPACK_Y, Clothing::settlerViewOn));
         // Игрок
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {

@@ -19,12 +19,31 @@ public final class KatanaHud {
     private KatanaHud() {
     }
 
+    /** Перезарядка особой атаки — белая шторка на ячейках панели с катанами (как ванильная перезарядка). */
+    private static void cooldownOverlay(DrawContext ctx, ClientPlayerEntity p, float tickDelta) {
+        float k = KatanaClient.specialCooldown(tickDelta);
+        if (k <= 0) {
+            return;
+        }
+        int w = ctx.getScaledWindowWidth();
+        int h = ctx.getScaledWindowHeight();
+        for (int i = 0; i < 9; i++) {
+            if (p.getInventory().getStack(i).getItem() instanceof com.lesha_top1972.basedefense.weapon.KatanaItem) {
+                int x = w / 2 - 90 + i * 20 + 2;
+                int y = h - 16 - 3;
+                int top = y + Math.round(16 * (1 - k));
+                ctx.fill(x, top, x + 16, y + 16, 0x7FFFFFFF);
+            }
+        }
+    }
+
     static void render(DrawContext ctx, float tickDelta) {
         MinecraftClient c = MinecraftClient.getInstance();
         ClientPlayerEntity p = c.player;
         if (p == null || c.options.hudHidden || p.isSpectator()) {
             return;
         }
+        cooldownOverlay(ctx, p, tickDelta);
         int power = KatanaClient.power;
         boolean ancient = KatanaCombat.holding(p) && KatanaCombat.variant(p).ancient;
         if (power <= 0 && !ancient) {

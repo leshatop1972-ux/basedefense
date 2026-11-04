@@ -63,7 +63,7 @@ public final class Temperature {
     private static final int HEIGHT_FROM = 80;
     private static final float HEIGHT_STEP = 8f;
     private static final float CAVE_TEMP = 12f;
-    private static final float RAIN = -3f;
+    public static final float RAIN = -3f;
     private static final float WIND = -2f;
     private static final float WATER = -6f;
     private static final float NETHER = 45f;
@@ -88,7 +88,7 @@ public final class Temperature {
     public static final float NAKED_MAX = 27f;
 
     /** Температура и насколько место закрыто (0 — чистое поле, 1 — комната с крышей и стенами). */
-    public record Sample(float temp, float enclosure) {
+    public record Sample(float temp, float enclosure, boolean rain) {
     }
 
     private Temperature() {
@@ -105,10 +105,10 @@ public final class Temperature {
 
     public static Sample sample(ServerWorld w, BlockPos pos, @Nullable List<Text> why) {
         if (w.getRegistryKey() == World.NETHER) {
-            return new Sample(NETHER, 0f);
+            return new Sample(NETHER, 0f, false);
         }
         if (w.getRegistryKey() == World.END) {
-            return new Sample(END, 0f);
+            return new Sample(END, 0f, false);
         }
         long time = w.getServer().getOverworld().getTimeOfDay();
         long offset = Seasons.serverOffset();
@@ -162,8 +162,10 @@ public final class Temperature {
             t = MathHelper.lerp(enclosure * HOUSE_PULL, t, HOUSE_TEMP);
             add(why, "house", t - before, Text.literal(Math.round(enclosure * 100) + "%"));
         }
+        boolean rained = false;
         if (roof < 0.5f) {
             if (w.hasRain(head)) {
+                rained = true;
                 t += RAIN;
                 add(why, "rain", RAIN, null);
             }
@@ -183,7 +185,7 @@ public final class Temperature {
             t += heat;
             add(why, "heat", heat, null);
         }
-        return new Sample(t, enclosure);
+        return new Sample(t, enclosure, rained);
     }
 
     public static float ambient(ServerWorld w, BlockPos pos) {
@@ -332,7 +334,7 @@ public final class Temperature {
         int n = 0;
         if (inv != null) {
             for (int i = 0; i < inv.size(); i++) {
-                if (!inv.getStack(i).isEmpty()) {
+                if (inv.getStack(i).getItem() instanceof ClothingItem) {
                     n++;
                 }
             }

@@ -25,6 +25,11 @@ public final class TigerMusic {
 
     private static Track current;
     private static int lost;
+    /** Мир, в котором играли в прошлый тик: при переходе в другое измерение (арена тигра) игра останавливает
+     *  все звуки — трек перезапускается, а на поиск тигра в новом мире даётся 10 с. */
+    private static Object lastWorld;
+    private static int clientTicks;
+    private static int startedAt;
 
     private TigerMusic() {
     }
@@ -56,6 +61,20 @@ public final class TigerMusic {
             }
             return;
         }
+        clientTicks++;
+        if (mc.world != lastWorld) {
+            lastWorld = mc.world;
+            if (current != null && !current.isDone()) {
+                lost = -200;                                   // ждём, пока тигр появится в новом мире
+            }
+        }
+        // Трек остановили снаружи (смена измерения — игра глушит все звуки) — запускаем заново
+        if (current != null && !current.isDone() && !current.fading && clientTicks - startedAt > 20
+                && !mc.getSoundManager().isPlaying(current)) {
+            current = new Track(VOLUME * 0.5f);
+            mc.getSoundManager().play(current);
+            startedAt = clientTicks;
+        }
         boolean playing = current != null && !current.isDone();
         ThunderTigerEntity boss = nearest(mc, playing ? KEEP : START);
         boolean fight = boss != null && (playing || !boss.isLazy() || boss.getPhase() > 1 || boss.getAction() >= 0
@@ -63,8 +82,9 @@ public final class TigerMusic {
         if (fight) {
             lost = 0;
             if (!playing) {
-                current = new Track();
+                current = new Track(0.01f);
                 mc.getSoundManager().play(current);
+                startedAt = clientTicks;
             }
             mc.getMusicTracker().stop();
         } else if (playing && ++lost > 60) {
@@ -75,11 +95,11 @@ public final class TigerMusic {
     private static final class Track extends MovingSoundInstance {
         private boolean fading;
 
-        Track() {
+        Track(float startVolume) {
             super(ModSounds.TIGER_MUSIC, SoundCategory.MASTER, SoundInstance.createRandom());
             this.repeat = true;
             this.repeatDelay = 0;
-            this.volume = 0.01f;
+            this.volume = startVolume;
             this.relative = true;
             this.attenuationType = SoundInstance.AttenuationType.NONE;
         }

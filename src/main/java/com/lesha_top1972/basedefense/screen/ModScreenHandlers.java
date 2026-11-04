@@ -29,6 +29,11 @@ public final class ModScreenHandlers {
             new Identifier(Basedefense.MOD_ID, "amulet_table"),
             new ScreenHandlerType<>(AmuletTableScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
 
+    /** Меню рюкзака (2 или 3 ряда). Клиенту передаются ряды и хозяин рюкзака. */
+    public static final ScreenHandlerType<com.lesha_top1972.basedefense.clothing.BackpackScreenHandler> BACKPACK =
+            Registry.register(Registries.SCREEN_HANDLER, new Identifier(Basedefense.MOD_ID, "backpack"),
+                    new ExtendedScreenHandlerType<>(com.lesha_top1972.basedefense.clothing.BackpackScreenHandler::new));
+
     private ModScreenHandlers() {
     }
 

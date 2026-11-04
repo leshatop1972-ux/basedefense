@@ -485,8 +485,6 @@
   "tooltip.basedefense.clothing.chest": "Одежда: тело",
   "tooltip.basedefense.clothing.legs": "Одежда: ноги",
   "tooltip.basedefense.clothing.feet": "Одежда: ступни",
-  "gui.basedefense.clothing.show_clothes": "Показать одежду",
-  "gui.basedefense.clothing.show_armor": "Показать броню",
   "screen.basedefense.guard.tip.clothing": "Одежда (слой под бронёй)",
   "season.basedefense.summer": "Лето",
   "season.basedefense.autumn": "Осень",
@@ -553,5 +551,18 @@
   "needs.basedefense.temp_comfort": "Комфортно в этой одежде: %s…%s°",
   "needs.basedefense.place.indoors": "В помещении",
   "needs.basedefense.place.shelter": "Под укрытием",
-  "needs.basedefense.place.outdoors": "На улице"
+  "needs.basedefense.place.outdoors": "На улице",
+  "item.basedefense.knit_hat": "Вязаная шапка",
+  "item.basedefense.raincoat": "Дождевик",
+  "item.basedefense.backpack": "Рюкзак",
+  "item.basedefense.big_backpack": "Большой рюкзак",
+  "tooltip.basedefense.backpack.rows": "Рядов: %s (%s ячеек)",
+  "tooltip.basedefense.backpack.speed": "Скорость: %s%%",
+  "tooltip.basedefense.backpack.items": "Внутри предметов: %s",
+  "tooltip.basedefense.raincoat": "Под дождём и снегом не холоднее",
+  "gui.basedefense.tab.backpack": "Рюкзак",
+  "gui.basedefense.clothing.show": "Одежда и рюкзак",
+  "gui.basedefense.clothing.hide": "Скрыть одежду и рюкзак",
+  "screen.basedefense.guard.tip.backpack": "Рюкзак",
+  "container.basedefense.settler_backpack": "Рюкзак: %s"
 }
