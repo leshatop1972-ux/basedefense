@@ -85,6 +85,14 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         };
         pill(c, this.textRenderer, r - 12 - mw, t + 9, modeText, modeColor);
 
+        // Температура у поселенца — левее режима
+        if (this.client != null && this.client.world != null
+                && this.client.world.getEntityById(handler.getEntityId())
+                instanceof com.lesha_top1972.basedefense.entity.settler.SettlerEntity settler) {
+            com.lesha_top1972.basedefense.client.temperature.TemperatureHud.draw(c, this.textRenderer,
+                    r - 12 - mw - 38, t + 10, settler.getTemperature(), settler.getTempStatus());
+        }
+
         // Портрет
         drawPortrait(c, l + 8, t + 28, l + 76, t + 116, mouseX, mouseY);
 

@@ -30,7 +30,9 @@ public class Basedefense implements ModInitializer {
         SettlerThreats.init();
         com.lesha_top1972.basedefense.military.GuardEvents.init();   // Повестка: ЛКМ по блоку — точка обороны отряда
         com.lesha_top1972.basedefense.artifact.Artifacts.init();
-        com.lesha_top1972.basedefense.clothing.Clothing.init();   // слой одежды у игроков (под бронёй)   // слоты артефактов, амулет рывка
+        com.lesha_top1972.basedefense.clothing.Clothing.init();   // слой одежды у игроков (под бронёй)
+        com.lesha_top1972.basedefense.season.Seasons.init();          // времена года, команда /season
+        com.lesha_top1972.basedefense.temperature.Temperature.init(); // температура, команда /temperature   // слоты артефактов, амулет рывка
         com.lesha_top1972.basedefense.director.Director.init();   // «Режиссёр мира»: дни, акты, шкала, события
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         com.lesha_top1972.basedefense.weapon.KatanaCombat.init();

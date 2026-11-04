@@ -10,14 +10,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/** Одежда: кладётся только в свой слот одежды ({@link ClothingType}). Пока ничего не даёт. */
+/** Одежда: кладётся только в свой слот одежды ({@link ClothingType}); тёплость ({@link Warmth}) задаёт комфортную температуру. */
 public class ClothingItem extends Item {
 
     private final ClothingType type;
+    private final Warmth warmth;
 
-    public ClothingItem(ClothingType type, Settings settings) {
+    public ClothingItem(ClothingType type, Warmth warmth, Settings settings) {
         super(settings);
         this.type = type;
+        this.warmth = warmth;
+    }
+
+    public Warmth getWarmth() {
+        return warmth;
     }
 
     public ClothingType getType() {
@@ -27,5 +33,9 @@ public class ClothingItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
         tooltip.add(Text.translatable("tooltip.basedefense.clothing." + type.id).formatted(Formatting.GRAY));
+        if (warmth != Warmth.NONE) {
+            tooltip.add(Text.translatable("tooltip.basedefense.warmth." + warmth.name().toLowerCase(java.util.Locale.ROOT),
+                    (int) warmth.comfortMin, (int) warmth.comfortMax).formatted(Formatting.BLUE));
+        }
     }
 }

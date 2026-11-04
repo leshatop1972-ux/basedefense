@@ -2,6 +2,9 @@ package com.lesha_top1972.basedefense.entity.settler;
 
 import com.lesha_top1972.basedefense.clothing.Clothing;
 import com.lesha_top1972.basedefense.sound.ModSounds;
+import com.lesha_top1972.basedefense.temperature.TempStatus;
+import com.lesha_top1972.basedefense.temperature.Temperature;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -25,13 +28,20 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Общий класс поселенца: внешность (см. {@link SettlerLooks}), русское имя с фамилией, голос,
- * «дом» (точка, где появился — вокруг неё гуляет) и слой одежды (4 слота под бронёй, см. {@link Clothing}).
+ * «дом» (точка, где появился — вокруг неё гуляет), слой одежды (4 слота под бронёй, см. {@link Clothing})
+ * и температура воздуха вокруг (см. {@link Temperature}).
  * Профессий, зданий и поселения больше нет — поведение и меню задаёт {@link GuardEntity}.
  */
 public abstract class SettlerEntity extends PathAwareEntity {
 
     /** Внешность: номер из SettlerLooks (-1 — ещё не выбрана). */
     private static final TrackedData<Integer> SKIN =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+
+    /** Температура воздуха у поселенца (°C) и самочувствие (TempStatus) — для меню; считает сервер раз в 2 с. */
+    private static final TrackedData<Float> TEMPERATURE =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Integer> TEMP_STATUS =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     @Nullable
@@ -58,6 +68,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(SKIN, -1);
+        this.dataTracker.startTracking(TEMPERATURE, 20f);
+        this.dataTracker.startTracking(TEMP_STATUS, TempStatus.COMFORT.ordinal());
     }
 
     // ---------- Внешность ----------
@@ -79,6 +91,16 @@ public abstract class SettlerEntity extends PathAwareEntity {
         if (!this.hasCustomName()) {
             this.setCustomName(Text.literal(SettlerNames.random(this.random, isFemale())));
         }
+    }
+
+    // ---------- Температура ----------
+
+    public float getTemperature() {
+        return this.dataTracker.get(TEMPERATURE);
+    }
+
+    public TempStatus getTempStatus() {
+        return TempStatus.byIndex(this.dataTracker.get(TEMP_STATUS));
     }
 
     // ---------- Одежда ----------
@@ -108,6 +130,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
             }
             if (getSkin() < 0 || !this.hasCustomName()) {
                 ensureLook();
+            }
+            if (this.age % 40 == 5 && this.getWorld() instanceof ServerWorld sw) {
+                float t = Temperature.ambient(sw, this.getBlockPos(), null);
+                this.dataTracker.set(TEMPERATURE, Math.round(t * 10) / 10f);
+                this.dataTracker.set(TEMP_STATUS, Temperature.status(this, t).ordinal());
             }
         }
     }
