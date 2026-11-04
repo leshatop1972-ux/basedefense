@@ -154,7 +154,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         // Чем дерётся
         int weapon = handler.getProp(PROP_WEAPON);
         Text wText = Text.translatable("screen.basedefense.guard.weapon_state." + weapon);
-        c.drawText(this.textRenderer, wText, l + FOOD_X - 1, t + 111,
+        c.drawText(this.textRenderer, wText, l + FOOD_X - 1, t + 108,
                 weapon == 0 || weapon == 4 ? WARN : TEXT_MUTED, false);
 
         // Инвентарь игрока

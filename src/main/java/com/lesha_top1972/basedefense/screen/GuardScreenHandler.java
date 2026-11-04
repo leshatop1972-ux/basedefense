@@ -39,9 +39,9 @@ public class GuardScreenHandler extends ScreenHandler {
     public static final int ARMOR_Y = 44;
     public static final int WEAPON_X = 108;
     public static final int WEAPON_Y = 54;
-    public static final int ARROW_X = 134;
+    public static final int ARROW_X = 146;
     public static final int ARROW_Y = 54;
-    public static final int ARTIFACT_X = 184;
+    public static final int ARTIFACT_X = 192;
     public static final int ARTIFACT_Y = 54;
     public static final int FOOD_X = 108;
     public static final int FOOD_Y = 90;

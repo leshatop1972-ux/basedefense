@@ -83,7 +83,6 @@ public class NeedsScreen extends Screen {
         float cmin;
         float cmax;
         float enclosure;
-        Float air = null;
         if (settler != null) {
             name = settler.getDisplayName();
             hunger = settler.getHunger();
@@ -104,7 +103,6 @@ public class NeedsScreen extends Screen {
             cmin = ClientNeeds.comfortMin;
             cmax = ClientNeeds.comfortMax;
             enclosure = ClientNeeds.enclosure;
-            air = ClientNeeds.ambient;
         }
 
         int l = left;
@@ -147,20 +145,16 @@ public class NeedsScreen extends Screen {
         // ---------- Температура ----------
         y = Math.max(y + 4, t + 112);
         divider(c, l + 10, r - 10, y - 4);
+        // Значок и температура, справа — самочувствие
         TemperatureHud.draw(c, this.textRenderer, l + 10, y, felt, status);
-        Text tLine = air != null
-                ? Text.translatable("needs.basedefense.temp_felt_air", Math.round(felt), Math.round(air))
-                : Text.translatable("needs.basedefense.temp_felt", Math.round(felt));
-        c.drawText(this.textRenderer, tLine, l + 34, y + 1, TEXT_BODY, false);
-        y += 12;
+        Text st = Text.translatable("temperature.basedefense.status." + status.name().toLowerCase(Locale.ROOT));
+        c.drawText(this.textRenderer, st, r - 10 - this.textRenderer.getWidth(st), y + 1, TemperatureHud.color(status), false);
+        y += 13;
         c.drawText(this.textRenderer, Text.translatable("needs.basedefense.temp_comfort", Math.round(cmin), Math.round(cmax)),
                 l + 10, y, TEXT_BODY, false);
         y += 11;
         String where = enclosure >= Temperature.INDOORS ? "indoors" : enclosure > 0.15f ? "shelter" : "outdoors";
         c.drawText(this.textRenderer, Text.translatable("needs.basedefense.place." + where), l + 10, y, TEXT_MUTED, false);
-        c.drawText(this.textRenderer, Text.translatable("temperature.basedefense.status." + status.name().toLowerCase(Locale.ROOT)),
-                r - 10 - this.textRenderer.getWidth(Text.translatable("temperature.basedefense.status."
-                        + status.name().toLowerCase(Locale.ROOT))), y, TemperatureHud.color(status), false);
 
         super.render(c, mouseX, mouseY, delta);
         if (overComfort) {
