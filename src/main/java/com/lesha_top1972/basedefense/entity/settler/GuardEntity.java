@@ -61,7 +61,7 @@ import java.util.List;
 /**
  * Поселенец (раньше — стражник; сущность «guard»). Профессий нет: у всех жителей одно меню.
  * - ПКМ — меню (GuardScreenHandler): оружие (меч, топор или лук), 4 слота брони, 4 слота одежды (под бронёй),
- *   3 слота еды (ест сам, когда ранен), 2 слота стрел (для лука), 2 слота артефактов (пока закрыты).
+ *   3 слота еды (ест сам, когда ранен или голоден — сытость ≤ 12 из 20), 2 слота стрел (для лука), 2 слота артефактов (пока закрыты).
  * - Нападает на всех мобов мода в {@link #AGGRO} блоках. Мечник/топорщик бежит к врагу,
  *   лучник держится в ~{@link #BOW_RANGE} блоках и стреляет раз в 4 секунды (попадает в половине случаев).
  * - Без отряда (или у отряда нет точки) гуляет вокруг места, где появился; у отряда с точкой
@@ -110,6 +110,8 @@ public class GuardEntity extends SettlerEntity {
     public static final int EAT_BITE = 24;
     /** Ест не чаще раза в 30 секунд. */
     public static final int EAT_COOLDOWN = 600;
+    /** Если после еды всё ещё голоден — следующий кусок через 5 секунд. */
+    public static final int EAT_COOLDOWN_HUNGRY = 100;
 
     /** Слоты сумки: 0–2 еда, 3–4 стрелы, 5–6 артефакты (пока закрыты). */
     public static final int FOOD_START = 0;
@@ -275,28 +277,33 @@ public class GuardEntity extends SettlerEntity {
             return ActionResult.success(this.getWorld().isClient);
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity sp) {
-            this.getLookControl().lookAt(player, 30.0f, 30.0f);
             this.playSound(getGreetSound(), 1.0f, getSoundPitch());
-            menuPlayer = sp;
-            GuardEntity self = this;
-            sp.openHandledScreen(new ExtendedScreenHandlerFactory() {
-                @Override
-                public void writeScreenOpeningData(ServerPlayerEntity p, PacketByteBuf buf) {
-                    buf.writeVarInt(self.getId());
-                }
-
-                @Override
-                public Text getDisplayName() {
-                    return self.getDisplayName();
-                }
-
-                @Override
-                public ScreenHandler createMenu(int syncId, PlayerInventory inventory, PlayerEntity p) {
-                    return new GuardScreenHandler(syncId, inventory, self);
-                }
-            });
+            openMenu(sp);
         }
         return ActionResult.success(this.getWorld().isClient);
+    }
+
+    /** Открыть игроку меню поселенца (клик или вкладка «Инвентарь» в окне потребностей). */
+    public void openMenu(ServerPlayerEntity sp) {
+        this.getLookControl().lookAt(sp, 30.0f, 30.0f);
+        menuPlayer = sp;
+        GuardEntity self = this;
+        sp.openHandledScreen(new ExtendedScreenHandlerFactory() {
+            @Override
+            public void writeScreenOpeningData(ServerPlayerEntity p, PacketByteBuf buf) {
+                buf.writeVarInt(self.getId());
+            }
+
+            @Override
+            public Text getDisplayName() {
+                return self.getDisplayName();
+            }
+
+            @Override
+            public ScreenHandler createMenu(int syncId, PlayerInventory inventory, PlayerEntity p) {
+                return new GuardScreenHandler(syncId, inventory, self);
+            }
+        });
     }
 
     // =====================================================================
@@ -341,7 +348,8 @@ public class GuardEntity extends SettlerEntity {
         // Без врагов 5 секунд — понемногу восстанавливает здоровье
         if (enemy == null) {
             calmTicks++;
-            if (calmTicks > 100 && this.age % 80 == 0 && this.getHealth() < this.getMaxHealth()) {
+            if (calmTicks > 100 && this.age % 80 == 0 && this.getHealth() < this.getMaxHealth()
+                    && getHunger() > 6) {   // голодный не восстанавливается
                 this.heal(1.0f);
             }
         } else {
@@ -504,11 +512,12 @@ public class GuardEntity extends SettlerEntity {
                         FoodComponent food = stack.getItem().getFoodComponent();
                         float heal = food != null ? Math.max(2.0f, food.getHunger() * 1.5f) : 2.0f;
                         this.heal(heal);
+                        feed(food != null ? food.getHunger() : 1);
                         stack.decrement(1);
                         bag.markDirty();
                         this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.5f, 1.0f);
                     }
-                    eatCooldown = EAT_COOLDOWN;
+                    eatCooldown = isHungry() ? EAT_COOLDOWN_HUNGRY : EAT_COOLDOWN;
                 }
                 if (actionTick >= EAT_TICKS) {
                     endAction();
@@ -806,8 +815,9 @@ public class GuardEntity extends SettlerEntity {
                 return;
             }
 
-            // Ранен — сначала отбегает от врага, потом ест (если есть еда)
-            if (g.getHealth() < g.getMaxHealth() * 0.6f && g.eatCooldown <= 0 && g.findFood() >= 0) {
+            // Ранен или голоден — сначала отбегает от врага, потом ест (если есть еда)
+            boolean wantsFood = g.getHealth() < g.getMaxHealth() * 0.6f || (g.isHungry() && g.enemy == null);
+            if (wantsFood && g.eatCooldown <= 0 && g.findFood() >= 0) {
                 g.mode = MODE_EAT;
                 if (g.enemy != null && g.distanceTo(g.enemy) < EAT_SAFE_DISTANCE && retreatTicks < 60) {
                     retreatTicks++;

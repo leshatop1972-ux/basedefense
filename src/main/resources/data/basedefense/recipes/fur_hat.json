@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "RRR",
+    "RWR",
+    "L L"
+  ],
+  "key": {
+    "R": {
+      "item": "minecraft:rabbit_hide"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "item": "basedefense:fur_hat"
+  }
+}

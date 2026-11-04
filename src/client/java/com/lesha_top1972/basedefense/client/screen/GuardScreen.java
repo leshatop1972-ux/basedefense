@@ -36,6 +36,10 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
         super.init();
         // Кнопка «одежда/броня» — в правом верхнем углу портрета, рядом со слотами брони
         this.addDrawableChild(ClothingClient.toggleButton(this.x + 66, this.y + 30));
+        // Вкладки справа: «Инвентарь» (это меню) и «Потребности»
+        com.lesha_top1972.basedefense.client.needs.NeedsTabs.add(this::addDrawableChild, this.x + W, this.y, false,
+                () -> {
+                }, () -> com.lesha_top1972.basedefense.client.needs.NeedsTabs.openSettlerNeeds(handler.getEntityId()));
     }
 
     @Override

@@ -17,11 +17,6 @@ import net.minecraft.util.Rarity;
 /** Все предметы мода (кроме предметов-блоков, они в ModBlocks). */
 public final class ModItems {
 
-    /** Рубашка: обычная одежда (слот «тело»), комфорт 0…22 °C. Не крафтится. */
-    public static final Item SHIRT = register("shirt", new com.lesha_top1972.basedefense.clothing.ClothingItem(
-            com.lesha_top1972.basedefense.clothing.ClothingType.CHEST, com.lesha_top1972.basedefense.clothing.Warmth.NORMAL,
-            new Item.Settings().maxCount(1)));
-
     /** Повестка: отряды стражников (ПКМ — меню, ЛКМ по блоку — точка обороны выбранного отряда). */
     public static final Item SUMMONS = register("summons", new SummonsItem(new Item.Settings().maxCount(1)));
 
@@ -162,7 +157,6 @@ public final class ModItems {
             entries.add(SUMMONS);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
-            entries.add(SHIRT);
             entries.add(BLOODTHIRSTER_SWORD);
             entries.add(KATANA);
             entries.add(REFINED_KATANA);

@@ -10,6 +10,7 @@
     "LivingEntityCombatMixin",
     "PlayerEntityArtifactsMixin",
     "PlayerEntityClothingMixin",
+    "PlayerEntityNeedsMixin",
     "PlayerEntityDirectorMixin",
     "DimensionTypeMixin",
     "BiomeMixin",

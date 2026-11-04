@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.entity.settler;
 
 import com.lesha_top1972.basedefense.clothing.Clothing;
 import com.lesha_top1972.basedefense.sound.ModSounds;
+import com.lesha_top1972.basedefense.needs.Needs;
 import com.lesha_top1972.basedefense.temperature.TempStatus;
 import com.lesha_top1972.basedefense.temperature.Temperature;
 import net.minecraft.server.world.ServerWorld;
@@ -38,14 +39,40 @@ public abstract class SettlerEntity extends PathAwareEntity {
     private static final TrackedData<Integer> SKIN =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
-    /** Температура воздуха у поселенца (°C) и самочувствие (TempStatus) — для меню; считает сервер раз в 2 с. */
+    /** Потребности для меню (считает сервер раз в 2 с, см. Needs): ощущаемая температура, самочувствие (TempStatus),
+     *  комфорт 0…100, куда он идёт (−1/0/1), сытость 0…20, комфортная температура мин/макс, закрытость места. */
     private static final TrackedData<Float> TEMPERATURE =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Integer> TEMP_STATUS =
             DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Float> COMFORT =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Integer> TREND =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> HUNGER =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Float> COMFORT_MIN =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Float> COMFORT_MAX =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Float> ENCLOSURE =
+            DataTracker.registerData(SettlerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+
+    // ---------- Голод ----------
+    public static final int HUNGER_MAX = 20;
+    /** Сытость падает на 1 за столько секунд (≈27 за игровые сутки — 2–3 приёма пищи). */
+    public static final float HUNGER_SECONDS = 45f;
+    /** Ест сам, когда сытость не больше этого. */
+    public static final int HUNGER_EAT = 12;
+    /** При сытости 0 — 1 урона раз в столько тиков (не ниже 1 здоровья). */
+    private static final int STARVE_EVERY = 300;
 
     @Nullable
     private BlockPos homePos;
+    private float comfortValue = Needs.COMFORT_START;
+    private float feltValue = Float.NaN;
+    /** Сытость с дробной частью (в данных — округлённая вверх). */
+    private float hungerLeft = HUNGER_MAX;
     /** Одежда: 0 — голова, 1 — тело, 2 — ноги, 3 — ступни (см. ClothingType). */
     private final SimpleInventory clothing = new SimpleInventory(Clothing.SLOTS);
 
@@ -70,6 +97,12 @@ public abstract class SettlerEntity extends PathAwareEntity {
         this.dataTracker.startTracking(SKIN, -1);
         this.dataTracker.startTracking(TEMPERATURE, 20f);
         this.dataTracker.startTracking(TEMP_STATUS, TempStatus.COMFORT.ordinal());
+        this.dataTracker.startTracking(COMFORT, Needs.COMFORT_START);
+        this.dataTracker.startTracking(TREND, 0);
+        this.dataTracker.startTracking(HUNGER, HUNGER_MAX);
+        this.dataTracker.startTracking(COMFORT_MIN, Temperature.NAKED_MIN);
+        this.dataTracker.startTracking(COMFORT_MAX, Temperature.NAKED_MAX);
+        this.dataTracker.startTracking(ENCLOSURE, 0f);
     }
 
     // ---------- Внешность ----------
@@ -103,6 +136,88 @@ public abstract class SettlerEntity extends PathAwareEntity {
         return TempStatus.byIndex(this.dataTracker.get(TEMP_STATUS));
     }
 
+    public float getComfort() {
+        return this.dataTracker.get(COMFORT);
+    }
+
+    public int getComfortTrend() {
+        return this.dataTracker.get(TREND);
+    }
+
+    public float getComfortMin() {
+        return this.dataTracker.get(COMFORT_MIN);
+    }
+
+    public float getComfortMax() {
+        return this.dataTracker.get(COMFORT_MAX);
+    }
+
+    public float getEnclosure() {
+        return this.dataTracker.get(ENCLOSURE);
+    }
+
+    // ---------- Голод ----------
+
+    /** Сытость 0…20 (как у игрока). */
+    public int getHunger() {
+        return this.dataTracker.get(HUNGER);
+    }
+
+    public boolean isHungry() {
+        return getHunger() <= HUNGER_EAT;
+    }
+
+    /** Поел: сытость + hunger (как у еды игрока). */
+    public void feed(int hunger) {
+        hungerLeft = Math.min(HUNGER_MAX, hungerLeft + hunger);
+        this.dataTracker.set(HUNGER, (int) Math.ceil(hungerLeft));
+    }
+
+    /** Потребности в виде Needs.State (сервер). */
+    private final Needs.State needs = new Needs.State() {
+        @Override
+        public float comfort() {
+            return comfortValue;
+        }
+
+        @Override
+        public void setComfort(float v) {
+            comfortValue = v;
+        }
+
+        @Override
+        public float felt() {
+            return feltValue;
+        }
+
+        @Override
+        public void setFelt(float v) {
+            feltValue = v;
+        }
+
+        @Override
+        public int hunger() {
+            return getHunger();
+        }
+    };
+
+    /** Раз в 2 с: голод, ощущаемая температура, комфорт и его эффекты. */
+    private void updateNeeds(ServerWorld sw) {
+        float dt = 2f;
+        if (!(this instanceof GuardEntity g && g.isSummoned())) {
+            hungerLeft = Math.max(0f, hungerLeft - dt / HUNGER_SECONDS);
+            this.dataTracker.set(HUNGER, (int) Math.ceil(hungerLeft));
+        }
+        Needs.Result r = Needs.update(this, sw, needs, dt, true);
+        this.dataTracker.set(TEMPERATURE, Math.round(r.felt() * 10) / 10f);
+        this.dataTracker.set(TEMP_STATUS, r.status().ordinal());
+        this.dataTracker.set(COMFORT, r.comfort());
+        this.dataTracker.set(TREND, r.trend());
+        this.dataTracker.set(COMFORT_MIN, r.comfortMin());
+        this.dataTracker.set(COMFORT_MAX, r.comfortMax());
+        this.dataTracker.set(ENCLOSURE, r.enclosure());
+    }
+
     // ---------- Одежда ----------
 
     public SimpleInventory getClothing() {
@@ -132,9 +247,11 @@ public abstract class SettlerEntity extends PathAwareEntity {
                 ensureLook();
             }
             if (this.age % 40 == 5 && this.getWorld() instanceof ServerWorld sw) {
-                float t = Temperature.ambient(sw, this.getBlockPos(), null);
-                this.dataTracker.set(TEMPERATURE, Math.round(t * 10) / 10f);
-                this.dataTracker.set(TEMP_STATUS, Temperature.status(this, t).ordinal());
+                updateNeeds(sw);
+            }
+            // Голодает — понемногу теряет здоровье (не ниже 1)
+            if (hungerLeft <= 0f && this.age % STARVE_EVERY == 0 && this.getHealth() > 1f) {
+                this.damage(this.getDamageSources().starve(), 1f);
             }
         }
     }
@@ -165,6 +282,8 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
         nbt.putInt("Skin", getSkin());
         nbt.put("Clothing", Clothing.toNbt(clothing));
+        nbt.putFloat("Comfort", comfortValue);
+        nbt.putFloat("Hunger", hungerLeft);
     }
 
     @Override
@@ -175,6 +294,14 @@ public abstract class SettlerEntity extends PathAwareEntity {
         }
         int skin = nbt.contains("Skin") ? nbt.getInt("Skin") : -1;
         this.dataTracker.set(SKIN, SettlerLooks.isValid(skin) ? skin : -1);
+        if (nbt.contains("Comfort")) {
+            comfortValue = nbt.getFloat("Comfort");
+            this.dataTracker.set(COMFORT, comfortValue);
+        }
+        if (nbt.contains("Hunger")) {
+            hungerLeft = nbt.getFloat("Hunger");
+            this.dataTracker.set(HUNGER, (int) Math.ceil(hungerLeft));
+        }
         if (nbt.contains("Clothing", NbtElement.LIST_TYPE)) {
             Clothing.fromNbt(clothing, nbt.getList("Clothing", NbtElement.COMPOUND_TYPE));
         }

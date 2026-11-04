@@ -2,9 +2,7 @@ package com.lesha_top1972.basedefense.client.temperature;
 
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.temperature.TempStatus;
-import com.lesha_top1972.basedefense.temperature.Temperature;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.lesha_top1972.basedefense.client.needs.ClientNeeds;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -14,45 +12,29 @@ import net.minecraft.util.Identifier;
 
 /**
  * Температура на экране: справа от полоски еды — значок самочувствия (снежинка / термометр / солнце / пламя)
- * и число °C. Значения раз в секунду присылает сервер. В творческом режиме и режиме наблюдателя не видно.
+ * и число °C (ощущаемая температура, меняется плавно). Значения раз в секунду присылает сервер (ClientNeeds). В творческом режиме и режиме наблюдателя не видно.
  */
 public final class TemperatureHud {
 
     public static final Identifier ICONS = new Identifier(Basedefense.MOD_ID, "textures/gui/temperature.png");
 
-    private static boolean has;
-    private static float temp;
-    private static TempStatus status = TempStatus.COMFORT;
-
     private TemperatureHud() {
     }
 
     public static void init() {
-        ClientPlayNetworking.registerGlobalReceiver(Temperature.SYNC, (client, handler, buf, sender) -> {
-            float t = buf.readFloat();
-            TempStatus st = TempStatus.byIndex(buf.readByte());
-            buf.readByte();
-            buf.readByte();
-            client.execute(() -> {
-                temp = t;
-                status = st;
-                has = true;
-            });
-        });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> has = false);
         HudRenderCallback.EVENT.register(TemperatureHud::render);
     }
 
     private static void render(DrawContext ctx, float tickDelta) {
         MinecraftClient c = MinecraftClient.getInstance();
         ClientPlayerEntity p = c.player;
-        if (!has || p == null || c.options.hudHidden || c.interactionManager == null
+        if (!ClientNeeds.has || p == null || c.options.hudHidden || c.interactionManager == null
                 || !c.interactionManager.hasStatusBars()) {
             return;
         }
         int x = ctx.getScaledWindowWidth() / 2 + 91 + 4;
         int y = ctx.getScaledWindowHeight() - 39;
-        draw(ctx, c.textRenderer, x, y, temp, status);
+        draw(ctx, c.textRenderer, x, y, ClientNeeds.felt, ClientNeeds.status);
     }
 
     /** Значок 9×9 и число справа от него (общий для HUD и меню поселенца). */

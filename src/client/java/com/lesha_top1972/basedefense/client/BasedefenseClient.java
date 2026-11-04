@@ -46,6 +46,7 @@ public class BasedefenseClient implements ClientModInitializer {
         com.lesha_top1972.basedefense.client.clothing.ClothingClient.init();   // кнопка «одежда/броня» в инвентаре
         com.lesha_top1972.basedefense.client.season.SeasonClient.init();       // сезон, цвет листвы и травы
         com.lesha_top1972.basedefense.client.temperature.TemperatureHud.init(); // значок температуры у еды
+        com.lesha_top1972.basedefense.client.needs.NeedsTabs.init();            // вкладки «Инвентарь / Потребности», клавиша N
         HandledScreens.register(ModScreenHandlers.GUARD, com.lesha_top1972.basedefense.client.screen.GuardScreen::new);
         HandledScreens.register(ModScreenHandlers.SQUAD, com.lesha_top1972.basedefense.client.screen.SquadScreen::new);
         HandledScreens.register(ModScreenHandlers.AMULET_TABLE,

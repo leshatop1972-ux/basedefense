@@ -26,13 +26,16 @@ public class Basedefense implements ModInitializer {
         ModBlocks.init();
         com.lesha_top1972.basedefense.block.ModBlockEntities.init();
         ModItems.init();
+        com.lesha_top1972.basedefense.clothing.ModClothing.init();   // одежда (обычная и тёплая)
         ModScreenHandlers.init();
         SettlerThreats.init();
         com.lesha_top1972.basedefense.military.GuardEvents.init();   // Повестка: ЛКМ по блоку — точка обороны отряда
-        com.lesha_top1972.basedefense.artifact.Artifacts.init();
+        com.lesha_top1972.basedefense.artifact.Artifacts.init();   // слоты артефактов, амулет рывка
         com.lesha_top1972.basedefense.clothing.Clothing.init();   // слой одежды у игроков (под бронёй)
         com.lesha_top1972.basedefense.season.Seasons.init();          // времена года, команда /season
-        com.lesha_top1972.basedefense.temperature.Temperature.init(); // температура, команда /temperature   // слоты артефактов, амулет рывка
+        com.lesha_top1972.basedefense.temperature.Temperature.init(); // температура, команда /temperature
+        com.lesha_top1972.basedefense.needs.Needs.init();             // потребности: комфорт, ощущаемая температура
+        com.lesha_top1972.basedefense.needs.NeedsNetwork.init();      // вкладка «Инвентарь» у поселенца — снова открыть его меню
         com.lesha_top1972.basedefense.director.Director.init();   // «Режиссёр мира»: дни, акты, шкала, события
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         com.lesha_top1972.basedefense.weapon.KatanaCombat.init();
