@@ -7,7 +7,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.text.Text;
 
-/** Окно рюкзака: ванильное окно сундука на 2–3 ряда + вкладки справа («Инвентарь», «Потребности», «Рюкзак»). */
+/** Окно рюкзака: ванильное окно сундука на 2–3 ряда; кнопка ↩ в углу — назад в инвентарь (или меню поселенца). */
 public class BackpackScreen extends GenericContainerScreen {
 
     public BackpackScreen(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -18,6 +18,11 @@ public class BackpackScreen extends GenericContainerScreen {
     protected void init() {
         super.init();
         int owner = this.handler instanceof BackpackScreenHandler b ? b.getOwnerId() : -1;
-        NeedsTabs.add(this::addDrawableChild, this.x + this.backgroundWidth, this.y, NeedsTabs.Tab.BACKPACK, owner);
+        // Назад — в инвентарь игрока (или в меню поселенца)
+        this.addDrawableChild(net.minecraft.client.gui.widget.ButtonWidget.builder(Text.literal("↩"),
+                        btn -> NeedsTabs.toInventory(owner))
+                .dimensions(this.x + this.backgroundWidth - 18, this.y + 4, 14, 12)
+                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("gui.basedefense.backpack.back")))
+                .build());
     }
 }

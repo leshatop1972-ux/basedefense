@@ -12,9 +12,9 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 /**
- * Панель одежды на клиенте: маленькая кнопка у брони открывает рядом отдельную панель — 4 слота одежды и слот рюкзака.
- * У игрока панель над окном инвентаря (в ряд), у поселенца — слева от его меню (столбиком). Броня остаётся на месте.
- * Открыта ли панель — общее для обоих меню, запоминается до выхода из игры.
+ * Одежда на клиенте: маленькая кнопка открывает 4 слота одежды и слот рюкзака. У игрока одежда — столбиком сразу
+ * справа от брони (поверх окошка с персонажем), рюкзак — над второй рукой; у поселенца — панель слева от меню.
+ * Отдельная кнопка «Рюкзак» (видна, если рюкзак надет) открывает его вещи. Открыта ли одежда — запоминается до выхода.
  */
 public final class ClothingClient {
 
@@ -38,43 +38,42 @@ public final class ClothingClient {
                 return;
             }
             ButtonWidget b = toggleButton(0, 0);
+            ItemButton pack = backpackButton(0, 0, -1);
             Screens.getButtons(screen).add(b);
-            // Книга рецептов сдвигает окно — кнопка в левом верхнем углу окошка с игроком, справа от брони
-            ScreenEvents.beforeRender(screen).register((s, ctx, mx, my, d) ->
-                    b.setPosition(((ArtifactPanelHost) s).basedefense$left() + 27, (s.height - 166) / 2 + 9));
+            Screens.getButtons(screen).add(pack);
+            // Книга рецептов сдвигает окно — двигаем кнопки каждый кадр: «одежда» — в правом верхнем углу окошка
+            // с персонажем, «рюкзак» — правее, над слотом рюкзака
+            ScreenEvents.beforeRender(screen).register((s, ctx, mx, my, d) -> {
+                int left = ((ArtifactPanelHost) s).basedefense$left();
+                int top = (s.height - 166) / 2;
+                b.setPosition(left + 66, top + 9);
+                pack.setPosition(left + Clothing.PLAYER_BACKPACK_X - 1, top + 7);
+            });
         });
     }
 
-    // ---------- Игрок: панель над окном ----------
+    // ---------- Игрок: столбик справа от брони и слот рюкзака ----------
 
-    private static int playerL() {
-        return Clothing.PLAYER_X - 6;
-    }
-
-    private static int playerR() {
-        return Clothing.PLAYER_BACKPACK_X + 16 + 6;
-    }
-
-    /** Фон панели (из InventoryScreenMixin.drawBackground). */
+    /** Фон под слотами одежды (из InventoryScreenMixin.drawBackground — поверх окошка с персонажем). */
     public static void drawPlayerPanel(DrawContext ctx, int left, int top) {
         if (!panelOpen) {
             return;
         }
-        int x0 = left + playerL();
-        int y0 = top + Clothing.PLAYER_Y - 6;
-        int x1 = left + playerR();
-        int y1 = top + 2;
-        vanillaPanel(ctx, x0, y0, x1, y1);
+        int x0 = left + Clothing.PLAYER_X - 2;
+        int y0 = top + Clothing.PLAYER_Y - 2;
+        ctx.fill(x0, y0, x0 + 20, y0 + Clothing.CLOTHES * 18 + 2, 0xFFC6C6C6);
         for (int i = 0; i < Clothing.CLOTHES; i++) {
-            slotCell(ctx, left + Clothing.PLAYER_X + i * 18, top + Clothing.PLAYER_Y);
+            slotCell(ctx, left + Clothing.PLAYER_X, top + Clothing.PLAYER_Y + i * 18);
         }
-        slotCell(ctx, left + Clothing.PLAYER_BACKPACK_X, top + Clothing.PLAYER_Y);
+        slotCell(ctx, left + Clothing.PLAYER_BACKPACK_X, top + Clothing.PLAYER_BACKPACK_Y);
     }
 
-    /** Клик по панели — не «мимо окна». */
-    public static boolean inPlayerPanel(double mx, double my, int left, int top) {
-        return panelOpen && mx >= left + playerL() && mx < left + playerR()
-                && my >= top + Clothing.PLAYER_Y - 6 && my < top;
+    /** Кнопка «Рюкзак»: owner −1 — свой, иначе поселенец. Видна, только если рюкзак надет. */
+    public static ItemButton backpackButton(int x, int y, int owner) {
+        return new ItemButton(x, y, new net.minecraft.item.ItemStack(com.lesha_top1972.basedefense.clothing.ModClothing.BACKPACK),
+                Text.translatable("gui.basedefense.backpack.open"),
+                () -> com.lesha_top1972.basedefense.client.needs.NeedsTabs.hasBackpack(owner),
+                btn -> com.lesha_top1972.basedefense.client.needs.NeedsTabs.openBackpack(owner));
     }
 
     // ---------- Поселенец: панель слева ----------
@@ -103,14 +102,6 @@ public final class ClothingClient {
     }
 
     // ---------- Рисование ----------
-
-    private static void vanillaPanel(DrawContext ctx, int x0, int y0, int x1, int y1) {
-        ctx.fill(x0, y0, x1, y1, 0xFF000000);
-        ctx.fill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, 0xFFC6C6C6);
-        ctx.fill(x0 + 1, y0 + 1, x1 - 2, y0 + 3, 0xFFFFFFFF);
-        ctx.fill(x0 + 1, y0 + 1, x0 + 3, y1 - 2, 0xFFFFFFFF);
-        ctx.fill(x1 - 3, y0 + 3, x1 - 1, y1 - 1, 0xFF555555);
-    }
 
     /** Ячейка слота (как в ванильном окне); x, y — угол предмета. */
     private static void slotCell(DrawContext ctx, int x, int y) {

@@ -560,9 +560,10 @@
   "tooltip.basedefense.backpack.speed": "Speed: %s%%",
   "tooltip.basedefense.backpack.items": "Items inside: %s",
   "tooltip.basedefense.raincoat": "Rain and snow don't make you colder",
-  "gui.basedefense.tab.backpack": "Backpack",
-  "gui.basedefense.clothing.show": "Clothing and backpack",
-  "gui.basedefense.clothing.hide": "Hide clothing and backpack",
+  "gui.basedefense.clothing.show": "Show clothing",
+  "gui.basedefense.clothing.hide": "Hide clothing",
   "screen.basedefense.guard.tip.backpack": "Backpack",
-  "container.basedefense.settler_backpack": "Backpack: %s"
+  "container.basedefense.settler_backpack": "Backpack: %s",
+  "gui.basedefense.backpack.open": "Backpack",
+  "gui.basedefense.backpack.back": "Back"
 }

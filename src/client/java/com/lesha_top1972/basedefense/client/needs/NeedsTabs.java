@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Вкладки справа от окна — «Инвентарь», «Потребности» и «Рюкзак» (только если рюкзак надет) — у игрока
+ * Вкладки справа от окна — «Инвентарь» и «Потребности» — у игрока
  * (обычный инвентарь) и у поселенца (его меню). owner: −1 — свой игрок, иначе номер сущности поселенца.
  * Клавиша N — сразу окно потребностей своего персонажа.
  */
 public final class NeedsTabs {
 
-    public enum Tab { INVENTORY, NEEDS, BACKPACK }
+    public enum Tab { INVENTORY, NEEDS }
 
     private static KeyBinding key;
 
@@ -84,14 +84,11 @@ public final class NeedsTabs {
                 toNeeds(owner);
             }
         }));
-        adder.accept(new SideTab(x, top + 4 + 2 * (SideTab.H + 2), new ItemStack(
-                com.lesha_top1972.basedefense.clothing.ModClothing.BACKPACK),
-                Text.translatable("gui.basedefense.tab.backpack"), selected == Tab.BACKPACK,
-                () -> selected == Tab.BACKPACK || hasBackpack(owner), b -> {
-            if (selected != Tab.BACKPACK) {
-                send(Backpacks.OPEN, owner);
-            }
-        }));
+    }
+
+    /** Открыть рюкзак (свой — owner −1, или поселенца): меню открывает сервер. */
+    public static void openBackpack(int owner) {
+        send(Backpacks.OPEN, owner);
     }
 
     public static boolean hasBackpack(int owner) {

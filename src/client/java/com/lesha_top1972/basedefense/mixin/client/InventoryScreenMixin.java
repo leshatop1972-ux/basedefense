@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Панель одежды над окном; вкладка артефактов слева от инвентаря: фон под слотами; клик по вкладке — не «мимо окна» (не выбрасывает предмет). */
+/** Слоты одежды справа от брони; вкладка артефактов слева от инвентаря: фон под слотами; клик по вкладке — не «мимо окна» (не выбрасывает предмет). */
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin extends AbstractInventoryScreen<PlayerScreenHandler> implements ArtifactPanelHost {
 
@@ -51,10 +51,6 @@ public abstract class InventoryScreenMixin extends AbstractInventoryScreen<Playe
     private void basedefense$artifactPanelClick(double mouseX, double mouseY, int left, int top, int button,
                                                 CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValueZ() && ArtifactClient.panelVisible() && ArtifactClient.inPanel(mouseX, mouseY, left, top)) {
-            cir.setReturnValue(false);
-        }
-        if (cir.getReturnValueZ()
-                && com.lesha_top1972.basedefense.client.clothing.ClothingClient.inPlayerPanel(mouseX, mouseY, left, top)) {
             cir.setReturnValue(false);
         }
     }

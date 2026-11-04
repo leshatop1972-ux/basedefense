@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 
 import java.util.function.BooleanSupplier;
 
-/** Вкладка справа от окна («Инвентарь» / «Потребности» / «Рюкзак»): значок‑предмет, выбранная — светлее и шире. */
+/** Вкладка справа от окна («Инвентарь» / «Потребности»): значок‑предмет, выбранная — светлее и шире. */
 public class SideTab extends ButtonWidget {
 
     public static final int W = 26;

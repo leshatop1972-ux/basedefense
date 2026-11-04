@@ -14,7 +14,7 @@ import java.util.function.BooleanSupplier;
 /**
  * Два слоя экипировки: одежда (снизу) и броня (сверху). Одежда — 4 слота: голова, тело, ноги, ступни
  * ({@link ClothingType}), плюс слот рюкзака ({@link BackpackItem}). У игрока эти слоты — в конце меню инвентаря
- * (после артефактов), на отдельной панели над окном инвентаря (открывается маленькой кнопкой у брони).
+ * (после артефактов): столбик справа от брони и слот рюкзака над второй рукой (открываются маленькой кнопкой).
  * У поселенца — панель слева от его меню.
  * При смерти одежда выпадает (с keepInventory остаётся).
  */
@@ -25,10 +25,11 @@ public final class Clothing {
     public static final int BACKPACK = 4;
     public static final int SLOTS = 5;
 
-    /** Панель у игрока — над окном инвентаря (координаты слотов относительно окна). */
-    public static final int PLAYER_X = 8;
-    public static final int PLAYER_Y = -21;
-    public static final int PLAYER_BACKPACK_X = PLAYER_X + 4 * 18 + 8;
+    /** У игрока: одежда — столбик сразу справа от брони (поверх окошка с персонажем), рюкзак — над второй рукой. */
+    public static final int PLAYER_X = 26;
+    public static final int PLAYER_Y = 8;
+    public static final int PLAYER_BACKPACK_X = 77;
+    public static final int PLAYER_BACKPACK_Y = 44;
     /** Панель у поселенца — слева от его меню, столбиком. */
     public static final int SETTLER_X = -21;
     public static final int SETTLER_Y = 30;

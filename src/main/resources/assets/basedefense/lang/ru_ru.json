@@ -560,9 +560,10 @@
   "tooltip.basedefense.backpack.speed": "Скорость: %s%%",
   "tooltip.basedefense.backpack.items": "Внутри предметов: %s",
   "tooltip.basedefense.raincoat": "Под дождём и снегом не холоднее",
-  "gui.basedefense.tab.backpack": "Рюкзак",
-  "gui.basedefense.clothing.show": "Одежда и рюкзак",
-  "gui.basedefense.clothing.hide": "Скрыть одежду и рюкзак",
+  "gui.basedefense.clothing.show": "Показать одежду",
+  "gui.basedefense.clothing.hide": "Скрыть одежду",
   "screen.basedefense.guard.tip.backpack": "Рюкзак",
-  "container.basedefense.settler_backpack": "Рюкзак: %s"
+  "container.basedefense.settler_backpack": "Рюкзак: %s",
+  "gui.basedefense.backpack.open": "Рюкзак",
+  "gui.basedefense.backpack.back": "Назад"
 }
