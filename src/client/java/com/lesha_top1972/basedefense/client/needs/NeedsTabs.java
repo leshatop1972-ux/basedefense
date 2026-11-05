@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Вкладки справа от окна — «Инвентарь» и «Потребности» — у игрока
+ * Вкладки справа от окна — «Инвентарь», «Потребности» и у поселенца ещё «Работа» — у игрока
  * (обычный инвентарь) и у поселенца (его меню). owner: −1 — свой игрок, иначе номер сущности поселенца.
  * Клавиша N — сразу окно потребностей своего персонажа.
  */
 public final class NeedsTabs {
 
-    public enum Tab { INVENTORY, NEEDS }
+    public enum Tab { INVENTORY, NEEDS, WORK }
 
     private static KeyBinding key;
 
@@ -84,6 +84,17 @@ public final class NeedsTabs {
                 toNeeds(owner);
             }
         }));
+        if (owner >= 0) {
+            // Работа и навыки — только у поселенца
+            adder.accept(new SideTab(x, top + 4 + 2 * (SideTab.H + 2), new ItemStack(Items.IRON_PICKAXE),
+                    Text.translatable("gui.basedefense.tab.work"), selected == Tab.WORK, () -> true, b -> {
+                if (selected != Tab.WORK) {
+                    MinecraftClient c = MinecraftClient.getInstance();
+                    closeContainer(c);
+                    c.setScreen(new com.lesha_top1972.basedefense.client.work.WorkScreen(owner));
+                }
+            }));
+        }
     }
 
     /** Открыть рюкзак (свой — owner −1, или поселенца): меню открывает сервер. */

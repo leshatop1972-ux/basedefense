@@ -55,6 +55,11 @@ public final class ModClothing {
     public static final BackpackItem BIG_BACKPACK = Registry.register(Registries.ITEM,
             new Identifier(Basedefense.MOD_ID, "big_backpack"), new BackpackItem(3, -0.1, new Item.Settings().maxCount(1)));
 
+    /** Разметчик шахты (поселенцы с работой «Добыча» копают размеченное). */
+    public static final com.lesha_top1972.basedefense.work.MineMarkerItem MINE_MARKER = Registry.register(Registries.ITEM,
+            new Identifier(Basedefense.MOD_ID, "mine_marker"),
+            new com.lesha_top1972.basedefense.work.MineMarkerItem(new Item.Settings().maxCount(1)));
+
     private ModClothing() {
     }
 
@@ -66,6 +71,7 @@ public final class ModClothing {
     }
 
     public static void init() {
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MINE_MARKER));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             for (ClothingItem item : ALL) {
                 entries.add(item);

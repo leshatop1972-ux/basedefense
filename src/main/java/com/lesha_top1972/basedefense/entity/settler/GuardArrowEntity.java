@@ -55,6 +55,16 @@ public class GuardArrowEntity extends ArrowEntity {
         }
     }
 
+    /** Попадание — опыт стрельбы стрелку‑поселенцу (убил — больше). */
+    @Override
+    protected void onEntityHit(net.minecraft.util.hit.EntityHitResult hit) {
+        super.onEntityHit(hit);
+        if (!this.getWorld().isClient && this.getOwner() instanceof GuardEntity g
+                && hit.getEntity() instanceof LivingEntity target) {
+            g.work.skills.addXp(g, com.lesha_top1972.basedefense.work.Skill.SHOOTING, target.isAlive() ? 15f : 45f);
+        }
+    }
+
     @Override
     protected boolean canHit(Entity entity) {
         return super.canHit(entity) && !(entity instanceof SettlerEntity) && !(entity instanceof PlayerEntity);

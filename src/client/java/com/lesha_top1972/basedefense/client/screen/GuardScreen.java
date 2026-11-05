@@ -94,6 +94,7 @@ public class GuardScreen extends HandledScreen<GuardScreenHandler> {
             case GuardEntity.MODE_DEFEND -> TEAL_LIGHT;
             case GuardEntity.MODE_UNARMED -> WARN;
             case GuardEntity.MODE_EAT -> GOOD_LIGHT;
+            case GuardEntity.MODE_WORK -> GOOD_LIGHT;
             default -> TEXT_BODY;
         };
         pill(c, this.textRenderer, r - 12 - mw, t + 9, modeText, modeColor);

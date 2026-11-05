@@ -130,6 +130,7 @@ public class GuardEntity extends SettlerEntity {
     public static final int MODE_FIGHT = 2;
     public static final int MODE_EAT = 3;
     public static final int MODE_UNARMED = 4;
+    public static final int MODE_WORK = 5;
 
     /** (номер действия << 4) | вид — номер растёт, чтобы два одинаковых удара подряд тоже проигрались. */
     private static final TrackedData<Integer> ACTION = DataTracker.registerData(GuardEntity.class,
@@ -139,6 +140,8 @@ public class GuardEntity extends SettlerEntity {
             TrackedDataHandlerRegistry.BOOLEAN);
 
     private final SimpleInventory bag = new SimpleInventory(BAG_SIZE);
+    /** Работа, навыки, «руки» (см. SettlerWork). */
+    public final com.lesha_top1972.basedefense.work.SettlerWork work = new com.lesha_top1972.basedefense.work.SettlerWork(this);
 
     // ---------- Сервер ----------
     @Nullable
@@ -195,6 +198,12 @@ public class GuardEntity extends SettlerEntity {
     // =====================================================================
     // Снаряжение и сумка
     // =====================================================================
+
+    /** Точка обороны отряда (null — не на посту). */
+    @Nullable
+    public BlockPos getDefendPoint() {
+        return defendPoint;
+    }
 
     public SimpleInventory getBag() {
         return bag;
@@ -318,6 +327,9 @@ public class GuardEntity extends SettlerEntity {
             float goal = this.dataTracker.get(COMBAT) ? 1.0f : 0.0f;
             combatBlend += MathHelper.clamp(goal - combatBlend, -0.12f, 0.12f);
             return;
+        }
+        if (this.age % 20 == 7) {
+            work.skills.generateIfNeeded(this);   // новый поселенец — случайные навыки и увлечения
         }
         if (summonLeft >= 0 && --summonLeft <= 0 && this.getWorld() instanceof ServerWorld sw0) {
             sw0.spawnParticles(net.minecraft.particle.ParticleTypes.POOF, this.getX(), this.getBodyY(0.5), this.getZ(),
@@ -461,6 +473,7 @@ public class GuardEntity extends SettlerEntity {
                 if (actionTick == hit) {
                     this.playSound(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, sword ? 1.15f : 0.8f);
                     if (target != null && target.isAlive() && inReach(target, 0.9) && this.tryAttack(target)) {
+                        work.skills.addXp(this, com.lesha_top1972.basedefense.work.Skill.MELEE, target.isAlive() ? 10f : 40f);
                         // «Кровотёк» на стражнике срабатывает, когда он бьёт (как у игрока)
                         if (this.hasStatusEffect(com.lesha_top1972.basedefense.effect.ModEffects.BLEED)) {
                             com.lesha_top1972.basedefense.effect.ModEffects.triggerBleed(this);
@@ -571,7 +584,11 @@ public class GuardEntity extends SettlerEntity {
         Vec3d aim = target.getPos().add(0, target.getHeight() * 0.55, 0);
         double flight = aim.distanceTo(from) / speed;
         aim = aim.add(target.getVelocity().multiply(1, 0, 1).multiply(flight));   // упреждение
-        boolean hit = this.random.nextFloat() < BOW_HIT_CHANCE;
+        // Навык стрельбы: меткость 0.5 × (0.7 + 0.04 × ур.), урон стрелы ×(0.85 + 0.025 × ур.)
+        com.lesha_top1972.basedefense.work.SettlerSkills sk = work.skills;
+        int shoot = sk.level(com.lesha_top1972.basedefense.work.Skill.SHOOTING);
+        arrow.setDamage(arrow.getDamage() * sk.damageMult(com.lesha_top1972.basedefense.work.Skill.SHOOTING));
+        boolean hit = this.random.nextFloat() < BOW_HIT_CHANCE * (0.7f + 0.04f * shoot);
         if (hit) {
             arrow.setHoming(target);   // попадание: стрела доводится до цели
         } else {
@@ -704,6 +721,7 @@ public class GuardEntity extends SettlerEntity {
             }
         }
         bag.clear();
+        work.dropAll();
     }
 
     @Override
@@ -718,6 +736,7 @@ public class GuardEntity extends SettlerEntity {
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         nbt.put("GuardBag", bag.toNbtList());
+        nbt.put("Work", work.toNbt());
         if (summonLeft >= 0) {
             nbt.putInt("SummonLeft", summonLeft);
         }
@@ -729,6 +748,9 @@ public class GuardEntity extends SettlerEntity {
         summonLeft = nbt.contains("SummonLeft") ? nbt.getInt("SummonLeft") : -1;
         if (nbt.contains("GuardBag")) {
             bag.readNbtList(nbt.getList("GuardBag", NbtElement.COMPOUND_TYPE));
+        }
+        if (nbt.contains("Work")) {
+            work.fromNbt(nbt.getCompound("Work"));
         }
     }
 
@@ -778,6 +800,7 @@ public class GuardEntity extends SettlerEntity {
             GuardEntity g = guard;
             // Открыто меню — стоит и смотрит на игрока
             if (g.menuPlayer != null) {
+                g.work.cancel();
                 if (g.isActing()) {
                     g.endAction();
                 }
@@ -840,6 +863,7 @@ public class GuardEntity extends SettlerEntity {
             }
 
             if (g.enemy != null) {
+                g.work.cancel();
                 switch (weapon) {
                     case SWORD, AXE -> {
                         g.mode = MODE_FIGHT;
@@ -857,8 +881,12 @@ public class GuardEntity extends SettlerEntity {
                 return;
             }
             if (g.defendPoint != null) {
+                g.work.cancel();
                 g.mode = MODE_DEFEND;
                 holdPoint();
+            } else if (!g.isSummoned() && g.work.tick()) {
+                g.mode = MODE_WORK;          // работает (см. SettlerWork)
+                walkTarget = null;
             } else {
                 g.mode = weapon == Weapon.NONE ? MODE_UNARMED : MODE_PATROL;
                 patrol();
