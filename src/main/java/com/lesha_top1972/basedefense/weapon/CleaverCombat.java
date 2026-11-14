@@ -91,13 +91,13 @@ public final class CleaverCombat {
     public static final float[] N_DAMAGE = {6f, 6f, 9f};
     public static final float[] B_DAMAGE = {9f, 9f, 12f};
     /** Следующий удар — не раньше (тики от начала прошлого): после обычного / после взрывного. */
-    public static final int NEXT_MIN_N = 7;
-    public static final int NEXT_MIN_B = 8;
+    public static final int NEXT_MIN_N = 10;
+    public static final int NEXT_MIN_B = 9;
     /** Серия продолжается, если следующий клик — не позже (тики от начала прошлого удара). */
-    public static final int COMBO_WINDOW = 24;
+    public static final int COMBO_WINDOW = 30;
     /** Отдых после третьего шага (тики от его начала). */
-    public static final int REST_N = 22;
-    public static final int REST_B = 27;
+    public static final int REST_N = 25;
+    public static final int REST_B = 30;
     /** Шаг вперёд у ударов (скорость). */
     public static final float[] DASH_N = {0.30f, 0.30f, 0.36f};
     public static final float[] DASH_B = {0.46f, 0.40f, 0.30f};

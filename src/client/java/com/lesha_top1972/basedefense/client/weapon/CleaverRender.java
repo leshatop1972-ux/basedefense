@@ -2,7 +2,7 @@ package com.lesha_top1972.basedefense.client.weapon;
 
 import com.lesha_top1972.basedefense.Basedefense;
 import com.lesha_top1972.basedefense.client.weapon.fp.FpAnim;
-import com.lesha_top1972.basedefense.client.weapon.fp.FpArms;
+import com.lesha_top1972.basedefense.client.weapon.fp.ArmRig;
 import com.lesha_top1972.basedefense.client.weapon.fp.FpFx;
 import com.lesha_top1972.basedefense.client.weapon.fp.FpMesh;
 import com.lesha_top1972.basedefense.weapon.CleaverCombat;
@@ -32,7 +32,7 @@ import java.util.Iterator;
  * Тесак Громового тигра: модель — сетка assets/basedefense/mesh/cleaver.json (части: cleaver — тесак, drum — барабан,
  * loader — обойма; tools/cleaver_gen.py), текстура textures/entity/weapon/cleaver.png и маска накала cleaver_glow.png.
  * <p>
- * 1‑е лицо: руки игрока + тесак по клипу CleaverClient; барабан крутится и откидывается, обойма в левой руке,
+ * 1‑е лицо: суставные руки игрока (fp/ArmRig) + тесак по клипу CleaverClient; барабан крутится и откидывается, обойма в левой руке,
  * накал (кромка светится всегда, полосы/труба/сопла — от нагрева), струи пламени из сопел при выстреле, след клинка
  * (стальной или огненный). 3‑е лицо: тесак по позе CleaverClient.applyModel, накал, след.
  */
@@ -47,6 +47,8 @@ public final class CleaverRender {
     private static final float BASE_GLOW = 0.22f;
 
     private static FpMesh mesh;
+    private static final ArmRig.Sol SOL_R = new ArmRig.Sol();
+    private static final ArmRig.Sol SOL_L = new ArmRig.Sol();
     private static final FpFx FX = new FpFx(TEXTURE, CleaverKeys.WHITE_U, CleaverKeys.WHITE_V);
 
     private CleaverRender() {
@@ -129,8 +131,23 @@ public final class CleaverRender {
                     OverlayTexture.DEFAULT_UV, 0xFFFFFFFF);
             matrices.pop();
         }
+        // руки — суставные: плечо, локоть, запястье, кисть на рукояти
         Vector3f bladeR = pose.q.transform(new Vector3f(0, 1, 0));
-        FpArms.render(player, matrices, vcp, light, pose.g, bladeR, pose.ar, pose.lp, pose.la, pose.al, a.scale, a.armWidth);
+        Vector3f handR = pose.q.transform(new Vector3f(ArmRig.H0));
+        Vector3f backR = pose.q.transform(new Vector3f(0, 0, 1));
+        float lm = CleaverKeys.FP_ARM_LEN;
+        ArmRig.solve(pose.ar, pose.g, handR, vec(CleaverKeys.FP_POLE_R), s, lm, bladeR, SOL_R);
+        ArmRig.draw(player, SOL_R, backR, new Vector3f(1, 0, 0), s, true, a.armWidth, lm, matrices, vcp, light, OverlayTexture.DEFAULT_UV);
+        Vector3f backL = new Vector3f(pose.ext[4], pose.ext[5], pose.ext[6]);
+        if (backL.lengthSquared() < 1e-4f) {
+            backL.set(-1, 0, 0);
+        }
+        Vector3f handL = new Vector3f(pose.la);
+        if (handL.lengthSquared() < 1e-4f) {
+            handL.set(0, 0, -1);
+        }
+        ArmRig.solve(pose.al, pose.lp, handL, vec(CleaverKeys.FP_POLE_L), s, lm, pose.sq.transform(new Vector3f(0, 1, 0)), SOL_L);
+        ArmRig.draw(player, SOL_L, backL, new Vector3f(-1, 0, 0), s, false, a.armWidth, lm, matrices, vcp, light, OverlayTexture.DEFAULT_UV);
         VertexConsumer fx = FX.buffer(vcp);
         // выстрел: струи пламени из сопел и вспышка
         if (flash > 0.02f) {
@@ -150,6 +167,10 @@ public final class CleaverRender {
             trailFirstPerson(a, clip, CleaverClient.actionTime(), matrices, fx, s);
         }
         return true;
+    }
+
+    private static Vector3f vec(float[] v) {
+        return new Vector3f(v[0], v[1], v[2]);
     }
 
     /** Струи пламени из трёх сопел: по две скрещённые ленты вдоль выхлопа. len — длина струи в блоках при g = 1. */
@@ -220,6 +241,13 @@ public final class CleaverRender {
             heat = Math.max(heat, Math.min(1f, (now - st.chargeStart) / 20f));
         }
         weapon(st.weapon.p, st.weapon.q, sc, CleaverClient.drumOpenTP(st, now), 0f, heat, matrices, vcp, light, overlay, stack.hasGlint());
+        if (entity instanceof AbstractClientPlayerEntity acp) {      // суставные руки (ванильные спрятаны в applyModel)
+            matrices.push();
+            matrices.scale(1f / 16f, 1f / 16f, 1f / 16f);
+            ArmRig.draw(acp, st.armR, st.backR, st.outR, 1f, true, 1f, 1f, matrices, vcp, light, overlay);
+            ArmRig.draw(acp, st.armL, st.backL, st.outL, 1f, false, 1f, 1f, matrices, vcp, light, overlay);
+            matrices.pop();
+        }
         float a = now - st.start;
         if (CleaverClient.fiery(st) && CleaverClient.trailTP(st, now) > 0f && a < 30f) {
             jets(st.weapon.p, st.weapon.q, sc, 0.8f, matrices, FX.buffer(vcp), 0.5f);

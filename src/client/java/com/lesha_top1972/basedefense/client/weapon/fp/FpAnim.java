@@ -23,7 +23,7 @@ public final class FpAnim {
 
     public static final int CH = 33;
     /** Сколько добавочных каналов может быть после основных. */
-    public static final int EXT = 4;
+    public static final int EXT = 7;
 
     public final float fps;
     public final float scale;
@@ -69,7 +69,8 @@ public final class FpAnim {
         public float saya;
         public final Vector3f sp = new Vector3f();
         public final Quaternionf sq = new Quaternionf();
-        /** Добавочные каналы (кадр длиннее 33 чисел): у тесака — барабан откинут, поворот барабана, огонь, вспышка. */
+        /** Добавочные каналы (кадр длиннее 33 чисел): у тесака — барабан откинут, поворот барабана, огонь, вспышка,
+         * тыльная сторона левой кисти (3). */
         public final float[] ext = new float[EXT];
 
         public Pose set(Pose o) {

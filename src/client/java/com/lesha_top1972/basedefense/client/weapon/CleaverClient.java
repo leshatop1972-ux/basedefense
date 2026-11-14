@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.client.weapon;
 
+import com.lesha_top1972.basedefense.client.weapon.fp.ArmRig;
 import com.lesha_top1972.basedefense.client.weapon.fp.FpAnim;
 import com.lesha_top1972.basedefense.sound.ModSounds;
 import com.lesha_top1972.basedefense.weapon.CleaverCombat;
@@ -47,7 +48,8 @@ import java.util.Map;
  * зажать ПКМ — «Тесак в узел», клавиша (V) — перезарядка. Шаги, рывок и подскок своего игрока — здесь.
  * <p>
  * 3‑е лицо (все игроки): позы CleaverKeys — тесак опущен остриём вперёд (покой), боевая стойка после удара,
- * удары, зарядки, особые атаки, перезарядка; бёдра опускаются при широкой стойке.
+ * удары, зарядки, особые атаки, перезарядка; бёдра опускаются при широкой стойке. Руки — суставные (fp/ArmRig):
+ * ванильные прячутся, вместо них рисуются гнутые в локте и запястье, кисть — точно на рукояти.
  */
 public final class CleaverClient {
 
@@ -76,6 +78,13 @@ public final class CleaverClient {
         float heatAt;
         final BloodSwordPose.Frame weapon = new BloodSwordPose.Frame();
         boolean posed;
+        /** Суставные руки от 3‑го лица (px модели): решение, тыльная сторона кисти, «наружу». */
+        final ArmRig.Sol armR = new ArmRig.Sol();
+        final ArmRig.Sol armL = new ArmRig.Sol();
+        final Vector3f backR = new Vector3f(0, 0, 1);
+        final Vector3f backL = new Vector3f(0, 0, 1);
+        final Vector3f outR = new Vector3f(-1, 0, 0);
+        final Vector3f outL = new Vector3f(1, 0, 0);
         /** След от 3‑го лица: {время, основание xyz, острие xyz, идёт ли} в пространстве модели (блоки). */
         final ArrayDeque<float[]> trail = new ArrayDeque<>();
 
@@ -686,7 +695,7 @@ public final class CleaverClient {
     // =====================================================================
     // 3‑е лицо: позы
     // =====================================================================
-    private static final int N = 17;
+    private static final int N = 18;
 
     private static float smooth(float x) {
         x = MathHelper.clamp(x, 0f, 1f);
@@ -741,6 +750,9 @@ public final class CleaverClient {
         if (!(model instanceof PlayerEntityModel) || !(entity instanceof PlayerEntity pl)) {
             return;
         }
+        // длина ванильных рук — обычная (тесак делает их короче у своего владельца, см. ниже)
+        model.rightArm.yScale = 1f;
+        model.leftArm.yScale = 1f;
         if (!CleaverCombat.holding(pl)) {
             if (bodyDirty && !KatanaCombat.holding(pl)) {    // вернуть сдвинутые нами опоры (ваниль их не сбрасывает)
                 bodyDirty = false;
@@ -766,22 +778,45 @@ public final class CleaverClient {
         float hipZ = (model.rightLeg.pivotZ + model.leftLeg.pivotZ) * 0.5f;
         float lean = v[12] + model.body.pitch;
         float twist = v[13];
-        float free = MathHelper.clamp(v[16], 0f, 1f);
+        boolean free = v[16] > 0.5f;
+        boolean grips = v[17] > 0.5f;
+        float swingL = model.leftArm.pitch;              // ванильное покачивание свободной руки
         Matrix3f r = new Matrix3f().rotateY(twist).rotateX(lean);
         Vector3f neck = new Vector3f(0, hipY, hipZ).add(r.transform(new Vector3f(0, -12, 0)));
-        Vector3f shR = new Vector3f(neck).add(r.transform(new Vector3f(-5, 2, 0)));
-        Vector3f shL = new Vector3f(neck).add(r.transform(new Vector3f(5, 2, 0)));
-        Vector3f xRef = r.transform(new Vector3f(1, 0, 0));
+        Vector3f jR = r.transform(vec(CleaverKeys.SH_R)).add(neck);
+        Vector3f jL = r.transform(vec(CleaverKeys.SH_L)).add(neck);
         Vector3f g = r.transform(new Vector3f(v[0], v[1], v[2])).add(neck);
-        Vector3f l = r.transform(new Vector3f(v[9], v[10], v[11])).add(neck);
-        Matrix3f armR = new Matrix3f();
-        Matrix3f armL = new Matrix3f();
-        Vector3f handR = new Vector3f();
-        Vector3f handL = new Vector3f();
-        aim(shR, g, -1f, xRef, armR, handR);
-        aim(shL, l, 1f, xRef, armL, handL);
+        Vector3f bw = r.transform(new Vector3f(v[3], v[4], v[5])).normalize();
+        Vector3f nw = r.transform(new Vector3f(v[6], v[7], v[8]));
+        Vector3f z = new Vector3f(nw).sub(new Vector3f(bw).mul(nw.dot(bw))).normalize();
+        Vector3f x = new Vector3f(bw).cross(z);
+        // правая: кисть на рукояти (костяшки — к кромке), локоть — наружу‑вниз‑назад
+        Vector3f hand = new Vector3f(x).mul(ArmRig.H0.x).add(new Vector3f(bw).mul(ArmRig.H0.y)).normalize();
+        ArmRig.solve(jR, g, hand, r.transform(vec(CleaverKeys.POLE_R)), 1f, 1f, bw, st.armR);
+        st.backR.set(z);
+        r.transform(st.outR.set(-1, 0, 0));
+        // левая: на рукояти / по ключу / свободно висит и качается
+        Vector3f lk;
+        Vector3f handL;
+        Vector3f handleL = null;
+        r.transform(st.outL.set(1, 0, 0));
+        if (free) {
+            Vector3f hang = vec(CleaverKeys.HANG_L).sub(vec(CleaverKeys.SH_L)).rotateX(swingL * 0.8f);
+            lk = r.transform(hang).add(jL);
+            handL = new Vector3f(lk).sub(jL).normalize();
+            st.backL.set(st.outL);
+        } else if (grips) {
+            lk = r.transform(new Vector3f(v[9], v[10], v[11])).add(neck);
+            handL = new Vector3f(hand);
+            st.backL.set(z).negate();
+            handleL = bw;
+        } else {
+            lk = r.transform(new Vector3f(v[9], v[10], v[11])).add(neck);
+            handL = new Vector3f(lk).sub(jL).normalize();
+            st.backL.set(st.outL);
+        }
+        ArmRig.solve(jL, lk, handL, r.transform(vec(CleaverKeys.POLE_L)), 1f, 1f, handleL, st.armL);
 
-        Vector3f e = new Vector3f();
         model.body.pivotX = neck.x;
         model.body.pivotY = neck.y;
         model.body.pivotZ = neck.z;
@@ -793,30 +828,39 @@ public final class CleaverClient {
         model.head.pivotZ = neck.z;
         model.hat.copyTransform(model.head);
         bodyDirty = true;
-        BloodSwordPose.euler(armR, e);
-        set(shR, e, model.rightArm);
-        if (free > 0.5f) {                               // левая рука свободна: ванильное покачивание, только плечо на месте
-            model.leftArm.pivotX = shL.x;
-            model.leftArm.pivotY = shL.y;
-            model.leftArm.pivotZ = shL.z;
-        } else {
-            BloodSwordPose.euler(armL, e);
-            set(shL, e, model.leftArm);
-        }
+        // ванильные руки спрятаны (их рисует CleaverRender суставными); их поворот — по плечу до локтя и вдвое короче:
+        // так наплечники брони и рукава одежды садятся на плечо, а не торчат прямой палкой
+        Vector3f xRef = r.transform(new Vector3f(1, 0, 0));
+        Matrix3f m = new Matrix3f();
+        Vector3f e = new Vector3f();
+        BloodSwordPose.basis(new Vector3f(st.armR.e).sub(st.armR.s), xRef, m);
+        BloodSwordPose.euler(m, e);
+        set(r.transform(new Vector3f(-5, 2, 0)).add(neck), e, model.rightArm);
+        BloodSwordPose.basis(new Vector3f(st.armL.e).sub(st.armL.s), xRef, m);
+        BloodSwordPose.euler(m, e);
+        set(r.transform(new Vector3f(5, 2, 0)).add(neck), e, model.leftArm);
+        model.rightArm.yScale = 0.5f;
+        model.leftArm.yScale = 0.5f;
+        model.rightArm.visible = false;
+        model.leftArm.visible = false;
         model.leftLeg.pivotY += drop;
         model.rightLeg.pivotY += drop;
         model.leftLeg.pitch += legL;
         model.rightLeg.pitch += legR;
         if (model instanceof PlayerEntityModel<?> pm) {
             pm.jacket.copyTransform(model.body);
-            pm.rightSleeve.copyTransform(model.rightArm);
-            pm.leftSleeve.copyTransform(model.leftArm);
+            pm.rightSleeve.visible = false;
+            pm.leftSleeve.visible = false;
             pm.leftPants.copyTransform(model.leftLeg);
             pm.rightPants.copyTransform(model.rightLeg);
         }
-        KatanaClient.frame(handR, r.transform(new Vector3f(v[3], v[4], v[5])), r.transform(new Vector3f(v[6], v[7], v[8])), st.weapon);
+        KatanaClient.frame(g, bw, nw, st.weapon);
         st.weapon.p.div(16f);
         st.posed = true;
+    }
+
+    private static Vector3f vec(float[] v) {
+        return new Vector3f(v[0], v[1], v[2]);
     }
 
     private static void set(Vector3f pivot, Vector3f euler, net.minecraft.client.model.ModelPart part) {
@@ -826,18 +870,6 @@ public final class CleaverClient {
         part.pitch = euler.x;
         part.yaw = euler.y;
         part.roll = euler.z;
-    }
-
-    private static void aim(Vector3f sh, Vector3f target, float hx, Vector3f xRef, Matrix3f arm, Vector3f hand) {
-        Vector3f a = new Vector3f(target);
-        Vector3f local = new Vector3f();
-        for (int i = 0; i < 4; i++) {
-            BloodSwordPose.basis(new Vector3f(a).sub(sh), xRef, arm);
-            arm.transform(local.set(hx, BloodSwordKeys.ARM_REACH, 0), hand).add(sh);
-            a.add(new Vector3f(target).sub(hand));
-        }
-        BloodSwordPose.basis(new Vector3f(a).sub(sh), xRef, arm);
-        arm.transform(local.set(hx, BloodSwordKeys.ARM_REACH, 0), hand).add(sh);
     }
 
     /** След от 3‑го лица идёт сейчас? */

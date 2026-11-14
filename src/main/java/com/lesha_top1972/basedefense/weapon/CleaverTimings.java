@@ -6,11 +6,11 @@ package com.lesha_top1972.basedefense.weapon;
 public final class CleaverTimings {
 
     /** Длина ударов серии: обычные и взрывные. */
-    public static final int[] N_LEN = {14, 14, 20};
-    public static final int[] B_LEN = {16, 16, 26};
+    public static final int[] N_LEN = {18, 18, 23};
+    public static final int[] B_LEN = {19, 19, 29};
     /** Когда бьёт (тики от начала удара). */
-    public static final int[] N_HIT = {4, 3, 6};
-    public static final int[] B_HIT = {4, 4, 6};
+    public static final int[] N_HIT = {7, 5, 8};
+    public static final int[] B_HIT = {5, 5, 8};
     /** «Тигриный выпад»: зарядка, длина, взрыв на острие. */
     public static final int S1_CHARGE = 20;
     public static final int S1_LEN = 26;
