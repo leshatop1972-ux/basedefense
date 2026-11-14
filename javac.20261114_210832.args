@@ -1,0 +1,6 @@
+-proc:none
+-Xmaxerrs
+200000
+-d
+/tmp/jout
+@/tmp/srcs.txt
