@@ -43,6 +43,7 @@ public class Basedefense implements ModInitializer {
         BloodSwordCombat.init();       // «Кровавый разруб» меча кровожада
         com.lesha_top1972.basedefense.weapon.KatanaCombat.init();
         com.lesha_top1972.basedefense.weapon.KatanaPower.init();   // катана: серия, блок, «Иссэн»; древняя сила
+        com.lesha_top1972.basedefense.weapon.CleaverCombat.init(); // тесак Громового тигра: серия, взрывные удары, особые атаки
         // «Шум» игроков в бою с Набатом
         ServerTickEvents.END_SERVER_TICK.register(NabatNoise::tick);
     }

@@ -22,6 +22,8 @@ import java.util.Map;
 public final class FpAnim {
 
     public static final int CH = 33;
+    /** Сколько добавочных каналов может быть после основных. */
+    public static final int EXT = 4;
 
     public final float fps;
     public final float scale;
@@ -67,8 +69,11 @@ public final class FpAnim {
         public float saya;
         public final Vector3f sp = new Vector3f();
         public final Quaternionf sq = new Quaternionf();
+        /** Добавочные каналы (кадр длиннее 33 чисел): у тесака — барабан откинут, поворот барабана, огонь, вспышка. */
+        public final float[] ext = new float[EXT];
 
         public Pose set(Pose o) {
+            System.arraycopy(o.ext, 0, ext, 0, EXT);
             g.set(o.g);
             q.set(o.q);
             lp.set(o.lp);
@@ -106,6 +111,9 @@ public final class FpAnim {
             trail = MathHelper.lerp(w, a.trail, b.trail);
             glow = MathHelper.lerp(w, a.glow, b.glow);
             saya = MathHelper.lerp(w, a.saya, b.saya);
+            for (int i = 0; i < EXT; i++) {
+                ext[i] = MathHelper.lerp(w, a.ext[i], b.ext[i]);
+            }
             if (a.saya <= 0.001f) {
                 sp.set(b.sp);
                 sq.set(b.sq);
@@ -221,6 +229,9 @@ public final class FpAnim {
         out.saya = l(a, b, 25, w);
         out.sp.set(l(a, b, 26, w), l(a, b, 27, w), l(a, b, 28, w));
         nlerp(new Quaternionf(a[29], a[30], a[31], a[32]), new Quaternionf(b[29], b[30], b[31], b[32]), w, out.sq);
+        for (int k = 0; k < EXT; k++) {
+            out.ext[k] = CH + k < a.length && CH + k < b.length ? l(a, b, CH + k, w) : 0f;
+        }
         return out;
     }
 

@@ -3,6 +3,7 @@ package com.lesha_top1972.basedefense.mixin.client;
 import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordRender;
 import net.minecraft.util.math.RotationAxis;
+import com.lesha_top1972.basedefense.client.weapon.CleaverRender;
 import com.lesha_top1972.basedefense.client.weapon.KatanaRender;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -35,6 +36,7 @@ public abstract class HeldItemRendererMixin {
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-12f * dash));
         }
         if (KatanaRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)
+                || CleaverRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)
                 || BloodSwordRender.renderFirstPerson(player, hand, item, equipProgress, matrices, vertexConsumers, light)) {
             ci.cancel();
         }
@@ -46,6 +48,7 @@ public abstract class HeldItemRendererMixin {
                                               boolean leftHanded, MatrixStack matrices,
                                               VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
         if (KatanaRender.renderRest(stack, mode, leftHanded, matrices, vertexConsumers, light)
+                || CleaverRender.renderRest(stack, mode, leftHanded, matrices, vertexConsumers, light)
                 || BloodSwordRender.renderRest(entity, stack, mode, leftHanded, matrices, vertexConsumers, light)) {
             ci.cancel();
         }

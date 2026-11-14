@@ -1,5 +1,6 @@
 package com.lesha_top1972.basedefense.mixin.client;
 
+import com.lesha_top1972.basedefense.client.weapon.CleaverClient;
 import com.lesha_top1972.basedefense.client.weapon.KatanaClient;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -18,5 +19,6 @@ public abstract class GameRendererMixin {
     @Inject(method = "tiltViewWhenHurt", at = @At("HEAD"))
     private void basedefense$katanaCamera(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
         KatanaClient.applyCamera(matrices, tickDelta);
+        CleaverClient.applyCamera(matrices, tickDelta);
     }
 }

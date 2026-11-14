@@ -1,0 +1,30 @@
+package com.lesha_top1972.basedefense.weapon;
+
+/**
+ * Тайминги тесака Громового тигра (тики). СОЗДАНО tools/cleaver_gen.py из клипов анимации — правь скрипт.
+ */
+public final class CleaverTimings {
+
+    /** Длина ударов серии: обычные и взрывные. */
+    public static final int[] N_LEN = {14, 14, 20};
+    public static final int[] B_LEN = {16, 16, 26};
+    /** Когда бьёт (тики от начала удара). */
+    public static final int[] N_HIT = {4, 3, 6};
+    public static final int[] B_HIT = {4, 4, 6};
+    /** «Тигриный выпад»: зарядка, длина, взрыв на острие. */
+    public static final int S1_CHARGE = 20;
+    public static final int S1_LEN = 26;
+    public static final int S1_BLAST = 7;
+    /** «Тесак в узел»: зарядка, длина, три разреза, удар в землю. */
+    public static final int S2_CHARGE = 24;
+    public static final int S2_LEN = 40;
+    public static final int[] S2_CUTS = {3, 7, 12};
+    public static final int S2_SMASH = 22;
+    public static final int S2_HOP = 17;
+    /** Перезарядка: длина и момент, когда патроны в барабане. */
+    public static final int RELOAD_LEN = 36;
+    public static final int RELOAD_LOAD = 19;
+
+    private CleaverTimings() {
+    }
+}

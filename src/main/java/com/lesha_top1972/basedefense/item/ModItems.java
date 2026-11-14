@@ -32,6 +32,9 @@ public final class ModItems {
             new KatanaItem(KatanaVariant.ANCIENT, new Item.Settings().rarity(Rarity.EPIC)));
 
     /** Артефакт «Амулет рывка»: R — рывок на 4 блока, перезарядка 2 с. */
+    /** Тесак Громового тигра: барабан на 6 патронов, взрывные удары (weapon/CleaverCombat). Выпадает с тигра. */
+    public static final Item TIGER_CLEAVER = register("tiger_cleaver",
+            new com.lesha_top1972.basedefense.weapon.CleaverItem(new Item.Settings().rarity(Rarity.EPIC).fireproof()));
     public static final Item DASH_AMULET = register("dash_amulet",
             new com.lesha_top1972.basedefense.artifact.ArtifactItem(new Item.Settings().rarity(Rarity.RARE),
                     "item.basedefense.dash_amulet.tip"));
@@ -161,6 +164,7 @@ public final class ModItems {
             entries.add(KATANA);
             entries.add(REFINED_KATANA);
             entries.add(ANCIENT_KATANA);
+            entries.add(TIGER_CLEAVER);
             entries.add(DASH_AMULET);
             entries.add(LEAP_AMULET);
             entries.add(VAMPIRE_AMULET_1);

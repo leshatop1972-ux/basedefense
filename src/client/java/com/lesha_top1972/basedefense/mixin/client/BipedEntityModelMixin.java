@@ -2,6 +2,7 @@ package com.lesha_top1972.basedefense.mixin.client;
 
 import com.lesha_top1972.basedefense.client.artifact.ArtifactClient;
 import com.lesha_top1972.basedefense.client.weapon.BloodSwordClient;
+import com.lesha_top1972.basedefense.client.weapon.CleaverClient;
 import com.lesha_top1972.basedefense.client.weapon.KatanaClient;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.entity.LivingEntity;
@@ -19,6 +20,7 @@ public abstract class BipedEntityModelMixin {
                                             float animationProgress, float headYaw, float headPitch, CallbackInfo ci) {
         BloodSwordClient.applyModel((BipedEntityModel<?>) (Object) this, entity);
         KatanaClient.applyModel((BipedEntityModel<?>) (Object) this, entity);
+        CleaverClient.applyModel((BipedEntityModel<?>) (Object) this, entity);
         ArtifactClient.applyModel((BipedEntityModel<?>) (Object) this, entity);
     }
 }

@@ -635,5 +635,14 @@
   "work.basedefense.problem.mines_done": "Mines are dug out (or blocks are unreachable)",
   "work.basedefense.problem.no_station": "No furnace, smoker or lit campfire",
   "work.basedefense.problem.no_raw": "No raw food in storage",
-  "work.basedefense.problem.no_fuel": "No furnace fuel in storage"
+  "work.basedefense.problem.no_fuel": "No furnace fuel in storage",
+  "item.basedefense.tiger_cleaver": "Thunder Tiger's Cleaver",
+  "item.basedefense.tiger_cleaver.rounds": "Rounds: %s / %s",
+  "item.basedefense.tiger_cleaver.tip1": "LMB - 3-hit combo: 6 / 6 / 9, applies Tremor",
+  "item.basedefense.tiger_cleaver.tip2": "RMB - blast version of the combo hit (1 round): 9 / 9 / explosion 12; burns, bursts Tremor",
+  "item.basedefense.tiger_cleaver.tip3": "Hold LMB 1 s - Tiger Lunge (2 rounds): dash thrust 8 and explosion 12; 10 s cooldown",
+  "item.basedefense.tiger_cleaver.tip4": "Hold RMB 1.2 s - Tanglecleaver (10+ strength, all rounds): 3 cuts, ground smash, fire wave; 25 s",
+  "item.basedefense.tiger_cleaver.tip5": "Hits build Inner Strength (up to 25): +1% damage each",
+  "item.basedefense.tiger_cleaver.tip6": "Reload the drum - V key (rebindable)",
+  "key.basedefense.cleaver_reload": "Cleaver: reload"
 }

@@ -141,6 +141,8 @@ public class BasedefenseClient implements ClientModInitializer {
         com.lesha_top1972.basedefense.client.weapon.BloodSwordClient.init();
         // катана: модель и ножны, серия из трёх ударов
         com.lesha_top1972.basedefense.client.weapon.KatanaClient.init();
+        // тесак Громового тигра: барабан с патронами, взрывные удары, две особые атаки
+        com.lesha_top1972.basedefense.client.weapon.CleaverClient.init();
         // артефакты: вкладка с 5 слотами в инвентаре, рывок на R
         com.lesha_top1972.basedefense.client.artifact.ArtifactClient.init();
         com.lesha_top1972.basedefense.client.fx.FxClient.init();   // кольца, лучи, линии — одним пакетом

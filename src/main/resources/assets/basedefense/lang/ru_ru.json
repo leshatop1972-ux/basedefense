@@ -635,5 +635,14 @@
   "work.basedefense.problem.mines_done": "Шахты выкопаны (или до блоков не добраться)",
   "work.basedefense.problem.no_station": "Нет печи, коптильни или горящего костра",
   "work.basedefense.problem.no_raw": "Нет сырой еды на складе",
-  "work.basedefense.problem.no_fuel": "Нет топлива для печи на складе"
+  "work.basedefense.problem.no_fuel": "Нет топлива для печи на складе",
+  "item.basedefense.tiger_cleaver": "Тесак Громового тигра",
+  "item.basedefense.tiger_cleaver.rounds": "Патроны: %s / %s",
+  "item.basedefense.tiger_cleaver.tip1": "ЛКМ — серия из 3 ударов: 6 / 6 / 9, вешают «Дрожь»",
+  "item.basedefense.tiger_cleaver.tip2": "ПКМ — взрывная версия удара серии (патрон): 9 / 9 / взрыв 12; поджог, подрыв «Дрожи»",
+  "item.basedefense.tiger_cleaver.tip3": "Зажать ЛКМ 1 с — «Тигриный выпад» (2 патрона): укол на рывке 8 и взрыв 12; перезарядка 10 с",
+  "item.basedefense.tiger_cleaver.tip4": "Зажать ПКМ 1.2 с — «Тесак в узел» (сила от 10 и все патроны): 3 разреза, удар в землю, огненная волна; 25 с",
+  "item.basedefense.tiger_cleaver.tip5": "Попадания копят Внутреннюю силу (до 25): +1% урона за единицу",
+  "item.basedefense.tiger_cleaver.tip6": "Перезарядка барабана — клавиша V (меняется в настройках)",
+  "key.basedefense.cleaver_reload": "Тесак: перезарядка"
 }
